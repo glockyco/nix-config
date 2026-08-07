@@ -6,6 +6,7 @@
     ./defaults.nix
     ./fonts.nix
     ./homebrew.nix
+    ./rectangle.nix
     ./home-manager.nix
   ];
 }
