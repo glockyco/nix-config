@@ -5,7 +5,7 @@
     ./ghostty.nix
     ./default-apps.nix
     ./git.nix
-    ./ssh.nix
+    ./gh.nix
     ./packages.nix
     ./neo2.nix
     ./karabiner.nix
