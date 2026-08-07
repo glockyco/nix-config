@@ -8,6 +8,7 @@
     ./gh.nix
     ./packages.nix
     ./typst.nix
+    ./crossover.nix
     ./neo2.nix
     ./karabiner.nix
     ./screenshots.nix
