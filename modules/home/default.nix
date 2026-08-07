@@ -7,6 +7,7 @@
     ./git.nix
     ./gh.nix
     ./packages.nix
+    ./typst.nix
     ./neo2.nix
     ./karabiner.nix
     ./screenshots.nix
