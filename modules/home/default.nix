@@ -2,6 +2,7 @@
   imports = [
     ./shell.nix
     ./ghostty.nix
+    ./default-apps.nix
     ./git.nix
     ./ssh.nix
     ./packages.nix
