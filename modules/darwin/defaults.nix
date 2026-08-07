@@ -15,9 +15,13 @@
 
       AppleShowAllExtensions = true;
 
-      # Smart quotes and dashes corrupt code and shell commands.
+      # Smart quotes and dashes corrupt code and shell commands; the rest of
+      # the "helpful" text substitutions mangle identifiers and commit messages.
       NSAutomaticQuoteSubstitutionEnabled = false;
       NSAutomaticDashSubstitutionEnabled = false;
+      NSAutomaticCapitalizationEnabled = false;
+      NSAutomaticSpellingCorrectionEnabled = false;
+      NSAutomaticPeriodSubstitutionEnabled = false;
     };
 
     finder = {
