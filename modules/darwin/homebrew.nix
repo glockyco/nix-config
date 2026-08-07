@@ -65,6 +65,12 @@
       # `homebrew.masApps`. Extensions for Zen and Brave come from their own
       # browser stores and are not manageable from here.
       "bitwarden"
+
+      # Editor. nixpkgs has zed-editor for darwin, but Zed ships very
+      # frequently and its own updater expects the vendor bundle; the cask
+      # keeps us on the release cadence the editor is built around.
+      "zed"
+
     ];
 
     onActivation = {
