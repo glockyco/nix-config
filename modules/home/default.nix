@@ -2,6 +2,7 @@
   imports = [
     ./shell.nix
     ./git.nix
+    ./ssh.nix
     ./packages.nix
     ./neo2.nix
     ./karabiner.nix

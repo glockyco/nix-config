@@ -55,6 +55,10 @@
       # browser relay is a Chrome extension and cannot load into Gecko.
       "zen"
       "brave-browser"
+
+      # Secure Enclave SSH agent. Not in nixpkgs for darwin, and it has to be a
+      # signed app bundle anyway to get Secure Enclave and Touch ID entitlements.
+      "secretive"
     ];
 
     onActivation = {
