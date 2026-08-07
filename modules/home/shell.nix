@@ -44,9 +44,13 @@
       # the useful information is usually the deep end of the path.
       directory.truncation_length = 5;
 
-      # Show how long the previous command took when it was slow enough to
-      # notice, which is most of what a status line is actually for.
-      cmd_duration.min_time = 2000;
+      # The catppuccin-powerline preset turns cmd_duration on *and* sets
+      # `show_notifications = true`, so every slow command also fires a macOS
+      # notification. Neither is wanted: the duration is noise in the prompt and
+      # the notification is noise everywhere. `disabled` short-circuits the
+      # module, which kills the notification too; `$cmd_duration` in the preset's
+      # format string then renders empty.
+      cmd_duration.disabled = true;
     };
   };
 
