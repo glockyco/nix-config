@@ -47,3 +47,6 @@ macOS won't let these be declared:
 - `homebrew.onActivation.cleanup = "uninstall"` — dropping a cask uninstalls it.
 - SSH keys aren't here and can't be: Secure Enclave via Secretive, YubiKey for
   recovery. Neither is exportable.
+- Terminal.app's font is an archived `NSFont`, not a string, so it needs the
+  activation script in `modules/home/apple-terminal.nix`. Terminal rewrites its
+  own prefs on quit — if it was open during a switch, quit and reopen it.
