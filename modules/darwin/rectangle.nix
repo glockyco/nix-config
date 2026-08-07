@@ -6,11 +6,15 @@ let
   # absent key, which means "use the default binding".
   #
   # Window management here is entirely cursor-driven -- Window Throw and
-  # Move & Resize -- so the stock shortcuts are dead weight, and several of them
+  # Move & Resize -- so every stock shortcut is dead weight, and several of them
   # would sit on chords Neo2 and Karabiner already claim.
   #
-  # This list is the set carried over from the previous machine rather than
-  # every action Rectangle offers; actions absent from it keep their defaults.
+  # This is the complete set the app exposes, captured after clearing them in
+  # the UI. Regenerate with:
+  #
+  #   defaults export com.knollsoft.Hookshot - | plutil -convert xml1 -o - -
+  #
+  # and take every key whose value is an empty dict.
   unboundShortcuts = [
     "almostMaximize"
     "appLeftHalf"
@@ -18,37 +22,77 @@ let
     "bottomCenterLeftEighth"
     "bottomCenterRightEighth"
     "bottomCenterSixth"
+    "bottomHalf"
+    "bottomLeft"
     "bottomLeftSixth"
     "bottomLeftThird"
+    "bottomRight"
+    "bottomRightNinth"
     "bottomRightSixth"
     "bottomRightThird"
+    "bottomVerticalThird"
+    "bottomVerticalTwoThirds"
+    "cascadeAll"
+    "cascadeApp"
+    "center"
     "centerHalf"
+    "centerThird"
+    "centerThreeFourths"
     "centerTwoThirds"
     "fillBottomLeft"
     "fillBottomRight"
     "fillLeft"
+    "fillRight"
     "fillTopLeft"
     "fillTopRight"
+    "firstFifth"
     "firstFourth"
     "firstSixth"
+    "firstThird"
     "firstThreeFourths"
+    "firstTwoThirds"
+    "larger"
+    "largerHeight"
+    "largerWidth"
     "lastFourth"
+    "lastThird"
     "lastThreeFourths"
+    "lastTwoThirds"
+    "leftHalf"
+    "maximize"
+    "maximizeHeight"
     "middleRightNinth"
+    "middleVerticalThird"
     "moveDown"
     "moveLeft"
+    "moveUp"
+    "nextDisplay"
+    "nextDisplayRatio"
     "nudgeRight"
     "nudgeUp"
     "prevSpace"
+    "previousDisplay"
+    "restore"
+    "rightHalf"
+    "secondFifth"
     "secondFourth"
+    "smaller"
+    "smallerWidth"
     "snapTopLeft"
+    "thirdFifth"
     "thirdFourth"
+    "topCenterLeftEighth"
     "topCenterSixth"
+    "topHalf"
+    "topLeft"
     "topLeftEighth"
     "topLeftSixth"
     "topLeftThird"
+    "topRight"
     "topRightSixth"
     "topRightThird"
+    "topVerticalThird"
+    "topVerticalTwoThirds"
     "upperCenter"
   ];
 in
