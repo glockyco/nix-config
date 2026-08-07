@@ -6,46 +6,23 @@ let
 in
 
 {
-  # Key strategy: private keys are never stored in this repository, never
-  # copied, and never migrated between machines.
-  #
-  #   - Day to day: keys generated inside this Mac's Secure Enclave and served
-  #     by Secretive. They cannot be exported, by construction.
-  #   - Recovery and portability: a resident FIDO2 key on a YubiKey. The private
-  #     key lives on the token, so it travels with you rather than with a
-  #     machine, and it is the only way back in if this Mac dies -- Secure
-  #     Enclave keys have no backup path.
-  #
-  # Register the public half of both with every service, so losing either one is
-  # an inconvenience rather than a lockout.
+  # Enclave keys are served by Secretive; the YubiKey holds a resident FIDO2 key.
+  # Neither private key is exportable.
   programs.ssh = {
     enable = true;
 
-    # nixpkgs OpenSSH rather than Apple's. Apple builds theirs without libfido2,
-    # so `ssh-keygen -t ed25519-sk` fails with "No FIDO SecurityKeyProvider
-    # specified" and YubiKey keys are unusable. nixpkgs builds with
-    # `--with-security-key-builtin=yes`.
-    #
-    # Consequence: Apple's non-upstream `UseKeychain` directive is not
-    # understood by this client and must not appear below, or every ssh
-    # invocation errors out. That costs nothing here -- neither the Secure
-    # Enclave nor a token uses a passphrase-protected key file for Keychain to
-    # hold.
+    # Apple's ssh-keygen lacks libfido2: `-t ed25519-sk` fails with "No FIDO
+    # SecurityKeyProvider specified". nixpkgs builds it in. Apple's
+    # `UseKeychain` directive is unknown to this client and must not appear below.
     package = pkgs.openssh;
 
-    # Home Manager's implicit global block is deprecated on 26.05; opt out and
-    # declare the defaults we actually want.
+    # Matches the pinned Home Manager release; changing it changes option defaults.
     enableDefaultConfig = false;
 
     settings = {
-      # Rendered last, so any per-host block added above wins: ssh keeps the
-      # first value it obtains for a given directive.
       "*" = {
-        # Every interactive key is served by the Secure Enclave agent.
         IdentityAgent = secretiveAgent;
 
-        # Enclave and token keys are never loaded into an agent, so there is
-        # nothing to add.
         AddKeysToAgent = "no";
 
         HashKnownHosts = "yes";
@@ -53,9 +30,8 @@ in
         ServerAliveCountMax = 3;
       };
 
-      # A YubiKey key is used through its handle file rather than the agent, so
-      # it coexists with IdentityAgent above. Uncomment once enrolled:
-      #
+      # Use the YubiKey resident key through its handle file.
+      # Uncomment this host block after enrollment.
       # "github.com" = {
       #   HostName = "github.com";
       #   User = "git";

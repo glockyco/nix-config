@@ -1,13 +1,10 @@
 # nix-config
 
-Declarative macOS workstation. Determinate Nix + nix-darwin + Home Manager, Apple Silicon.
+Declarative macOS config: Determinate Nix, nix-darwin, Home Manager, Apple Silicon.
 
-`modules/darwin/` is system scope, `modules/home/` is user scope, `packages/` is
-local derivations. File names say what they do.
+`modules/darwin/` is system scope, `modules/home/` user scope, and `packages/` local derivations.
 
-No language toolchains here on purpose — those live in per-project flakes with
-`direnv`. Symbolic PathFinder wants JDK 8 and current JPF wants JDK 11, so a
-global JDK would be wrong for both.
+No global toolchains: project flakes use `direnv`. Symbolic PathFinder needs JDK 8; current JPF needs JDK 11.
 
 ## Use
 
@@ -18,43 +15,29 @@ nix flake update                        # bump inputs
 nix fmt                                 # format
 ```
 
-Bootstrapping a fresh machine, before `darwin-rebuild` exists and while the host
-still has its factory name:
+Fresh-machine bootstrap, before `darwin-rebuild` exists and while the host has its factory name:
 
 ```sh
 sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
 ```
 
-Delete `/etc/nix/nix.custom.conf` first if the Determinate installer left one —
-nix-darwin won't overwrite files in `/etc` it didn't write.
+Delete `/etc/nix/nix.custom.conf` if Determinate left it; nix-darwin will not overwrite unmanaged `/etc` files.
 
 ## Manual steps
 
-macOS won't let these be declared:
+macOS cannot declare these:
 
-- Add *Deutsch (Neo 2)* under Input Sources, then restart. Both Apple's TN2056
-  and neo-layout.org require a fresh login session after installing a layout
-  bundle; enabling one before that silently fails to stick.
+- Add *Deutsch (Neo 2)* under Input Sources, then restart; Apple TN2056 and neo-layout.org require a fresh login session after layout installation.
 - Approve Karabiner's driver extension, Input Monitoring and login items.
 - Confirm the default-app prompts on first switch.
-- Paste the Rectangle Pro licence code into the app, and grant it Accessibility.
-- `omp` auth via `/login`.
+- Paste the Rectangle Pro licence code into the app and grant it Accessibility.
+- Authenticate `omp` via `/login`.
 
 ## Gotchas
 
-- Determinate owns `/etc/nix/nix.conf`. Use `determinateNix.customSettings`;
-  `nix.settings` is inert and `nix.gc` throws. GC is `determinate-nixd`'s job.
-- `karabiner.json` and the Neo bundle are **copied**, not symlinked — Karabiner
-  rewrites its config, and macOS won't load a keylayout through a store symlink.
-  UI changes to Karabiner are reverted on switch; edit the module.
-- `homebrew.onActivation.cleanup = "uninstall"` — dropping a cask uninstalls it.
-- SSH keys aren't here and can't be: Secure Enclave via Secretive, YubiKey for
-  recovery. Neither is exportable.
-- Terminal.app's font is an archived `NSFont`, not a string, so it needs the
-  activation script in `modules/home/apple-terminal.nix`. Terminal rewrites its
-  own prefs on quit — if it was open during a switch, quit and reopen it.
-- macOS caches installed keyboard layouts in
-  `$(getconf DARWIN_USER_CACHE_DIR)/com.apple.IntlDataCache.le{,.kbdx}`, and
-  changing the bundle does not invalidate it — a layout deleted from the bundle
-  stayed in the input-source registry until the cache was removed. Delete both
-  files and restart if a layout change does not take.
+- Determinate owns `/etc/nix/nix.conf`: use `determinateNix.customSettings`; `nix.settings` is inert and `nix.gc` throws. `determinate-nixd` handles GC.
+- `karabiner.json` and the Neo bundle are **copied**, not symlinked: Karabiner rewrites its config and macOS rejects keylayouts through store symlinks. UI changes revert on switch; edit the module.
+- `homebrew.onActivation.cleanup = "uninstall"`: dropping a cask uninstalls it.
+- SSH keys stay out: Secure Enclave via Secretive, YubiKey for recovery; neither is exportable.
+- Terminal.app's font is an archived `NSFont`, not a string; `modules/home/apple-terminal.nix` applies it. Terminal rewrites preferences on quit, so quit and reopen after a switch if it was open.
+- macOS caches installed layouts in `$(getconf DARWIN_USER_CACHE_DIR)/com.apple.IntlDataCache.le{,.kbdx}`; bundle changes do not invalidate the cache. Delete both files and restart if a layout change does not take effect.

@@ -1,9 +1,5 @@
-"""Point Terminal.app's active profiles at a Nerd Font.
-
-Terminal.app stores each profile's font as an NSKeyedArchiver blob, which is why
-this cannot be a plain `defaults write` or a nix-darwin `system.defaults` entry.
-Only the face is replaced; the size already chosen in each profile is kept.
-"""
+"""Set active Terminal.app profiles to a Nerd Font.
+Terminal.app stores fonts as NSKeyedArchiver blobs; preserve profile sizes."""
 
 import plistlib
 import subprocess
@@ -54,8 +50,7 @@ def font_size(blob: object) -> float:
     return float(font.get("NSSize", 12.0)) if isinstance(font, dict) else 12.0
 
 
-# Absolute paths: Home Manager activation runs with a minimal PATH that has no
-# /usr/bin on it.
+# Home Manager activation does not include `/usr/bin` in PATH.
 DEFAULTS = "/usr/bin/defaults"
 
 prefs = plistlib.loads(
@@ -65,8 +60,7 @@ prefs = plistlib.loads(
 )
 profiles = prefs.get("Window Settings", {})
 
-# Only the profiles Terminal actually opens with. Leaving the rest alone keeps
-# the stock themes (Novel's Courier, Homebrew's Andale Mono) as they were.
+# Update only profiles Terminal opens with; leave other profile fonts unchanged.
 wanted = {
     prefs.get(key)
     for key in ("Default Window Settings", "Startup Window Settings")
@@ -81,9 +75,8 @@ for name in changed:
     profile = profiles[name]
     profile["Font"] = archived_font(FONT, font_size(profile.get("Font")))
 
-# Round-tripping the whole domain through `defaults import` rather than writing
-# one key: `defaults write` has no stdin form and would need the plist as an
-# argv string, which its old-style parser mangles on the binary Font blobs.
+# `defaults write` cannot safely pass binary Font blobs; import the full domain
+# through stdin instead.
 prefs["Window Settings"] = profiles
 subprocess.run(
     [DEFAULTS, "import", DOMAIN, "-"],

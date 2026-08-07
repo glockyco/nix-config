@@ -8,15 +8,14 @@
   imports = [ inputs.home-manager.darwinModules.home-manager ];
 
   home-manager = {
-    # One nixpkgs instance, shared with the system configuration.
+    # Share the system's nixpkgs instance.
     useGlobalPkgs = true;
 
-    # Install user packages into /etc/profiles/per-user/<user> rather than a
-    # separate imperative ~/.nix-profile.
+    # Install user packages in `/etc/profiles/per-user/<user>` rather than an
+    # imperative `~/.nix-profile`.
     useUserPackages = true;
 
-    # Move pre-existing dotfiles aside instead of aborting activation, and allow
-    # a later switch to replace a backup left behind by an earlier one.
+    # Move conflicting dotfiles aside instead of aborting activation.
     backupFileExtension = "hm-backup";
 
     extraSpecialArgs = { inherit inputs username; };

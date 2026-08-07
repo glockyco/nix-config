@@ -10,46 +10,40 @@
   nixpkgs.hostPlatform = "aarch64-darwin";
   nixpkgs.overlays = [ inputs.self.overlays.default ];
 
-  # Current nix-darwin state version (`system.maxStateVersion`).
   system.stateVersion = 7;
 
-  # Required by every option that touches a specific user's macOS defaults,
-  # `homebrew.*` among them.
+  # `system.primaryUser` is required by options targeting a user's macOS
+  # defaults, including `homebrew.*`.
   system.primaryUser = username;
 
-  # Shows up in `darwin-version`, which makes it obvious which commit is live.
+  # Expose the active commit in `darwin-version`.
   system.configurationRevision = inputs.self.rev or inputs.self.dirtyRev or null;
 
-  # Own the machine's identity declaratively. `localHostName` is what
-  # `darwin-rebuild --flake .` uses to pick the configuration, so it has to
-  # agree with the attribute name in flake.nix.
+  # Keep `localHostName` aligned with the flake attribute used by
+  # `darwin-rebuild --flake .`.
   networking = {
     computerName = "MacBook Pro";
     hostName = hostname;
     localHostName = hostname;
 
-    # macOS ships the application firewall switched off. Stealth mode also
-    # stops the machine answering ICMP pings and probes to closed ports, which
-    # is what you want on untrusted networks.
+    # Stealth mode blocks ICMP pings and probes to closed ports.
     applicationFirewall = {
       enable = true;
       enableStealthMode = true;
     };
   };
 
-  # `home` is mandatory here: the Home Manager nix-darwin module derives
-  # `home.homeDirectory` from it.
+  # Home Manager derives `home.homeDirectory` from `users.users.<name>.home`.
   users.users.${username} = {
     name = username;
     home = "/Users/${username}";
   };
 
-  # System-wide git, so root has one during `darwin-rebuild switch` and the
-  # machine is usable before Home Manager has ever run. The user-facing
-  # configuration lives in modules/home/git.nix.
+  # Install git system-wide so root has it during `darwin-rebuild switch`; user
+  # configuration is in `modules/home/git.nix`.
   environment.systemPackages = [ pkgs.git ];
 
-  # Authenticate `sudo` with Touch ID, including `sudo darwin-rebuild switch`.
-  # nix-darwin writes /etc/pam.d/sudo_local, which macOS updates leave alone.
+  # Use Touch ID for sudo, including `sudo darwin-rebuild switch`; nix-darwin
+  # writes `/etc/pam.d/sudo_local`.
   security.pam.services.sudo_local.touchIdAuth = true;
 }

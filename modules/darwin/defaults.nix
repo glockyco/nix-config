@@ -1,43 +1,33 @@
 { config, ... }:
 
 {
-  # Declarative macOS preferences. These are applied to `system.primaryUser`.
-  #
-  # Deliberately absent: `system.keyboard.remapCapsLockToControl`. Caps Lock is
-  # the left Mod3 key in Neo2 and must reach Karabiner unmodified.
+  # Do not set `system.keyboard.remapCapsLockToControl`: Caps Lock is Neo2's
+  # left Mod3 key and must reach Karabiner unchanged.
   system.defaults = {
     NSGlobalDomain = {
-      # Hold-to-repeat instead of the accent picker. Required for a usable Neo2
-      # layer 4 (held navigation keys) and for repeat to work at all.
+      # Disable the accent picker so held keys repeat for Neo2 layer 4.
       ApplePressAndHoldEnabled = false;
 
-      # Both are counted in 15 ms ticks: 225 ms until repeat, 30 ms between.
+      # Repeat timings use 15 ms ticks: 225 ms delay, 30 ms interval.
       InitialKeyRepeat = 15;
       KeyRepeat = 2;
 
-      # F1-F12 send real function keys; brightness, volume and the rest move
-      # behind `fn`. This is the inverse of the macOS default.
+      # Enable F1-F12 function keys; media controls require `fn`.
       "com.apple.keyboard.fnState" = true;
 
       AppleShowAllExtensions = true;
 
-      # Smart quotes and dashes corrupt code and shell commands; the rest of
-      # the "helpful" text substitutions mangle identifiers and commit messages.
+      # Disable text substitutions and corrections to preserve code and identifiers.
       NSAutomaticQuoteSubstitutionEnabled = false;
       NSAutomaticDashSubstitutionEnabled = false;
       NSAutomaticCapitalizationEnabled = false;
       NSAutomaticSpellingCorrectionEnabled = false;
       NSAutomaticPeriodSubstitutionEnabled = false;
 
-      # ctrl+cmd+drag to move a window from anywhere. Off, and stated rather
-      # than omitted, because it was previously on and nix-darwin only writes
-      # the keys it is given -- dropping the line would leave the old `true`
-      # behind. Rectangle Pro's Window Throw defaults to exactly this chord and
-      # is the same gesture doing more: drag from anywhere, then snap on
-      # release. Set this back to true if Rectangle ever goes away.
+      # Explicitly disable this key: omitting it leaves a previous `true` value.
+      # nix-darwin writes only specified keys.
       NSWindowShouldDragOnGesture = false;
 
-      # Locale: German/Austrian conventions rather than the US defaults.
       AppleICUForce24HourTime = true;
       AppleMetricUnits = 1;
       AppleMeasurementUnits = "Centimeters";
@@ -55,20 +45,15 @@
       AppleShowAllFiles = true;
       _FXSortFoldersFirst = true;
 
-      # Stop asking for confirmation every time a file extension changes.
       FXEnableExtensionChangeWarning = false;
 
-      # Search the folder you are actually looking at. "SCcf" is current
-      # folder; the macOS default "SCev" searches the entire Mac, which is
-      # almost never what you meant.
+      # `SCcf` searches the current folder; `SCev` searches the entire Mac.
       FXDefaultSearchScope = "SCcf";
 
-      # Allow cmd-Q to quit Finder.
       QuitMenuItem = true;
     };
 
     trackpad = {
-      # Tap to click, off by default on every Mac.
       Clicking = true;
       TrackpadThreeFingerDrag = true;
     };
@@ -77,37 +62,26 @@
       autohide = true;
       show-recents = false;
 
-      # Without these, autohide is unpleasant: macOS waits ~0.5 s before the
-      # Dock even starts to appear, then plays a slow slide animation.
-      # `autohide-delay` removes the wait entirely; `autohide-time-modifier`
-      # scales the animation (1.0 is the default, 0.15 is quick but still
-      # animated rather than a jarring snap).
+      # `autohide-delay` removes the wait; `autohide-time-modifier` shortens the animation.
       autohide-delay = 0.0;
       autohide-time-modifier = 0.15;
 
-      # Stop Spaces from reordering themselves by recent use, which makes
-      # "switch two desktops left" mean something different every time.
+      # Disable MRU Space reordering so desktop-switch direction stays stable.
       mru-spaces = false;
     };
 
     WindowManager = {
-      # Since Sonoma, clicking any empty patch of desktop hides every window.
-      # This turns that off.
+      # Prevent clicks on empty desktop space from hiding every window.
       EnableStandardClickToShowDesktop = false;
 
-      # Rectangle Pro owns window management (modules/darwin/homebrew.nix), and
-      # it snaps on the same drag-to-edge gesture macOS added in Sequoia. Two
-      # things racing for one gesture is worse than either, so the built-in one
-      # goes. The green-button and menu-bar layouts are untouched; flip these
-      # back if Rectangle is ever dropped.
+      # Rectangle Pro handles edge tiling; disable macOS edge-drag tiling to avoid
+      # competing gesture handlers.
       EnableTilingByEdgeDrag = false;
       EnableTopTilingByEdgeDrag = false;
     };
 
     screencapture = {
-      # Keep screenshots out of the Desktop. The directory is created by
-      # modules/home/screenshots.nix -- macOS silently falls back to the
-      # Desktop if the configured location does not exist.
+      # macOS silently falls back to Desktop if the screenshot location is absent.
       location = "${config.system.primaryUserHome}/Pictures/Screenshots";
       type = "png";
       disable-shadow = true;
