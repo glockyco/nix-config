@@ -34,7 +34,6 @@ macOS won't let these be declared:
 
 - Reboot, then add *Deutsch (Neo 2)* under Input Sources.
 - Approve Karabiner's driver extension, Input Monitoring and login items.
-- `softwareupdate --install-rosetta --agree-to-license` for CrossOver.
 - Confirm the default-app prompts on first switch.
 - `omp` auth via `/login`.
 
