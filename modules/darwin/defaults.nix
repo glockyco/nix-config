@@ -90,6 +90,14 @@
       # Since Sonoma, clicking any empty patch of desktop hides every window.
       # This turns that off.
       EnableStandardClickToShowDesktop = false;
+
+      # Rectangle Pro owns window management (modules/darwin/homebrew.nix), and
+      # it snaps on the same drag-to-edge gesture macOS added in Sequoia. Two
+      # things racing for one gesture is worse than either, so the built-in one
+      # goes. The green-button and menu-bar layouts are untouched; flip these
+      # back if Rectangle is ever dropped.
+      EnableTilingByEdgeDrag = false;
+      EnableTopTilingByEdgeDrag = false;
     };
 
     screencapture = {
