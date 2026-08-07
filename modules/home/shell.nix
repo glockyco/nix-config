@@ -4,6 +4,29 @@
     enableCompletion = true;
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
+
+    # zsh's defaults are a small, per-session, duplicate-ridden history. That
+    # matters more now that Ctrl-R is fzf: the search is only as good as what
+    # is behind it.
+    history = {
+      size = 100000;
+      save = 100000;
+
+      # Two terminals open at once no longer clobber each other's history.
+      share = true;
+      append = true;
+
+      # Collapse repeats so Ctrl-R shows distinct commands.
+      ignoreDups = true;
+      ignoreAllDups = true;
+
+      # A leading space keeps a command out of history -- useful for one-off
+      # invocations that contain a token or password.
+      ignoreSpace = true;
+
+      # Record timestamps and durations.
+      extended = true;
+    };
   };
 
   # Prompt. Starship is a single static binary that renders the prompt itself,
