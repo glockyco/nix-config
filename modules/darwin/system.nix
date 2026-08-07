@@ -27,6 +27,14 @@
     computerName = "MacBook Pro";
     hostName = hostname;
     localHostName = hostname;
+
+    # macOS ships the application firewall switched off. Stealth mode also
+    # stops the machine answering ICMP pings and probes to closed ports, which
+    # is what you want on untrusted networks.
+    applicationFirewall = {
+      enable = true;
+      enableStealthMode = true;
+    };
   };
 
   # `home` is mandatory here: the Home Manager nix-darwin module derives
