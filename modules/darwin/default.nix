@@ -7,6 +7,7 @@
     ./fonts.nix
     ./homebrew.nix
     ./rectangle.nix
+    ./zen.nix
     ./home-manager.nix
   ];
 }

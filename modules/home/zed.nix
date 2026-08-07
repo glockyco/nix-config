@@ -16,6 +16,13 @@
       buffer_font_size = 14;
       terminal.font_family = "JetBrainsMonoNL Nerd Font";
 
+      # Carried from the previous machine.
+      vim_mode = true;
+      base_keymap = "VSCode";
+      ui_font_size = 16;
+      show_edit_predictions = false;
+      diff_view_style = "unified";
+
       # `omp acp` speaks ACP over stdio; Zed routes tool calls and permission requests through its agent panel.
       # Use an absolute path because GUI-launched Zed does not inherit the login shell's PATH.
       agent_servers.omp = {

@@ -3,6 +3,7 @@
     ./shell.nix
     ./cli.nix
     ./ghostty.nix
+    ./brave.nix
     ./apple-terminal.nix
     ./default-apps.nix
     ./git.nix
