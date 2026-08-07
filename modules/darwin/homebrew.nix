@@ -59,6 +59,12 @@
       # Secure Enclave SSH agent. Not in nixpkgs for darwin, and it has to be a
       # signed app bundle anyway to get Secure Enclave and Touch ID entitlements.
       "secretive"
+
+      # Password manager. This is the GitHub .dmg build, which does NOT bundle
+      # the Safari extension -- only the Mac App Store build does, via
+      # `homebrew.masApps`. Extensions for Zen and Brave come from their own
+      # browser stores and are not manageable from here.
+      "bitwarden"
     ];
 
     onActivation = {
