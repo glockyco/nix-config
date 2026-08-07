@@ -1,6 +1,7 @@
 {
   imports = [
     ./shell.nix
+    ./cli.nix
     ./ghostty.nix
     ./default-apps.nix
     ./git.nix

@@ -2,6 +2,11 @@
   programs.git = {
     enable = true;
 
+    # Syntax-highlighted, word-level diffs. Home Manager allows exactly one of
+    # delta / diff-so-fancy / difftastic / diff-highlight, so enabling this
+    # rules the others out.
+    delta.enable = true;
+
     # Rendered to ~/.config/git/config.
     settings = {
       user = {
