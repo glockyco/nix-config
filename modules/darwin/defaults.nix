@@ -26,7 +26,15 @@
       # Hold ctrl+cmd and drag anywhere in a window to move it, instead of
       # having to find the title bar.
       NSWindowShouldDragOnGesture = true;
+
+      # Locale: German/Austrian conventions rather than the US defaults.
+      AppleICUForce24HourTime = true;
+      AppleMetricUnits = 1;
+      AppleMeasurementUnits = "Centimeters";
+      AppleTemperatureUnit = "Celsius";
     };
+
+    menuExtraClock.Show24Hour = true;
 
     finder = {
       AppleShowAllExtensions = true;
