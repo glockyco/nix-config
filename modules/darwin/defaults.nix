@@ -1,3 +1,5 @@
+{ config, ... }:
+
 {
   # Declarative macOS preferences. These are applied to `system.primaryUser`.
   #
@@ -84,6 +86,15 @@
       # Since Sonoma, clicking any empty patch of desktop hides every window.
       # This turns that off.
       EnableStandardClickToShowDesktop = false;
+    };
+
+    screencapture = {
+      # Keep screenshots out of the Desktop. The directory is created by
+      # modules/home/screenshots.nix -- macOS silently falls back to the
+      # Desktop if the configured location does not exist.
+      location = "${config.system.primaryUserHome}/Pictures/Screenshots";
+      type = "png";
+      disable-shadow = true;
     };
   };
 }

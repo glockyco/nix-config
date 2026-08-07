@@ -6,6 +6,7 @@
     ./packages.nix
     ./neo2.nix
     ./karabiner.nix
+    ./screenshots.nix
   ];
 
   # Matches the nixpkgs/Home Manager release this flake is pinned to. Do not
