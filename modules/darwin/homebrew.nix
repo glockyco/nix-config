@@ -75,6 +75,10 @@
 
       # Tasks and calendar.
       "ticktick"
+
+      # Windows compatibility layer. All game-related work goes through
+      # CrossOver bottles rather than native Steam, so no Steam cask.
+      "crossover"
     ];
 
     onActivation = {
