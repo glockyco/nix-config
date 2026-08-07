@@ -29,9 +29,13 @@
       NSAutomaticSpellingCorrectionEnabled = false;
       NSAutomaticPeriodSubstitutionEnabled = false;
 
-      # Hold ctrl+cmd and drag anywhere in a window to move it, instead of
-      # having to find the title bar.
-      NSWindowShouldDragOnGesture = true;
+      # ctrl+cmd+drag to move a window from anywhere. Off, and stated rather
+      # than omitted, because it was previously on and nix-darwin only writes
+      # the keys it is given -- dropping the line would leave the old `true`
+      # behind. Rectangle Pro's Window Throw defaults to exactly this chord and
+      # is the same gesture doing more: drag from anywhere, then snap on
+      # release. Set this back to true if Rectangle ever goes away.
+      NSWindowShouldDragOnGesture = false;
 
       # Locale: German/Austrian conventions rather than the US defaults.
       AppleICUForce24HourTime = true;
