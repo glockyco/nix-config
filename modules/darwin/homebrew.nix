@@ -76,6 +76,13 @@
       # Tasks and calendar.
       "ticktick"
 
+      # Window management. The paid Pro build, whose bundle identifier is still
+      # `com.knollsoft.Hookshot` from when it was called Hookshot -- that is the
+      # domain to use for any `defaults` tweaking. Licensing is a one-off
+      # purchase activated by pasting a code into the app, so it cannot be
+      # declared here; see the manual steps in the README.
+      "rectangle-pro"
+
       # Windows compatibility layer. All game-related work goes through
       # CrossOver bottles rather than native Steam, so no Steam cask.
       "crossover"

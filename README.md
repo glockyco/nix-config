@@ -35,6 +35,7 @@ macOS won't let these be declared:
 - Reboot, then add *Deutsch (Neo 2)* under Input Sources.
 - Approve Karabiner's driver extension, Input Monitoring and login items.
 - Confirm the default-app prompts on first switch.
+- Paste the Rectangle Pro licence code into the app, and grant it Accessibility.
 - `omp` auth via `/login`.
 
 ## Gotchas
