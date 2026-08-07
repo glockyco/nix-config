@@ -60,10 +60,10 @@
       # signed app bundle anyway to get Secure Enclave and Touch ID entitlements.
       "secretive"
 
-      # Password manager. This is the GitHub .dmg build, which does NOT bundle
-      # the Safari extension -- only the Mac App Store build does, via
-      # `homebrew.masApps`. Extensions for Zen and Brave come from their own
-      # browser stores and are not manageable from here.
+      # Password manager. The cask build does bundle the Safari extension, as
+      # `Contents/PlugIns/safari.appex` (`com.bitwarden.desktop.safari`), so no
+      # Mac App Store copy is needed for it. Extensions for Zen and Brave come
+      # from their own browser stores and are not manageable from here.
       "bitwarden"
 
       # Editor. nixpkgs has zed-editor for darwin, but Zed ships very

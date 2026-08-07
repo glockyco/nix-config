@@ -109,11 +109,12 @@ in
   # while it is running is undone on the next quit. Restart it after a switch
   # that changes anything below.
   system.defaults.CustomUserPreferences."com.knollsoft.Hookshot" = {
-    # The decisive one. A licence bought in the Hookshot era selects the Hookshot
-    # default set, in which the cursor-movement features are bound out of the
-    # box; a fresh Rectangle Pro install instead gets the keyboard-shortcut
-    # oriented Rectangle defaults and leaves Move & Resize inert. Without this,
-    # cursor movement does nothing on a new machine no matter what else is set.
+    # The decisive one, established by experiment rather than documentation.
+    # The previous machine had this set and its cursor-movement features worked;
+    # a fresh install here did not have it and Move & Resize was inert. Setting
+    # it fixed that. The key is undocumented, so why it has that effect -- and
+    # whether it relates to the Hookshot-era licence also present on the old
+    # machine -- is not established.
     hookshotDefaults = 1;
 
     # Driven by gestures, so the menu bar item is just clutter.
