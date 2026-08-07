@@ -32,7 +32,8 @@ nix-darwin won't overwrite files in `/etc` it didn't write.
 
 macOS won't let these be declared:
 
-- Reboot, then add *Deutsch (Neo 2)* under Input Sources.
+- Add *Deutsch (Neo 2)* under Input Sources. It shows up in the picker as soon
+  as the switch writes the bundle; no reboot or new login session needed.
 - Approve Karabiner's driver extension, Input Monitoring and login items.
 - Confirm the default-app prompts on first switch.
 - Paste the Rectangle Pro licence code into the app, and grant it Accessibility.
