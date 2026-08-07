@@ -23,11 +23,6 @@
       window-padding-y = 10;
       window-padding-balance = true;
 
-      # Slight translucency with the macOS blur behind it. Subtle on purpose:
-      # anything below ~0.9 starts to hurt readability of dim ANSI colours.
-      background-opacity = 0.95;
-      background-blur = true;
-
       macos-titlebar-style = "tabs";
 
       cursor-style = "bar";
