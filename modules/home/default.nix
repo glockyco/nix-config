@@ -6,6 +6,7 @@
     ./default-apps.nix
     ./git.nix
     ./gh.nix
+    ./ssh.nix
     ./packages.nix
     ./typst.nix
     ./crossover.nix
