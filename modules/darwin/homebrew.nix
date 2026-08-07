@@ -72,6 +72,9 @@
       "zed"
 
       "discord"
+
+      # Tasks and calendar.
+      "ticktick"
     ];
 
     onActivation = {
