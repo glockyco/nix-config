@@ -20,16 +20,26 @@ in
   # be archived and restored (CrossOver has Bottle > Archive for exactly this),
   # not something to regenerate from a flake.
   #
-  # Guarded on the directory so an existing bottle is never touched -- this
-  # only ever runs on a machine that does not have one yet.
+  # Never fails the activation. CrossOver is a GUI app with its own runtime
+  # requirements, and a problem here must not leave the rest of the system
+  # half-applied -- an earlier version of this module did exactly that.
   home.activation.crossoverSteamBottle = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    if [ -x ${lib.escapeShellArg "${crossover}/bin/cxbottle"} ] \
-       && [ ! -d ${lib.escapeShellArg "${bottles}/${bottle}"} ]; then
+    if [ ! -x ${lib.escapeShellArg "${crossover}/bin/cxbottle"} ]; then
+      verboseEcho "CrossOver not installed; skipping ${bottle} bottle"
+    elif [ -d ${lib.escapeShellArg "${bottles}/${bottle}"} ]; then
+      verboseEcho "CrossOver bottle ${bottle} already exists; leaving it alone"
+    elif ! /usr/bin/pgrep -q oahd; then
+      # CrossOver 26's wineloader is still an x86_64 binary, so bottle creation
+      # dies with "Bad CPU type in executable" without Rosetta 2.
+      warnEcho "Rosetta 2 is not installed, so the ${bottle} bottle cannot be created."
+      warnEcho "Run: softwareupdate --install-rosetta --agree-to-license"
+    else
       run ${lib.escapeShellArg "${crossover}/bin/cxbottle"} \
         --bottle ${lib.escapeShellArg bottle} \
         --create \
         --template ${lib.escapeShellArg template} \
-        --description "Managed by nix-darwin. Install Steam from CrossOver's app list."
+        --description "Managed by nix-darwin. Install Steam from CrossOver's app list." \
+        || warnEcho "Creating the ${bottle} bottle failed; create it from CrossOver's UI."
     fi
   '';
 }
