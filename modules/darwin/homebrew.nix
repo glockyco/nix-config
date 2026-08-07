@@ -71,6 +71,7 @@
       # keeps us on the release cadence the editor is built around.
       "zed"
 
+      "discord"
     ];
 
     onActivation = {
