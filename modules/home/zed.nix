@@ -15,6 +15,14 @@
     # font size and panel state, while the values declared here are re-imposed
     # on every switch. That avoids the failure mode we hit with Karabiner.
     userSettings = {
+      # Match the terminal: Catppuccin Mocha, JetBrains Mono without
+      # ligatures. Zed ships Catppuccin as a built-in theme, so no extension
+      # is required.
+      theme = "Catppuccin Mocha";
+      buffer_font_family = "JetBrainsMonoNL Nerd Font";
+      buffer_font_size = 14;
+      terminal.font_family = "JetBrainsMonoNL Nerd Font";
+
       # Run omp as an external agent inside Zed's agent panel.
       #
       # omp speaks ACP (Agent Client Protocol) natively via `omp acp`: JSON-RPC

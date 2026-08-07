@@ -11,9 +11,13 @@
     settings = {
       theme = "Catppuccin Mocha";
 
-      # Installed system-wide by modules/darwin/fonts.nix. The Nerd Font
-      # variant matters: omp and other TUIs draw powerline and devicon glyphs.
-      font-family = "JetBrainsMono Nerd Font";
+      # Installed system-wide by modules/darwin/fonts.nix. Two things matter in
+      # this family name: "Nerd Font" supplies the powerline and devicon glyphs
+      # that omp and other TUIs draw, and the "NL" variant is JetBrains Mono
+      # with the ligatures physically removed. That is preferable to disabling
+      # `calt` at the renderer -- there is no ligature to suppress in the first
+      # place, so nothing can re-enable them per-application.
+      font-family = "JetBrainsMonoNL Nerd Font";
       font-size = 14;
 
       # Ghostty defaults to 2px of padding, which is why the stock window looks
