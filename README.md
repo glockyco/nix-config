@@ -32,8 +32,9 @@ nix-darwin won't overwrite files in `/etc` it didn't write.
 
 macOS won't let these be declared:
 
-- Add *Deutsch (Neo 2)* under Input Sources. It shows up in the picker as soon
-  as the switch writes the bundle; no reboot or new login session needed.
+- Add *Deutsch (Neo 2)* under Input Sources, then restart. Both Apple's TN2056
+  and neo-layout.org require a fresh login session after installing a layout
+  bundle; enabling one before that silently fails to stick.
 - Approve Karabiner's driver extension, Input Monitoring and login items.
 - Confirm the default-app prompts on first switch.
 - Paste the Rectangle Pro licence code into the app, and grant it Accessibility.
@@ -52,3 +53,8 @@ macOS won't let these be declared:
 - Terminal.app's font is an archived `NSFont`, not a string, so it needs the
   activation script in `modules/home/apple-terminal.nix`. Terminal rewrites its
   own prefs on quit — if it was open during a switch, quit and reopen it.
+- macOS caches installed keyboard layouts in
+  `$(getconf DARWIN_USER_CACHE_DIR)/com.apple.IntlDataCache.le{,.kbdx}`, and
+  changing the bundle does not invalidate it — a layout deleted from the bundle
+  stayed in the input-source registry until the cache was removed. Delete both
+  files and restart if a layout change does not take.
