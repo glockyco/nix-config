@@ -5,7 +5,7 @@
     # Rendered to ~/.config/git/config.
     settings = {
       user = {
-        name = "glockyco";
+        name = "Johann Glock";
         # GitHub's noreply address, so commits are attributable to the account
         # without publishing a real mailbox.
         email = "11704293+glockyco@users.noreply.github.com";
