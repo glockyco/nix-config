@@ -7,6 +7,7 @@
     ./default-apps.nix
     ./git.nix
     ./gh.nix
+    ./ghq.nix
     ./ssh.nix
     ./packages.nix
     ./typst.nix
