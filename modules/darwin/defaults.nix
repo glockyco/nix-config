@@ -15,6 +15,10 @@
       InitialKeyRepeat = 15;
       KeyRepeat = 2;
 
+      # F1-F12 send real function keys; brightness, volume and the rest move
+      # behind `fn`. This is the inverse of the macOS default.
+      "com.apple.keyboard.fnState" = true;
+
       AppleShowAllExtensions = true;
 
       # Smart quotes and dashes corrupt code and shell commands; the rest of
