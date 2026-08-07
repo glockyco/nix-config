@@ -29,6 +29,14 @@
     dock = {
       autohide = true;
       show-recents = false;
+
+      # Without these, autohide is unpleasant: macOS waits ~0.5 s before the
+      # Dock even starts to appear, then plays a slow slide animation.
+      # `autohide-delay` removes the wait entirely; `autohide-time-modifier`
+      # scales the animation (1.0 is the default, 0.15 is quick but still
+      # animated rather than a jarring snap).
+      autohide-delay = 0.0;
+      autohide-time-modifier = 0.15;
     };
   };
 }
