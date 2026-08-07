@@ -57,6 +57,12 @@
       QuitMenuItem = true;
     };
 
+    trackpad = {
+      # Tap to click, off by default on every Mac.
+      Clicking = true;
+      TrackpadThreeFingerDrag = true;
+    };
+
     dock = {
       autohide = true;
       show-recents = false;
