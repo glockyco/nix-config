@@ -6,33 +6,54 @@ Declarative configuration for an Apple Silicon Mac running Determinate Nix.
 
 ```
 flake.nix                     inputs, the darwinConfiguration, overlay, checks, devShell
+
 modules/darwin/               system scope
-  system.nix                  platform, state version, hostname, user, Touch ID sudo
+  system.nix                  platform, state version, hostname, user, firewall, Touch ID sudo
   nix.nix                     Determinate Nix module and /etc/nix/nix.custom.conf
   defaults.nix                macOS preferences (system.defaults)
   fonts.nix                   Nerd Fonts
   homebrew.nix                nix-homebrew plus the cask list
   home-manager.nix            Home Manager wired in as a nix-darwin module
+
 modules/home/                 user scope
-  shell.nix                   zsh, direnv/nix-direnv
-  git.nix                     git configuration
+  shell.nix                   zsh, history, starship, direnv/nix-direnv
+  cli.nix                     fzf, zoxide, ripgrep, fd, bat, eza
+  git.nix                     git identity and delta
+  gh.nix                      GitHub CLI
+  ssh.nix                     Secure Enclave agent, FIDO2-capable OpenSSH
   packages.nix                omp, herdr
+  typst.nix                   Typst and the tinymist language server
+  ghostty.nix                 terminal appearance
+  zed.nix                     editor settings, omp wired in over ACP
   neo2.nix                    Neo keyboard layout bundle installation
   karabiner.nix               generated karabiner.json with the Neo2 rules
+  default-apps.nix            LaunchServices bindings for text and source files
+  screenshots.nix             screenshot directory
+  crossover.nix               Steam CrossOver bottle
+
 packages/
   neo-keyboard-layouts.nix    the Neo macOS layout bundle, from the official Neo git
 ```
 
-## First activation
+Language toolchains are deliberately absent. They belong in per-project
+flakes with `direnv`, not here -- Symbolic PathFinder needs JDK 8 while
+current Java PathFinder needs JDK 11, and a single global JDK would be wrong
+for both.
 
-`darwin-rebuild` is not on `PATH` yet, and the machine is still called
-`Johanns-MacBook-Pro`, so both have to be named explicitly exactly once:
+## Bootstrapping a fresh machine
+
+With Determinate Nix installed but nix-darwin not yet activated,
+`darwin-rebuild` is not on `PATH` and the host still has its factory name, so
+the configuration has to be named explicitly exactly once:
 
 ```sh
 sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
 ```
 
-That switch renames the host to `macbook-pro`, after which the short form works.
+That switch renames the host to `macbook-pro`, after which the short form
+below works. If `/etc/nix/nix.custom.conf` already exists from the Determinate
+installer, delete it first -- nix-darwin refuses to overwrite files in `/etc`
+it did not write.
 
 ## Everyday use
 
@@ -59,7 +80,13 @@ These cannot be granted or performed declaratively.
 3. **Approve Karabiner-Elements**: System Settings, Privacy & Security, allow
    the `org.pqrs` driver extension, then grant Input Monitoring and add the
    login items. macOS requires a human for all three.
-4. **Authenticate omp** once with `/login` inside a session. Credentials live in
+4. **Install Rosetta 2** if you use CrossOver: `softwareupdate --install-rosetta
+   --agree-to-license`. CrossOver 26's wineloader is still x86_64, so bottle
+   creation fails with "Bad CPU type in executable" without it. A licence has to
+   be accepted, so this is not automated.
+5. **Confirm default-app changes.** macOS 26 prompts once per file type when
+   `modules/home/default-apps.nix` rebinds handlers to Zed.
+6. **Authenticate omp** once with `/login` inside a session. Credentials live in
    `~/.omp/agent/` and are deliberately not managed here.
 
 ## Things worth knowing
@@ -76,3 +103,10 @@ These cannot be granted or performed declaratively.
   and `nix flake update` does not move cask versions. `homebrew.onActivation.cleanup`
   is `"uninstall"`: a cask removed from `modules/darwin/homebrew.nix` is removed
   from the machine on the next switch.
+- **SSH keys are not in here and cannot be.** The day-to-day key lives in this
+  Mac's Secure Enclave via Secretive and is non-exportable by construction; a
+  FIDO2 resident key on a YubiKey is the recovery path. Neither can be backed
+  up into a repository, which is the point.
+- **`nix.gc` is unusable here.** It throws under Determinate because
+  `nix.package` is inaccessible when `nix.enable` is off. Garbage collection is
+  already handled by `determinate-nixd`, which collects on disk pressure.
