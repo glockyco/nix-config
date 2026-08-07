@@ -22,6 +22,10 @@
       NSAutomaticCapitalizationEnabled = false;
       NSAutomaticSpellingCorrectionEnabled = false;
       NSAutomaticPeriodSubstitutionEnabled = false;
+
+      # Hold ctrl+cmd and drag anywhere in a window to move it, instead of
+      # having to find the title bar.
+      NSWindowShouldDragOnGesture = true;
     };
 
     finder = {
@@ -41,6 +45,16 @@
       # animated rather than a jarring snap).
       autohide-delay = 0.0;
       autohide-time-modifier = 0.15;
+
+      # Stop Spaces from reordering themselves by recent use, which makes
+      # "switch two desktops left" mean something different every time.
+      mru-spaces = false;
+    };
+
+    WindowManager = {
+      # Since Sonoma, clicking any empty patch of desktop hides every window.
+      # This turns that off.
+      EnableStandardClickToShowDesktop = false;
     };
   };
 }
