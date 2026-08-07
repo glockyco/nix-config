@@ -32,6 +32,21 @@
       AppleShowAllExtensions = true;
       FXPreferredViewStyle = "Nlsv";
       ShowPathbar = true;
+      ShowStatusBar = true;
+
+      AppleShowAllFiles = true;
+      _FXSortFoldersFirst = true;
+
+      # Stop asking for confirmation every time a file extension changes.
+      FXEnableExtensionChangeWarning = false;
+
+      # Search the folder you are actually looking at. "SCcf" is current
+      # folder; the macOS default "SCev" searches the entire Mac, which is
+      # almost never what you meant.
+      FXDefaultSearchScope = "SCcf";
+
+      # Allow cmd-Q to quit Finder.
+      QuitMenuItem = true;
     };
 
     dock = {
