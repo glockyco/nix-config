@@ -88,8 +88,31 @@
         inherit (inputs.nix-darwin.packages.${system}) darwin-rebuild;
       };
 
-      # `nix flake check` builds the whole system closure.
-      checks.${system}.darwinSystem = self.darwinConfigurations.${hostname}.system;
+      checks.${system} = {
+        # Builds the whole system closure.
+        darwinSystem = self.darwinConfigurations.${hostname}.system;
+
+        # A module that isn't imported isn't an error, it's just absent -- the
+        # system still builds and silently does less. That has bitten once
+        # (ssh.nix). Assert every module is reachable from its sibling default.nix.
+        moduleImports = pkgs.runCommand "check-module-imports" { } ''
+          cd ${./modules}
+          missing=
+          for dir in */; do
+            for f in "$dir"*.nix; do
+              base=''${f#"$dir"}
+              if [ "$base" != default.nix ] && ! grep -qF "./$base" "$dir/default.nix"; then
+                missing="$missing $f"
+              fi
+            done
+          done
+          if [ -n "$missing" ]; then
+            echo "not imported by their sibling default.nix:$missing" >&2
+            exit 1
+          fi
+          touch $out
+        '';
+      };
 
       devShells.${system}.default = pkgs.mkShellNoCC {
         packages = [
