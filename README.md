@@ -37,6 +37,27 @@ macOS cannot declare these:
   `age-keygen -o ~/.config/sops/age/keys.txt && age-keygen -y ~/.config/sops/age/keys.txt`.
   Without it `sops-nix` cannot decrypt and the launchd agent fails.
 
+### Mail domain
+
+`glockyco.com` sends through Fastmail but its DNS lives at Cloudflare, so these
+records are outside this repository. Fastmail has already generated the DKIM
+keys; only the pointers are missing.
+
+| Type | Name | Value | Proxy |
+| ----- | -------------- | ----------------------------------------------- | -------- |
+| CNAME | `fm1._domainkey` | `fm1.glockyco.com.dkim.fmhosted.com` | DNS only |
+| CNAME | `fm2._domainkey` | `fm2.glockyco.com.dkim.fmhosted.com` | DNS only |
+| CNAME | `fm3._domainkey` | `fm3.glockyco.com.dkim.fmhosted.com` | DNS only |
+| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:...` | -- |
+| TXT | `@` | existing SPF, `?all` tightened to `~all` | -- |
+
+Proxying a DKIM record replaces the answer with Cloudflare's, so the key never
+reaches the verifier: those three must stay grey-clouded. Keep one SPF record
+only. Start DMARC at `p=none` and read the reports before tightening, in case
+something legitimate sends as the domain. Leave `A`, `AAAA`, `NS` and `MX`
+alone -- the apex serves the `personal-website` Worker and
+`dashboard.glockyco.com` is a Worker custom domain.
+
 ## Gotchas
 
 - Determinate owns `/etc/nix/nix.conf`: use `determinateNix.customSettings`; `nix.settings` is inert and `nix.gc` throws. `determinate-nixd` handles GC. `nix.registry` is inert too -- pin flake references through `determinateNix.registry`.
