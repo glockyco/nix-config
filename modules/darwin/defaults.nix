@@ -76,10 +76,15 @@
       # switch, so rearranging it in the UI does not survive.
       #
       # Grouped left to right: credentials, chat, browser, development, then
-      # tasks. No spacers. Brave is omitted because it exists only to host the
-      # browser relay; background and menu-bar-only apps (Rectangle Pro,
-      # Secretive) are absent for the same reason -- nothing here is launched
-      # from the Dock.
+      # tasks. Brave is omitted because it exists only to host the browser
+      # relay; background and menu-bar-only apps (Rectangle Pro, Secretive)
+      # are absent for the same reason -- nothing here is launched from the
+      # Dock.
+      #
+      # macOS appends running-but-unpinned apps after this list, so the
+      # trailing spacer renders on that boundary. macOS offers no way to place
+      # its thin divider there -- that one is fixed between the app region and
+      # the files region -- so a narrow gap is as close as it gets.
       persistent-apps = [
         { app = "/Applications/Bitwarden.app"; }
         { app = "/Applications/Discord.app"; }
@@ -88,6 +93,11 @@
         { app = "/Applications/Fork.app"; }
         { app = "/Applications/Zed.app"; }
         { app = "/Applications/TickTick.app"; }
+        {
+          spacer = {
+            small = true;
+          };
+        }
       ];
 
       # Keep the right-hand side empty. An explicit list is required: omitting
