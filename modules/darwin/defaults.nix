@@ -68,6 +68,31 @@
 
       # Disable MRU Space reordering so desktop-switch direction stays stable.
       mru-spaces = false;
+
+      # Smaller than the 48 default, so a full Dock still fits comfortably.
+      tilesize = 35;
+
+      # These lists are authoritative: the Dock is rebuilt from them on every
+      # switch, so rearranging it in the UI does not survive.
+      #
+      # Grouped left to right: credentials, chat, browser, development, then
+      # tasks. No spacers. Brave is omitted because it exists only to host the
+      # browser relay; background and menu-bar-only apps (Rectangle Pro,
+      # Secretive) are absent for the same reason -- nothing here is launched
+      # from the Dock.
+      persistent-apps = [
+        { app = "/Applications/Bitwarden.app"; }
+        { app = "/Applications/Discord.app"; }
+        { app = "/Applications/Zen.app"; }
+        { app = "/Applications/Ghostty.app"; }
+        { app = "/Applications/Fork.app"; }
+        { app = "/Applications/Zed.app"; }
+        { app = "/Applications/TickTick.app"; }
+      ];
+
+      # Keep the right-hand side empty. An explicit list is required: omitting
+      # the option would leave whatever the Dock already holds.
+      persistent-others = [ ];
     };
 
     WindowManager = {
