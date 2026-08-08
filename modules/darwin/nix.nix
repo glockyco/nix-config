@@ -12,6 +12,13 @@
   determinateNix = {
     enable = true;
 
+    # This module forces `nix.enable = false`, so nix-darwin's own
+    # `nix.registry` never reaches disk. Pin the indirect `nixpkgs` reference
+    # here instead: without it `nix run nixpkgs#...` resolves through
+    # Determinate's `nixpkgs-weekly` default rather than the flake input this
+    # system is built from.
+    registry.nixpkgs.flake = inputs.nixpkgs;
+
     customSettings = {
       eval-cores = 0;
 

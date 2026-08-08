@@ -35,7 +35,7 @@ macOS cannot declare these:
 
 ## Gotchas
 
-- Determinate owns `/etc/nix/nix.conf`: use `determinateNix.customSettings`; `nix.settings` is inert and `nix.gc` throws. `determinate-nixd` handles GC.
+- Determinate owns `/etc/nix/nix.conf`: use `determinateNix.customSettings`; `nix.settings` is inert and `nix.gc` throws. `determinate-nixd` handles GC. `nix.registry` is inert too -- pin flake references through `determinateNix.registry`.
 - `karabiner.json` and the Neo bundle are **copied**, not symlinked: Karabiner rewrites its config and macOS rejects keylayouts through store symlinks. UI changes revert on switch; edit the module.
 - `homebrew.onActivation.cleanup = "uninstall"`: dropping a cask uninstalls it.
 - SSH keys stay out: Secure Enclave via Secretive, YubiKey for recovery; neither is exportable.
