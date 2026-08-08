@@ -14,13 +14,13 @@
       share = true;
       append = true;
 
-      # Collapse repeats so Ctrl-R shows distinct commands.
-      ignoreDups = true;
+      # Collapse repeats so Ctrl-R shows distinct commands. This prunes older
+      # duplicates anywhere in the history, which subsumes the consecutive-only
+      # `ignoreDups`; that one is left at its default rather than restated here.
       ignoreAllDups = true;
 
       # A leading space excludes one-off commands containing secrets from history.
       ignoreSpace = true;
-
     };
   };
 
