@@ -4,6 +4,8 @@
     ./catppuccin.nix
     ./nix-index.nix
     ./darwin-switch.nix
+    ./secrets.nix
+    ./fastmail.nix
     ./cli.nix
     ./ghostty.nix
     ./brave.nix

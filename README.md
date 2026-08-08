@@ -33,6 +33,9 @@ macOS cannot declare these:
 - Confirm the default-app prompts on first switch.
 - Paste the Rectangle Pro licence code into the app and grant it Accessibility.
 - Authenticate `omp` via `/login`.
+- Generate this machine's age key before the first switch, then add its public half to `.sops.yaml`:
+  `age-keygen -o ~/.config/sops/age/keys.txt && age-keygen -y ~/.config/sops/age/keys.txt`.
+  Without it `sops-nix` cannot decrypt and the launchd agent fails.
 
 ## Gotchas
 
@@ -40,5 +43,6 @@ macOS cannot declare these:
 - `karabiner.json` and the Neo bundle are **copied**, not symlinked: Karabiner rewrites its config and macOS rejects keylayouts through store symlinks. UI changes revert on switch; edit the module.
 - `homebrew.onActivation.cleanup = "uninstall"`: dropping a cask uninstalls it.
 - SSH keys stay out: Secure Enclave via Secretive, YubiKey for recovery; neither is exportable.
+- Secrets are committed **encrypted** under `secrets/`. The age private key is per machine, lives at `~/.config/sops/age/keys.txt` and is never committed; a second machine gets its own key and is added to `.sops.yaml` as another recipient. Decrypted values appear at `~/.config/sops-nix/secrets/` and never touch the repository.
 - Terminal.app's font is an archived `NSFont`, not a string; `modules/home/apple-terminal.nix` applies it. Terminal rewrites preferences on quit, so quit and reopen after a switch if it was open.
 - macOS caches installed layouts in `$(getconf DARWIN_USER_CACHE_DIR)/com.apple.IntlDataCache.le{,.kbdx}`; bundle changes do not invalidate the cache. Delete both files and restart if a layout change does not take effect.

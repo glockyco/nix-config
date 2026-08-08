@@ -5,6 +5,12 @@ _:
   # `nix fmt` covers the whole tree no matter which subdirectory it runs from.
   projectRootFile = "flake.nix";
 
+  # sops writes these; a formatter has no business rewriting ciphertext. The
+  # MAC covers values rather than layout, so reindenting happens to survive,
+  # but it would fight `sops` on every edit and any reflowing of the ENC[...]
+  # blobs would corrupt the file outright.
+  settings.excludes = [ "secrets/*" ];
+
   programs = {
     # RFC 166 formatter.
     nixfmt.enable = true;
