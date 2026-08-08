@@ -23,8 +23,12 @@ in
     EnterprisePoliciesEnabled = true;
 
     ExtensionSettings = {
-      "uBlock0@raymondhill.net" = forceInstalled "ublock-origin";
-      "{446900e4-71c2-419f-a6a7-df9c091e268b}" = forceInstalled "bitwarden-password-manager";
+      "uBlock0@raymondhill.net" = forceInstalled "ublock-origin" // {
+        private_browsing = true;
+      };
+      "{446900e4-71c2-419f-a6a7-df9c091e268b}" = forceInstalled "bitwarden-password-manager" // {
+        private_browsing = true;
+      };
       "sponsorBlocker@ajay.app" = forceInstalled "sponsorblock";
       "enhancerforyoutube@maximerf.addons.mozilla.org" = forceInstalled "enhancer-for-youtube";
       "{1be309c5-3e4f-4b99-927d-bb500eb4fa88}" = forceInstalled "augmented-steam";
