@@ -3,6 +3,7 @@
     ./shell.nix
     ./catppuccin.nix
     ./nix-index.nix
+    ./darwin-switch.nix
     ./cli.nix
     ./ghostty.nix
     ./brave.nix

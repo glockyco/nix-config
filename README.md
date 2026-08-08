@@ -9,7 +9,8 @@ No global toolchains: project flakes use `direnv`. Symbolic PathFinder needs JDK
 ## Use
 
 ```sh
-sudo darwin-rebuild switch --flake .    # apply
+darwin-switch                           # apply, then diff the closure
+sudo darwin-rebuild switch --flake .    # apply, without the diff
 nix flake check                         # build, and verify formatting, without applying
 nix flake update                        # bump inputs
 nix fmt                                 # format the tree; see ./treefmt.nix
