@@ -22,5 +22,8 @@ in
   #
   # The relay extension is unpacked and not on the Web Store, so it cannot be
   # installed this way. Run `omp browser-relay install` and load it by hand.
-  home.file = fromWebStore "nngceckbapebfimnlniiiahkandclblb"; # Bitwarden
+  home.file =
+    (fromWebStore "nngceckbapebfimnlniiiahkandclblb")
+    # Bitwarden
+    // (fromWebStore "jinjaccalgkegednnccohejagnlnfdag"); # Violentmonkey
 }
