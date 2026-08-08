@@ -2,6 +2,7 @@
   imports = [
     ./shell.nix
     ./catppuccin.nix
+    ./nix-index.nix
     ./cli.nix
     ./ghostty.nix
     ./brave.nix
