@@ -1,4 +1,4 @@
-{ ... }:
+_:
 
 let
   # AMO's "latest" endpoint, which serves the newest build for the platform.
