@@ -43,13 +43,13 @@ macOS cannot declare these:
 records are outside this repository. Fastmail has already generated the DKIM
 keys; only the pointers are missing.
 
-| Type | Name | Value | Proxy |
-| ----- | -------------- | ----------------------------------------------- | -------- |
-| CNAME | `fm1._domainkey` | `fm1.glockyco.com.dkim.fmhosted.com` | DNS only |
-| CNAME | `fm2._domainkey` | `fm2.glockyco.com.dkim.fmhosted.com` | DNS only |
-| CNAME | `fm3._domainkey` | `fm3.glockyco.com.dkim.fmhosted.com` | DNS only |
-| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:...` | -- |
-| TXT | `@` | existing SPF, `?all` tightened to `~all` | -- |
+| Type  | Name             | Value                                    | Proxy    |
+| ----- | ---------------- | ---------------------------------------- | -------- |
+| CNAME | `fm1._domainkey` | `fm1.glockyco.com.dkim.fmhosted.com`     | DNS only |
+| CNAME | `fm2._domainkey` | `fm2.glockyco.com.dkim.fmhosted.com`     | DNS only |
+| CNAME | `fm3._domainkey` | `fm3.glockyco.com.dkim.fmhosted.com`     | DNS only |
+| TXT   | `_dmarc`         | `v=DMARC1; p=none; rua=mailto:...`       | --       |
+| TXT   | `@`              | existing SPF, `?all` tightened to `~all` | --       |
 
 Proxying a DKIM record replaces the answer with Cloudflare's, so the key never
 reaches the verifier: those three must stay grey-clouded. Keep one SPF record

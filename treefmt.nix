@@ -18,7 +18,14 @@ _:
     # modules/home/apple-terminal.py
     ruff-format.enable = true;
 
-    mdformat.enable = true;
+    # Plain mdformat only speaks CommonMark, which has no tables: it collapses
+    # the cells and leaves the delimiter row ragged. The GFM plugin adds
+    # tables, strikethrough and task lists, and aligns table columns.
+    mdformat = {
+      enable = true;
+      plugins = ps: [ ps.mdformat-gfm ];
+    };
+
     jsonfmt.enable = true;
 
     # .github/workflows/. yamlfmt collapses every blank line by default, which
