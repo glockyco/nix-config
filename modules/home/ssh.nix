@@ -25,7 +25,20 @@ in
 
         AddKeysToAgent = "no";
 
+        # Secretive signs once per authentication, and every git command
+        # otherwise opens its own connection -- so a background `git fetch`
+        # loop means a Touch ID prompt each time. Multiplexing reuses one
+        # authenticated connection per host, reducing that to one prompt an
+        # hour. `%C` hashes the connection tuple, keeping the socket path
+        # under the 104-byte limit on macOS.
+        ControlMaster = "auto";
+        ControlPath = "~/.ssh/master-%C";
+        ControlPersist = "1h";
+
         HashKnownHosts = "yes";
+
+        # Also tears down a master left behind by a dropped link, after ~3
+        # minutes, instead of letting clients hang on it.
         ServerAliveInterval = 60;
         ServerAliveCountMax = 3;
       };
