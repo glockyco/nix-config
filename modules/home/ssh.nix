@@ -55,14 +55,22 @@ in
         User = "joaichberger";
       };
 
-      # Use the YubiKey resident key through its handle file.
-      # Uncomment this host block after enrollment.
-      # "github.com" = {
-      #   HostName = "github.com";
-      #   User = "git";
-      #   IdentityFile = "~/.ssh/id_ed25519_sk";
-      #   IdentitiesOnly = "yes";
-      # };
+      # Opt-in path to GitHub through the YubiKey resident key, as
+      # `git clone github-yubikey:owner/repo`. Deliberately not bound to
+      # `github.com`: that would make every push wait on a hardware touch,
+      # where the Secure Enclave key signs silently.
+      #
+      # This is the credential that survives losing this Mac. The Secure
+      # Enclave key cannot leave it, so a second machine enrolls its own key
+      # rather than copying one; the YubiKey is what gets you in meanwhile.
+      # `IdentityAgent none` keeps Secretive out of the exchange.
+      "github-yubikey" = {
+        HostName = "github.com";
+        User = "git";
+        IdentityAgent = "none";
+        IdentityFile = "~/.ssh/id_ed25519_sk";
+        IdentitiesOnly = "yes";
+      };
     };
   };
 }
