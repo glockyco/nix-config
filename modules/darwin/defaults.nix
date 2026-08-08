@@ -87,6 +87,7 @@
       # the files region -- so a narrow gap is as close as it gets.
       persistent-apps = [
         { app = "/Applications/Bitwarden.app"; }
+        { app = "/Applications/Thunderbird.app"; }
         { app = "/Applications/Discord.app"; }
         { app = "/Applications/Ghostty.app"; }
         { app = "/Applications/Zen.app"; }

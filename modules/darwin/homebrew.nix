@@ -38,6 +38,10 @@
       "zen"
       "brave-browser"
 
+      # Thunderbird is a Firefox-scale C++/Rust build. Use Mozilla's signed
+      # binary and updater instead of risking a nixpkgs source build on Darwin.
+      "thunderbird"
+
       # Secretive needs a signed app bundle for Secure Enclave and Touch ID entitlements.
       "secretive"
 

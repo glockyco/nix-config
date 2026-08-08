@@ -6,6 +6,14 @@
 
 let
   zed = "dev.zed.Zed";
+  thunderbird = "org.mozilla.thunderbird";
+
+  thunderbirdHandlers = [
+    "mailto"
+    "news"
+    "feed"
+    "net.thunderbird"
+  ];
 
   # Extensions macOS has no UTI for. It synthesises a per-extension `dyn.*`
   # identifier for these, and LaunchServices refuses to record a handler against
@@ -111,6 +119,10 @@ let
       utis ++ map utiOf (builtins.attrNames declaredTypes) ++ extensions
     )
   );
+
+  setThunderbird = builtins.concatStringsSep "\n" (
+    map (t: "run ${duti} -s ${thunderbird} ${lib.escapeShellArg t} || true") thunderbirdHandlers
+  );
 in
 
 {
@@ -130,5 +142,6 @@ in
     run ${pkgs.coreutils}/bin/chmod -R u+w "$HOME/Applications/FileTypes.app"
     run ${lsregister} -f "$HOME/Applications/FileTypes.app" || true
     ${setAll}
+    ${setThunderbird}
   '';
 }
