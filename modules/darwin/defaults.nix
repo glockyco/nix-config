@@ -75,11 +75,11 @@
       # These lists are authoritative: the Dock is rebuilt from them on every
       # switch, so rearranging it in the UI does not survive.
       #
-      # Grouped left to right: credentials, chat, browser, development, then
-      # tasks. Brave is omitted because it exists only to host the browser
-      # relay; background and menu-bar-only apps (Rectangle Pro, Secretive)
-      # are absent for the same reason -- nothing here is launched from the
-      # Dock.
+      # Ordered left to right: credentials, chat, terminal, browser, editor,
+      # version control, tasks. Brave is omitted because it exists only to
+      # host the browser relay; background and menu-bar-only apps (Rectangle
+      # Pro, Secretive) are absent for the same reason -- nothing here is
+      # launched from the Dock.
       #
       # macOS appends running-but-unpinned apps after this list, so the
       # trailing spacer renders on that boundary. macOS offers no way to place
@@ -88,10 +88,10 @@
       persistent-apps = [
         { app = "/Applications/Bitwarden.app"; }
         { app = "/Applications/Discord.app"; }
-        { app = "/Applications/Zen.app"; }
         { app = "/Applications/Ghostty.app"; }
-        { app = "/Applications/Fork.app"; }
+        { app = "/Applications/Zen.app"; }
         { app = "/Applications/Zed.app"; }
+        { app = "/Applications/Fork.app"; }
         { app = "/Applications/TickTick.app"; }
         {
           spacer = {
