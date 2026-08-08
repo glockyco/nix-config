@@ -1,7 +1,11 @@
 { pkgs, ... }:
 
 let
-  # Secretive's Secure Enclave agent socket.
+  # Secretive's Secure Enclave agent socket. The single secret it serves was
+  # created with protection level "Notify", so it signs without a Touch ID
+  # prompt. Protection level is fixed when a secret is created, so a secret
+  # that prompts can only be replaced, never relaxed -- keep that in mind
+  # before adding another one here.
   secretiveAgent = "~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh";
 in
 
@@ -25,12 +29,10 @@ in
 
         AddKeysToAgent = "no";
 
-        # Secretive signs once per authentication, and every git command
-        # otherwise opens its own connection -- so a background `git fetch`
-        # loop means a Touch ID prompt each time. Multiplexing reuses one
-        # authenticated connection per host, reducing that to one prompt an
-        # hour. `%C` hashes the connection tuple, keeping the socket path
-        # under the 104-byte limit on macOS.
+        # Every git command otherwise opens its own connection, and Fork
+        # fetches in the background, so multiplexing keeps that to one
+        # connection per host. `%C` hashes the connection tuple, keeping the
+        # socket path under the 104-byte limit on macOS.
         ControlMaster = "auto";
         ControlPath = "~/.ssh/master-%C";
         ControlPersist = "1h";
