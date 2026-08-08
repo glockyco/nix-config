@@ -45,6 +45,16 @@ in
         ServerAliveCountMax = 3;
       };
 
+      # The old MacBook Air, reachable over the LAN by mDNS (its DHCP lease
+      # moves, the .local name does not). Its account name differs from this
+      # machine's, so without this block ssh defaults to `glockyco` and the
+      # Secure Enclave key -- which is in the Air's authorized_keys -- is
+      # rejected as an unknown user.
+      "air" = {
+        HostName = "MacBook-Air-von-ISYS.local";
+        User = "joaichberger";
+      };
+
       # Use the YubiKey resident key through its handle file.
       # Uncomment this host block after enrollment.
       # "github.com" = {
