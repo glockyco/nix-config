@@ -1,0 +1,31 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    # This flake only ever builds `aarch64-darwin`, so the runner has to be
+    # Apple Silicon; the standard macOS 14 and newer labels are.
+    runs-on: macos-15
+    permissions:
+      # FlakeHub Cache authenticates with the workflow's OIDC token.
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: DeterminateSystems/determinate-nix-action@v3
+
+      - uses: DeterminateSystems/flakehub-cache-action@v3
+
+      # Builds `darwinSystem`, so evaluation errors, build failures, an
+      # unimported module and unformatted files all fail here.
+      - run: nix flake check --print-build-logs

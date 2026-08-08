@@ -14,5 +14,12 @@ _:
 
     mdformat.enable = true;
     jsonfmt.enable = true;
+
+    # .github/workflows/. yamlfmt collapses every blank line by default, which
+    # runs the workflow steps together.
+    yamlfmt = {
+      enable = true;
+      settings.formatter.retain_line_breaks = true;
+    };
   };
 }
