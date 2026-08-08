@@ -16,6 +16,17 @@ nix flake update                        # bump inputs
 nix fmt                                 # format the tree; see ./treefmt.nix
 ```
 
+Cloudflare projects opt into the SOPS-managed deployment token explicitly in
+their `.envrc`; it is never exported to the global shell:
+
+```sh
+use flake
+use cloudflare_workers
+```
+
+Only enable this in trusted projects. The token can edit Workers, D1, Queues,
+and Worker routes across all Cloudflare accounts and zones.
+
 Fresh-machine bootstrap, before `darwin-rebuild` exists and while the host has its factory name:
 
 ```sh

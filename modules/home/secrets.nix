@@ -30,6 +30,29 @@
         sopsFile = ../../secrets/cloudflare.yaml;
         key = "token";
       };
+
+      # Deployment token for Workers, D1, Queues, and Worker routes. Projects
+      # opt in explicitly with `use cloudflare_workers` in their `.envrc`.
+      "cloudflare-workers-token" = {
+        sopsFile = ../../secrets/cloudflare-workers.yaml;
+        key = "token";
+      };
     };
   };
+
+  # Keep the deployment credential out of the global shell. direnv loads this
+  # helper automatically, but only projects that call it receive the token.
+  home.file.".config/direnv/lib/use_cloudflare_workers.sh".text = ''
+    use_cloudflare_workers() {
+      local token_file=${config.sops.secrets."cloudflare-workers-token".path}
+
+      if [[ ! -r "$token_file" ]]; then
+        log_error "Cloudflare Workers token is unavailable: $token_file"
+        return 1
+      fi
+
+      export CLOUDFLARE_API_TOKEN
+      CLOUDFLARE_API_TOKEN="$(< "$token_file")"
+    }
+  '';
 }
