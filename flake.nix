@@ -23,6 +23,11 @@
 
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
 
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Do not set `inputs.nixpkgs.follows`: upstream pins nixpkgs-unstable for its packages and cache.
     # Overriding it breaks cache hits and is unsupported on this stable release branch.
     llm-agents.url = "github:numtide/llm-agents.nix";
@@ -52,6 +57,8 @@
       # Reuse the package set nix-darwin already instantiated for the system, so
       # the other outputs cannot drift from it and nixpkgs is evaluated once.
       pkgs = self.darwinConfigurations.${hostname}.pkgs;
+
+      treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
     in
     {
       darwinConfigurations.${hostname} = inputs.nix-darwin.lib.darwinSystem {
@@ -75,6 +82,9 @@
 
       checks.${system} = {
         darwinSystem = self.darwinConfigurations.${hostname}.system;
+
+        # Fail the check when any tracked file is unformatted.
+        formatting = treefmtEval.config.build.check self;
 
         # An unimported module is absent rather than an error.
         # Assert every module is reachable from its sibling `default.nix`.
@@ -105,8 +115,7 @@
         ];
       };
 
-      # RFC 166 formatter. Run:
-      #   git ls-files -z '*.nix' | xargs -0 nix fmt --
-      formatter.${system} = pkgs.nixfmt;
+      # `nix fmt` formats every language listed in ./treefmt.nix, tree-wide.
+      formatter.${system} = treefmtEval.config.build.wrapper;
     };
 }
