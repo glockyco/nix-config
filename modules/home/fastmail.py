@@ -74,7 +74,7 @@ class Session:
 
 
 def cmd_mailboxes(session: Session, _args) -> object:
-    (_, res, _), = session.call(
+    ((_, res, _),) = session.call(
         [
             [
                 "Mailbox/get",
@@ -130,7 +130,7 @@ def cmd_search(session: Session, args) -> object:
     if args.query:
         filt["text"] = " ".join(args.query)
     if args.mailbox:
-        (_, res, _), = session.call(
+        ((_, res, _),) = session.call(
             [
                 [
                     "Mailbox/get",
@@ -158,7 +158,7 @@ def cmd_search(session: Session, args) -> object:
 
 
 def cmd_read(session: Session, args) -> object:
-    (_, res, _), = session.call(
+    ((_, res, _),) = session.call(
         [
             [
                 "Email/get",
@@ -230,7 +230,9 @@ def main() -> int:
 
     try:
         if not args.token_file:
-            raise JmapError("no token file; pass --token-file or set FASTMAIL_TOKEN_FILE")
+            raise JmapError(
+                "no token file; pass --token-file or set FASTMAIL_TOKEN_FILE"
+            )
         session = Session(read_token(args.token_file))
         json.dump(handlers[args.command](session, args), sys.stdout, indent=2)
         sys.stdout.write("\n")
