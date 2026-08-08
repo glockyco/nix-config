@@ -40,16 +40,16 @@ macOS cannot declare these:
 ### Mail domain
 
 `glockyco.com` sends through Fastmail but its DNS lives at Cloudflare, so these
-records are outside this repository. Fastmail has already generated the DKIM
-keys; only the pointers are missing.
+records are applied through the Cloudflare API rather than nix-darwin. The
+zone-scoped token is encrypted in `secrets/cloudflare.yaml`.
 
-| Type  | Name             | Value                                    | Proxy    |
-| ----- | ---------------- | ---------------------------------------- | -------- |
-| CNAME | `fm1._domainkey` | `fm1.glockyco.com.dkim.fmhosted.com`     | DNS only |
-| CNAME | `fm2._domainkey` | `fm2.glockyco.com.dkim.fmhosted.com`     | DNS only |
-| CNAME | `fm3._domainkey` | `fm3.glockyco.com.dkim.fmhosted.com`     | DNS only |
-| TXT   | `_dmarc`         | `v=DMARC1; p=none; rua=mailto:...`       | --       |
-| TXT   | `@`              | existing SPF, `?all` tightened to `~all` | --       |
+| Type  | Name             | Value                                                | Proxy    |
+| ----- | ---------------- | ---------------------------------------------------- | -------- |
+| CNAME | `fm1._domainkey` | `fm1.glockyco.com.dkim.fmhosted.com`                 | DNS only |
+| CNAME | `fm2._domainkey` | `fm2.glockyco.com.dkim.fmhosted.com`                 | DNS only |
+| CNAME | `fm3._domainkey` | `fm3.glockyco.com.dkim.fmhosted.com`                 | DNS only |
+| TXT   | `_dmarc`         | `v=DMARC1; p=none; rua=mailto:glockyco@fastmail.com` | --       |
+| TXT   | `@`              | `v=spf1 include:spf.messagingengine.com ~all`        | --       |
 
 Proxying a DKIM record replaces the answer with Cloudflare's, so the key never
 reaches the verifier: those three must stay grey-clouded. Keep one SPF record

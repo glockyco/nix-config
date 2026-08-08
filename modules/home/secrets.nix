@@ -18,8 +18,18 @@
 
     age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
 
-    # Read-only JMAP token, scoped to Email. It cannot send mail or create
-    # Masked Email addresses; see modules/home/fastmail.nix.
-    secrets."token" = { };
+    secrets = {
+      # Read-only JMAP token, scoped to Email. It cannot send mail or create
+      # Masked Email addresses; see modules/home/fastmail.nix.
+      "token" = { };
+
+      # Limited to DNS edits on glockyco.com. Deployment credentials remain
+      # separate so a compromised project shell cannot rewrite mail or apex
+      # records.
+      "cloudflare-dns-token" = {
+        sopsFile = ../../secrets/cloudflare.yaml;
+        key = "token";
+      };
+    };
   };
 }
