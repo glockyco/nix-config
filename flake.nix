@@ -41,7 +41,7 @@
   };
 
   outputs =
-    { self, nixpkgs, ... }@inputs:
+    { self, ... }@inputs:
     let
       system = "aarch64-darwin";
 
@@ -49,10 +49,9 @@
       hostname = "macbook-pro";
       username = "glockyco";
 
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [ self.overlays.default ];
-      };
+      # Reuse the package set nix-darwin already instantiated for the system, so
+      # the other outputs cannot drift from it and nixpkgs is evaluated once.
+      pkgs = self.darwinConfigurations.${hostname}.pkgs;
     in
     {
       darwinConfigurations.${hostname} = inputs.nix-darwin.lib.darwinSystem {
