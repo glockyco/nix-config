@@ -7,7 +7,7 @@
     package = null;
 
     settings = {
-      theme = "Catppuccin Mocha";
+      # The theme comes from modules/home/catppuccin.nix.
 
       # Nerd Font supplies powerline/devicon glyphs; `NL` removes ligatures
       # from JetBrains Mono, so `calt` need not be disabled.

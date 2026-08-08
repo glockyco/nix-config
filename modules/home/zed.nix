@@ -10,8 +10,7 @@
     # Keep `mutableUserSettings = true`: Zed merges these settings into writable
     # settings.json, preserving UI state while reapplying declared values on each switch.
     userSettings = {
-      # Catppuccin is built in; no theme extension is needed.
-      theme = "Catppuccin Mocha";
+      # The theme comes from modules/home/catppuccin.nix.
       buffer_font_family = "JetBrainsMonoNL Nerd Font";
       buffer_font_size = 14;
       terminal.font_family = "JetBrainsMonoNL Nerd Font";

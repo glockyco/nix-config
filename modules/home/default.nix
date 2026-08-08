@@ -1,6 +1,7 @@
 {
   imports = [
     ./shell.nix
+    ./catppuccin.nix
     ./cli.nix
     ./ghostty.nix
     ./brave.nix
