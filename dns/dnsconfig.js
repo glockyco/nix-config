@@ -21,17 +21,19 @@ D("glockyco.com", REG_NONE,
   // Subdomains carry no mail, so they enforce immediately while the apex stays
   // at `none` pending the staged rollout in docs/plans.
   //
-  // `rua` still points out of the organizational domain, which RFC 9990
-  // section 4 makes conditional on fastmail.com publishing an authorization
-  // record at `glockyco.com._report._dmarc.fastmail.com`. It publishes none,
-  // so a conforming receiver must discard the report. The fix is the role
-  // address `dmarc@glockyco.com`, which cannot be created through any API and
-  // is pending in docs/plans. Do not publish it here before it exists:
-  // reports would bounce, and some reporters drop a destination permanently
-  // after that.
+  // `rua` is in-domain so that RFC 9990 section 4 never applies. Pointing it
+  // out of the organizational domain would oblige the receiving domain to
+  // publish an authorization record at `<domain>._report._dmarc.<rua-domain>`,
+  // and fastmail.com publishes none, so a conforming receiver would have to
+  // discard every report.
+  //
+  // `dmarc@` is a role address on purpose. Mail to it currently resolves via
+  // the catch-all, but a catch-all is the first thing to be switched off when
+  // the spam gets tiring, and this record is public and load-bearing. The
+  // alias has to exist in its own right.
   //
   // TTL 300 keeps every step of the ladder revertible in minutes.
-  TXT("_dmarc", "v=DMARC1; p=none; sp=reject; np=reject; rua=mailto:glockyco@fastmail.com", TTL(300)),
+  TXT("_dmarc", "v=DMARC1; p=none; sp=reject; np=reject; rua=mailto:dmarc@glockyco.com", TTL(300)),
 
   // Cloudflare creates these discard-address records for Worker routes and
   // marks them read-only, so DNSControl must leave them in place rather than
