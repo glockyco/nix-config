@@ -45,19 +45,10 @@ macOS cannot declare these:
 - Approve Karabiner's driver extension, Input Monitoring and login items.
 - Confirm the default-app prompts on first switch.
 - Paste the Rectangle Pro licence code into the app and grant it Accessibility.
-- Set the Alfred and LaunchBar activation hotkeys, and grant both Accessibility. Neither app can
-  sync a hotkey, so this is per machine.
-  - `⌘Space` is safe and is the one to use. Neo 2 rewrites `spacebar` only while Mod4 is held, and
-    then to `keypad_0`, so plain `⌘Space` reaches the system untouched. Take it from Spotlight
-    rather than working around it; the muscle memory is already there.
-  - **Avoid Option.** Neo 2 does not merely consume keys, it synthesises them: the generated
-    `karabiner.json` emits `left_option` as a modifier 143 times and `left_shift` 162 times to
-    produce layer 3 and 4 symbols, and takes `right_option` as a mandatory modifier 62 times.
-    `RegisterEventHotKey` matches device-independent masks, so a binding cannot ask for the left
-    Option key specifically. Alfred's `⌥Space` default is the one stock setting to change.
-  - Control is emitted and consumed nowhere, so `⌃`-plus-letter is the safe second binding for
-    whichever app does not hold `⌘Space`. Not `⌃Space` or `⌃⌥Space`: symbolic hotkeys 60 and 61
-    are enabled and switch input sources, of which Neo 2 is one.
+- Grant LaunchBar Accessibility and confirm its search shortcut is `⌘Space`. `defaults.nix` frees
+  the key from Spotlight, but LaunchBar cannot sync a hotkey, so check it per machine. Avoid Option
+  for any rebinding: Neo 2 emits it to build layers 3 and 4, and hotkey masks cannot tell left from
+  right. `⌃Space` and `⌃⌥Space` switch input sources.
 - Authenticate `omp` via `/login`.
 - Generate this machine's age key before the first switch, then add its public half to `.sops.yaml`:
   `age-keygen -o ~/.config/sops/age/keys.txt && age-keygen -y ~/.config/sops/age/keys.txt`.
