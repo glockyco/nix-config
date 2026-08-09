@@ -49,6 +49,10 @@ macOS cannot declare these:
 - Generate this machine's age key before the first switch, then add its public half to `.sops.yaml`:
   `age-keygen -o ~/.config/sops/age/keys.txt && age-keygen -y ~/.config/sops/age/keys.txt`.
   Without it `sops-nix` cannot decrypt and the launchd agent fails.
+- On the MacBook Air, enable SMB File Sharing for `joaichberger`. On this Mac, connect once to
+  `smb://joaichberger@MacBook-Air-von-ISYS.local/Macintosh%20HD` and save the password in
+  Keychain. Home Manager then reconnects the share and exposes the Air's home directory at `~/Air`;
+  the credential never enters Nix.
 
 ## DNS
 

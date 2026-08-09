@@ -15,6 +15,7 @@
     ./gh.nix
     ./ghq.nix
     ./ssh.nix
+    ./network-shares.nix
     ./packages.nix
     ./typst.nix
     ./neo2.nix
