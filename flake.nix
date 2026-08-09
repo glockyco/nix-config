@@ -28,6 +28,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+
+      # flake-parts consumes nixpkgs-lib rather than nixpkgs; follow the pinned library explicitly.
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
+
     catppuccin = {
       url = "github:catppuccin/nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -61,76 +68,95 @@
   };
 
   outputs =
-    { self, ... }@inputs:
-    let
-      system = "aarch64-darwin";
+    inputs@{ self, ... }:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [
+        "aarch64-darwin"
+        "x86_64-linux"
+      ];
 
-      # `darwin-rebuild --flake .` resolves `darwinConfigurations.<LocalHostName>` after activation.
-      hostname = "macbook-pro";
-      username = "glockyco";
+      imports = [ inputs.treefmt-nix.flakeModule ];
 
-      # Reuse the package set nix-darwin already instantiated for the system, so
-      # the other outputs cannot drift from it and nixpkgs is evaluated once.
-      pkgs = self.darwinConfigurations.${hostname}.pkgs;
+      flake = {
+        darwinConfigurations.macbook-pro = import ./hosts/macbook-pro { inherit inputs; };
 
-      treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
-    in
-    {
-      darwinConfigurations.${hostname} = inputs.nix-darwin.lib.darwinSystem {
-        specialArgs = { inherit inputs hostname username; };
-        modules = [ ./modules/darwin ];
-      };
-
-      overlays.default = final: _prev: {
-        neo-keyboard-layouts = final.callPackage ./packages/neo-keyboard-layouts.nix {
-          src = inputs.neo-layout;
+        overlays.default = final: _prev: {
+          neo-keyboard-layouts = final.callPackage ./packages/neo-keyboard-layouts.nix {
+            src = inputs.neo-layout;
+          };
         };
       };
 
-      packages.${system} = {
-        inherit (pkgs) neo-keyboard-layouts;
+      perSystem =
+        {
+          config,
+          lib,
+          system,
+          ...
+        }:
+        let
+          isDarwin = system == "aarch64-darwin";
 
-        # Expose pinned `darwin-rebuild` for the first activation, before it is on PATH:
-        #   sudo nix run .#darwin-rebuild -- switch --flake .#${hostname}
-        inherit (inputs.nix-darwin.packages.${system}) darwin-rebuild;
-      };
+          # Reuse the package set nix-darwin already instantiated for the system, so
+          # the other outputs cannot drift from it and nixpkgs is evaluated once.
+          pkgs =
+            if isDarwin then
+              self.darwinConfigurations.macbook-pro.pkgs
+            else
+              inputs.nixpkgs.legacyPackages.${system}.extend self.overlays.default;
+        in
+        {
+          # `nix fmt` formats every language listed in ./treefmt.nix, tree-wide.
+          # Fail the check when any tracked file is unformatted.
+          treefmt = import ./treefmt.nix pkgs;
 
-      checks.${system} = {
-        darwinSystem = self.darwinConfigurations.${hostname}.system;
+          # flake-parts' default package set does not include this flake's overlay.
+          # Use the Darwin package set above, or extend the per-system package set on Linux.
+          _module.args.pkgs = pkgs;
 
-        # Fail the check when any tracked file is unformatted.
-        formatting = treefmtEval.config.build.check self;
+          packages = {
+            inherit (pkgs) neo-keyboard-layouts;
+          }
+          // lib.optionalAttrs isDarwin {
+            # Expose pinned `darwin-rebuild` for the first activation, before it is on PATH:
+            #   sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
+            inherit (inputs.nix-darwin.packages.${system}) darwin-rebuild;
+          };
 
-        # An unimported module is absent rather than an error.
-        # Assert every module is reachable from its sibling `default.nix`.
-        moduleImports = pkgs.runCommand "check-module-imports" { } ''
-          cd ${./modules}
-          missing=
-          for dir in */; do
-            for f in "$dir"*.nix; do
-              base=''${f#"$dir"}
-              if [ "$base" != default.nix ] && ! grep -qF "./$base" "$dir/default.nix"; then
-                missing="$missing $f"
+          checks = {
+            # An unimported module is absent rather than an error.
+            # Assert every module is reachable from its sibling `default.nix`.
+            moduleImports = pkgs.runCommand "check-module-imports" { } ''
+              cd ${./modules}
+              missing=
+              for dir in */; do
+                for f in "$dir"*.nix; do
+                  base=''${f#"$dir"}
+                  if [ "$base" != default.nix ] && ! grep -qF "./$base" "$dir/default.nix"; then
+                    missing="$missing $f"
+                  fi
+                done
+              done
+              if [ -n "$missing" ]; then
+                echo "not imported by their sibling default.nix:$missing" >&2
+                exit 1
               fi
-            done
-          done
-          if [ -n "$missing" ]; then
-            echo "not imported by their sibling default.nix:$missing" >&2
-            exit 1
-          fi
-          touch $out
-        '';
-      };
+              touch $out
+            '';
+          }
+          // lib.optionalAttrs isDarwin {
+            darwinSystem = self.darwinConfigurations.macbook-pro.system;
+          };
 
-      devShells.${system}.default = pkgs.mkShellNoCC {
-        packages = [
-          inputs.nix-darwin.packages.${system}.darwin-rebuild
-          pkgs.git
-          self.formatter.${system}
-        ];
-      };
-
-      # `nix fmt` formats every language listed in ./treefmt.nix, tree-wide.
-      formatter.${system} = treefmtEval.config.build.wrapper;
+          devShells = lib.optionalAttrs isDarwin {
+            default = pkgs.mkShellNoCC {
+              packages = [
+                inputs.nix-darwin.packages.${system}.darwin-rebuild
+                pkgs.git
+                config.treefmt.build.wrapper
+              ];
+            };
+          };
+        };
     };
 }

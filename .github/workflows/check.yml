@@ -12,9 +12,14 @@ concurrency:
 
 jobs:
   check:
-    # This flake only ever builds `aarch64-darwin`, so the runner has to be
-    # Apple Silicon; the standard macOS 14 and newer labels are.
-    runs-on: macos-15
+    # `nix flake check` only checks the runner's own system, so the fleet needs
+    # one runner per system in `systems`. The macOS 14 and newer labels are
+    # Apple Silicon; `ubuntu-latest` covers `x86_64-linux`.
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, ubuntu-latest]
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v5
 
@@ -28,6 +33,7 @@ jobs:
             extra-substituters = https://cache.numtide.com
             extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
 
-      # Builds `darwinSystem`, so evaluation errors, build failures, an
-      # unimported module and unformatted files all fail here.
+      # On macOS this builds `darwinSystem`; on Linux it is the module-import
+      # and formatting checks. Evaluation errors, build failures, an unimported
+      # module and unformatted files all fail here.
       - run: nix flake check --print-build-logs
