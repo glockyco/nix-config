@@ -60,6 +60,10 @@
       "rectangle-pro"
 
       "crossover"
+
+      # nixpkgs `unityhub` is Linux-only, and the Hub owns Editor installs and
+      # license activation, so use the vendor cask.
+      "unity-hub"
     ];
 
     onActivation = {
