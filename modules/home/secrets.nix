@@ -55,4 +55,20 @@
       CLOUDFLARE_API_TOKEN="$(< "$token_file")"
     }
   '';
+
+  # Keep the DNS credential opt-in too: previewing or applying a zone should
+  # never make a broad-scope token available to every project shell.
+  home.file.".config/direnv/lib/use_cloudflare_dns.sh".text = ''
+    use_cloudflare_dns() {
+      local token_file=${config.sops.secrets."cloudflare-dns-token".path}
+
+      if [[ ! -r "$token_file" ]]; then
+        log_error "Cloudflare DNS token is unavailable: $token_file"
+        return 1
+      fi
+
+      export CLOUDFLARE_API_TOKEN
+      CLOUDFLARE_API_TOKEN="$(< "$token_file")"
+    }
+  '';
 }

@@ -153,6 +153,7 @@
               packages = [
                 inputs.nix-darwin.packages.${system}.darwin-rebuild
                 pkgs.git
+                pkgs.dnscontrol
                 config.treefmt.build.wrapper
               ];
             };

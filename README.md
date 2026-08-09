@@ -50,26 +50,34 @@ macOS cannot declare these:
   `age-keygen -o ~/.config/sops/age/keys.txt && age-keygen -y ~/.config/sops/age/keys.txt`.
   Without it `sops-nix` cannot decrypt and the launchd agent fails.
 
-### Mail domain
+## DNS
 
-`glockyco.com` sends through Fastmail but its DNS lives at Cloudflare, so these
-records are applied through the Cloudflare API rather than nix-darwin. The
-zone-scoped token is encrypted in `secrets/cloudflare.yaml`.
+`glockyco.com` sends through Fastmail while its DNS lives at Cloudflare.
+`dns/dnsconfig.js` is the source of truth for the zone; the zone-scoped token
+is encrypted in `secrets/cloudflare.yaml`. From the repository root, enter the
+pinned development shell and opt into the token before reviewing the diff:
 
-| Type  | Name             | Value                                                | Proxy    |
-| ----- | ---------------- | ---------------------------------------------------- | -------- |
-| CNAME | `fm1._domainkey` | `fm1.glockyco.com.dkim.fmhosted.com`                 | DNS only |
-| CNAME | `fm2._domainkey` | `fm2.glockyco.com.dkim.fmhosted.com`                 | DNS only |
-| CNAME | `fm3._domainkey` | `fm3.glockyco.com.dkim.fmhosted.com`                 | DNS only |
-| TXT   | `_dmarc`         | `v=DMARC1; p=none; rua=mailto:glockyco@fastmail.com` | --       |
-| TXT   | `@`              | `v=spf1 include:spf.messagingengine.com ~all`        | --       |
+```sh
+nix develop
+use_cloudflare_dns
+dnscontrol preview --creds=dns/creds.json --config=dns/dnsconfig.js
+dnscontrol push --creds=dns/creds.json --config=dns/dnsconfig.js
+```
 
-Proxying a DKIM record replaces the answer with Cloudflare's, so the key never
-reaches the verifier: those three must stay grey-clouded. Keep one SPF record
-only. Start DMARC at `p=none` and read the reports before tightening, in case
-something legitimate sends as the domain. Leave `A`, `AAAA`, `NS` and `MX`
-alone -- the apex serves the `personal-website` Worker and
-`dashboard.glockyco.com` is a Worker custom domain.
+Always `preview` before `push`. This deliberately sits outside activation: a
+`darwin-rebuild switch` must never mutate external shared state, and mail on
+this domain is the recovery channel for every other account.
+
+The record set is documented in `dns/dnsconfig.js` rather than repeated here,
+because a second copy is a second thing to get wrong. Three constraints the
+zone file cannot enforce on its own:
+
+- The DKIM `CNAME`s must stay grey-clouded. Proxying one replaces the answer
+  with Cloudflare's, so the key never reaches the verifier.
+- Keep exactly one SPF record. Two is a permanent error, not a merge.
+- The `100::` `AAAA` records belong to Workers and Cloudflare marks them
+  read-only, which is why `dnsconfig.js` lists them as `IGNORE` rather than
+  managing them.
 
 ## Gotchas
 
