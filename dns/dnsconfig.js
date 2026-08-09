@@ -52,16 +52,17 @@ D("glockyco.com", REG_NONE,
   // Google uses this token to verify ownership of the public site.
   TXT("@", "google-site-verification=jFHLKO_n1tlV12VSycCUJHi7K-iaH2QH6OPRr03In00", TTL(3600)),
 
-  // These are leftovers from Gandi's former mail hosting and are pending
-  // deletion in a follow-up commit after the user approves the cleanup.
-  CNAME("webmail", "webmail.gandi.net.", CF_PROXY_ON),
-  // The old delegation is retained in Cloudflare but is not managed here.
+  // RFC 6186 autoconfiguration. A target of "." means the service is
+  // deliberately not offered, which is the correct answer for cleartext IMAP
+  // and POP, so these two stay.
+  SRV("_imap._tcp", 0, 0, 0, "."),
+  SRV("_pop3._tcp", 0, 0, 0, "."),
+
+  // The apex NS records still name Gandi, but Cloudflare answers the apex with
+  // its own nameservers and never serves these, so they are inert rows in the
+  // dashboard rather than a live misdirection. Cloudflare also rejects apex NS
+  // deletion through the API, so they are ignored rather than managed.
   IGNORE("@", "NS", "ns-159-c.gandi.net."),
   IGNORE("@", "NS", "ns-238-b.gandi.net."),
   IGNORE("@", "NS", "ns-243-a.gandi.net."),
-  SRV("_imaps._tcp", 0, 1, 993, "mail.gandi.net."),
-  SRV("_imap._tcp", 0, 0, 0, "."),
-  SRV("_pop3s._tcp", 10, 1, 995, "mail.gandi.net."),
-  SRV("_pop3._tcp", 0, 0, 0, "."),
-  SRV("_submission._tcp", 0, 1, 465, "mail.gandi.net."),
 );
