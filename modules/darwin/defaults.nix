@@ -4,12 +4,6 @@
   # Do not set `system.keyboard.remapCapsLockToControl`: Caps Lock is Neo2's
   # left Mod3 key and must reach Karabiner unchanged.
 
-  # Free Cmd+Space for LaunchBar by disabling hotkey 64, Spotlight's search
-  # window. Neo2 rewrites `spacebar` only under Mod4, so the plain chord is
-  # untouched. Takes effect at the next login.
-  system.defaults.CustomUserPreferences."com.apple.symbolichotkeys".AppleSymbolicHotKeys."64".enabled =
-    false;
-
   system.defaults = {
     NSGlobalDomain = {
       # Disable the accent picker so held keys repeat for Neo2 layer 4.
