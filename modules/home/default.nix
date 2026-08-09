@@ -20,7 +20,7 @@
     ./typst.nix
     ./neo2.nix
     ./karabiner.nix
-    ./launchbar.nix
+    ./keyboard-shortcuts.nix
     ./screenshots.nix
     ./zed.nix
   ];
