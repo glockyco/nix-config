@@ -45,6 +45,14 @@ macOS cannot declare these:
 - Approve Karabiner's driver extension, Input Monitoring and login items.
 - Confirm the default-app prompts on first switch.
 - Paste the Rectangle Pro licence code into the app and grant it Accessibility.
+- Set the Alfred and LaunchBar activation hotkeys, and grant both Accessibility. Neither app can
+  sync a hotkey, so this is per machine. **Bind them with Control and no other modifier family.**
+  Neo 2 does not merely consume keys, it synthesises them: the generated `karabiner.json` emits
+  `left_option` as a modifier 143 times and `left_shift` 162 times to produce layer 3 and 4
+  symbols, and takes `right_option` as a mandatory modifier 62 times. Control appears on neither
+  side, so it is the only family that cannot collide. Avoid `⌃Space` and `⌃⌥Space` as well: those
+  switch input sources, and Neo 2 is registered as one. The stock defaults, Alfred's `⌥Space` and
+  LaunchBar's `⌘Space`, are both unusable here.
 - Authenticate `omp` via `/login`.
 - Generate this machine's age key before the first switch, then add its public half to `.sops.yaml`:
   `age-keygen -o ~/.config/sops/age/keys.txt && age-keygen -y ~/.config/sops/age/keys.txt`.

@@ -64,6 +64,16 @@
       # nixpkgs `unityhub` is Linux-only, and the Hub owns Editor installs and
       # license activation, so use the vendor cask.
       "unity-hub"
+
+      # Launchers, installed together to be compared in use. Spotlight cannot
+      # quit a named application: macOS only offers Quit for the frontmost app,
+      # and Spotlight hands an action runtime text rather than a running-app
+      # reference, so the Shortcuts route needs one shortcut per application.
+      # Both of these index running apps and act on any of them.
+      # Neither is in nixpkgs, and both rewrite their own settings, so their
+      # configuration stays manual; see the hotkey note in the README.
+      "alfred"
+      "launchbar"
     ];
 
     onActivation = {
