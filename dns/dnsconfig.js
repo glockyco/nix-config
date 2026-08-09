@@ -19,7 +19,7 @@ D("glockyco.com", REG_NONE,
   TXT("@", "v=spf1 include:spf.messagingengine.com ~all"),
 
   // Subdomains carry no mail, so they enforce immediately while the apex stays
-  // at `none` pending the staged rollout in docs/plans.
+  // at `none` until aggregate reports show every legitimate sender aligning.
   //
   // `rua` is in-domain so that RFC 9990 section 4 never applies. Pointing it
   // out of the organizational domain would oblige the receiving domain to
