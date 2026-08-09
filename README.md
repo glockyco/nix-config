@@ -2,6 +2,7 @@
 
 Declarative macOS config: Determinate Nix, nix-darwin, Home Manager, Apple Silicon.
 
+`hosts/` is one directory per machine, owning that machine's name and user.
 `modules/darwin/` is system scope, `modules/home/` user scope, and `packages/` local derivations.
 
 No global toolchains: project flakes use `direnv`. Symbolic PathFinder needs JDK 8; current JPF needs JDK 11.
@@ -12,6 +13,7 @@ No global toolchains: project flakes use `direnv`. Symbolic PathFinder needs JDK
 darwin-switch                           # apply, then diff the closure
 sudo darwin-rebuild switch --flake .    # apply, without the diff
 nix flake check                         # build, and verify formatting, without applying
+                                        # checks only this system; CI covers the others
 nix flake update                        # bump inputs
 nix fmt                                 # format the tree; see ./treefmt.nix
 ```
