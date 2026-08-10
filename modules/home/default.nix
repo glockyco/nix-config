@@ -18,6 +18,7 @@
     ./network-shares.nix
     ./packages.nix
     ./typst.nix
+    ./tex.nix
     ./neo2.nix
     ./karabiner.nix
     ./keyboard-shortcuts.nix
