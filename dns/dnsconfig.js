@@ -18,8 +18,24 @@ D("glockyco.com", REG_NONE,
   // Fastmail is the only authorized sender for the domain's mail.
   TXT("@", "v=spf1 include:spf.messagingengine.com ~all"),
 
-  // Subdomains carry no mail, so they enforce immediately while the apex stays
-  // at `none` until aggregate reports show every legitimate sender aligning.
+  // `quarantine` is the endpoint, not a stop on the way to `reject`.
+  // Quarantine is where the protection arrives: a spoofed apex message lands
+  // in spam. Reject adds little on top for a domain with a single sender and
+  // no bulk mail, while turning a forgotten legitimate sender from a
+  // recoverable spam-folder message into a bounce nobody reads. Subdomains
+  // are stricter than the apex because they carry no mail at all.
+  //
+  // Published without `t=y` staging. That tag demotes the policy on receivers
+  // implementing RFC 9989, but RFC 7489 receivers must ignore unknown tags and
+  // would enforce at full strength regardless, so it buys an inconsistent
+  // half-measure. What it guards against is a sender nobody remembers, and at
+  // this volume no observation window would surface one either. Quarantine
+  // failing softly is the mitigation.
+  //
+  // The sender inventory is closed by construction: Fastmail is the only thing
+  // that sends as this domain, per-service addresses are Masked Email on other
+  // domains, and aggregate reports show direct mail aligning on both SPF and
+  // DKIM.
   //
   // `rua` is in-domain so that RFC 9990 section 4 never applies. Pointing it
   // out of the organizational domain would oblige the receiving domain to
@@ -32,8 +48,12 @@ D("glockyco.com", REG_NONE,
   // the spam gets tiring, and this record is public and load-bearing. The
   // alias has to exist in its own right.
   //
-  // TTL 300 keeps every step of the ladder revertible in minutes.
-  TXT("_dmarc", "v=DMARC1; p=none; sp=reject; np=reject; rua=mailto:dmarc@glockyco.com", TTL(300)),
+  // TTL 300 keeps this revertible in minutes.
+  TXT(
+    "_dmarc",
+    "v=DMARC1; p=quarantine; sp=reject; np=reject; rua=mailto:dmarc@glockyco.com",
+    TTL(300),
+  ),
 
   // Cloudflare creates these discard-address records for Worker routes and
   // marks them read-only, so DNSControl must leave them in place rather than
