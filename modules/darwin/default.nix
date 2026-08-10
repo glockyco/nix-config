@@ -9,6 +9,7 @@
     ./homebrew.nix
     ./rectangle.nix
     ./zen.nix
+    ./postgresql.nix
     ./home-manager.nix
   ];
 }
