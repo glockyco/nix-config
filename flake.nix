@@ -154,6 +154,16 @@
                 inputs.nix-darwin.packages.${system}.darwin-rebuild
                 pkgs.git
                 pkgs.dnscontrol
+
+                # The interpreter comes from the pinned nixpkgs, and every
+                # consumer names it independently: this shell, the `fastmail`
+                # wrapper and the apple-terminal activation script. The shell
+                # has to name it too rather than inherit one, because an
+                # undeclared `python3` resolves to macOS's 3.9, which cannot
+                # parse the `X | None` annotations these scripts use and fails
+                # in a way that reads like a code bug.
+                pkgs.python3
+
                 config.treefmt.build.wrapper
               ];
             };
