@@ -10,6 +10,17 @@
     # starting, so the upgrade has to be a deliberate edit here.
     package = pkgs.postgresql_17;
 
+    # A launchd agent starts with no LANG, so initdb would otherwise pick SQL_ASCII, which stores
+    # bytes unvalidated and reports an encoding clients cannot rely on. ICU ties collation to the
+    # PostgreSQL build rather than to the host's libc.
+    #
+    # initdb only runs against an empty data directory, so this does not convert an existing cluster.
+    initdbArgs = [
+      "--encoding=UTF8"
+      "--locale-provider=icu"
+      "--icu-locale=en-US"
+    ];
+
     # These lines land above nix-darwin's generated defaults, which ask for md5
     # over loopback. The module initialises the cluster with `initdb -U
     # postgres` and leaves that role without a password, and it implements
