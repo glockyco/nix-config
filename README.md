@@ -18,6 +18,16 @@ nix flake update                        # bump inputs
 nix fmt                                 # format the tree; see ./treefmt.nix
 ```
 
+`omp` is installed from the `llm-agents` flake input. Do not run `omp update`,
+which cannot replace the immutable Nix package. Update it declaratively instead:
+
+```sh
+nix flake update llm-agents
+nix flake check
+darwin-switch
+omp --version
+```
+
 Cloudflare projects opt into the SOPS-managed deployment token explicitly in
 their `.envrc`; it is never exported to the global shell:
 
