@@ -58,6 +58,9 @@
       # session state remain mutable under ~/Library/Application Support/Ferdium.
       "ferdium"
 
+      # Signal has no web client, so Ferdium cannot host it.
+      "signal"
+
       "ticktick"
 
       # Rectangle Pro retains bundle id `com.knollsoft.Hookshot` from Hookshot.
