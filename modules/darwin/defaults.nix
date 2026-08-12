@@ -89,6 +89,7 @@
       persistent-apps = [
         { app = "/Applications/Bitwarden.app"; }
         { app = "/Applications/Thunderbird.app"; }
+        { app = "/Applications/Ferdium.app"; }
         { app = "/Applications/Discord.app"; }
         { app = "/Applications/Ghostty.app"; }
         { app = "/Applications/Zen.app"; }
