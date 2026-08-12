@@ -54,6 +54,10 @@
 
       "discord"
 
+      # Open-source web-app container for communication services; account and
+      # session state remain mutable under ~/Library/Application Support/Ferdium.
+      "ferdium"
+
       "ticktick"
 
       # Rectangle Pro retains bundle id `com.knollsoft.Hookshot` from Hookshot.
