@@ -88,16 +88,13 @@
       # the files region -- so a narrow gap is as close as it gets.
       persistent-apps = [
         { app = "/Applications/Bitwarden.app"; }
-        { app = "/Applications/Thunderbird.app"; }
         { app = "/Applications/Ferdium.app"; }
         { app = "/Applications/Signal.app"; }
-        { app = "/Applications/Discord.app"; }
         { app = "/Applications/Ghostty.app"; }
         { app = "/Applications/Zen.app"; }
         { app = "/Applications/Zed.app"; }
         { app = "/Applications/PDF Expert.app"; }
         { app = "/Applications/Fork.app"; }
-        { app = "/Applications/TickTick.app"; }
         {
           spacer = {
             small = true;
