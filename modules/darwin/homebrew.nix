@@ -63,6 +63,9 @@
 
       "ticktick"
 
+      # Use Readdle's signed, self-updating app bundle.
+      "pdf-expert"
+
       # Rectangle Pro retains bundle id `com.knollsoft.Hookshot` from Hookshot.
       "rectangle-pro"
 

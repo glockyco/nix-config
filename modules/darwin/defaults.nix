@@ -77,7 +77,7 @@
       # switch, so rearranging it in the UI does not survive.
       #
       # Ordered left to right: credentials, chat, terminal, browser, editor,
-      # version control, tasks. Brave is omitted because it exists only to
+      # documents, version control, tasks. Brave is omitted because it exists only to
       # host the browser relay; background and menu-bar-only apps (Rectangle
       # Pro, Secretive) are absent for the same reason -- nothing here is
       # launched from the Dock.
@@ -95,6 +95,7 @@
         { app = "/Applications/Ghostty.app"; }
         { app = "/Applications/Zen.app"; }
         { app = "/Applications/Zed.app"; }
+        { app = "/Applications/PDF Expert.app"; }
         { app = "/Applications/Fork.app"; }
         { app = "/Applications/TickTick.app"; }
         {
