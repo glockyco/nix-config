@@ -9,6 +9,8 @@
 
     # Keep `mutableUserSettings = true`: Zed merges these settings into writable
     # settings.json, preserving UI state while reapplying declared values on each switch.
+    extensions = [ "latex" ];
+
     userSettings = {
       # The theme comes from modules/home/catppuccin.nix.
       buffer_font_family = "JetBrainsMonoNL Nerd Font";

@@ -11,6 +11,7 @@
   # check silently passes over everything.
   home.packages = [
     pkgs.texliveFull
+    pkgs.texlab
     (pkgs.python3.withPackages (ps: [ ps.pygments ]))
     pkgs.aspell
     pkgs.aspellDicts.en

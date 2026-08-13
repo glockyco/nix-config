@@ -6,6 +6,7 @@
 
 let
   zed = "dev.zed.Zed";
+  pdfExpert = "com.readdle.PDFExpert-Mac";
   thunderbird = "org.mozilla.thunderbird";
 
   thunderbirdHandlers = [
@@ -123,6 +124,8 @@ let
   setThunderbird = builtins.concatStringsSep "\n" (
     map (t: "run ${duti} -s ${thunderbird} ${lib.escapeShellArg t} || true") thunderbirdHandlers
   );
+
+  setPdfExpert = "run ${duti} -s ${pdfExpert} com.adobe.pdf all || true";
 in
 
 {
@@ -142,6 +145,7 @@ in
     run ${pkgs.coreutils}/bin/chmod -R u+w "$HOME/Applications/FileTypes.app"
     run ${lsregister} -f "$HOME/Applications/FileTypes.app" || true
     ${setAll}
+    ${setPdfExpert}
     ${setThunderbird}
   '';
 }

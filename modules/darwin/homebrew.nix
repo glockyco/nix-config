@@ -66,6 +66,9 @@
       # Use Readdle's signed, self-updating app bundle.
       "pdf-expert"
 
+      # Lightweight PDF previewer with SyncTeX support for LaTeX.
+      "skim"
+
       # Rectangle Pro retains bundle id `com.knollsoft.Hookshot` from Hookshot.
       "rectangle-pro"
 
