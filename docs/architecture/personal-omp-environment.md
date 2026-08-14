@@ -570,6 +570,8 @@ After the base and project-independent acceptance gates pass, run the frontend a
 
 ## Activation, verification, and rollback
 
+The [dependency-update runbook](../operations/dependency-updates.md) owns schedules, automation credentials, native update commands, and remote merge policy.
+
 A plugin or OMP release changes immutable inputs only. Use this sequence from `nix-darwin`:
 
 1. Publish the reviewed `omp-agent-setup` revision when the plugin changed.
@@ -651,6 +653,8 @@ The environment is complete when:
 - Remove the mutable deployment implementation after two successful workstation activations and a real wrapped-session smoke. Preserve OMP-owned state and Herdr's supported extension only.
 - Keep repository development tooling in a pinned `nix develop` shell. Do not retain global Bun shims for the plugin repository.
 - Use retained nix-darwin generations as the rollback mechanism. Do not copy or restore mutable OMP databases as part of rollback.
+- Let Renovate own JavaScript and GitHub Actions updates. Let the official flake updater own Nix inputs. Keep both systems review-only.
+- Use a repository-scoped GitHub App token for flake pull requests so normal CI starts automatically. Keep merge, workstation activation, and the real OMP smoke under human control.
 
 ## Primary references
 

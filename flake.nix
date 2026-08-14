@@ -113,6 +113,7 @@
               inputs.nixpkgs.legacyPackages.${system}.extend self.overlays.default;
 
           llmAgents = inputs.llm-agents.packages.${system};
+          openspec = llmAgents.openspec;
           personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
             inherit (llmAgents) herdr omp;
             plugin = inputs.personal-omp-plugin.packages.${system}.default;
@@ -129,6 +130,7 @@
 
           packages = {
             inherit (pkgs) neo-keyboard-layouts;
+            inherit openspec;
             personal-omp = personalOmp;
           }
           // lib.optionalAttrs isDarwin {
@@ -180,7 +182,7 @@
                   test -x ${pkgs.nixd}/bin/nixd
                   test -x ${pkgs.marksman}/bin/marksman
                   test -x ${pkgs.texlab}/bin/texlab
-                  test "$(${lib.getExe llmAgents.openspec} --version)" = 1.8.0
+                  test "$(${lib.getExe openspec} --version)" = "${openspec.version}"
                   touch $out
                 '';
 
@@ -259,6 +261,44 @@
 
               touch $out
             '';
+
+            openspecContracts =
+              pkgs.runCommand "check-openspec-contracts"
+                {
+                  nativeBuildInputs = [ openspec ];
+                }
+                ''
+                  export CI=1
+                  export HOME="$TMPDIR/home"
+                  export OPENSPEC_TELEMETRY=0
+                  mkdir -p "$HOME"
+                  cd ${./.}
+                  openspec validate --all --strict --no-interactive
+                  openspec validate --archived --strict --no-interactive
+                  touch $out
+                '';
+
+            openspecAdapters =
+              pkgs.runCommand "check-openspec-adapters"
+                {
+                  nativeBuildInputs = [
+                    openspec
+                    pkgs.diffutils
+                  ];
+                }
+                ''
+                  export CI=1
+                  export HOME="$TMPDIR/home"
+                  export OPENSPEC_TELEMETRY=0
+                  mkdir -p "$HOME"
+                  cp -R ${./.} source
+                  chmod -R u+w source
+                  cd source
+                  openspec update . --force
+                  diff -ru ${./.}/.omp/commands .omp/commands
+                  diff -ru ${./.}/.omp/skills .omp/skills
+                  touch $out
+                '';
           }
           // lib.optionalAttrs isDarwin {
             darwinSystem = self.darwinConfigurations.macbook-pro.system;

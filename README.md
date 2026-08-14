@@ -31,7 +31,7 @@ omp --version
 ```
 
 Home Manager reconciles Herdr and runs a local OMP/plugin verifier on every activation.
-Use the architecture document's release smoke and rollback runbook for a plugin or OMP change.
+Use the [dependency-update runbook](docs/operations/dependency-updates.md) for automation, manual updates, activation, the conditional real-session smoke, and rollback.
 
 Cloudflare projects opt into the SOPS-managed deployment token explicitly in
 their `.envrc`; it is never exported to the global shell:
