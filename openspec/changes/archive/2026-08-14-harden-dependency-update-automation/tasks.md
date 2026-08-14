@@ -8,7 +8,7 @@
 
 - [x] 2.1 Add the shared Renovate configuration
 - [x] 2.2 Disable Renovate's beta Nix manager explicitly
-- [ ] 2.3 Verify GitHub Actions are detected without duplicate flake ownership
+- [x] 2.3 Verify GitHub Actions are detected without duplicate flake ownership
 
 ## 3. Strengthen package checks
 
@@ -36,14 +36,14 @@
 ## 6. Enforce remote policy
 
 - [x] 6.1 Store the updater App client ID and private key as Actions configuration
-- [ ] 6.2 Require the actual Darwin and Linux status contexts
-- [ ] 6.3 Require current pull requests and linear history for every actor
-- [ ] 6.4 Prevent force-push and branch deletion
-- [ ] 6.5 Prove a failing required check blocks merge
-- [ ] 6.6 Prove an updater pull request starts both CI jobs automatically
+- [x] 6.2 Require the actual Darwin and Linux status contexts
+- [x] 6.3 Require current pull requests and linear history for every actor
+- [x] 6.4 Prevent force-push and branch deletion
+- [x] 6.5 Prove a failing required check blocks merge
+- [x] 6.6 Prove an updater pull request starts both CI jobs automatically
 
 ## 7. Complete the change
 
-- [ ] 7.1 Validate the OpenSpec change strictly
-- [ ] 7.2 Publish the reviewed implementation through a pull request
-- [ ] 7.3 Archive and validate the completed OpenSpec change
+- [x] 7.1 Validate the OpenSpec change strictly
+- [x] 7.2 Publish the reviewed implementation through a pull request
+- [x] 7.3 Archive and validate the completed OpenSpec change
