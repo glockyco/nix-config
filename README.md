@@ -18,15 +18,20 @@ nix flake update                        # bump inputs
 nix fmt                                 # format the tree; see ./treefmt.nix
 ```
 
-`omp` is installed from the `llm-agents` flake input. Do not run `omp update`,
-which cannot replace the immutable Nix package. Update it declaratively instead:
+`omp` is a Nix wrapper around the `llm-agents` package and the independently pinned
+`personal-omp-plugin` flake. Do not run `omp update` or install the personal plugin
+through OMP's mutable plugin manager. Update either input deliberately:
 
 ```sh
 nix flake update llm-agents
+# or: nix flake update personal-omp-plugin
 nix flake check
 darwin-switch
 omp --version
 ```
+
+Home Manager reconciles Herdr and runs a local OMP/plugin verifier on every activation.
+Use the architecture document's release smoke and rollback runbook for a plugin or OMP change.
 
 Cloudflare projects opt into the SOPS-managed deployment token explicitly in
 their `.envrc`; it is never exported to the global shell:
@@ -46,6 +51,14 @@ sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
 ```
 
 Delete `/etc/nix/nix.custom.conf` if Determinate left it; nix-darwin will not overwrite unmanaged `/etc` files.
+
+## Architecture
+
+The canonical cross-repository design for OMP, Herdr, OpenSpec, language
+servers, project environments, and the planned frontend and memory experiments
+is [Personal OMP Environment Architecture](docs/architecture/personal-omp-environment.md).
+Resume multi-session work from its current-state table, then read the named
+repository's active OpenSpec change.
 
 ## Manual steps
 

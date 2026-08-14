@@ -54,6 +54,13 @@
     # Overriding it breaks cache hits and is unsupported on this stable release branch.
     llm-agents.url = "github:numtide/llm-agents.nix";
 
+    # Personal OMP behavior has its own release cadence and immutable plugin output.
+    personal-omp-plugin = {
+      url = "github:glockyco/omp-agent-setup";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.llm-agents.follows = "llm-agents";
+    };
+
     # Use the official Neo repository; the GitHub mirror is stale.
     neo-layout = {
       url = "git+https://git.neo-layout.org/neo/neo-layout.git?shallow=1";
@@ -104,6 +111,12 @@
               self.darwinConfigurations.macbook-pro.pkgs
             else
               inputs.nixpkgs.legacyPackages.${system}.extend self.overlays.default;
+
+          llmAgents = inputs.llm-agents.packages.${system};
+          personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
+            inherit (llmAgents) herdr omp;
+            plugin = inputs.personal-omp-plugin.packages.${system}.default;
+          };
         in
         {
           # `nix fmt` formats every language listed in ./treefmt.nix, tree-wide.
@@ -116,6 +129,7 @@
 
           packages = {
             inherit (pkgs) neo-keyboard-layouts;
+            personal-omp = personalOmp;
           }
           // lib.optionalAttrs isDarwin {
             # Expose pinned `darwin-rebuild` for the first activation, before it is on PATH:
@@ -141,6 +155,108 @@
                 echo "not imported by their sibling default.nix:$missing" >&2
                 exit 1
               fi
+              touch $out
+            '';
+
+            personalOmpShape =
+              pkgs.runCommand "check-personal-omp-shape"
+                {
+                  nativeBuildInputs = [ pkgs.jq ];
+                }
+                ''
+                  test -x ${personalOmp}/bin/omp
+                  grep -qF -- ${lib.escapeShellArg (lib.getExe llmAgents.omp)} ${personalOmp}/bin/omp
+                  grep -qF -- ${lib.escapeShellArg "--plugin-dir ${personalOmp.plugin}"} ${personalOmp}/bin/omp
+                  grep -qF -- ${lib.escapeShellArg "--extension ${personalOmp.plugin}"} ${personalOmp}/bin/omp
+                  ! grep -qF /Users/ ${personalOmp}/bin/omp
+
+                  test "$(jq -r '.omp.extensions | length' ${personalOmp.plugin}/package.json)" = 1
+                  test "$(jq -r '.servers | keys | sort | join(",")' ${personalOmp.plugin}/lsp.json)" = roslyn-language-server,svelte
+
+                  test -x ${pkgs.roslyn-ls}/bin/Microsoft.CodeAnalysis.LanguageServer
+                  test -x ${pkgs.pyright}/bin/pyright-langserver
+                  test -x ${pkgs.typescript-language-server}/bin/typescript-language-server
+                  test -x ${pkgs.svelte-language-server}/bin/svelteserver
+                  test -x ${pkgs.nixd}/bin/nixd
+                  test -x ${pkgs.marksman}/bin/marksman
+                  test -x ${pkgs.texlab}/bin/texlab
+                  test "$(${lib.getExe llmAgents.openspec} --version)" = 1.8.0
+                  touch $out
+                '';
+
+            personalOmpVerification = pkgs.runCommand "check-personal-omp-verification" { } ''
+              omp_stub=$TMPDIR/omp-stub
+              cat > "$omp_stub" <<'EOF'
+              #!${pkgs.runtimeShell}
+              printf '%s\n' "$*" > "$OMP_CALLS"
+              printf '%s\n' '17.2.15'
+              EOF
+              chmod +x "$omp_stub"
+
+              herdr_stub=$TMPDIR/herdr-stub
+              cat > "$herdr_stub" <<'EOF'
+              #!${pkgs.runtimeShell}
+              printf '%s\n' "$*" > "$HERDR_CALLS"
+              printf '%s\n' "''${STATUS:-omp: current (v8)}"
+              EOF
+              chmod +x "$herdr_stub"
+
+              export OMP_BIN="$omp_stub"
+              export HERDR_BIN="$herdr_stub"
+              export OMP_CALLS=$TMPDIR/omp.calls
+              export HERDR_CALLS=$TMPDIR/herdr.calls
+              ${lib.getExe personalOmp.verifyPersonalOmp} > $TMPDIR/output
+
+              test "$(cat "$OMP_CALLS")" = "--plugin-dir ${personalOmp.plugin} --extension ${personalOmp.plugin} --version"
+              test "$(cat "$HERDR_CALLS")" = "integration status"
+              grep -qF 'OMP: 17.2.15' $TMPDIR/output
+              grep -qF 'Plugin: ${personalOmp.plugin}' $TMPDIR/output
+              grep -qF 'omp: current (v8)' $TMPDIR/output
+
+              if STATUS='omp: outdated (v7)' ${lib.getExe personalOmp.verifyPersonalOmp} >/dev/null 2>&1; then
+                echo 'verification accepted an outdated Herdr integration' >&2
+                exit 1
+              fi
+
+              touch $out
+            '';
+
+            herdrOmpReconciliation = pkgs.runCommand "check-herdr-omp-reconciliation" { } ''
+              stub=$TMPDIR/herdr-stub
+              cat > "$stub" <<'EOF'
+              #!${pkgs.runtimeShell}
+              printf '%s\n' "$*" >> "$CALLS"
+              if [ "$1 $2" = "integration status" ]; then
+                printf '%s\n' "''${STATUS:-}"
+              elif [ "$1 $2 $3" = "integration install omp" ]; then
+                mkdir -p "$OMP_AGENT_DIR/extensions"
+                touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
+              fi
+              EOF
+              chmod +x "$stub"
+              export HERDR_BIN="$stub"
+
+              export OMP_AGENT_DIR=$TMPDIR/missing/agent
+              export CALLS=$TMPDIR/missing.calls
+              ${lib.getExe personalOmp.reconcileHerdrOmp}
+              test "$(cat "$CALLS")" = "integration install omp"
+              test -f "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
+
+              export OMP_AGENT_DIR=$TMPDIR/current/agent
+              mkdir -p "$OMP_AGENT_DIR/extensions"
+              touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
+              export CALLS=$TMPDIR/current.calls
+              STATUS= ${lib.getExe personalOmp.reconcileHerdrOmp}
+              test "$(cat "$CALLS")" = "integration status --outdated-only"
+
+              export OMP_AGENT_DIR=$TMPDIR/stale/agent
+              mkdir -p "$OMP_AGENT_DIR/extensions"
+              touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
+              export CALLS=$TMPDIR/stale.calls
+              STATUS='omp: outdated (v7)' ${lib.getExe personalOmp.reconcileHerdrOmp}
+              test "$(cat "$CALLS")" = "integration status --outdated-only
+              integration install omp"
+
               touch $out
             '';
           }

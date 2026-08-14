@@ -17,6 +17,7 @@
     ./ssh.nix
     ./network-shares.nix
     ./packages.nix
+    ./omp.nix
     ./typst.nix
     ./tex.nix
     ./neo2.nix

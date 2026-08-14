@@ -461,6 +461,29 @@
         "url": "https://flakehub.com/f/NixOS/nixpkgs/0.2605"
       }
     },
+    "personal-omp-plugin": {
+      "inputs": {
+        "llm-agents": [
+          "llm-agents"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1786703272,
+        "narHash": "sha256-VRFVpBp9X4TwBOFTSe9i7BTZt4u63wjv1aYv8fv8fZE=",
+        "owner": "glockyco",
+        "repo": "omp-agent-setup",
+        "rev": "487e0291fc1cac837babee63af9bef5b7006c4fd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "glockyco",
+        "repo": "omp-agent-setup",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "catppuccin": "catppuccin",
@@ -474,6 +497,7 @@
         "nix-homebrew": "nix-homebrew",
         "nix-index-database": "nix-index-database",
         "nixpkgs": "nixpkgs_3",
+        "personal-omp-plugin": "personal-omp-plugin",
         "sops-nix": "sops-nix",
         "treefmt-nix": "treefmt-nix_2"
       }
