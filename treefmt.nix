@@ -9,7 +9,10 @@ _:
   # MAC covers values rather than layout, so reindenting happens to survive,
   # but it would fight `sops` on every edit and any reflowing of the ENC[...]
   # blobs would corrupt the file outright.
-  settings.excludes = [ "secrets/*" ];
+  settings.excludes = [
+    ".omp/**"
+    "secrets/*"
+  ];
 
   programs = {
     # RFC 166 formatter.
