@@ -656,6 +656,11 @@ The environment is complete when:
 - Let Renovate own JavaScript and GitHub Actions updates. Let the official flake updater own Nix inputs. Keep both systems review-only.
 - Use a repository-scoped GitHub App token for flake pull requests so normal CI starts automatically. Keep merge, workstation activation, and the real OMP smoke under human control.
 
+### 2026-08-15
+
+- Store the dependency-updater App private key only in the protected `dependency-automation` control plane. Target repositories keep their update closure and CI contracts but no fleet-wide credential or local scheduler.
+- Declare native Nix commands as argument arrays and allowlist their complete changed-path sets. Do not introduce a shared package-manager wrapper.
+
 ## Primary references
 
 - [ASD-STE100 official definition](https://www.asd-ste100.org/about_STE.html)
