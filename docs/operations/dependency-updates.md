@@ -2,63 +2,89 @@
 
 ## Ownership
 
-| Repository        | Dependency class                               | Owner                        | Schedule                  |
-| ----------------- | ---------------------------------------------- | ---------------------------- | ------------------------- |
-| `omp-agent-setup` | `package.json`, `bun.lock`, and GitHub Actions | Renovate                     | Saturday, `Europe/Vienna` |
-| `omp-agent-setup` | Nix inputs in `flake.lock`                     | `update-flake-lock` workflow | Saturday, 04:00 UTC       |
-| `nix-config`      | GitHub Actions                                 | Renovate                     | Saturday, `Europe/Vienna` |
-| `nix-config`      | Nix inputs in `flake.lock`                     | `update-flake-lock` workflow | Saturday, 05:00 UTC       |
+| Repository             | Dependency class                               | Owner                   | Schedule                  |
+| ---------------------- | ---------------------------------------------- | ----------------------- | ------------------------- |
+| `omp-agent-setup`      | `package.json`, `bun.lock`, and GitHub Actions | Renovate                | Saturday, `Europe/Vienna` |
+| `omp-agent-setup`      | Nix inputs in `flake.lock`                     | `dependency-automation` | Saturday, 04:00 UTC       |
+| `nix-config`           | GitHub Actions                                 | Renovate                | Saturday, `Europe/Vienna` |
+| `nix-config`           | Nix inputs in `flake.lock`                     | `dependency-automation` | Saturday, 04:00 UTC       |
+| `erenshor-data-mining` | Nix inputs and the matching pnpm assertion     | `dependency-automation` | Saturday, 04:00 UTC       |
 
-Renovate's Nix manager stays disabled in both repositories. The official Determinate updater is the only automated writer for each `flake.lock`. Neither system merges pull requests.
+Renovate's Nix manager stays disabled in all three repositories. The protected `glockyco/dependency-automation` control plane is the only automated writer for each `flake.lock`. Neither system merges pull requests.
 
 ## Automation identity
 
-The private `glockyco-dependency-updater` GitHub App is installed only on `omp-agent-setup` and `nix-config`. Its repository permissions are:
+The private `glockyco-dependency-updater` GitHub App is installed only on `omp-agent-setup`, `nix-config`, and `erenshor-data-mining`. Its repository permissions are:
 
 - Metadata: read
 - Contents: read and write
 - Pull requests: read and write
 
-Each repository stores:
+Only `glockyco/dependency-automation` stores:
 
 - Actions variable `DEPENDENCY_UPDATER_CLIENT_ID`
 - Actions secret `DEPENDENCY_UPDATER_PRIVATE_KEY`
 
-The workflow uses these values to create a repository-scoped installation token. The token expires after one hour and is revoked when the job ends. Do not put the private key in Git, Nix, SOPS, shell history, or a local environment file.
+Each matrix job uses these values to create a token scoped to one target repository. The token expires after one hour and is revoked when the job ends. Target repositories store no App credential and run no local Nix scheduler. Do not put the private key in Git, Nix, SOPS, a password manager, shell history, or a local environment file.
 
 To rotate the key:
 
 1. Generate a new private key in the GitHub App settings.
-1. Replace `DEPENDENCY_UPDATER_PRIVATE_KEY` in both repositories.
-1. Run both update workflows and confirm token creation.
+1. Replace `DEPENDENCY_UPDATER_PRIVATE_KEY` in `dependency-automation`.
+1. Run one update for each managed repository and confirm token creation.
 1. Delete the old key in the GitHub App settings.
 
 ## Automatic pull requests
 
-The flake workflows use the stable `update-flake-lock` branch. A run with no lock change exits without a pull request. A changed lock must create or refresh one pull request and start normal CI without a close-and-reopen step.
+The control plane uses `automation/update-nix-dependencies` in every target repository. `repositories.json` declares each command as an argument array and allowlists every path it may change. A run with no change exits without a pull request. A changed lock must create or refresh one App-authored pull request and start normal target CI.
 
-Trigger a run:
+Trigger every managed update:
 
 ```sh
-gh workflow run update.yml --repo glockyco/omp-agent-setup
-gh workflow run update.yml --repo glockyco/nix-config
+gh workflow run update-nix-dependencies.yml --repo glockyco/dependency-automation
+```
+
+Trigger one repository:
+
+```sh
+gh workflow run update-nix-dependencies.yml \
+  --repo glockyco/dependency-automation \
+  -f repository=erenshor-data-mining
 ```
 
 Inspect the latest runs and open pull requests:
 
 ```sh
-gh run list --workflow update.yml --repo glockyco/omp-agent-setup --limit 5
-gh run list --workflow update.yml --repo glockyco/nix-config --limit 5
-gh pr list --repo glockyco/omp-agent-setup --head update-flake-lock
-gh pr list --repo glockyco/nix-config --head update-flake-lock
+gh run list --workflow update-nix-dependencies.yml \
+  --repo glockyco/dependency-automation --limit 5
+
+gh pr list --repo glockyco/omp-agent-setup --head automation/update-nix-dependencies
+gh pr list --repo glockyco/nix-config --head automation/update-nix-dependencies
+gh pr list --repo glockyco/erenshor-data-mining --head automation/update-nix-dependencies
 ```
 
-Before merge, inspect `flake.lock`, the updater log, and the dependency's release notes. Both required checks must succeed:
+Before merge, inspect `flake.lock`, the updater log, and the dependency release notes. Also inspect the matching `package.json` change in Erenshor when the Nix-provided pnpm version changes.
 
-- `check (macos-15)`
-- `check (ubuntu-latest)`
+| Repository             | Required checks                             |
+| ---------------------- | ------------------------------------------- |
+| `omp-agent-setup`      | `check (macos-15)`, `check (ubuntu-latest)` |
+| `nix-config`           | `check (macos-15)`, `check (ubuntu-latest)` |
+| `erenshor-data-mining` | `CI Success`                                |
 
 Main also requires a current pull-request branch and linear history. The policy applies to administrators. Force-push and branch deletion are disabled.
+
+## Manual Erenshor update
+
+From `erenshor-data-mining`:
+
+```sh
+nix flake update
+nix run .#sync-pnpm-version
+nix develop --command uv run erenshor test dependency-state
+nix develop --command uv run erenshor test ci
+```
+
+Use this path to repair an updater branch or diagnose one input locally. Commit `flake.lock` and `package.json` together when the Nix-provided pnpm version changes.
 
 ## Manual plugin update
 
@@ -163,6 +189,7 @@ Inspect remote protection:
 ```sh
 gh api repos/glockyco/omp-agent-setup/branches/main/protection
 gh api repos/glockyco/nix-config/branches/main/protection
+gh api repos/glockyco/erenshor-data-mining/branches/main/protection
 ```
 
 Inspect Renovate detection through each repository's Dependency Dashboard. If a flake input appears there, first confirm that `nix.enabled` is still `false`; do not accept overlapping updater ownership.

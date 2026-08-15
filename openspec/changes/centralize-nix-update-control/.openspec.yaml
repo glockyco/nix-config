@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-08-15
+goal: Keep the App credential in one controller while preserving repository CI and activation boundaries.
