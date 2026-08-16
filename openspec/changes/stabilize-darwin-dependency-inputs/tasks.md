@@ -3,14 +3,14 @@
 - [x] 1.1 Replace the Neo repository input with hash-pinned official macOS release resources
 - [x] 1.2 Preserve bundle metadata and duplicate layout identifier validation
 - [x] 1.3 Build and inspect the Neo bundle from a clean Nix source path
-- [ ] 1.4 Commit the Neo source cutover atomically
+- [x] 1.4 Commit the Neo source cutover atomically
 
-## 2. Minimal Roslyn Closure
+## 2. Minimal Managed Language-Server Closure
 
-- [ ] 2.1 Override the Roslyn .NET package scope with Nixpkgs binary SDK variants
-- [ ] 2.2 Prove the Darwin build plan excludes Swift and source-built .NET SDKs
-- [ ] 2.3 Build the wrapped OMP package and verify the Roslyn executable remains on PATH
-- [ ] 2.4 Commit the Roslyn closure change atomically
+- [x] 2.1 Override the Marksman and Roslyn .NET package scope with Nixpkgs binary variants
+- [x] 2.2 Prove the Darwin build plan excludes Swift and source-built .NET packages
+- [x] 2.3 Build the wrapped OMP package and verify both managed language servers remain on PATH
+- [x] 2.4 Commit the managed language-server closure change atomically
 
 ## 3. Acceptance
 

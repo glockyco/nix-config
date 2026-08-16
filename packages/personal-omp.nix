@@ -7,11 +7,25 @@
 }:
 
 let
+  binaryDotnetCorePackages = pkgs.dotnetCorePackages.overrideScope (
+    _final: previous: {
+      runtime_9_0 = previous."runtime_9_0-bin";
+      sdk_8_0 = previous."sdk_8_0-bin";
+      sdk_9_0 = previous."sdk_9_0-bin";
+      sdk_10_0 = previous."sdk_10_0-bin";
+    }
+  );
+  marksmanBinary = pkgs.marksman.override {
+    dotnetCorePackages = binaryDotnetCorePackages;
+  };
+  roslynLs = pkgs.roslyn-ls.override {
+    dotnetCorePackages = binaryDotnetCorePackages;
+  };
   languageServers = with pkgs; [
-    marksman
+    marksmanBinary
     nixd
     pyright
-    roslyn-ls
+    roslynLs
     svelte-language-server
     texlab
     typescript-language-server

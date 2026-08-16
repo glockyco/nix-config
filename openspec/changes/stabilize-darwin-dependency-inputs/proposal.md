@@ -1,12 +1,12 @@
 ## Why
 
-Routine Darwin checks currently depend on an unreliable Git clone and can compile Swift plus three .NET SDKs only to provide the Roslyn language server. These incidental dependencies make review-only updates slow or non-deterministic without changing workstation behavior.
+Routine Darwin checks currently depend on an unreliable Git clone and can compile Swift plus multiple .NET SDKs only to provide managed language servers. These incidental dependencies make review-only updates slow or non-deterministic without changing workstation behavior.
 
 ## What Changes
 
 - Build the Neo keyboard bundle from the official macOS release resources with fixed hashes instead of cloning the full upstream repository.
 - Remove the obsolete Neo flake input and its lock entry.
-- Build Roslyn with Nixpkgs' fixed-output binary .NET SDK packages instead of source-built SDK packages on Darwin.
+- Build Marksman and Roslyn with Nixpkgs' fixed-output binary .NET runtime and SDK packages instead of source-built packages on Darwin.
 - Preserve the selected language servers, keyboard layouts, duplicate-layout validation, and normal Darwin and Linux checks.
 
 ## Capabilities
@@ -21,4 +21,4 @@ Routine Darwin checks currently depend on an unreliable Git clone and can compil
 
 ## Impact
 
-Affected code includes `flake.nix`, `flake.lock`, `packages/neo-keyboard-layouts.nix`, and `packages/personal-omp.nix`. The change removes one flake input, replaces its Git source with fixed-output release resources, and changes Roslyn's .NET SDK composition without changing the wrapped OMP interface.
+Affected code includes `flake.nix`, `flake.lock`, `packages/neo-keyboard-layouts.nix`, and `packages/personal-omp.nix`. The change removes one flake input, replaces its Git source with fixed-output release resources, and changes the managed language servers' .NET package scope without changing the wrapped OMP interface.
