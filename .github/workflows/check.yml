@@ -21,7 +21,7 @@ jobs:
         runner: [macos-15, ubuntu-latest]
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       # No FlakeHub Cache: it needs a registered FlakeHub account and fails the
       # login otherwise. The Numtide cache is what actually matters here, since
