@@ -61,12 +61,6 @@
       inputs.llm-agents.follows = "llm-agents";
     };
 
-    # Use the official Neo repository; the GitHub mirror is stale.
-    neo-layout = {
-      url = "git+https://git.neo-layout.org/neo/neo-layout.git?shallow=1";
-      flake = false;
-    };
-
     # Include upstream Karabiner rules, including the Neo2 group from `neo-layout.org/Einrichtung/macOS/`.
     karabiner-complex-modifications = {
       url = "github:pqrs-org/KE-complex_modifications";
@@ -88,9 +82,7 @@
         darwinConfigurations.macbook-pro = import ./hosts/macbook-pro { inherit inputs; };
 
         overlays.default = final: _prev: {
-          neo-keyboard-layouts = final.callPackage ./packages/neo-keyboard-layouts.nix {
-            src = inputs.neo-layout;
-          };
+          neo-keyboard-layouts = final.callPackage ./packages/neo-keyboard-layouts.nix { };
         };
       };
 

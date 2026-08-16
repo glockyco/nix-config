@@ -1,8 +1,8 @@
 ## 1. Stable Neo Sources
 
-- [ ] 1.1 Replace the Neo repository input with hash-pinned official macOS release resources
-- [ ] 1.2 Preserve bundle metadata and duplicate layout identifier validation
-- [ ] 1.3 Build and inspect the Neo bundle from a clean Nix source path
+- [x] 1.1 Replace the Neo repository input with hash-pinned official macOS release resources
+- [x] 1.2 Preserve bundle metadata and duplicate layout identifier validation
+- [x] 1.3 Build and inspect the Neo bundle from a clean Nix source path
 - [ ] 1.4 Commit the Neo source cutover atomically
 
 ## 2. Minimal Roslyn Closure
