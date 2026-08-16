@@ -28,17 +28,17 @@ The Neo package SHALL reject duplicate keyboard layout identifiers before produc
 - **WHEN** two selected keyboard resources declare the same layout identifier
 - **THEN** the package build fails and reports the duplicate identifier
 
-### Requirement: Minimal Roslyn toolchain
+### Requirement: Minimal managed language-server toolchain
 
-The wrapped OMP package SHALL provide Roslyn without requiring source builds of .NET SDKs or Swift on Darwin. The selected package set SHALL use fixed-output .NET SDK binaries from Nixpkgs and SHALL preserve the existing Roslyn executable.
+The wrapped OMP package SHALL provide Marksman and Roslyn without requiring source builds of .NET packages or Swift on Darwin. The selected package scope SHALL use fixed-output .NET runtime and SDK binaries from Nixpkgs and SHALL preserve both existing executables.
 
-#### Scenario: Inspect the Roslyn build plan
+#### Scenario: Inspect the managed language-server build plan
 
 - **WHEN** a maintainer evaluates a clean Darwin build of the wrapped OMP package
-- **THEN** the build plan contains the selected Roslyn language server
-- **AND** it does not contain a Swift compiler or source-built .NET SDK
+- **THEN** the build plan contains the selected Marksman and Roslyn language servers
+- **AND** it does not contain a Swift compiler or source-built .NET package
 
 #### Scenario: Run the wrapped OMP command
 
 - **WHEN** the wrapped OMP command starts with its managed language servers
-- **THEN** the Roslyn executable remains available on `PATH`
+- **THEN** the Marksman and Roslyn executables remain available on `PATH`

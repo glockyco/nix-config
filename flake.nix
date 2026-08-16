@@ -155,7 +155,7 @@
             personalOmpShape =
               pkgs.runCommand "check-personal-omp-shape"
                 {
-                  nativeBuildInputs = [ pkgs.jq ];
+                  nativeBuildInputs = [ pkgs.jq ] ++ personalOmp.languageServers;
                 }
                 ''
                   test -x ${personalOmp}/bin/omp
@@ -167,13 +167,13 @@
                   test "$(jq -r '.omp.extensions | length' ${personalOmp.plugin}/package.json)" = 1
                   test "$(jq -r '.servers | keys | sort | join(",")' ${personalOmp.plugin}/lsp.json)" = roslyn-language-server,svelte
 
-                  test -x ${pkgs.roslyn-ls}/bin/Microsoft.CodeAnalysis.LanguageServer
-                  test -x ${pkgs.pyright}/bin/pyright-langserver
-                  test -x ${pkgs.typescript-language-server}/bin/typescript-language-server
-                  test -x ${pkgs.svelte-language-server}/bin/svelteserver
-                  test -x ${pkgs.nixd}/bin/nixd
-                  test -x ${pkgs.marksman}/bin/marksman
-                  test -x ${pkgs.texlab}/bin/texlab
+                  command -v Microsoft.CodeAnalysis.LanguageServer
+                  command -v pyright-langserver
+                  command -v typescript-language-server
+                  command -v svelteserver
+                  command -v nixd
+                  command -v marksman
+                  command -v texlab
                   test "$(${lib.getExe openspec} --version)" = "${openspec.version}"
                   touch $out
                 '';
