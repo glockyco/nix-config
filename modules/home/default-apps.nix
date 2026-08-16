@@ -42,6 +42,7 @@ let
     tsx.description = "TypeScript JSX source";
     jsx.description = "JavaScript JSX source";
     scss.description = "SCSS stylesheet";
+    tex.description = "TeX source";
     # No `gitignore`/`gitconfig`: macOS resolves those dotfiles to `public.data`
     # regardless of a declaration, and binding `public.data` would hand Zed
     # every unrecognised file on the system.
