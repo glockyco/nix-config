@@ -14,7 +14,7 @@
 
 ## 3. Acceptance
 
-- [ ] 3.1 Run formatting and strict OpenSpec validation
-- [ ] 3.2 Run the complete flake check and Darwin system build
-- [ ] 3.3 Push the update branch and verify required Darwin and Linux checks
-- [ ] 3.4 Archive the OpenSpec change after repository acceptance passes
+- [x] 3.1 Run formatting and strict OpenSpec validation
+- [x] 3.2 Run the complete flake check and Darwin system build
+- [x] 3.3 Push the update branch and verify required Darwin and Linux checks
+- [x] 3.4 Archive the OpenSpec change after repository acceptance passes
