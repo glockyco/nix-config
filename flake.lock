@@ -286,23 +286,6 @@
         "type": "github"
       }
     },
-    "neo-layout": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1773486350,
-        "narHash": "sha256-VU3sQtSU2ORWU00u7+lqKuyttomIcCl4lDh3Pja0kto=",
-        "ref": "refs/heads/master",
-        "rev": "cf36e07ce5ff22c51149c3ad933c71fcd770f613",
-        "shallow": true,
-        "type": "git",
-        "url": "https://git.neo-layout.org/neo/neo-layout.git"
-      },
-      "original": {
-        "shallow": true,
-        "type": "git",
-        "url": "https://git.neo-layout.org/neo/neo-layout.git"
-      }
-    },
     "nix": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -488,7 +471,6 @@
         "home-manager": "home-manager",
         "karabiner-complex-modifications": "karabiner-complex-modifications",
         "llm-agents": "llm-agents",
-        "neo-layout": "neo-layout",
         "nix-darwin": "nix-darwin",
         "nix-homebrew": "nix-homebrew",
         "nix-index-database": "nix-index-database",
