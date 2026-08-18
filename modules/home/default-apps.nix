@@ -328,8 +328,13 @@ let
     # the authoritative answer, but it fails for some types whose UTI does have a
     # handler (`fs`). Fall back to the declared UTI so those are not rebound on
     # every activation.
+    #
+    # Home Manager activation runs under `set -e` and `set -o pipefail`, so the
+    # read has to end in `|| true`: `duti -x` exits nonzero for an extension with
+    # no handler, and that would abort activation.
     bindExtension() {
-      handler="$(${duti} -x "$1" 2>/dev/null | tail -1)"
+      local handler
+      handler="$(${duti} -x "$1" 2>/dev/null | tail -1 || true)"
       if test -z "$handler"; then
         handler="$(handlerOfUti "$2")"
       fi
