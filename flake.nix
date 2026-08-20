@@ -28,6 +28,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    git-hooks-nix = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
 
@@ -76,7 +81,10 @@
         "x86_64-linux"
       ];
 
-      imports = [ inputs.treefmt-nix.flakeModule ];
+      imports = [
+        inputs.git-hooks-nix.flakeModule
+        inputs.treefmt-nix.flakeModule
+      ];
 
       flake = {
         darwinConfigurations.macbook-pro = import ./hosts/macbook-pro { inherit inputs; };
@@ -115,6 +123,7 @@
           # `nix fmt` formats every language listed in ./treefmt.nix, tree-wide.
           # Fail the check when any tracked file is unformatted.
           treefmt = import ./treefmt.nix pkgs;
+          pre-commit.settings.hooks.treefmt.enable = true;
 
           # flake-parts' default package set does not include this flake's overlay.
           # Use the Darwin package set above, or extend the per-system package set on Linux.
@@ -311,9 +320,10 @@
                 # parse the `X | None` annotations these scripts use and fails
                 # in a way that reads like a code bug.
                 pkgs.python3
+              ]
+              ++ config.pre-commit.settings.enabledPackages;
 
-                config.treefmt.build.wrapper
-              ];
+              shellHook = config.pre-commit.shellHook;
             };
           };
         };
