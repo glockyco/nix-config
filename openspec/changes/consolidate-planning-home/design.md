@@ -97,12 +97,12 @@ The check includes synthetic rejected and allowed fixtures before it scans the r
 ## Migration Plan
 
 1. Create the eight-record ledger and inventory planning statements in the index and canonical architecture.
-2. Generate and validate the five focused OpenSpec owner changes without implementing them.
-3. Verify the DMARC alias directly and resolve its delivered or outstanding state.
-4. Migrate unique delivered DMARC and OMP content to accepted or operational owners.
-5. Remove task and backlog ownership from the canonical architecture while preserving architecture and coordination constraints.
-6. Add the pure flake planning-home check and prove its rejected and allowed fixtures.
-7. Delete all eight records and `INDEX.md` after every ledger row is complete.
-8. Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, the system build, and `openspec validate --all --strict`.
+1. Generate and validate the five focused OpenSpec owner changes without implementing them.
+1. Verify the DMARC alias directly and resolve its delivered or outstanding state.
+1. Migrate unique delivered DMARC and OMP content to accepted or operational owners.
+1. Remove task and backlog ownership from the canonical architecture while preserving architecture and coordination constraints.
+1. Add the pure flake planning-home check and prove its rejected and allowed fixtures.
+1. Delete all eight records and `INDEX.md` after every ledger row is complete.
+1. Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, the system build, and `openspec validate --all --strict`.
 
 Rollback is a normal commit revert because this change does not activate a generation or mutate external services. Keep validated focused owner changes and verified content migrations if the final cutover must be reverted.
