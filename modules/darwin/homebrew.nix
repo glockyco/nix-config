@@ -58,6 +58,10 @@
       # session state remain mutable under ~/Library/Application Support/Ferdium.
       "ferdium"
 
+      # Install Teams as a standalone app because its Ferdium recipe cannot expose
+      # the complete Teams UI, including settings.
+      "microsoft-teams"
+
       # Signal has no web client, so Ferdium cannot host it.
       "signal"
 

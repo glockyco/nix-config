@@ -90,6 +90,7 @@
         { app = "/Applications/Bitwarden.app"; }
         { app = "/Applications/Ferdium.app"; }
         { app = "/Applications/Signal.app"; }
+        { app = "/Applications/Microsoft Teams.app"; }
         { app = "/Applications/Ghostty.app"; }
         { app = "/Applications/Zen.app"; }
         { app = "/Applications/Zed.app"; }
