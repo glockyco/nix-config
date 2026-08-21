@@ -97,7 +97,7 @@ nix develop --command bun run ci
 nix flake check --print-build-logs
 ```
 
-Use this path when diagnosis needs one local update or when the scheduled workflow is unavailable. Commit `flake.lock` and any reviewed generated OpenSpec adapters in the same pull request. Do not publish an untested plugin revision.
+Use this path when diagnosis needs one local update or when the scheduled workflow is unavailable. Commit `flake.lock` in the same pull request. Do not publish an untested plugin revision.
 
 ## Manual workstation update
 
@@ -120,15 +120,16 @@ nix flake check --print-build-logs
 nix build .#darwinConfigurations.macbook-pro.system
 ```
 
-For an OMP, Herdr, or OpenSpec update, update the shared package source and regenerate adapters with the selected executable:
+For an OMP, Herdr, or OpenSpec update, update the shared package source:
 
 ```sh
 nix flake update llm-agents
-CI=1 OPENSPEC_TELEMETRY=0 nix run .#openspec -- update . --force
-git diff -- flake.lock .omp
+git diff -- flake.lock
 nix flake check --print-build-logs
 nix build .#darwinConfigurations.macbook-pro.system
 ```
+
+An OpenSpec update can change the generated workflow adapters. They live in the personal plugin, so regenerate them in `glockyco/omp-agent-setup` with `nix run .#sync-openspec-adapters`, then advance `personal-omp-plugin` here.
 
 OpenSpec 1.9 adds strict task-numbering and scenario checks plus `validate --archived`. The flake gate runs both active-contract and archived-task validation.
 

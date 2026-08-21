@@ -300,6 +300,10 @@ Use one durable home for each information class:
 
 Use OpenSpec's released core profile. Do not create a workstation-specific global workflow profile. Invoke validation and any needed verification explicitly. OpenSpec-generated adapters remain under OpenSpec ownership.
 
+The generated workflow adapters are machine-level, not repository content. They are identical everywhere and describe no repository, so the personal plugin ships the only tracked copy and every repository loads it. A repository keeps its own `openspec/` directory, because specifications and changes are repository content. Do not run `openspec init` in a consuming repository. Regenerate the adapters in `glockyco/omp-agent-setup`, then advance `personal-omp-plugin` here.
+
+A repository may still define a command or skill whose name matches one the plugin provides. The repository definition wins there and nowhere else. Use that only for a deviation the repository actually needs.
+
 Lifecycle:
 
 1. Explore without artifacts only while the direction is uncertain.

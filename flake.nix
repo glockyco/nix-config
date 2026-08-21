@@ -284,27 +284,6 @@
                   touch $out
                 '';
 
-            openspecAdapters =
-              pkgs.runCommand "check-openspec-adapters"
-                {
-                  nativeBuildInputs = [
-                    openspec
-                    pkgs.diffutils
-                  ];
-                }
-                ''
-                  export CI=1
-                  export HOME="$TMPDIR/home"
-                  export OPENSPEC_TELEMETRY=0
-                  mkdir -p "$HOME"
-                  cp -R ${./.} source
-                  chmod -R u+w source
-                  cd source
-                  openspec update . --force
-                  diff -ru ${./.}/.omp/commands .omp/commands
-                  diff -ru ${./.}/.omp/skills .omp/skills
-                  touch $out
-                '';
           }
           // lib.optionalAttrs isDarwin {
             darwinSystem = self.darwinConfigurations.macbook-pro.system;
