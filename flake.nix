@@ -169,12 +169,17 @@
                 ''
                   test -x ${personalOmp}/bin/omp
                   grep -qF -- ${lib.escapeShellArg (lib.getExe llmAgents.omp)} ${personalOmp}/bin/omp
-                  grep -qF -- ${lib.escapeShellArg "--plugin-dir ${personalOmp.plugin}"} ${personalOmp}/bin/omp
                   grep -qF -- ${lib.escapeShellArg "--extension ${personalOmp.plugin}"} ${personalOmp}/bin/omp
+                  grep -qF -- ${lib.escapeShellArg "--plugin-dir ${personalOmp.plugin}/lsp"} ${personalOmp}/bin/omp
                   ! grep -qF /Users/ ${personalOmp}/bin/omp
 
                   test "$(jq -r '.omp.extensions | length' ${personalOmp.plugin}/package.json)" = 1
-                  test "$(jq -r '.servers | keys | sort | join(",")' ${personalOmp.plugin}/lsp.json)" = roslyn-language-server,svelte
+                  test "$(jq -r '.servers | keys | sort | join(",")' ${personalOmp.plugin}/lsp/lsp.json)" = roslyn-language-server,svelte
+
+                  # The workflow commands ship in the payload, and the LSP root
+                  # must stay free of them so they register exactly once.
+                  test -f ${personalOmp.plugin}/commands/opsx-propose.md
+                  test ! -e ${personalOmp.plugin}/lsp/commands
 
                   command -v Microsoft.CodeAnalysis.LanguageServer
                   command -v pyright-langserver
@@ -210,7 +215,7 @@
               export HERDR_CALLS=$TMPDIR/herdr.calls
               ${lib.getExe personalOmp.verifyPersonalOmp} > $TMPDIR/output
 
-              test "$(cat "$OMP_CALLS")" = "--plugin-dir ${personalOmp.plugin} --extension ${personalOmp.plugin} --version"
+              test "$(cat "$OMP_CALLS")" = "--extension ${personalOmp.plugin} --plugin-dir ${personalOmp.plugin}/lsp --version"
               test "$(cat "$HERDR_CALLS")" = "integration status"
               grep -qF 'OMP: 17.2.15' $TMPDIR/output
               grep -qF 'Plugin: ${personalOmp.plugin}' $TMPDIR/output

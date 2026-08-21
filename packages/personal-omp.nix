@@ -63,9 +63,11 @@ let
 
       test -f "$plugin_dir/package.json"
       test -f "$plugin_dir/extensions/personal-commit.ts"
-      test -f "$plugin_dir/lsp.json"
+      test -f "$plugin_dir/lsp/lsp.json"
+      test -d "$plugin_dir/commands"
+      test ! -e "$plugin_dir/lsp/commands"
 
-      omp_version="$($omp_bin --plugin-dir "$plugin_dir" --extension "$plugin_dir" --version)"
+      omp_version="$($omp_bin --extension "$plugin_dir" --plugin-dir "$plugin_dir/lsp" --version)"
       test -n "$omp_version"
 
       herdr_status="$($herdr_bin integration status)"
@@ -83,7 +85,13 @@ let
     name = "omp";
     runtimeInputs = languageServers;
     text = ''
-      exec ${lib.getExe omp} --plugin-dir ${plugin} --extension ${plugin} "$@"
+      # Each flag is aimed at what only it provides. --extension loads the
+      # personal_commit extension, the skills, the rules, and the OpenSpec
+      # workflow commands. --plugin-dir loads the LSP overrides, and points at
+      # the scoped lsp/ root: aiming it at the package root would rescan
+      # commands/ and register every workflow command a second time under a
+      # store-derived name.
+      exec ${lib.getExe omp} --extension ${plugin} --plugin-dir ${plugin}/lsp "$@"
     '';
   };
 in
