@@ -282,21 +282,14 @@
               touch $out
             '';
 
-            openspecContracts =
-              pkgs.runCommand "check-openspec-contracts"
-                {
-                  nativeBuildInputs = [ openspec ];
-                }
-                ''
-                  export CI=1
-                  export HOME="$TMPDIR/home"
-                  export OPENSPEC_TELEMETRY=0
-                  mkdir -p "$HOME"
-                  cd ${./.}
-                  openspec validate --all --strict --no-interactive
-                  openspec validate --archived --strict --no-interactive
-                  touch $out
-                '';
+            # Defined once for the whole fleet in the plugin flake, which this
+            # configuration already tracks, so the workstation validates its
+            # artifacts exactly as every repository does.
+            openspecContracts = inputs.personal-omp-plugin.lib.openspecCheck {
+              inherit pkgs;
+              src = ./.;
+              name = "check-openspec-contracts";
+            };
 
           }
           // lib.optionalAttrs isDarwin {
