@@ -33,6 +33,26 @@ omp --version
 Home Manager reconciles Herdr and runs a local OMP/plugin verifier on every activation.
 Use the [dependency-update runbook](docs/operations/dependency-updates.md) for automation, manual updates, activation, the conditional real-session smoke, and rollback.
 
+Use the [container runtime runbook](docs/operations/container-runtime.md) for Colima startup, acceptance, shutdown, upgrades, recovery, and profile recreation.
+
+## Release gates
+
+Run the inactive-generation gates before activation:
+
+```sh
+nix fmt -- --fail-on-change
+nix flake check --print-build-logs
+nix run .#check-darwin-build-plans
+nix build .#darwinConfigurations.macbook-pro.system
+```
+
+After activation, start Colima and run the real container boundary gate:
+
+```sh
+colima start
+container-runtime-check
+```
+
 Cloudflare projects opt into the SOPS-managed deployment token explicitly in
 their `.envrc`; it is never exported to the global shell:
 

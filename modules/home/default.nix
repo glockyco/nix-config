@@ -1,6 +1,7 @@
 {
   imports = [
     ./shell.nix
+    ./container-runtime.nix
     ./catppuccin.nix
     ./nix-index.nix
     ./darwin-switch.nix

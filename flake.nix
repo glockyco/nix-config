@@ -112,6 +112,14 @@
             inherit (llmAgents) herdr omp;
             plugin = inputs.personal-omp-plugin.packages.${system}.default;
           };
+          containerRuntimeCheck = pkgs.callPackage ./packages/container-runtime-check.nix { };
+          containerRuntimeCommandTest = pkgs.callPackage ./packages/container-runtime-check-tests.nix {
+            inherit containerRuntimeCheck;
+          };
+          containerRuntimeConfigCheck = pkgs.callPackage ./packages/container-runtime-config-check.nix {
+            inherit containerRuntimeCheck;
+            homeConfiguration = self.darwinConfigurations.macbook-pro.config.home-manager.users.glockyco;
+          };
         in
         {
           # `nix fmt` formats every language listed in ./treefmt.nix, tree-wide.
@@ -135,6 +143,7 @@
             # Walks build plans, so it needs the store and cannot be a check.
             #   nix run .#check-darwin-build-plans
             check-darwin-build-plans = pkgs.callPackage ./packages/check-darwin-build-plans.nix { };
+            container-runtime-check = containerRuntimeCheck;
           };
 
           checks = {
@@ -283,6 +292,8 @@
 
           }
           // lib.optionalAttrs isDarwin {
+            containerRuntimeCommand = containerRuntimeCommandTest;
+            containerRuntimeConfiguration = containerRuntimeConfigCheck;
             darwinSystem = self.darwinConfigurations.macbook-pro.system;
           };
 
