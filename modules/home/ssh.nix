@@ -7,9 +7,16 @@ let
   # that prompts can only be replaced, never relaxed -- keep that in mind
   # before adding another one here.
   secretiveAgent = "~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh";
+  airBatchCheck = pkgs.callPackage ../../packages/air-batch-check.nix { };
+  airHost = {
+    HostName = "MacBook-Air-von-ISYS.local";
+    User = "joaichberger";
+  };
 in
 
 {
+  home.packages = [ airBatchCheck ];
+
   # Enclave keys are served by Secretive; the YubiKey holds a resident FIDO2 key.
   # Neither private key is exportable.
   programs.ssh = {
@@ -50,9 +57,18 @@ in
       # machine's, so without this block ssh defaults to `glockyco` and the
       # Secure Enclave key -- which is in the Air's authorized_keys -- is
       # rejected as an unknown user.
-      "air" = {
-        HostName = "MacBook-Air-von-ISYS.local";
-        User = "joaichberger";
+      "air" = airHost;
+
+      # Unattended commands must exit with their remote process instead of
+      # inheriting the interactive one-hour control-master lifetime. Keep stdin
+      # available because rsync carries its protocol over the SSH streams.
+      "air-batch" = airHost // {
+        BatchMode = "yes";
+        RequestTTY = "no";
+        ControlMaster = "no";
+        ControlPath = "none";
+        ControlPersist = "no";
+        ConnectTimeout = 8;
       };
 
       # Opt-in path to GitHub through the YubiKey resident key, as

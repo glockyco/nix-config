@@ -41,10 +41,31 @@ return-and-evacuation path rather than a place in the fleet.
 | Wife's Windows machine (WSL2) | `x86_64-linux`   | Planned, deliberately scoped batch worker | Separate Linux user, non-administrative Windows account, narrow secrets |
 | University MacBook Air        | Not applicable   | **Excluded** temporary equipment          | Return next month; not future infrastructure                            |
 
-The MacBook Air must not be made a fleet host while it is available. Its
-`Host air` block in `modules/home/ssh.nix` is scheduled for removal as part of
-return preparation. This is consistent with the family backup plan's rule that
-only personally owned data is evacuated from the university device.
+The MacBook Air must not be made a fleet host while it is available. Its `air`
+and `air-batch` entries in `modules/home/ssh.nix`, the `air-batch-check` package
+and flake outputs, and their README guidance are scheduled for removal together
+as part of return preparation. This is consistent with the family backup plan's
+rule that only personally owned data is evacuated from the university device.
+The return change must remove this complete access surface in one step:
+
+- Delete the `airHost`, `air`, `air-batch`, and `airBatchCheck` declarations from
+  `modules/home/ssh.nix`.
+- Delete `packages/air-batch-check.nix`,
+  `packages/air-batch-check-tests.nix`, and
+  `packages/air-batch-config-check.nix`.
+- Delete the `airBatchCheck`, `airBatchCommandTest`, and `airBatchConfigCheck`
+  bindings from `flake.nix`, including
+  `packages.aarch64-darwin.air-batch-check`,
+  `checks.aarch64-darwin.airBatchCommand`, and
+  `checks.aarch64-darwin.airBatchConfiguration`.
+- Delete the MacBook Air SSH section and the SMB bootstrap step from
+  `README.md`.
+- Delete `modules/home/network-shares.nix` and its import from
+  `modules/home/default.nix` so the `~/Air` link and mount agent disappear with
+  the SSH endpoints.
+
+The archived OpenSpec change remains historical evidence. It is not active
+workstation configuration.
 
 ## One repository, many hosts
 

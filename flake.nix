@@ -112,6 +112,13 @@
             inherit (llmAgents) herdr omp;
             plugin = inputs.personal-omp-plugin.packages.${system}.default;
           };
+          airBatchCheck = pkgs.callPackage ./packages/air-batch-check.nix { };
+          airBatchCommandTest = pkgs.callPackage ./packages/air-batch-check-tests.nix {
+            inherit airBatchCheck;
+          };
+          airBatchConfigCheck = pkgs.callPackage ./packages/air-batch-config-check.nix {
+            homeConfiguration = self.darwinConfigurations.macbook-pro.config.home-manager.users.glockyco;
+          };
           containerRuntimeCheck = pkgs.callPackage ./packages/container-runtime-check.nix { };
           containerRuntimeCommandTest = pkgs.callPackage ./packages/container-runtime-check-tests.nix {
             inherit containerRuntimeCheck;
@@ -143,6 +150,7 @@
             # Walks build plans, so it needs the store and cannot be a check.
             #   nix run .#check-darwin-build-plans
             check-darwin-build-plans = pkgs.callPackage ./packages/check-darwin-build-plans.nix { };
+            air-batch-check = airBatchCheck;
             container-runtime-check = containerRuntimeCheck;
           };
 
@@ -292,6 +300,8 @@
 
           }
           // lib.optionalAttrs isDarwin {
+            airBatchCommand = airBatchCommandTest;
+            airBatchConfiguration = airBatchConfigCheck;
             containerRuntimeCommand = containerRuntimeCommandTest;
             containerRuntimeConfiguration = containerRuntimeConfigCheck;
             darwinSystem = self.darwinConfigurations.macbook-pro.system;

@@ -35,6 +35,42 @@ Use the [dependency-update runbook](docs/operations/dependency-updates.md) for a
 
 Use the [container runtime runbook](docs/operations/container-runtime.md) for Colima startup, acceptance, shutdown, upgrades, recovery, and profile recreation.
 
+## MacBook Air SSH
+
+The temporary MacBook Air has two SSH aliases. Use `air` for an interactive
+session. It inherits the shared control master and its one-hour persistence.
+Use `air-batch` for unattended commands and protocol clients such as `rsync`.
+This alias does not allocate a terminal, prompt for authentication, or create a
+control socket. It keeps standard input available for protocol data. A direct
+command that does not supply input must detach it explicitly:
+
+```sh
+ssh -n air-batch true
+```
+
+After a configuration activation, run the bounded acceptance command with the
+reviewed Docker executable on the Air:
+
+```sh
+AIR_BATCH_DOCKER=/Applications/Docker.app/Contents/Resources/bin/docker \
+  air-batch-check
+```
+
+Each probe has a 15-second deadline. The command checks detached-input command
+completion, exact remote failure status, a read-only `rsync` transfer, read-only
+Docker access, and the absence of a persistent master. It removes its local
+temporary directory after success or failure and does not write to the Air.
+A failure prints recovery commands. Start with these checks:
+
+```sh
+ssh -n air-batch true
+ssh -G air-batch
+ssh -n air-batch /Applications/Docker.app/Contents/Resources/bin/docker info
+```
+
+The Docker path is explicit because the Air's non-interactive shell does not
+provide Docker on `PATH`.
+
 ## Release gates
 
 Run the inactive-generation gates before activation:
