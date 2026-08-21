@@ -194,3 +194,16 @@ Recorded on 2026-08-21 before the first activation of this change:
 - `/var/run/docker.sock` was absent.
 
 This baseline proves that the later activation and runtime steps start from no existing Colima profile, Docker context directory, mutable Docker configuration, or global socket.
+
+### Activated runtime acceptance
+
+Recorded on 2026-08-21 after activation:
+
+- Colima reported 8 CPUs, 16 GiB of memory, and a 150 GiB sparse data disk.
+- The Docker Engine reported Linux `aarch64`, version 29.2.1, and engine name `colima`.
+- The sparse data disk had a logical size of 161,061,273,600 bytes and an allocated size of 1,549,176 KiB. The complete `$COLIMA_HOME` tree allocated 2,600,288 KiB.
+- `container-runtime-check` passed in 21.63 seconds. `/usr/bin/time -lp` reported a maximum resident set size of 61,997,056 bytes.
+- Acceptance used BusyBox digest `sha256:9db7b59979c38555a39def84a31fb98b5296952f9e3afd4f6f11f05b07adfab0` and PostgreSQL digest `sha256:00bc86618629af00d2937fdc5a5d63db3ff8450acf52f0636ec813c7f4902929`. Both resolved to `arm64` images.
+- The Teralizer positive control used PostgreSQL 17.1 image digest `sha256:163763c8afd28cae69035ce84b12d8180179559c747c0701b3cad17818a0dbc5` on `arm64`.
+- The `jarvis-scenarios` export checkpoint recorded 2 projects, 18,495,155 database bytes, a 380,308-byte dump, and SHA-256 `04bb388d432fa7e62af55fed20b39fa220ee8dfe3d17ea629ff563a82d5115e2`. The transferred dump matched that identity and checksum.
+- The isolated restore, corpus preparation, project-count check, and report-role preflight passed. A Colima stop and start preserved the image digest, volume creation identity, restored database, and read-only preflight result.

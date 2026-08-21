@@ -38,8 +38,8 @@
 ## 5. Activate and exercise the real boundary
 
 - [x] 5.1 After review and merge, activate the generation with `darwin-switch`, inspect activation output, and prove activation created no Colima VM and started no container service.
-- [ ] 5.2 Start the default profile, verify the active context and declared resources, and run `container-runtime-check` to completion on the actual Apple Silicon host.
-- [ ] 5.3 Stop the profile and prove Docker workload commands fail against the stopped Colima endpoint rather than selecting another endpoint.
-- [ ] 5.4 Restart the profile, run the Teralizer `jarvis-scenarios` export and isolated Compose restore positive control, then stop and remove only the positive-control resources.
-- [ ] 5.5 Confirm a same-generation activation preserves images and volumes, then retain the previous Nix generation until the downstream Teralizer verification completes.
-- [ ] 5.6 Record the measured runtime, peak memory, disk allocation, engine architecture, image digests, and acceptance outcome in the operations evidence section.
+- [x] 5.2 Start the default profile, verify the active context and declared resources, and run `container-runtime-check` to completion on the actual Apple Silicon host.
+- [x] 5.3 Stop the profile and prove Docker workload commands fail against the stopped Colima endpoint rather than selecting another endpoint.
+- [x] 5.4 Restart the profile, run the Teralizer `jarvis-scenarios` export and isolated Compose restore positive control, then stop and remove only the positive-control resources.
+- [x] 5.5 Confirm a same-generation activation preserves images and volumes, then retain the previous Nix generation until the downstream Teralizer verification completes.
+- [x] 5.6 Record the measured runtime, peak memory, disk allocation, engine architecture, image digests, and acceptance outcome in the operations evidence section.
