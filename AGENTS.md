@@ -24,8 +24,15 @@ Run the native commands from the repository root:
 ```sh
 nix fmt -- --fail-on-change
 nix flake check --print-build-logs
+nix run .#check-darwin-build-plans
 nix build .#darwinConfigurations.macbook-pro.system
 ```
+
+`check-darwin-build-plans` is separate from `nix flake check` because it reads
+build plans, and a check derivation has no store access. It fails when an output
+reaches a source-built .NET package or a Swift compiler, which Nixpkgs does not
+cache for `aarch64-darwin`: one such dependency once cost this repository a five
+hour CI run.
 
 Use `darwin-switch` only after review and merge. Read its activation output. For an OMP or plugin behavior change, also run the real wrapped-session smoke in the architecture document. Keep the previous generation until all applicable gates pass.
 

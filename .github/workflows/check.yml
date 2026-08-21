@@ -37,3 +37,11 @@ jobs:
       # and formatting checks. Evaluation errors, build failures, an unimported
       # module and unformatted files all fail here.
       - run: nix flake check --print-build-logs
+
+      # Nixpkgs publishes no aarch64-darwin binary for the source-built .NET SDK
+      # or for Swift, so an output that reaches either compiles both toolchains
+      # and this job runs for hours. `nix flake check` cannot catch that: a
+      # check runs in a sandbox with no store access, and reading a build plan
+      # needs the store. The app skips itself on Linux, where both are cached.
+      - if: runner.os == 'macOS'
+        run: nix run .#check-darwin-build-plans

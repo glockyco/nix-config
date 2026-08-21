@@ -1,0 +1,16 @@
+# When formatting runs. Not what it formats.
+#
+# The formatter set, the file patterns and the exclusions live in treefmt.nix,
+# and `nix flake check` runs the same wrapper through `checks.treefmt`. Keeping
+# that knowledge in one file is what stops the commit gate and CI from
+# disagreeing about what "formatted" means.
+#
+# `nix develop --command` resolves treefmt from the pinned dev shell instead of
+# from PATH. A Git client started outside the shell must not get to decide which
+# formatter version runs, and a missing environment must fail the commit rather
+# than skip the gate.
+
+pre-commit:
+  jobs:
+    - name: treefmt
+      run: nix develop --command treefmt --fail-on-change {staged_files}

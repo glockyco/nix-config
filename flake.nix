@@ -28,11 +28,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    git-hooks-nix = {
-      url = "github:cachix/git-hooks.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
 
@@ -82,7 +77,6 @@
       ];
 
       imports = [
-        inputs.git-hooks-nix.flakeModule
         inputs.treefmt-nix.flakeModule
       ];
 
@@ -123,7 +117,6 @@
           # `nix fmt` formats every language listed in ./treefmt.nix, tree-wide.
           # Fail the check when any tracked file is unformatted.
           treefmt = import ./treefmt.nix pkgs;
-          pre-commit.settings.hooks.treefmt.enable = true;
 
           # flake-parts' default package set does not include this flake's overlay.
           # Use the Darwin package set above, or extend the per-system package set on Linux.
@@ -138,6 +131,10 @@
             # Expose pinned `darwin-rebuild` for the first activation, before it is on PATH:
             #   sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
             inherit (inputs.nix-darwin.packages.${system}) darwin-rebuild;
+
+            # Walks build plans, so it needs the store and cannot be a check.
+            #   nix run .#check-darwin-build-plans
+            check-darwin-build-plans = pkgs.callPackage ./packages/check-darwin-build-plans.nix { };
           };
 
           checks = {
@@ -295,6 +292,11 @@
                 inputs.nix-darwin.packages.${system}.darwin-rebuild
                 pkgs.git
                 pkgs.dnscontrol
+                pkgs.lefthook
+
+                # The commit hook runs this wrapper through `nix develop`, and
+                # `nix fmt` and `checks.treefmt` run the same one.
+                config.treefmt.build.wrapper
 
                 # The interpreter comes from the pinned nixpkgs, and every
                 # consumer names it independently: this shell, the `fastmail`
@@ -304,10 +306,17 @@
                 # parse the `X | None` annotations these scripts use and fails
                 # in a way that reads like a code bug.
                 pkgs.python3
-              ]
-              ++ config.pre-commit.settings.enabledPackages;
+              ];
 
-              shellHook = config.pre-commit.shellHook;
+              # Install the commit hook on entry. The grep keeps this cheap on
+              # re-entry, and it also catches a hook file left behind by a
+              # previous runner: that file does not mention lefthook, so
+              # `--force` replaces it.
+              shellHook = ''
+                if ! grep -qs lefthook .git/hooks/pre-commit; then
+                  ${lib.getExe pkgs.lefthook} install --force >/dev/null
+                fi
+              '';
             };
           };
         };
