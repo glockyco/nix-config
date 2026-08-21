@@ -52,7 +52,24 @@ writeShellApplication {
     # derivation name. Task 4.4's controls below prove the pattern still bites.
     pattern='-(dotnet-vmr|dotnet-stage0-vmr|swift)-[0-9]'
 
-    flake="git+file://$PWD"
+    # The controls need the Nixpkgs this repository pins. Read it from the lock
+    # rather than evaluating the flake from inside itself: `builtins.getFlake`
+    # on a Git reference wants `revCount`, and a CI checkout is shallow.
+    # Interpolating the derivations at build time is worse still, because the
+    # store then has to hold their input closures, which is gigabytes.
+    nixpkgs_type="$(jq -r '.nodes.nixpkgs.locked.type' flake.lock)"
+
+    case "$nixpkgs_type" in
+      tarball)
+        nixpkgs="tarball+$(jq -r '.nodes.nixpkgs.locked.url' flake.lock)"
+        ;;
+      *)
+        echo "check-darwin-build-plans: the nixpkgs lock entry is of type '$nixpkgs_type'." >&2
+        echo "This app cannot turn that into a flake reference. Teach it the new form" >&2
+        echo "rather than leaving the controls unchecked." >&2
+        exit 1
+        ;;
+    esac
 
     hits() {
       # `--` because the pattern starts with a dash.
@@ -64,8 +81,7 @@ writeShellApplication {
     # before trusting anything it says about this repository.
     controls_failed=0
     for control in dotnetCorePackages.sdk_8_0 swift; do
-      control_drv="$(nix eval --raw --impure \
-        --expr "(builtins.getFlake \"$flake\").inputs.nixpkgs.legacyPackages.$system.$control.drvPath")"
+      control_drv="$(nix eval --raw "$nixpkgs#legacyPackages.$system.$control.drvPath")"
 
       if [ -z "$(hits "$control_drv")" ]; then
         echo "control failed: $control no longer matches the detection pattern." >&2
@@ -83,11 +99,13 @@ writeShellApplication {
     # Read the output names from the flake rather than a list kept here, so an
     # output added later is covered without editing this file.
     violations=0
+    checked=0
     for group in checks packages devShells; do
-      attrs="$(nix eval --json "$flake#$group.$system" --apply builtins.attrNames 2>/dev/null || echo '[]')"
+      attrs="$(nix eval --json ".#$group.$system" --apply builtins.attrNames)"
 
       for attr in $(printf '%s' "$attrs" | jq -r '.[]'); do
-        drv="$(nix eval --raw "$flake#$group.$system.$attr.drvPath")"
+        checked=$((checked + 1))
+        drv="$(nix eval --raw ".#$group.$system.$attr.drvPath")"
         offenders="$(hits "$drv")"
 
         if [ -n "$offenders" ]; then
@@ -96,7 +114,7 @@ writeShellApplication {
 
           echo "" >&2
           echo "$group.$system.$attr reaches $(basename "$offender")" >&2
-          nix why-depends --derivation "$flake#$group.$system.$attr" "$offender" 2>/dev/null \
+          nix why-depends --derivation ".#$group.$system.$attr" "$offender" 2>/dev/null \
             | grep -v '^warning' >&2 || true
         fi
       done
@@ -109,6 +127,11 @@ writeShellApplication {
       exit 1
     fi
 
-    echo "check-darwin-build-plans: no output reaches a source-built .NET package or Swift compiler."
+    if [ "$checked" -eq 0 ]; then
+      echo "check-darwin-build-plans: read no outputs, so this run proved nothing." >&2
+      exit 1
+    fi
+
+    echo "check-darwin-build-plans: $checked outputs, none reaching a source-built .NET package or Swift compiler."
   '';
 }
