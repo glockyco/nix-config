@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change consume-personal-omp-plugin. Update Purpose after archive.
+This specification defines how the workstation packages, activates, and verifies an immutable OMP executable and personal plugin while preserving mutable runtime state.
 
 ## Requirements
 
