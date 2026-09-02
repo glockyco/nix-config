@@ -129,7 +129,7 @@ nix run .#bootstrap-omp-on-wsl
 The command must stop before profile mutation unless the host is WSL 2 on `x86_64`. On success it:
 
 1. sets the repository-local GitHub no-reply email;
-1. installs or replaces one `personal-omp-wsl` user-profile entry;
+1. migrates separate `personal-omp` and OpenSpec entries into one `personal-omp-wsl` user-profile entry;
 1. creates `~/.omp/agent` only when Herdr needs that parent directory;
 1. lets Herdr create or update its generated extension;
 1. verifies the immutable plugin and current Herdr integration.

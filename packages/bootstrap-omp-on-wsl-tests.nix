@@ -271,8 +271,11 @@ runCommand "check-bootstrap-omp-on-wsl-command"
     done
     ln -s generation-1 "$replacement/profiles/profile-1-link"
     ln -s profile-1-link "$BOOTSTRAP_TEST_PROFILE"
-    jq -n --arg old "$replacement/old-personal-omp-wsl" \
-      '{"version":3,"elements":{"personal-omp-wsl":{"storePaths":[$old]},"unrelated":{"storePaths":["/nix/store/unrelated"]}}}' \
+    jq -n \
+      --arg old "$replacement/old-personal-omp-wsl" \
+      --arg legacy_personal_omp ${bootstrapOmpOnWsl.environment.personalOmp} \
+      --arg legacy_openspec ${bootstrapOmpOnWsl.environment.openspec} \
+      '{"version":3,"elements":{"personal-omp-wsl":{"storePaths":[$old]},"personal-omp":{"storePaths":[$legacy_personal_omp]},"openspec":{"storePaths":[$legacy_openspec]},"unrelated":{"storePaths":["/nix/store/unrelated"]}}}' \
       > "$BOOTSTRAP_STATE"
     cp "$BOOTSTRAP_STATE" "$BOOTSTRAP_OLD_STATE"
     : > "$BOOTSTRAP_CALLS"
@@ -284,6 +287,8 @@ runCommand "check-bootstrap-omp-on-wsl-command"
     )
     test "$(jq -r '.elements.unrelated.storePaths[0]' "$BOOTSTRAP_STATE")" = /nix/store/unrelated
     test "$(jq -r '.elements."personal-omp-wsl".storePaths[0]' "$BOOTSTRAP_STATE")" = "$BOOTSTRAP_NEW_ENVIRONMENT"
+    test "$(jq '.elements | length' "$BOOTSTRAP_STATE")" -eq 2
+    test "$(grep -cF 'profile remove' "$BOOTSTRAP_CALLS")" -eq 3
     test "$(readlink "$BOOTSTRAP_TEST_PROFILE")" = profile-2-link
 
     cp "$BOOTSTRAP_OLD_STATE" "$BOOTSTRAP_STATE"

@@ -12,6 +12,7 @@
 - [x] 2.4 Make Herdr reconciliation create only a missing `~/.omp/agent` directory before it calls Herdr, then run the packaged reconciler and verifier after the profile switch with automatic profile rollback on failure; verify never-started-user success without an OMP launch, stale integration, reconciliation failure, verification failure, prior-generation restoration, and clean-install cleanup paths.
 - [x] 2.5 Preserve WSL-local OMP state across every bootstrap path; verify temporary-home tests retain configuration and database sentinels and permit only creation of a missing agent directory plus Herdr's supported generated-extension mutation.
 - [x] 2.6 Configure the current `nix-config` worktree's local Git email as `11704293+glockyco@users.noreply.github.com`; verify the bootstrap rejects a non-worktree before profile mutation, leaves tracked files unchanged, and preserves the global `johann.glock@scch.at` email.
+- [x] 2.7 Migrate prior separate `personal-omp` and OpenSpec profile entries into the combined entry; verify replacement removes only managed entries and preserves unrelated packages.
 
 ## 3. Operator Procedure
 

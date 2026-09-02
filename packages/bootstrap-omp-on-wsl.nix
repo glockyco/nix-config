@@ -27,6 +27,8 @@ writeShellApplication {
     git_bin="''${BOOTSTRAP_GIT_BIN:-git}"
     uname_bin="''${BOOTSTRAP_UNAME_BIN:-uname}"
     environment="''${BOOTSTRAP_ENVIRONMENT:-${environment}}"
+    legacy_personal_omp=${lib.escapeShellArg (toString environment.personalOmp)}
+    legacy_openspec=${lib.escapeShellArg (toString environment.openspec)}
     profile="''${BOOTSTRAP_PROFILE:-''${NIX_PROFILE:-''${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/profile}}"
 
     kernel_name="''${BOOTSTRAP_KERNEL_NAME:-$($uname_bin -s)}"
@@ -92,13 +94,20 @@ writeShellApplication {
       fi
     }
 
-    personal_entries() {
-      jq -r '
-        .elements
-        | to_entries[]
-        | select(any(.value.storePaths[]?; endswith("-personal-omp-wsl")))
-        | .key
-      '
+    managed_entries() {
+      jq -r \
+        --arg legacy_personal_omp "$legacy_personal_omp" \
+        --arg legacy_openspec "$legacy_openspec" '
+          .elements
+          | to_entries[]
+          | select(any(
+              .value.storePaths[]?;
+              endswith("-personal-omp-wsl")
+              or . == $legacy_personal_omp
+              or . == $legacy_openspec
+            ))
+          | .key
+        '
     }
 
     exact_entries() {
@@ -163,16 +172,16 @@ writeShellApplication {
     trap rollback ERR
 
     profile_json="$(list_profile)"
-    personal_count="$(printf '%s\n' "$profile_json" | personal_entries | grep -c . || true)"
+    managed_count="$(printf '%s\n' "$profile_json" | managed_entries | grep -c . || true)"
     exact_count="$(printf '%s\n' "$profile_json" | exact_entries | grep -c . || true)"
 
-    if [ "$personal_count" -ne 1 ] || [ "$exact_count" -ne 1 ]; then
+    if [ "$managed_count" -ne 1 ] || [ "$exact_count" -ne 1 ]; then
       while IFS= read -r entry; do
         if [ -n "$entry" ]; then
           "$nix_bin" profile remove --profile "$profile" "$entry"
           profile_changed=1
         fi
-      done < <(printf '%s\n' "$profile_json" | personal_entries)
+      done < <(printf '%s\n' "$profile_json" | managed_entries)
 
       "$nix_bin" profile add --profile "$profile" "$environment"
       profile_changed=1
