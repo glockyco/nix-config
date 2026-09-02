@@ -12,7 +12,7 @@ This change creates that boundary. It is the prerequisite for any Linux user-sco
 - Extend the `moduleImports` check to nested module directories.
 - Record the portable and Darwin-only classification in `README.md`.
 
-The built Darwin system SHALL keep an identical store path. That equality is the acceptance gate.
+The Darwin closure SHALL gain no package, lose no package, and change no version. A closure diff on the Mac is the acceptance gate, and four evaluated invariants precede it on either host.
 
 ## Capabilities
 

@@ -1,6 +1,6 @@
 ## 1. Record the Acceptance Baseline
 
-- [x] 1.1 Evaluate and record both baseline store paths in this change: the revision-pinned Darwin system and the Home Manager activation package.
+- [x] 1.1 Record the baseline in this change: the parent system store path and the four evaluated invariants.
 - [x] 1.2 Confirm that the worktree is clean and that `flake.lock` stays unchanged for the whole change.
 
 ## 2. Create the Platform Boundary
@@ -30,10 +30,11 @@
 
 ## 5. Verify the Refactor
 
-- [ ] 5.1 Evaluate both store paths again and confirm that each equals its recorded value from task 1.1.
+- [ ] 5.1 Confirm the four evaluated invariants against the parent commit, and record the post-refactor system store path.
 - [ ] 5.2 Run `nix fmt -- --fail-on-change`.
 - [ ] 5.3 Run `nix flake check --print-build-logs` on `x86_64-linux` and inspect the `moduleImports` output.
-- [ ] 5.4 On the Mac, run `nix flake check --print-build-logs` and `nix run .#check-darwin-build-plans`, because both realize Darwin-only outputs.
-- [ ] 5.5 Build the portable module set as a standalone Home Manager generation for `x86_64-linux` and confirm success.
-- [ ] 5.6 Update the `modules/home/` layout description in `README.md`.
-- [ ] 5.7 Review the final diff and confirm that it contains only moves, import lists, host values, and the check.
+- [ ] 5.4 On the Mac, run `nvd diff` between the parent system and this change's system, and confirm no added package, no removed package, and no version change.
+- [ ] 5.5 On the Mac, run `nix flake check --print-build-logs` and `nix run .#check-darwin-build-plans`, because both realize Darwin-only outputs.
+- [ ] 5.6 Build the portable module set as a standalone Home Manager generation for `x86_64-linux` and confirm success.
+- [ ] 5.7 Update the `modules/home/` layout description in `README.md`.
+- [ ] 5.8 Review the final diff and confirm that it contains only moves, import lists, host values, and the check.

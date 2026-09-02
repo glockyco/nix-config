@@ -1,44 +1,58 @@
 # Acceptance baseline
 
-Recorded before the first edit, on `x86_64-linux`, with a clean tracked worktree.
+The acceptance gate is a closure diff, not a store-path comparison. See design decision 2 for the reason.
 
-| Item                                    | Value                                                                     |
-| --------------------------------------- | ------------------------------------------------------------------------- |
-| `HEAD`                                  | `3d58d2ee15605066b2c2b680ac15eef64be6a38d`                                |
-| `flake.lock` SHA-256                    | `56bb25b6e102b743aa000896c5be167d30dce44cfb4a4ea8522f1107051ef4fa`        |
-| Gate A: Darwin system, revision pinned  | `/nix/store/sjdxm34sg1c5cvm63c586p9akvx07ksm-darwin-system-26.05.c3e90c8` |
-| Gate B: Home Manager activation package | `/nix/store/y9c6x2lsbvh374yppizpqpbdhxnwb2pb-home-manager-generation`     |
+| Item                 | Value                                                                     |
+| -------------------- | ------------------------------------------------------------------------- |
+| Parent commit        | `9222191b93ba5ebb4a0353061861491af037aa22`                                |
+| `flake.lock` SHA-256 | `56bb25b6e102b743aa000896c5be167d30dce44cfb4a4ea8522f1107051ef4fa`        |
+| Parent Darwin system | `/nix/store/3mpkbm920h23s6vqyw00c6llncyjqaqp-darwin-system-26.05.c3e90c8` |
 
-## Gate A
-
-```sh
-nix eval --raw '.#darwinConfigurations.macbook-pro' \
-  --apply 'c: (c.extendModules { modules = [ ({ lib, ... }: { system.configurationRevision = lib.mkForce "gate"; }) ]; }).system.outPath'
-```
-
-The pin is required. `modules/darwin/system.nix` sets `system.configurationRevision` from the flake revision, and that value enters the system derivation. A probe confirmed that one appended newline in a tracked file changes the unpinned path:
-
-| Tree state        | Revision                                         | Unpinned system path                                                      |
-| ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------- |
-| clean             | `3d58d2ee15605066b2c2b680ac15eef64be6a38d`       | `/nix/store/inp9an8xw0c5bl1gr9vlllksxr7kx6p6-darwin-system-26.05.c3e90c8` |
-| one newline added | `3d58d2ee15605066b2c2b680ac15eef64be6a38d-dirty` | `/nix/store/lb2hpa3k5fkpqida76qnl2hx633z180k-darwin-system-26.05.c3e90c8` |
-
-Both gates returned an identical path in the clean state and in that dirty state, so both are independent of the tree state.
-
-## Gate B
+## Acceptance gate, on the Mac
 
 ```sh
-nix eval --raw '.#darwinConfigurations.macbook-pro.config.home-manager.users.glockyco.home.activationPackage.outPath'
+nvd diff /nix/store/3mpkbm920h23s6vqyw00c6llncyjqaqp-darwin-system-26.05.c3e90c8 <this-change-system>
 ```
 
-Gate B is the tighter gate, because every edit in this change reaches the user scope. Gate A detects an accidental change in system scope.
+The gate passes when the diff reports no added package, no removed package, and no version change. `modules/home/darwin/darwin-switch.nix` already uses `nvd diff` for the same question after every switch.
 
-## Confirmed commit invariance
+## Evaluated invariants, on either host
 
-The three planning commits moved `HEAD` from `3d58d2ee1560` to `d8d39e008b10`. Both gates returned their recorded values after those commits. The unpinned system path moved from `/nix/store/inp9an8xw0c5bl1gr9vlllksxr7kx6p6-...` to `/nix/store/rzh02f2s3n69gcy1f7igm5cr9dgp13j9-...` over the same commits.
+Each comparison uses the parent commit as the reference:
 
-The pin is therefore necessary, and both gates are valid across commits.
+```sh
+REV=9222191b93ba5ebb4a0353061861491af037aa22
+BASE="git+file://$PWD?rev=$REV#darwinConfigurations.macbook-pro.config.home-manager.users.glockyco"
+NOW=".#darwinConfigurations.macbook-pro.config.home-manager.users.glockyco"
+```
+
+| Invariant                                           | Applied to                              | Measured result                                       |
+| --------------------------------------------------- | --------------------------------------- | ----------------------------------------------------- |
+| Same package set                                    | `home.packages`, `map (p: p.name)`      | 34 both sides, sorted sets identical                  |
+| Same file targets                                   | `home.file`, `builtins.attrNames`       | 23 both sides, identical                              |
+| Same activation entries                             | `home.activation`, `builtins.attrNames` | 21 both sides, identical                              |
+| Every derivation difference traces to package order | differing activation texts              | 3 entries differ, each only by a package-derived hash |
+
+## Measured cause of the store-path difference
+
+The split reorders `home.packages` because two import lists replace one. The set stays identical, and six packages change position: `air-batch-check`, `fastmail`, `darwin-switch`, `colima`, `docker`, and `container-runtime-check`.
+
+That single change propagates:
+
+```
+home.packages order
+  -> home-manager-path            buildEnv receives paths in list order
+  -> home-manager-fonts           aggregate over the package list
+  -> home-manager-applications    aggregate over the package list
+  -> hm_LibraryFonts version file content derived from the package list
+       -> activation script text  names the four paths above
+            -> home-manager-files -> home-manager-generation -> darwin-system
+```
+
+The three activation entries that differ are `checkFilesChanged`, `copyApps`, and `onFilesChange`, and each differs only by one of those hashes.
+
+`buildEnv` receives `ignoreCollisions = false`. A collision depends on the package set rather than its order, and the current Mac already builds that set, so the reordered set cannot collide and the built tree stays identical.
 
 ## Rule
 
-`flake.lock` SHALL NOT change while this change is open. An input update moves both paths and invalidates the comparison.
+`flake.lock` SHALL NOT change while this change is open. An input update changes the closure and invalidates the comparison.
