@@ -22,11 +22,11 @@
 
 ## 4. Repository Verification
 
-- [ ] 4.1 Run the focused `x86_64-linux` cache, environment-package, and bootstrap command checks and verify all package, state-machine, clean-user Herdr, Git identity, rollback, and state-preservation scenarios pass.
+- [x] 4.1 Run the focused `x86_64-linux` cache, environment-package, and bootstrap command checks and verify all package, state-machine, clean-user Herdr, Git identity, rollback, and state-preservation scenarios pass.
 - [x] 4.2 Run `openspec validate "bootstrap-omp-on-wsl" --strict`, `nix fmt -- --fail-on-change`, and `nix flake check --print-build-logs`; verify every command exits successfully.
 - [x] 4.3 Run `nix run .#check-darwin-build-plans` and `nix build .#darwinConfigurations.macbook-pro.system`; verify WSL additions do not change the supported Darwin build-plan boundary or break the existing host.
 
 ## 5. WSL Acceptance
 
-- [ ] 5.1 On the new Windows machine, update Windows Terminal Stable, make its Ubuntu WSL 2 profile the default, follow the runbook from the manual prerequisite boundary, accept the reviewed root-flake cache settings, and run `nix run .#bootstrap-omp-on-wsl` for a never-started OMP user; verify the profile starts in the Linux home directory, the OMP output is substituted when published, the local GitHub email overrides only this checkout, and the installed commands, current Herdr integration, and deterministic verifier succeed without provider authentication.
-- [ ] 5.2 Authenticate interactively, start a fresh wrapped OMP session from Windows Terminal Stable in a disposable WSL repository, and complete the recorded real-session smoke without forced terminal protocol variables; verify the recorded terminal version, immutable plugin, personal policy, documented fallback chords, and `personal_commit` preview before accepting WSL support.
+- [x] 5.1 On the new Windows machine, update Windows Terminal Stable, make its Ubuntu WSL 2 profile the default, follow the runbook from the manual prerequisite boundary, accept the reviewed root-flake cache settings, and run `nix run .#bootstrap-omp-on-wsl` for a never-started OMP user; verify the profile starts in the Linux home directory, the OMP output is substituted when published, the local GitHub email overrides only this checkout, and the installed commands, current Herdr integration, and deterministic verifier succeed without provider authentication.
+- [x] 5.2 Authenticate interactively, start a fresh wrapped OMP session from Windows Terminal Stable in a disposable WSL repository, and complete the recorded real-session smoke without forced terminal protocol variables; verify the recorded terminal version, immutable plugin, personal policy, documented fallback chords, and `personal_commit` preview before accepting WSL support.

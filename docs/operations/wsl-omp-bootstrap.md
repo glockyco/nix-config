@@ -257,3 +257,20 @@ printf 'omp=%s\n' "$(omp --version)"
 printf 'openspec=%s\n' "$(openspec --version)"
 printf 'repository-revision=%s\n' "$(git -C "$HOME/src/nix-config" rev-parse HEAD)"
 ```
+
+### Accepted evidence: 2026-09-01
+
+| Item                    | Accepted value                      |
+| ----------------------- | ----------------------------------- |
+| Windows Terminal        | `1.24.11911.0`                      |
+| Windows                 | `10.0.26100.9168`                   |
+| WSL                     | `2.7.12.0`                          |
+| Distribution            | `Ubuntu 26.04.1 LTS`                |
+| Architecture            | `x86_64`                            |
+| Kernel                  | `6.18.33.2-microsoft-standard-WSL2` |
+| Nix                     | `2.35.2`                            |
+| OMP                     | `18.0.10`                           |
+| OpenSpec                | `1.11.0`                            |
+| Implementation revision | `e97d2effe878`                      |
+
+The native Linux checks, transactional bootstrap, same-revision re-entry, isolated clean-user bootstrap, OpenAI and Anthropic requests, and wrapped-session smoke passed. The smoke loaded the personal plugin from `/nix/store`, loaded the personal commit policy, completed a `personal_commit` preview, and left the disposable repository unchanged.
