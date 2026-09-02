@@ -38,7 +38,7 @@ Session transcripts, OMP memory, chat summaries, and issue comments are supporti
 | Delete the old Air Mnemopi state     | complete | explicit maintenance operation; no migration artifact                                                                   | none                                    |
 | Package the personal OMP plugin      | complete | archived `omp-agent-setup` OpenSpec change `package-personal-omp-plugin`                                                | none                                    |
 | Consume the plugin from `nix-darwin` | complete | archived `nix-darwin` OpenSpec change `consume-personal-omp-plugin`                                                     | verified plugin output contract         |
-| Bootstrap OMP on WSL 2               | active   | `nix-darwin` OpenSpec change `bootstrap-omp-on-wsl` and `docs/operations/wsl-omp-bootstrap.md`                          | verified Linux package output           |
+| Bootstrap OMP on WSL 2               | complete | archived `nix-darwin` OpenSpec change `2026-09-01-bootstrap-omp-on-wsl` and `docs/operations/wsl-omp-bootstrap.md`      | accepted WSL release evidence           |
 | Migrate HotRepl                      | ready    | future HotRepl OpenSpec change `nix-development-environment`                                                            | workstation base                        |
 | Migrate Ardenfall                    | blocked  | future Ardenfall OpenSpec change `nix-development-environment`                                                          | HotRepl and workstation base            |
 | Migrate Ancient Kingdoms             | blocked  | future Ancient Kingdoms OpenSpec change `nix-development-environment`                                                   | HotRepl and workstation base            |
@@ -168,7 +168,7 @@ It does not copy personal-plugin source. It consumes the plugin's flake output. 
 
 Windows owns Windows Terminal, WSL enablement, employer policy, and native applications. Ubuntu WSL 2 owns the Linux user, Nix profile, Git configuration, repositories, and mutable OMP state. Repositories stay under the Linux home directory, not `/mnt/c`.
 
-The root flake exposes one `personal-omp-wsl` profile package and one `bootstrap-omp-on-wsl` application for `x86_64-linux`. The bootstrap rejects native Linux, WSL 1, and unsupported architectures before profile mutation. It changes only its named profile entry, rolls back that entry after reconciliation or verification failure, and preserves unrelated entries.
+The root flake exposes one `personal-omp-wsl` profile package and one `bootstrap-omp-on-wsl` application for `x86_64-linux`. The bootstrap rejects native Linux, WSL 1, and unsupported architectures before profile mutation. It migrates exact locked OMP and OpenSpec entries into its named profile entry, rolls back after reconciliation or verification failure, and preserves unrelated entries.
 
 For a user who has never started OMP, the reconciliation helper can create the missing `~/.omp/agent` directory. Herdr remains the only writer of its generated extension. The bootstrap does not create authentication, configuration, sessions, or databases. It sets the `nix-config` checkout's local Git email to the GitHub no-reply address and leaves the global work email unchanged.
 
@@ -397,7 +397,7 @@ Delivered: the pinned plugin output, wrapped upstream OMP, curated language-serv
 
 Repository: `nix-darwin`.
 
-The [WSL OMP bootstrap runbook](../operations/wsl-omp-bootstrap.md) owns the manual Windows and Linux prerequisites, cache review, one post-Nix command, recovery, and real-session proof. The OpenSpec change owns implementation and acceptance until archive. WSL support does not imply a Linux Home Manager host or native Windows application management.
+The [WSL OMP bootstrap runbook](../operations/wsl-omp-bootstrap.md) owns the manual Windows and Linux prerequisites, cache review, one post-Nix command, recovery, and real-session proof. The archived OpenSpec change records the accepted implementation. WSL support does not imply a Linux Home Manager host or native Windows application management.
 
 ### Project migrations
 
