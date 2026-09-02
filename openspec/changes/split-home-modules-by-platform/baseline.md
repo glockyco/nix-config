@@ -33,6 +33,12 @@ nix eval --raw '.#darwinConfigurations.macbook-pro.config.home-manager.users.glo
 
 Gate B is the tighter gate, because every edit in this change reaches the user scope. Gate A detects an accidental change in system scope.
 
+## Confirmed commit invariance
+
+The three planning commits moved `HEAD` from `3d58d2ee1560` to `d8d39e008b10`. Both gates returned their recorded values after those commits. The unpinned system path moved from `/nix/store/inp9an8xw0c5bl1gr9vlllksxr7kx6p6-...` to `/nix/store/rzh02f2s3n69gcy1f7igm5cr9dgp13j9-...` over the same commits.
+
+The pin is therefore necessary, and both gates are valid across commits.
+
 ## Rule
 
 `flake.lock` SHALL NOT change while this change is open. An input update moves both paths and invalidates the comparison.
