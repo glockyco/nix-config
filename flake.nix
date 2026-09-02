@@ -131,6 +131,10 @@
           bootstrapOmpOnWslTest = pkgs.callPackage ./packages/bootstrap-omp-on-wsl-tests.nix {
             inherit bootstrapOmpOnWsl;
           };
+          moduleImportsCheck = pkgs.callPackage ./packages/module-imports-check.nix { };
+          moduleImportsCommandTest = pkgs.callPackage ./packages/module-imports-check-tests.nix {
+            inherit moduleImportsCheck;
+          };
           airBatchCheck = pkgs.callPackage ./packages/air-batch-check.nix { };
           airBatchCommandTest = pkgs.callPackage ./packages/air-batch-check-tests.nix {
             inherit airBatchCheck;
@@ -188,22 +192,13 @@
             # An unimported module is absent rather than an error.
             # Assert every module is reachable from its sibling `default.nix`.
             moduleImports = pkgs.runCommand "check-module-imports" { } ''
-              cd ${./modules}
-              missing=
-              for dir in */; do
-                for f in "$dir"*.nix; do
-                  base=''${f#"$dir"}
-                  if [ "$base" != default.nix ] && ! grep -qF "./$base" "$dir/default.nix"; then
-                    missing="$missing $f"
-                  fi
-                done
-              done
-              if [ -n "$missing" ]; then
-                echo "not imported by their sibling default.nix:$missing" >&2
-                exit 1
-              fi
+              ${lib.getExe moduleImportsCheck} ${./modules}
               touch $out
             '';
+
+            # Prove that the check above can reject, so an empty result means
+            # something.
+            moduleImportsCommand = moduleImportsCommandTest;
 
             wslOmpEnvironment = pkgs.runCommand "check-personal-omp-wsl-environment" { } ''
               commands=

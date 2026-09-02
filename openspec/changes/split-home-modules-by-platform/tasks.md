@@ -24,9 +24,9 @@
 
 ## 4. Extend the Import Check
 
-- [ ] 4.1 Extend the `moduleImports` check in `flake.nix` to nested module directories.
-- [ ] 4.2 Add a rejected fixture that proves the check fails for an unimported module inside a nested directory.
-- [ ] 4.3 Add an allowed fixture that proves a correctly imported nested module passes.
+- [x] 4.1 Extend the `moduleImports` check to nested module directories, moving its logic into a package that takes the module root so fixtures can exercise it.
+- [x] 4.2 Add a rejected fixture that proves the check fails for an unimported module inside a nested directory.
+- [x] 4.3 Add an allowed fixture that proves a correctly imported nested module passes.
 
 ## 5. Verify the Refactor
 
