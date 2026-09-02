@@ -1,0 +1,6 @@
+schema: spec-driven
+created: 2026-09-02
+
+# This change moves files and adds no observable behavior. No accepted
+# requirement describes the module layout or the module-import check.
+skip_specs: true
