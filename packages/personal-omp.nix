@@ -41,6 +41,10 @@ let
       agent_dir="''${OMP_AGENT_DIR:-$HOME/.omp/agent}"
       extension="$agent_dir/extensions/herdr-omp-agent-state.ts"
 
+      # Herdr owns the generated extension, but its installer requires the OMP
+      # agent root to exist even for a user who has never launched OMP.
+      mkdir -p "$agent_dir"
+
       if [ ! -f "$extension" ]; then
         "$herdr_bin" integration install omp
         exit 0

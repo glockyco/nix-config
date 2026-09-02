@@ -1,6 +1,15 @@
 {
   description = "Apple Silicon workstation: Determinate Nix + nix-darwin + Home Manager";
 
+  # Root flakes do not inherit an input flake's cache settings. Publish the
+  # llm-agents cache here so Linux installs substitute OMP instead of compiling it.
+  nixConfig = {
+    extra-substituters = [ "https://cache.numtide.com" ];
+    extra-trusted-public-keys = [
+      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+    ];
+  };
+
   inputs = {
     # Pin nixpkgs to 26.05 to keep nix-darwin and Home Manager on the same release.
     nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2605";
@@ -247,10 +256,14 @@
               stub=$TMPDIR/herdr-stub
               cat > "$stub" <<'EOF'
               #!${pkgs.runtimeShell}
+              test -d "$OMP_AGENT_DIR"
               printf '%s\n' "$*" >> "$CALLS"
               if [ "$1 $2" = "integration status" ]; then
                 printf '%s\n' "''${STATUS:-}"
               elif [ "$1 $2 $3" = "integration install omp" ]; then
+                if [ ! -f "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts" ]; then
+                  test ! -e "$OMP_AGENT_DIR/extensions"
+                fi
                 mkdir -p "$OMP_AGENT_DIR/extensions"
                 touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
               fi

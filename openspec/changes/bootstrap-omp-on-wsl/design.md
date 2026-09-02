@@ -45,7 +45,18 @@ The initial font will be Cascadia Mono. A Nerd Font belongs to the later shell a
 - An editor-integrated terminal couples OMP to the editor lifecycle and shortcut map. It remains useful for short commands, not the primary session.
 - Windows Terminal Preview or Canary adds pre-release behavior without a capability required by the accepted OMP contract.
 
-### 2. Export one WSL environment package and one bootstrap application
+### 2. Publish the Numtide cache from the root flake
+
+The root flake will declare `https://cache.numtide.com` as an additional substituter and the published `niks3.numtide.com-1` key as an additional trusted public key. Nix does not propagate an input flake's `nixConfig` to the root evaluation, so retaining `llm-agents.nix` as an input is not sufficient to activate its cache.
+
+The settings will use the `extra-*` forms so the NixOS and Determinate substituters remain available. The operator can review and accept the root flake settings through Nix's normal trust prompt. The bootstrap will not edit `/etc/nix/nix.conf` or `/etc/nix/nix.custom.conf` and will not require `sudo` after the manual Nix installation boundary.
+
+**Alternatives considered:**
+
+- Document a system-wide `nix.custom.conf` edit. This works, but it adds privileged mutable configuration that the repository cannot update or roll back.
+- Compile OMP when the signed output is already published. This wastes workstation resources and caused the live bootstrap to build Rust dependencies until the missing root cache setting was identified.
+
+### 3. Export one WSL environment package and one bootstrap application
 
 The flake will export an `x86_64-linux` environment package containing the existing `omp` wrapper, OpenSpec, and the reconciliation and verification helpers. It will also export a bootstrap application, invoked from the locked checkout as:
 
@@ -63,7 +74,7 @@ The application will reject non-WSL and non-`x86_64-linux` hosts before profile 
 - Add a WSL Home Manager configuration. This requires a portable-versus-Darwin module split that is unnecessary for the first usable session.
 - Publish a PowerShell installer. PowerShell cannot own the Linux Nix profile or remove the manual WSL and Linux-user boundary.
 
-### 3. Make profile replacement transactional
+### 4. Make profile replacement transactional
 
 The bootstrap will build the selected environment before it changes the user profile. It will then install the named entry on a clean profile or replace that entry on re-entry. After the profile switch, it will run the packaged Herdr reconciliation helper and the packaged verifier.
 
@@ -77,20 +88,34 @@ The bootstrap will never run `nix flake update`, modify `flake.lock`, or select 
 - Treat a failed post-install verification as a warning. That leaves `omp` resolving to an unaccepted environment.
 - Delete and recreate the whole user profile. That violates ownership of unrelated packages.
 
-### 4. Keep mutable state local and narrowly touched
+### 5. Keep mutable state local and narrowly touched
 
-The command will use the WSL user's normal `HOME`. It will not accept a Mac state archive or add a migration option. The only intentional write below `~/.omp/agent` is Herdr's generated integration through `herdr integration install omp` when the existing helper determines that installation is missing or stale.
+The command will use the WSL user's normal `HOME`. It will not accept a Mac state archive or add a migration option. Before reconciliation, the helper will create `~/.omp/agent` only when that directory is missing. It will not create the `extensions` directory or any generated file itself. Herdr's supported `integration install omp` command will create or update the generated integration when installation is missing or stale.
 
-Tests will set temporary homes and profiles. They will assert that unrelated files, configuration, and database sentinels retain their type, contents, and metadata across clean, current, stale, and failed bootstrap paths.
+This minimal initialization is required because Herdr rejects a never-started user when `~/.omp/agent` is absent. It does not fabricate authentication, configuration, sessions, or databases, and it removes the need for an interactive OMP launch before deterministic bootstrap.
+
+Tests will set temporary homes and profiles. They will assert that unrelated files, configuration, and database sentinels retain their type, contents, and metadata across never-started, current, stale, and failed bootstrap paths.
 
 **Alternatives considered:**
 
 - Copy the Mac `~/.omp/agent` directory. This transfers provider credentials and unverified database state across trust and operating-system boundaries.
 - Make OMP configuration immutable through Home Manager. This contradicts the existing OMP ownership boundary.
 
-### 5. Separate deterministic proof from the real WSL smoke
+### 6. Keep work and repository Git identities separate
 
-Linux flake checks will cover package composition, platform rejection, clean installation, re-entry, locked-revision replacement, Herdr reconciliation, verification failure, rollback, and mutable-state preservation. Command tests will use explicit temporary profiles and controlled tool doubles where nested Nix profile operations cannot run in a sandbox. Existing package-shape checks will continue to inspect the real selected closures.
+The WSL user's global Git email remains the employer address. The bootstrap will set `user.email` in the current `nix-config` checkout's local Git configuration to `11704293+glockyco@users.noreply.github.com`. Git's local setting overrides the global value only for this repository and keeps its public commit history associated with the GitHub account without exposing the work address.
+
+The command will require its current directory to resolve to a Git worktree before profile mutation. It will write only `.git/config`; it will not modify tracked files, global Git configuration, or other repositories.
+
+**Alternatives considered:**
+
+- Use the employer email for `nix-config`. This exposes the work identity in a personal public repository.
+- Replace the global WSL email with the GitHub no-reply address. This gives employer repositories the wrong default identity.
+- Add a tracked repository configuration file. Git does not read repository-local identity from a tracked file without a separate include mechanism.
+
+### 7. Separate deterministic proof from the real WSL smoke
+
+Linux flake checks will cover root cache configuration, package composition, platform rejection, clean installation, re-entry, locked-revision replacement, never-started-user and stale Herdr reconciliation, repository-local Git identity, verification failure, rollback, and mutable-state preservation. Command tests will use explicit temporary profiles and controlled tool doubles where nested Nix profile operations cannot run in a sandbox. Existing package-shape checks will continue to inspect the real selected closures.
 
 The final acceptance gate will run on the Windows machine. The operator will record the Windows version, WSL version, distribution, architecture, and repository revision. A disposable repository and a fresh wrapped session will prove the immutable plugin path, personal policy, and harmless `personal_commit` preview.
 
@@ -99,9 +124,9 @@ The final acceptance gate will run on the Windows machine. The operator will rec
 - Declare support after `nix build` on ordinary Linux. That does not exercise WSL, the user profile, Herdr's mutable integration, or an interactive OMP session.
 - Put a provider credential in CI. That adds secret and usage risk without proving the actual workstation boundary.
 
-### 6. Keep the runbook procedural and WSL-specific
+### 8. Keep the runbook procedural and WSL-specific
 
-A focused operations document will first install or update Windows Terminal Stable through the employer-managed or Microsoft-supported channel. It will set the generated Ubuntu WSL 2 profile as the default, retain normal terminal keybindings, and use the Linux home directory. The procedure will then start in Administrator PowerShell for WSL enablement, cross into the Linux shell, install Nix through the selected supported installer, obtain the repository, and run the one bootstrap command. It will include exact deterministic checks, OMP's Windows Terminal key fallbacks, the interactive smoke, update re-entry, failure recovery, and the unsupported-architecture stop.
+A focused operations document will first install or update Windows Terminal Stable through the employer-managed or Microsoft-supported channel. It will set the generated Ubuntu WSL 2 profile as the default, retain normal terminal keybindings, and use the Linux home directory. The procedure will then start in Administrator PowerShell for WSL enablement, cross into the Linux shell, install Nix through the selected supported installer, obtain the repository, review the root flake's Numtide cache settings, and run the one bootstrap command. It will explain the repository-local GitHub email and unchanged global work email. It will include exact deterministic checks, OMP's Windows Terminal key fallbacks, the interactive smoke, update re-entry, failure recovery, and the unsupported-architecture stop.
 
 The document will guide manual Windows Terminal settings, but it will not claim that this repository installs or manages Windows Terminal, VS Code, GitHub authentication, corporate controls, or OMP provider approval.
 

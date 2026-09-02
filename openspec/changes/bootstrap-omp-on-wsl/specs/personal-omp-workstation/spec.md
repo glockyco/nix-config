@@ -16,6 +16,17 @@ The workstation SHALL provide a WSL 2 bootstrap procedure for `x86_64-linux`. Th
 - **WHEN** the operator attempts the procedure on a WSL architecture other than `x86_64-linux`
 - **THEN** the procedure stops with an explicit unsupported-platform result before it changes the Nix profile
 
+### Requirement: Signed Linux binary cache
+
+The root flake SHALL advertise Numtide's substituter and trusted public key as additional Nix configuration. A supported Linux installation SHALL use the signed cached OMP output when the locked output is available from that substituter.
+
+#### Scenario: Install a cached OMP output
+
+- **WHEN** the operator evaluates the root flake and accepts its additional signed cache configuration
+- **AND** the locked OMP output exists in the Numtide cache
+- **THEN** Nix fetches that output instead of compiling OMP locally
+- **AND** the default NixOS and Determinate substituters remain configured
+
 ### Requirement: Single post-Nix bootstrap command
 
 After Nix and the repository are available, the workstation SHALL expose one supported command that installs or updates the locked personal OMP and OpenSpec packages in the user profile. The same command SHALL reconcile Herdr through its supported integration interface and run deterministic local verification without requiring a model call.
@@ -52,9 +63,21 @@ The WSL bootstrap SHALL leave OMP authentication, provider preferences, sessions
 
 #### Scenario: Bootstrap a new WSL user
 
-- **WHEN** the supported command runs before the WSL user has authenticated OMP
-- **THEN** deterministic installation and verification complete without fabricating authentication or copying state from another machine
-- **AND** OMP can create its mutable state during the later interactive session
+- **WHEN** the supported command runs before the WSL user has started or authenticated OMP
+- **THEN** the bootstrap creates only the missing `~/.omp/agent` directory required by Herdr
+- **AND** Herdr's supported integration command creates its generated extension
+- **AND** deterministic installation and verification complete without fabricating authentication, configuration, or state from another machine
+
+### Requirement: Repository-specific Git identity
+
+The WSL bootstrap SHALL configure the `nix-config` checkout to use `11704293+glockyco@users.noreply.github.com` for commits. It SHALL apply this email only to the repository-local Git configuration and SHALL preserve the WSL user's global work email.
+
+#### Scenario: Bootstrap with a work email
+
+- **WHEN** the WSL user's global Git email is `johann.glock@scch.at`
+- **AND** the supported command runs from the `nix-config` checkout
+- **THEN** `git config --local user.email` reports `11704293+glockyco@users.noreply.github.com`
+- **AND** `git config --global user.email` remains `johann.glock@scch.at`
 
 ### Requirement: WSL release proof through a real session
 
