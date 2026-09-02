@@ -4,7 +4,7 @@
 
 Status: stable workstation base implemented; project migrations and controlled experiments remain planned.
 
-Last reviewed: 2026-08-14.
+Last reviewed: 2026-09-01.
 
 This document is the canonical cross-repository record for the personal OMP environment. It owns the target architecture, ownership boundaries, accepted decisions, experiment protocols, migration order, and cross-session recovery procedure.
 
@@ -38,6 +38,7 @@ Session transcripts, OMP memory, chat summaries, and issue comments are supporti
 | Delete the old Air Mnemopi state     | complete | explicit maintenance operation; no migration artifact                                                                   | none                                    |
 | Package the personal OMP plugin      | complete | archived `omp-agent-setup` OpenSpec change `package-personal-omp-plugin`                                                | none                                    |
 | Consume the plugin from `nix-darwin` | complete | archived `nix-darwin` OpenSpec change `consume-personal-omp-plugin`                                                     | verified plugin output contract         |
+| Bootstrap OMP on WSL 2               | active   | `nix-darwin` OpenSpec change `bootstrap-omp-on-wsl` and `docs/operations/wsl-omp-bootstrap.md`                          | verified Linux package output           |
 | Migrate HotRepl                      | ready    | future HotRepl OpenSpec change `nix-development-environment`                                                            | workstation base                        |
 | Migrate Ardenfall                    | blocked  | future Ardenfall OpenSpec change `nix-development-environment`                                                          | HotRepl and workstation base            |
 | Migrate Ancient Kingdoms             | blocked  | future Ancient Kingdoms OpenSpec change `nix-development-environment`                                                   | HotRepl and workstation base            |
@@ -50,7 +51,7 @@ HotRepl is the next migration. Erenshor may proceed independently on the stable 
 
 ## Goals
 
-- One reproducible OMP environment for one user on one primary workstation.
+- One reproducible OMP environment for one user on each supported host: Apple Silicon macOS and `x86_64` WSL 2.
 - One independently packaged personal OMP plugin.
 - Nix-managed OMP, Herdr, OpenSpec, language-server executables, and plugin revisions.
 - Mutable OMP authentication, preferences, sessions, history, and caches remain under OMP ownership.
@@ -81,6 +82,8 @@ These are exclusions, not deferred work.
 | Area                            | Decision                                                                                                       |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | OMP                             | Use the unmodified, Nix-pinned package                                                                         |
+| Supported hosts                 | Activate the complete host with nix-darwin on Apple Silicon; bootstrap only the OMP environment on WSL 2       |
+| Linux binary cache              | Publish the signed Numtide cache from the root flake because input cache settings are not inherited            |
 | Personal behavior               | Load one Nix-pinned plugin from `omp-agent-setup`                                                              |
 | Plugin location                 | Keep the source and flake in `omp-agent-setup`; do not copy it into `nix-darwin`                               |
 | Mutable OMP state               | Leave it writable and under OMP ownership                                                                      |
@@ -154,10 +157,20 @@ This repository owns the workstation contract:
 - the OMP wrapper and immutable launch policy;
 - a curated language-server executable path;
 - Herdr's supported integration reconciliation;
+- the signed Numtide substituter contract;
+- the WSL OMP environment package, transactional bootstrap application, and operator runbook;
 - CrossOver and Rosetta prerequisites;
 - checks that the selected packages and wrapper compose correctly.
 
 It does not copy personal-plugin source. It consumes the plugin's flake output. It must not parse, merge, replace, back up, or symlink mutable OMP databases and configuration.
+
+### WSL work machine
+
+Windows owns Windows Terminal, WSL enablement, employer policy, and native applications. Ubuntu WSL 2 owns the Linux user, Nix profile, Git configuration, repositories, and mutable OMP state. Repositories stay under the Linux home directory, not `/mnt/c`.
+
+The root flake exposes one `personal-omp-wsl` profile package and one `bootstrap-omp-on-wsl` application for `x86_64-linux`. The bootstrap rejects native Linux, WSL 1, and unsupported architectures before profile mutation. It changes only its named profile entry, rolls back that entry after reconciliation or verification failure, and preserves unrelated entries.
+
+For a user who has never started OMP, the reconciliation helper can create the missing `~/.omp/agent` directory. Herdr remains the only writer of its generated extension. The bootstrap does not create authentication, configuration, sessions, or databases. It sets the `nix-config` checkout's local Git email to the GitHub no-reply address and leaves the global work email unchanged.
 
 ### OMP
 
@@ -380,6 +393,12 @@ Repository: `nix-darwin`.
 
 Delivered: the pinned plugin output, wrapped upstream OMP, curated language-server path, Herdr reconciliation, local activation verifier, package-shape checks, representative LSP scenarios, and a real wrapped-session smoke. Activation leaves OMP-owned configuration and databases as regular writable files.
 
+### `bootstrap-omp-on-wsl`
+
+Repository: `nix-darwin`.
+
+The [WSL OMP bootstrap runbook](../operations/wsl-omp-bootstrap.md) owns the manual Windows and Linux prerequisites, cache review, one post-Nix command, recovery, and real-session proof. The OpenSpec change owns implementation and acceptance until archive. WSL support does not imply a Linux Home Manager host or native Windows application management.
+
 ### Project migrations
 
 The dependency graph is:
@@ -585,6 +604,8 @@ A plugin or OMP release changes immutable inputs only. Use this sequence from `n
 1. Read the activation output. `verifyPersonalOmp` must print the OMP version, immutable plugin store path, and `omp: current` Herdr status.
 1. Start a fresh wrapped OMP session. Ask it to report the loaded `@glockyco/personal-omp-plugin` source path, quote the personal policy, and run `personal_commit` with `action=preview`. The path must be under `/nix/store`, and preview must not change the repository.
 
+On WSL, follow the [WSL OMP bootstrap runbook](../operations/wsl-omp-bootstrap.md) and run `nix run .#bootstrap-omp-on-wsl` from the reviewed checkout. Retain the previous user-profile generation until the installed verifier and real-session smoke pass. The bootstrap owns profile rollback; it does not copy or restore mutable OMP state.
+
 For an activation-mutation audit, stop other OMP sessions and capture file type, mode, modification time, and size before and after activation:
 
 ```sh
@@ -618,6 +639,7 @@ The environment is complete when:
 - the commit extension creates a real hooked commit with one correctly formatted causal body;
 - the representative LSP matrix passes;
 - Herdr starts a real session through the wrapped OMP binary;
+- the WSL bootstrap substitutes the published OMP output, preserves the global work Git identity and OMP-owned state, reports current Herdr integration, and passes the real Windows Terminal session smoke;
 - native image generation succeeds with the configured provider;
 - each migrated game repository proves its complete host-to-game workflow;
 - experiments produce reviewable results and no experimental state remains active accidentally;
@@ -664,6 +686,14 @@ The environment is complete when:
 
 - Store the dependency-updater App private key only in the protected `dependency-automation` control plane. Target repositories keep their update closure and CI contracts but no fleet-wide credential or local scheduler.
 - Declare native Nix commands as argument arrays and allowlist their complete changed-path sets. Do not introduce a shared package-manager wrapper.
+
+### 2026-09-01
+
+- Support the work machine through Windows Terminal Stable and `x86_64` Ubuntu WSL 2. Do not make `nix-darwin` or WSL manage native Windows applications.
+- Install OMP, OpenSpec, Herdr reconciliation, and verification as one named WSL profile entry with automatic profile rollback.
+- Publish the signed Numtide cache from the root flake because input flake cache settings are not inherited.
+- Let the bootstrap create only a missing OMP agent directory. Herdr remains the owner of its generated extension, and OMP remains the owner of all other mutable state.
+- Keep the employer email as the WSL global Git identity and use the GitHub no-reply email only in the `nix-config` checkout.
 
 ## Primary references
 
