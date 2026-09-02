@@ -56,3 +56,26 @@ The three activation entries that differ are `checkFilesChanged`, `copyApps`, an
 ## Rule
 
 `flake.lock` SHALL NOT change while this change is open. An input update changes the closure and invalidates the comparison.
+
+## Result
+
+Measured on `x86_64-linux` against the parent commit, with the refactor complete at `b0f91c59ee55`:
+
+| Invariant                                           | Result                                                                                    |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Same package set                                    | same, 35 both sides                                                                       |
+| Same file targets                                   | same, 23 both sides                                                                       |
+| Same activation entries                             | same, 21 both sides                                                                       |
+| Every derivation difference traces to package order | only `checkFilesChanged`, `copyApps`, and `onFilesChange`, each by a package-derived hash |
+
+The intended host-scope moves are present. `programs.git.settings.user` holds the same value from the host, `programs.gh.settings.editor` is empty so `gh` reads the environment, and `home.sessionVariables.EDITOR` is set.
+
+`nix fmt -- --fail-on-change` exits 0. `nix flake check` exits 0 for `x86_64-linux` and reports 17 outputs, including `moduleImports` and `moduleImportsCommand`. The portable module set builds as a standalone Home Manager generation for `x86_64-linux`.
+
+The Darwin system path at `b0f91c59ee55` is `/nix/store/49f89hn1n09d43gc9g84zar837cs9ycl-darwin-system-26.05.c3e90c8`. That value belongs to that revision only, because `system.configurationRevision` enters the derivation. The Mac gate SHALL build the system from the final revision of this change rather than reuse this path.
+
+## Outstanding, on the Mac
+
+- `nvd diff` between the parent system and this change's system.
+- `nix flake check` for `aarch64-darwin`, which the Linux run reported as an omitted system.
+- `nix run .#check-darwin-build-plans`.

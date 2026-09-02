@@ -2,8 +2,14 @@
 
 Declarative macOS config: Determinate Nix, nix-darwin, Home Manager, Apple Silicon.
 
-`hosts/` is one directory per machine, owning that machine's name and user.
+`hosts/` is one directory per machine, owning that machine's name, user, and the
+values that differ per machine, such as the commit identity and `EDITOR`.
 `modules/darwin/` is system scope, `modules/home/` user scope, and `packages/` local derivations.
+
+`modules/home/` holds the user-scope modules any host can import. `modules/home/darwin/`
+holds those that need a macOS interface, and only the Darwin host imports them. A module
+belongs in the second directory when it names `launchd`, LaunchServices, `osascript`,
+`~/Library`, a Homebrew-supplied binary, or `darwin-rebuild`.
 
 No global toolchains: project flakes use `direnv`. Symbolic PathFinder needs JDK 8; current JPF needs JDK 11.
 
