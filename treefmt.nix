@@ -18,7 +18,7 @@ _:
     # RFC 166 formatter.
     nixfmt.enable = true;
 
-    # modules/home/apple-terminal.py
+    # modules/home/darwin/*.py
     ruff-format.enable = true;
 
     # Plain mdformat only speaks CommonMark, which has no tables: it collapses

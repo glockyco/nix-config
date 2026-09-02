@@ -14,7 +14,7 @@
   imports = [ inputs.sops-nix.homeManagerModules.sops ];
 
   sops = {
-    defaultSopsFile = ../../secrets/fastmail.yaml;
+    defaultSopsFile = ../../../secrets/fastmail.yaml;
 
     age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
 
@@ -27,14 +27,14 @@
       # separate so a compromised project shell cannot rewrite mail or apex
       # records.
       "cloudflare-dns-token" = {
-        sopsFile = ../../secrets/cloudflare.yaml;
+        sopsFile = ../../../secrets/cloudflare.yaml;
         key = "token";
       };
 
       # Deployment token for Workers, D1, Queues, and Worker routes. Projects
       # opt in explicitly with `use cloudflare_workers` in their `.envrc`.
       "cloudflare-workers-token" = {
-        sopsFile = ../../secrets/cloudflare-workers.yaml;
+        sopsFile = ../../../secrets/cloudflare-workers.yaml;
         key = "token";
       };
     };

@@ -20,6 +20,12 @@
 
     extraSpecialArgs = { inherit inputs username; };
 
-    users.${username} = import ../home;
+    # `../home` holds the portable user-scope modules, and `../home/darwin`
+    # holds the modules that depend on a macOS interface. Only this host imports
+    # the second list.
+    users.${username}.imports = [
+      ../home
+      ../home/darwin
+    ];
   };
 }

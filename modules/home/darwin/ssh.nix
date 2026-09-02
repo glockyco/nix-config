@@ -7,7 +7,7 @@ let
   # that prompts can only be replaced, never relaxed -- keep that in mind
   # before adding another one here.
   secretiveAgent = "~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh";
-  airBatchCheck = pkgs.callPackage ../../packages/air-batch-check.nix { };
+  airBatchCheck = pkgs.callPackage ../../../packages/air-batch-check.nix { };
   airHost = {
     HostName = "MacBook-Air-von-ISYS.local";
     User = "joaichberger";

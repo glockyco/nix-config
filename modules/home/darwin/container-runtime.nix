@@ -5,7 +5,7 @@
 }:
 
 let
-  containerRuntimeCheck = pkgs.callPackage ../../packages/container-runtime-check.nix { };
+  containerRuntimeCheck = pkgs.callPackage ../../../packages/container-runtime-check.nix { };
   profileFormat = pkgs.formats.yaml { };
   profile = {
     cpu = 8;

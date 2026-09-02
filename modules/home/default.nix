@@ -1,30 +1,22 @@
 {
+  # User-scope modules that any supported host can import. A module that depends
+  # on a macOS interface belongs in `./darwin`, which only the Darwin host
+  # imports.
+  #
+  # `catppuccin.nix` and `zed.nix` stay here because their settings are portable
+  # while their package selection is host scope.
   imports = [
     ./shell.nix
-    ./container-runtime.nix
     ./catppuccin.nix
     ./nix-index.nix
-    ./darwin-switch.nix
-    ./secrets.nix
-    ./fastmail.nix
     ./cli.nix
-    ./ghostty.nix
-    ./brave.nix
-    ./apple-terminal.nix
-    ./default-apps.nix
     ./git.nix
     ./gh.nix
     ./ghq.nix
-    ./ssh.nix
-    ./network-shares.nix
     ./packages.nix
     ./omp.nix
     ./typst.nix
     ./tex.nix
-    ./neo2.nix
-    ./karabiner.nix
-    ./keyboard-shortcuts.nix
-    ./screenshots.nix
     ./zed.nix
   ];
 

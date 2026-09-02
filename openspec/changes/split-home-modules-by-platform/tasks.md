@@ -5,14 +5,14 @@
 
 ## 2. Create the Platform Boundary
 
-- [ ] 2.1 Create `modules/home/darwin/` and move `apple-terminal.nix`, `apple-terminal.py`, `brave.nix`, and `container-runtime.nix` with `git mv`.
-- [ ] 2.2 Move `darwin-switch.nix`, `default-apps.nix`, `fastmail.nix`, and `ghostty.nix` with `git mv`.
-- [ ] 2.3 Move `karabiner.nix`, `keyboard-shortcuts.nix`, `network-shares.nix`, and `neo2.nix` with `git mv`.
-- [ ] 2.4 Move `screenshots.nix`, `secrets.nix`, and `ssh.nix` with `git mv`.
-- [ ] 2.5 Fix every relative path that the moved modules use to reach `packages/`, `modules/`, and their own data files.
-- [ ] 2.6 Create `modules/home/darwin/default.nix` that imports the 14 moved modules.
-- [ ] 2.7 Reduce `modules/home/default.nix` to the 10 portable modules, `catppuccin.nix`, `zed.nix`, and `home.stateVersion`.
-- [ ] 2.8 Import `modules/home/darwin` from the Darwin path only.
+- [x] 2.1 Create `modules/home/darwin/` and move `apple-terminal.nix`, `apple-terminal.py`, `brave.nix`, and `container-runtime.nix` with `git mv`.
+- [x] 2.2 Move `darwin-switch.nix`, `default-apps.nix`, `fastmail.nix`, `fastmail.py`, and `ghostty.nix` with `git mv`.
+- [x] 2.3 Move `karabiner.nix`, `keyboard-shortcuts.nix`, `network-shares.nix`, and `neo2.nix` with `git mv`.
+- [x] 2.4 Move `screenshots.nix`, `secrets.nix`, and `ssh.nix` with `git mv`.
+- [x] 2.5 Fix every relative path that the moved modules use to reach `packages/`, `modules/`, and their own data files.
+- [x] 2.6 Create `modules/home/darwin/default.nix` that imports the 14 moved modules.
+- [x] 2.7 Reduce `modules/home/default.nix` to the 10 portable modules, `catppuccin.nix`, `zed.nix`, and `home.stateVersion`.
+- [x] 2.8 Import `modules/home/darwin` from the Darwin path only.
 
 ## 3. Move Host-Specific Values
 
