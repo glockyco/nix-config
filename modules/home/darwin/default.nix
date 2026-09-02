@@ -5,9 +5,9 @@
   # Homebrew-supplied binary, or `darwin-rebuild`. Only the Darwin host imports
   # this list; `../default.nix` holds the modules that any host can use.
   #
-  # The order matches the order these modules had in `../default.nix` before the
-  # split, so the two lists still read as one sequence.
+  # `./catppuccin.nix` holds the theme ports for the programs in this directory.
   imports = [
+    ./catppuccin.nix
     ./container-runtime.nix
     ./darwin-switch.nix
     ./secrets.nix

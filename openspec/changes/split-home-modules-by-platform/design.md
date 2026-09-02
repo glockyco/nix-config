@@ -42,7 +42,7 @@ Move the 14 Darwin-only modules to `modules/home/darwin/`. Keep the portable mod
 
 ### 2. Prove equality with a closure diff, not with a store path
 
-A store path is input-addressed, so it encodes the concatenation order of every list-valued option. `imports` order therefore reaches the hash. A directory split necessarily reorders `home.packages`, so a store-path comparison rejects the refactor itself instead of testing its behavior. Measurement confirmed this: the split kept the same 34 packages and moved 6 of them in the list, which changed `home-manager-path`, `home-manager-fonts`, `home-manager-applications`, the fonts-version file, the activation script that names them, and therefore the system path.
+A store path is input-addressed, so it encodes the concatenation order of every list-valued option. `imports` order therefore reaches the hash. A directory split necessarily reorders `home.packages`, so a store-path comparison rejects the refactor itself instead of testing its behavior. Measurement confirmed this: the split kept the same 35 packages and moved 6 of them in the list, which changed `home-manager-path`, `home-manager-fonts`, `home-manager-applications`, the fonts-version file, the activation script that names them, and therefore the system path.
 
 This repository already owns the correct instrument. `modules/home/darwin/darwin-switch.nix` wraps `darwin-rebuild switch` because *"it reports that it activated a generation, but not what actually changed"*, and it answers that question with `nvd diff`. A closure diff compares packages and versions, so a pure reorder reports no change.
 

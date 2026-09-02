@@ -15,14 +15,9 @@
       # pointer text.
       lfs.enable = true;
 
+      # The commit identity belongs to the host, because it differs per machine.
+      # See `hosts/<name>/default.nix`.
       settings = {
-        user = {
-          name = "Johann Glock";
-          # GitHub's noreply address associates commits with the account without
-          # exposing a real mailbox.
-          email = "11704293+glockyco@users.noreply.github.com";
-        };
-
         init.defaultBranch = "main";
 
         # Only fast-forward or rebase on pull; never create a silent merge.

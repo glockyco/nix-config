@@ -16,11 +16,11 @@
 
 ## 3. Move Host-Specific Values
 
-- [ ] 3.1 Remove `user.name` and `user.email` from `modules/home/git.nix` and keep all other Git settings.
-- [ ] 3.2 Set `user.name` and `user.email` for the Mac in `hosts/macbook-pro/`, using the current GitHub no-reply address.
-- [ ] 3.3 Replace the hard-coded `editor` in `modules/home/gh.nix` with a read of `EDITOR`.
-- [ ] 3.4 Set `EDITOR` for the Mac in host scope, preserving the current `zed --wait` value.
-- [ ] 3.5 Confirm that no portable module names an application, a macOS path, or an identity.
+- [x] 3.1 Remove `user.name` and `user.email` from `modules/home/git.nix` and keep all other Git settings.
+- [x] 3.2 Set `user.name` and `user.email` for the Mac in `hosts/macbook-pro/`, using the current GitHub no-reply address.
+- [x] 3.3 Replace the hard-coded `editor` in `modules/home/gh.nix` with a read of `EDITOR`.
+- [x] 3.4 Set `EDITOR` for the Mac in host scope, preserving the current `zed --wait` value.
+- [x] 3.5 Confirm that no portable module names an application, a macOS path, or an identity.
 
 ## 4. Extend the Import Check
 

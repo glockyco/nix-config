@@ -28,7 +28,7 @@ NOW=".#darwinConfigurations.macbook-pro.config.home-manager.users.glockyco"
 
 | Invariant                                           | Applied to                              | Measured result                                       |
 | --------------------------------------------------- | --------------------------------------- | ----------------------------------------------------- |
-| Same package set                                    | `home.packages`, `map (p: p.name)`      | 34 both sides, sorted sets identical                  |
+| Same package set                                    | `home.packages`, `map (p: p.name)`      | 35 both sides, sorted sets identical                  |
 | Same file targets                                   | `home.file`, `builtins.attrNames`       | 23 both sides, identical                              |
 | Same activation entries                             | `home.activation`, `builtins.attrNames` | 21 both sides, identical                              |
 | Every derivation difference traces to package order | differing activation texts              | 3 entries differ, each only by a package-derived hash |

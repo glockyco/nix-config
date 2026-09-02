@@ -17,11 +17,13 @@
     # explicitly, so a future upstream release cannot theme a program silently.
     autoEnable = false;
 
+    # Ports for programs that any host can install. A port for a
+    # platform-specific program belongs beside that program, so the explicit
+    # list in each scope still says exactly what is themed there.
     bat.enable = true;
     delta.enable = true;
     eza.enable = true;
     fzf.enable = true;
-    ghostty.enable = true;
 
     # No starship port: Home Manager merges `programs.starship.settings` on top
     # of the presets, and the port sets `format`, which would drop the powerline
