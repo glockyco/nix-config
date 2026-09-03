@@ -79,7 +79,7 @@
 
 - [x] 8.1 Rewrite `docs/operations/wsl-omp-bootstrap.md` for import and NixOS activation, and delete the package-manager and Nix-installer sections.
 - [x] 8.2 Document the side-by-side cutover, generation rollback, and distribution rollback.
-- [ ] 8.3 Record the release evidence, including the NixOS release and the locked revision.
+- [x] 8.3 Record the release evidence, including the NixOS release and the locked revision.
 - [x] 8.4 Update `README.md` for the second host and the two entry-point kinds.
 - [x] 8.5 Add a dated architecture decision entry that reverses the profile-entry decision and states the three-layer ownership model.
 - [x] 8.6 State that the operator holds durable local administrator credentials and that the declarative layer deliberately does not use them.
