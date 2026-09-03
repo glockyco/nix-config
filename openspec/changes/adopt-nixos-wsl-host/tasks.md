@@ -46,13 +46,13 @@
 - [x] 5.1 Build the tarball inside the current Ubuntu distribution from the reviewed revision.
 - [x] 5.2 Import the distribution while `Ubuntu-26.04` stays registered, without elevation.
 - [x] 5.3 Confirm that systemd is process 1 and that the declared user owns the session.
-- [ ] 5.4 Clone the published revision under the tree that the conditional include names, then run `nixos-rebuild switch --flake .#korolev`.
+- [ ] 5.4 Clone the published revision under the tree that the conditional include names, then run `nixos-rebuild switch --flake .#korolev` with no other distribution running.
 - [ ] 5.5 Confirm that Herdr reports `omp: current` and that local verification succeeds.
 - [ ] 5.6 Confirm that an unprivileged build reports no ignored `trusted-public-keys` warning.
 - [ ] 5.7 Re-activate the same revision and confirm that nothing changes and no duplicate entry appears.
 - [ ] 5.8 Confirm that name resolution, both substituters, and GitHub authentication work with the corporate VPN connected.
 - [x] 5.9 Confirm with `getent passwd` and a new session that the login shell is the declared shell.
-- [ ] 5.10 Confirm that the prompt, the shared history, and the completion behavior are active in that session.
+- [x] 5.10 Confirm that the prompt, the shared history, and the completion behavior are active in that session.
 - [x] 5.11 Confirm the time zone with `date`, and confirm the time and measurement categories with `locale`.
 
 ## 6. Prove the Runtime Behavior
