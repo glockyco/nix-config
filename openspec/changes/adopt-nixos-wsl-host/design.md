@@ -117,6 +117,8 @@ One repository holds one lock. A seeded `/etc/nixos` needs its own `flake.nix` a
 
 Recovery does not need a seed. The tarball is itself the recovery artifact, the previous generation stays selectable after every activation, and `Ubuntu-26.04` stays registered until the smoke passes.
 
+The clone resolves against the published revision. A revision must therefore reach the remote before the first rebuild inside the distribution. The tarball is unaffected, because the builder writes the closure that the local tree evaluates. A clone of an older remote would build and activate cleanly, and it would silently drop every change that the remote does not carry.
+
 **Alternative:** Seed `/etc/nixos` with a flake and its lock. Rejected because it adds a second lock that is stale on arrival, and because that lock can pin only a revision that already reached the remote.
 
 **Alternative:** Copy this repository into the image. Rejected because it puts repository history in a system image, needs an ownership fixup, and replaces a resolved reference with a snapshot that has no update path of its own.
