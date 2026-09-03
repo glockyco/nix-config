@@ -47,7 +47,7 @@
 - [x] 5.2 Import the distribution while `Ubuntu-26.04` stays registered, without elevation.
 - [x] 5.3 Confirm that systemd is process 1 and that the declared user owns the session.
 - [x] 5.4 Clone the published revision under the tree that the conditional include names, then run `nixos-rebuild switch --flake .#korolev` with no other distribution running and with `user@1000.service` active.
-- [ ] 5.5 Confirm that Herdr reports `omp: current` and that local verification succeeds.
+- [x] 5.5 Confirm that Herdr reports `omp: current` and that local verification succeeds.
 - [x] 5.6 Confirm that an unprivileged build reports no ignored `trusted-public-keys` warning.
 - [x] 5.7 Re-activate the same revision and confirm that nothing changes and no duplicate entry appears.
 - [x] 5.8 Confirm that name resolution, both substituters, and GitHub authentication work with the corporate VPN connected.
@@ -92,4 +92,4 @@
 - [ ] 9.3 Run `nix build .#darwinConfigurations.macbook-pro.system` and confirm that the Darwin host still builds.
 - [ ] 9.4 Run `nix run .#check-darwin-build-plans`.
 - [x] 9.5 Run `openspec validate adopt-nixos-wsl-host --strict`.
-- [ ] 9.6 Review the final diff by host, module, check, deletion, and documentation, and confirm that no module declares a Windows container product.
+- [x] 9.6 Review the final diff by host, module, check, deletion, and documentation, and confirm that no module declares a Windows container product.
