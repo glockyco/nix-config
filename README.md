@@ -1,8 +1,9 @@
 # nix-config
 
 Declarative configuration for two machines. `macbook-pro` is an Apple Silicon Mac
-that runs Determinate Nix and nix-darwin. `korolev` is an `x86_64` WSL machine
-that runs NixOS. Both import the same Home Manager user scope.
+that runs Determinate Nix and nix-darwin. `korolev` is an `x86_64` WSL machine,
+and this repository defines its NixOS host. Both hosts import the same Home
+Manager user scope.
 
 `hosts/` is one directory per machine, owning that machine's name, user, and the
 values that differ per machine, such as the commit identity and `EDITOR`. Each
