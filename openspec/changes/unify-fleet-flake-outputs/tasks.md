@@ -34,9 +34,9 @@
 
 ## 6. Verify the Complete Change
 
-- [ ] 6.1 Run `nix fmt -- --fail-on-change`.
-- [ ] 6.2 Run `nix flake check --print-build-logs` on `x86_64-linux` with the Nix the host declares.
-- [ ] 6.3 Confirm that the Darwin system derivation path is unchanged by the whole change, which is the strongest available proof from a Linux host.
+- [x] 6.1 Run `nix fmt -- --fail-on-change`.
+- [x] 6.2 Run `nix flake check --print-build-logs` on `x86_64-linux` with the Nix the host declares.
+- [x] 6.3 Confirm that the Darwin system derivation path is unchanged by the whole change, which is the strongest available proof from a Linux host.
 - [ ] 6.4 Run `nix build .#darwinConfigurations.macbook-pro.system` and `nix run .#check-darwin-build-plans` on the Darwin host.
-- [ ] 6.5 Run `openspec validate unify-fleet-flake-outputs --strict`.
-- [ ] 6.6 Review the final diff by package set, shell, table, workflow, and documentation, and confirm that no output gained a platform condition that its workflow does not require.
+- [x] 6.5 Run `openspec validate unify-fleet-flake-outputs --strict`.
+- [x] 6.6 Review the final diff by package set, shell, table, workflow, and documentation, and confirm that no output gained a platform condition that its workflow does not require.
