@@ -27,6 +27,19 @@ An audit of the flake surface on 2026-09-03 produced these facts. They decide th
 
 The two package sets on `x86_64-linux` produce equal derivations today, because both use the default configuration and the overlay only adds an attribute. That equality is a coincidence of the current content, not a property of the structure.
 
+### Measured result
+
+A comparison across the change, with `system.configurationRevision` pinned to one value on both sides so that the commit itself does not move the hash, reports these differences and no others.
+
+| Compared value                                  | Result                                                                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Home Manager generation, both hosts             | identical derivation                                                                                                |
+| Package and shell attribute names, both systems | unchanged, plus `devShells.default` on `x86_64-linux` and `checks.fleetSurface` on both                             |
+| Development shell contents, `aarch64-darwin`    | the same six packages, in a different order                                                                         |
+| System closure, both hosts                      | differs only in the rendered option documentation, and in the `etc` and `system-path` derivations that reference it |
+
+The documentation moves because an option's declaration site moved: `nixpkgs.pkgs` now arrives from an inline module, and two declarations left `modules/darwin/system.nix`.
+
 ## Goals / Non-Goals
 
 **Goals:**
@@ -67,7 +80,9 @@ The first instinct was a parity check that reads `self.devShells` and `self.chec
 
 An assertion stays only where a human can still choose wrongly and structure cannot prevent it. That is decision 4.
 
-**Alternative:** Add `checks.flakeSurface` that asserts the presence of each required output. Rejected because it is a runtime guard for a compile-time property, and because it needs a self-reference.
+The implementation keeps one narrow assertion for the shell, in `checks.fleetSurface`. It reads `self.devShells.${system}`, which is a different output attribute, so it forces no part of `checks` and needs no self-reference. Its purpose is a later edit that reintroduces a platform condition, not the state this change leaves behind.
+
+**Alternative:** Assert the presence of every required check as well. Rejected because a member of `checks` cannot read `checks` for its own system without forcing the attribute set it belongs to.
 
 ### 3. Split the development shell by workflow, not by convenience
 
@@ -87,7 +102,9 @@ Map each supported system to its host configuration and its kind in one table, a
 
 `isDarwin` and `isLinux` re-derive which host lives on a system from a string, separately, at every definition site. That is why four asymmetries arrived as four separate failures during the cutover. With the table, the fleet shape is stated once, and a third host is one entry.
 
-Add one check that asserts the table covers `systems` exactly and names every configuration under `darwinConfigurations` and `nixosConfigurations`. That assertion reads the table and the host attribute names, not the output set it belongs to, so it needs no self-reference. It matches the assertion style of the existing `korolevIsolation` and `korolevNixSettings` checks, which carry no rejecting counterpart either.
+Derive `systems` from the table with `builtins.attrNames`, so "the table covers `systems`" becomes a property of the code rather than a claim a check has to make. A supported system with no host, and a host on a system that no gate covers, both become unrepresentable.
+
+One assertion remains, because the table can still fall behind a new host. The check asserts that the table names every configuration under `darwinConfigurations` and `nixosConfigurations`, and that the host for the current system reports that system as its platform. It reads the table and the host attribute names, not the output set it belongs to, so it needs no self-reference. It matches the assertion style of the existing `korolevIsolation` and `korolevNixSettings` checks, which carry no rejecting counterpart either.
 
 **Alternative:** Keep the booleans and document the rule. Rejected because the four failures are the evidence that a documented rule does not hold.
 

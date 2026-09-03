@@ -117,6 +117,15 @@ The result must be `11704293+glockyco@users.noreply.github.com`. A clone in anot
 
 The clone must resolve the published revision. Publish the reviewed revision before the first activation inside the distribution. A clone of an older remote activates cleanly and silently drops every later change.
 
+Entering the clone installs the commit hook. `direnv` enters the development shell for this system, and the shell installs the hook into the working tree:
+
+```sh
+direnv allow
+test -f .git/hooks/pre-commit && printf '%s\n' 'commit-gate=installed'
+```
+
+Run `nix develop --command true` instead when `direnv` is not active. A host with no development shell for its system installs no hook, and a commit there passes no formatting gate and reports nothing.
+
 ## 7. Activate the host
 
 Activate from a committed tree:

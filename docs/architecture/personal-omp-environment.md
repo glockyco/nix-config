@@ -709,6 +709,10 @@ The environment is complete when:
 - Record that the operator holds durable credentials for the local `Administrator` account, and that the declarative layer deliberately does not use them. Import, activation, and both rollback paths run as the standard user.
 - Install the editor on Windows and keep it out of the Linux closure. Zed for Windows runs its remote server under `wsl.exe`, so every language server stays in the Nix closure without an SSH server or a display path.
 - Declare a rootless container runtime with Docker command compatibility inside the NixOS host. WSL 2 already provides the Linux virtual machine that Colima provides on macOS.
+- Instantiate one package set per system in the flake and hand it to that system's host. The dependency runs outward, so a host and an output cannot resolve a package differently.
+- Provide the development shell on every supported system, because that shell installs the commit hook. A host without it has no local formatting gate and reports nothing.
+- Run each continuous-integration leg with the Nix implementation that its host runs. `nix flake check` is implementation-sensitive, so a green leg under a different Nix is not evidence for the host.
+- Derive the supported systems from one host binding table, so a supported system without a host, or a host without a gate, cannot be declared.
 
 ## Primary references
 
