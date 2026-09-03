@@ -1,13 +1,13 @@
 ## ADDED Requirements
 
-### Requirement: Rendered Windows configuration document
+### Requirement: Rendered Windows configuration artifacts
 
-The repository SHALL render one Windows configuration document from Nix expressions. The document SHALL be the single source for the Windows application set, the declared Windows settings, and the declared application configuration files. Nix activation on any host SHALL NOT write to a Windows path, and SHALL NOT apply the document.
+The repository SHALL render one Windows configuration document and one Administrator Zen policy script from the same Nix expressions. Together they SHALL be the single source for the Windows application set, the declared Windows settings, and the declared application configuration files. Nix activation on any host SHALL NOT write to a Windows path and SHALL NOT apply either artifact.
 
-#### Scenario: Render the document
+#### Scenario: Render the artifacts
 
 - **WHEN** the Windows configuration output is built from the locked repository
-- **THEN** the result is one document plus the configuration files it references
+- **THEN** the result contains one WinGet Configuration document, one Zen policy script, and the review files that describe their settings
 - **AND** the build reads no mutable Windows state
 
 #### Scenario: Keep the operating-system boundary
@@ -16,19 +16,26 @@ The repository SHALL render one Windows configuration document from Nix expressi
 - **THEN** activation writes no file under the Windows user profile
 - **AND** activation does not start the Windows apply operation
 
-### Requirement: Unelevated user-scope application
+### Requirement: User scope with one browser exception
 
-Every item that the document declares SHALL apply in the interactive user's own scope. Applying the document SHALL complete without administrator rights.
+Every document resource SHALL apply in the interactive user's own scope except the Zen package. The official Zen installer SHALL be the only document resource that requests elevation. The Administrator script SHALL own only the Zen policy file under Program Files, refuse a non-administrator token, and read no Administrator-profile path.
 
-#### Scenario: Apply as a standard user
+#### Scenario: Apply user-scope resources
 
 - **WHEN** the interactive user applies the document with standard user rights
-- **THEN** the operation completes without an elevation prompt
-- **AND** every installed application and written file belongs to that user's profile
+- **THEN** every resource except the Zen package completes without elevation
+- **AND** every other installed application and written file belongs to that user's profile
 
-#### Scenario: Reject a privileged declaration
+#### Scenario: Apply the browser exception
 
-- **WHEN** the document would declare a machine-scope package, a machine-scope registry value, or a Windows feature
+- **WHEN** the Zen installer requests the administrator credential and the operator later applies the policy script from an Administrator PowerShell session
+- **THEN** those are the only two privileged operations
+- **AND** both write only to the machine-wide Zen installation under Program Files
+
+#### Scenario: Reject another privileged declaration
+
+- **WHEN** the document declares another machine-scope package, elevated resource, machine-scope registry value, or Windows feature
+- **OR** the Administrator script refers to an interactive-user profile path
 - **THEN** the repository validation fails
 
 ### Requirement: Pinned application set
@@ -67,7 +74,7 @@ The document SHALL declare Windows settings by explicit named keys. For a bundle
 
 ### Requirement: Application configuration files
 
-The document SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the document SHALL enforce the complete file content. For an application that rewrites its own configuration, the document SHALL converge only the declared values and SHALL preserve the application's own writes.
+The document and policy script SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the owning artifact SHALL enforce the complete file content. For an application that rewrites its own configuration, the owning artifact SHALL converge only the declared values and SHALL preserve the application's own writes.
 
 #### Scenario: Enforce a stable configuration file
 
@@ -92,16 +99,16 @@ The Windows layer SHALL declare nothing about the taskbar pinned-application lis
 
 ### Requirement: Validation before and after apply
 
-The repository SHALL validate the rendered document without a Windows machine. The operator SHALL preview the document before the first apply, and SHALL confirm the applied state after the apply.
+The repository SHALL validate the rendered document and privilege boundary without a Windows machine. The operator SHALL test the document and policy script before their first apply and SHALL confirm each applied state after the apply.
 
 #### Scenario: Validate without Windows
 
 - **WHEN** the repository checks run on a supported build platform
-- **THEN** they validate the document structure, the version pin of every application, and the absence of a centrally managed application
+- **THEN** they validate the document structure, the narrow script boundary, the version pin of every application, and the absence of a centrally managed application
 - **AND** they require no Windows machine and no network service
 
 #### Scenario: Preview and confirm on the machine
 
-- **WHEN** the operator previews the document on `korolev`
-- **THEN** the preview reports the pending changes without applying them
-- **AND** a later test operation reports that the applied state matches the document
+- **WHEN** the operator tests the document and policy script on `korolev`
+- **THEN** each test reports drift without applying it
+- **AND** later test operations report that the applied state matches both artifacts

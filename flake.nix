@@ -177,6 +177,10 @@
               inherit containerRuntimeCheck;
               homeConfiguration = self.darwinConfigurations.macbook-pro.config.home-manager.users.glockyco;
             };
+            windowsConfiguration = pkgs.callPackage ./modules/windows { };
+            windowsConfigurationCheck = pkgs.callPackage ./packages/windows-configuration-check.nix {
+              inherit windowsConfiguration;
+            };
 
             # `nixosConfigurations.korolev` is the only `x86_64-linux` host. These
             # bindings are lazy, so the Darwin outputs never force them.
@@ -197,6 +201,7 @@
             packages = {
               inherit openspec;
               personal-omp = personalOmp;
+              windows-configuration = windowsConfiguration;
             }
             // onDarwinHost {
               # `meta.platforms` is Darwin only, so `nix flake check` on the WSL
@@ -363,6 +368,8 @@
                 src = ./.;
                 name = "check-openspec-contracts";
               };
+
+              windowsConfiguration = windowsConfigurationCheck;
 
             }
             // onNixosHost {

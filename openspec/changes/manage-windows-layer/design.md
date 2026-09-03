@@ -11,20 +11,20 @@ An audit of `korolev` on 2026-09-02 established these facts.
 | Device management   | Azure AD joined, AD domain `SCCH`, Intune enrolled                                           |
 | Interactive account | `JGlock`, standard user, medium integrity, not in `Administrators`                           |
 | Privileged account  | The operator holds durable credentials for the separate local `Administrator` account        |
-| DSC                 | `Microsoft.DSC` 3.2.2, installed per user without elevation                                  |
+| DSC                 | `Microsoft.DSC` 3.2.3, installed per user without elevation                                  |
 | WinGet              | 1.29.290, sources `msstore`, `winget`, `winget-font`                                         |
 | Per-user install    | Verified: a package installed into the interactive user's profile with no elevation prompt   |
 | Policy collision    | The elevated policy tree holds no entry for WSL, Windows Terminal, or the developer settings |
 
 ### Verified DSC resource set
 
-| Source                     | Resources                                                                                                                                                                                 |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built in                   | `Microsoft.Windows/Registry`, `/Service`, `/FirewallRuleList`, `/OptionalFeatureList`, `/FeatureOnDemandList`, `/UpdateList`, `/RebootPending`, `Microsoft.DSC/{Group,Include,Assertion}` |
-| WinGet                     | `Microsoft.WinGet/{Package,Source,AdminSettings,UserSettingsFile}`                                                                                                                        |
-| Windows PowerShell adapter | `PSDesiredStateConfiguration/{File,Script,Registry,Archive}`                                                                                                                              |
+| Source                     | Resources                                                                                                                                                                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Built in                   | `Microsoft.Windows/Registry`, `/Service`, `/FirewallRuleList`, `/OptionalFeatureList`, `/FeatureOnDemandList`, `/UpdateList`, `/RebootPending`, `Microsoft.DSC/{Group,Include,Assertion}`, `Microsoft.DSC.Transitional/WindowsPowerShellScript` |
+| WinGet                     | `Microsoft.WinGet/{Package,Source,AdminSettings,UserSettingsFile}`                                                                                                                                                                              |
+| Windows PowerShell adapter | `PSDesiredStateConfiguration/{File,Script,Registry,Archive}`; discovered, but its local execution requires unavailable WS-Management                                                                                                            |
 
-DSC v3 provides no built-in file resource. The in-box Windows PowerShell adapter provides one, so file management needs no gallery module.
+The native Windows PowerShell script resource supports get, set, and test operations. Its get operation hangs under DSC 3.2.3 on the accepted machine, while test and set complete. These resources therefore declare only test and set scripts. They run in the selected security context without the Windows PowerShell adapter or WS-Management.
 
 ### Centrally managed applications
 
@@ -34,8 +34,8 @@ Intune deploys or manages updates for `7-Zip`, `Adobe Acrobat Reader`, `draw.io 
 
 **Goals:**
 
-- Give the Windows host one declarative document with the same review path as the Nix hosts.
-- Keep the document appliable by a standard user.
+- Give the Windows host one declarative source rendered into a WinGet document and a narrow Zen policy script with the same review path as the Nix hosts.
+- Keep every operation in user scope except the official Zen package and its policy file.
 - Declare each cross-platform setting once, and let each host renderer apply it.
 - Make an unpinned or centrally managed application a validation failure.
 
@@ -50,9 +50,11 @@ Intune deploys or manages updates for `7-Zip`, `Adobe Acrobat Reader`, `draw.io 
 
 ### 1. Use DSC v3 with WinGet Configuration
 
-Express the Windows layer as one WinGet Configuration document and apply it with `winget configure`.
+Express the Windows layer as one Nix declaration that renders a WinGet Configuration document and one Zen policy script. Apply the document as the interactive user. The official Zen installer performs its own elevation. Apply the policy script from an Administrator PowerShell session.
 
-**Alternative:** A hand-written idempotent PowerShell script. Rejected because it reimplements convergence, which is the same category of work that `adopt-nixos-wsl-host` deletes on the Linux side.
+The live WinGet 1.29.290 CLI recognized `metadata.winget.securityContext: elevated` and displayed its shield but ran a token probe with `admin=False`. The separate Administrator account could not process a second configuration document because DSC 3.2.3 was installed only for the interactive user, and the Administrator account had no Microsoft Store logon session from which to install it. The companion script needs no DSC package, refuses a non-administrator token, and owns only the fixed Zen policy path. No interactive-user resource runs from the Administrator profile.
+
+**Alternative:** A hand-written idempotent PowerShell script for the complete layer. Rejected because it reimplements convergence, which is the same category of work that `adopt-nixos-wsl-host` deletes on the Linux side. The Zen policy companion is limited to the one path that the available DSC processor cannot apply in the required account.
 
 **Alternative:** Ansible against Windows. Rejected because it adds a second configuration-management system and a transport for no capability that DSC lacks.
 
@@ -62,19 +64,23 @@ Express the Windows layer as one WinGet Configuration document and apply it with
 
 ### 2. Nix renders and Windows applies
 
-Nix produces the document and the configuration files it references. A human applies it from Windows. Nix activation never writes across the boundary.
+Nix produces the document, Zen policy script, and review files. A human applies the document and script from Windows. Nix activation never writes across the boundary.
 
 This repository already builds host-specific artifacts for another operating system to consume: `packages/neo-keyboard-layouts.nix` builds a macOS bundle, `modules/home/default-apps.nix` builds an application bundle, and `modules/home/container-runtime.nix` renders YAML with `pkgs.formats.yaml`. Rendering a document for Windows is the same pattern.
 
 A cross-boundary write from Linux activation would race with Windows and would have no rollback on either side.
 
-### 3. Declare user scope only, although the operator holds administrator credentials
+### 3. Keep one explicit machine-scope exception for Zen
 
-Elevation on this machine means running as a different account, because the operator's interactive account is a standard user. An elevated process therefore resolves `HKCU`, `%USERPROFILE%`, and `%LOCALAPPDATA%` to the `Administrator` profile. Every item in this layer is user scope, so an elevated apply would write to the wrong profile.
+Elevation on this machine means running as a different account, because the operator's interactive account is a standard user. An elevated process therefore resolves `HKCU`, `%USERPROFILE%`, and `%LOCALAPPDATA%` to the `Administrator` profile. Every user-setting resource must remain unelevated for that reason.
 
-Two further reasons hold independently. Intune and Group Policy reassert machine-scope settings on their next synchronization, so a machine-scope declaration that collides with policy is a claim with an expiry. And a user-scope document remains valid on any corporate Windows machine, which keeps the repository useful after a rebuild.
+The official Zen WinGet manifest declares machine scope, and the live apply installed it under `C:\Program Files\Zen Browser`. Zen reads Windows enterprise policy from its installation's `distribution\policies.json`, which the standard user cannot write. Mark the Zen package as the only elevated document resource; its official installer requests the administrator credential. Render the policy file into the single Administrator script and apply that script separately. Both operations use fixed machine paths and read no administrator-profile environment value.
 
-**Alternative:** Use the administrator credential to declare machine scope. Rejected for the three reasons above.
+All other applications and files remain in the interactive user's profile. Validation rejects every additional elevated resource, every machine registry value, and every Windows feature. This keeps the exception narrow and reviewable if Intune or Group Policy later claims Zen.
+
+**Alternative:** Replace Zen with Vivaldi. Rejected because the operator selected Zen and accepted its narrow privilege exception.
+
+**Alternative:** Use a community portable Zen wrapper. Rejected because it adds an unsupported packaging and update dependency.
 
 ### 4. Declare only applications that the device policy does not manage
 
@@ -92,18 +98,20 @@ Declare the disabled state explicitly. `modules/darwin/defaults.nix` records the
 
 ### 6. Separate enforced configuration files from converged ones
 
-An application that does not rewrite its configuration gets a `PSDesiredStateConfiguration/File` resource with a checksum, which enforces the complete content. An application that rewrites its configuration gets a `PSDesiredStateConfiguration/Script` resource that sets the declared values and preserves the rest.
+Use `Microsoft.DSC.Transitional/WindowsPowerShellScript` to converge the interactive-user files. Declare test and set operations; omit the affected get operation. The resource does not need the Windows PowerShell adapter, and every instance runs without elevation. The separate Administrator script enforces the complete Zen policy file because the Administrator profile cannot run the per-user DSC processor. PowerToys holds its settings file open, so its set operation stops the user's PowerToys processes, recovers an empty or invalid file, writes the declared values, and restarts PowerToys.
 
-This distinction already exists on Darwin. `modules/home/karabiner.nix` copies rather than symlinks because the application rewrites its file, and `modules/home/zed.nix` keeps `mutableUserSettings = true` so that declared values reapply while interface state survives.
+This distinction already exists on Darwin. `modules/home/darwin/karabiner.nix` copies rather than symlinks because the application rewrites its file, and `modules/home/darwin/zed.nix` keeps `mutableUserSettings = true` so that declared values reapply while interface state survives.
 
-| Class                | Files                                                       |
-| -------------------- | ----------------------------------------------------------- |
-| Enforced by checksum | AltSnap configuration                                       |
-| Converged by merge   | Windows Terminal settings, Zed settings, PowerToys settings |
+| Class              | Files                                                       |
+| ------------------ | ----------------------------------------------------------- |
+| Enforced content   | Zen policies                                                |
+| Converged by merge | Windows Terminal settings, Zed settings, PowerToys settings |
+
+**Alternative:** Use the adapted `PSDesiredStateConfiguration/File` and `/Script` resources. Rejected after the live dry run failed because the adapter tried to connect through unavailable WS-Management. Enabling that machine service would need administration and violate the user-scope boundary.
 
 **Alternative:** Enforce every file. Rejected because it would revert generated profile identifiers and interface state on every apply, and would fight the application forever.
 
-**Alternative:** `Microsoft.DSC.Transitional/RunCommandOnSet`. Rejected because the resource name states that it is transitional, and a copy command provides no test operation.
+**Alternative:** `Microsoft.DSC.Transitional/RunCommandOnSet`. Rejected because a run-only command provides no test operation.
 
 ### 7. Application selection
 
@@ -115,10 +123,10 @@ The operator confirmed each role. The rejected options are recorded so that the 
 | Browser                       | Zen                                     | —                                                                                                                                                                                                                              |
 | Git client                    | Fork                                    | Measured cost of the `\\wsl.localhost` path: 0.165 ms per file against 0.021 ms native, about eight times, plus a fixed connection cost near 0.6 s. Acceptable.                                                                |
 | Launcher and window switching | PowerToys, with Command Palette enabled | Flow Launcher needs a community plugin for window switching, and its plugin manager installs outside the declarative layer. PowerToys provides launching, window switching, and a calculator in the pinned package.            |
-| Mouse window move and resize  | AltSnap                                 | PowerToys FancyZones needs the title bar and predefined zones. komorebi and GlazeWM are keyboard-driven tiling managers, which the operator does not use. AquaSnap is proprietary and carries licence state.                   |
+| Mouse window move and resize  | PowerToys, with Grab And Move enabled   | Grab And Move provides modifier-plus-drag move and resize anywhere inside a window. It reuses the launcher package and removes the extra AltSnap installer and process. FancyZones remains disabled.                           |
 | Neo2 keyboard layout          | ReNeo, Neo2 variant                     | The `kbdneo` layout driver needs administrator rights and a machine-scope registration. ReNeo installs per user.                                                                                                               |
 | Terminal                      | Windows Terminal                        | Ghostty publishes no Windows build. WezTerm's package-manager release is from February 2024 and its WSL integration is manual. Alacritty offers no tabs and no WSL profile concept.                                            |
-| Terminal font                 | JetBrainsMono Nerd Font                 | Same face as the Darwin host.                                                                                                                                                                                                  |
+| Terminal font                 | JetBrainsMono Nerd Font                 | Same face as the Darwin host. Install four faces from the checksum-pinned upstream archive because the only WinGet package self-elevates.                                                                                      |
 
 ### 8. Declare no taskbar pinned-application list
 
@@ -126,7 +134,7 @@ Windows provides no supported per-user mechanism. The pinned list is an opaque s
 
 The Darwin configuration also makes this a small loss. `modules/darwin/defaults.nix` records that the Dock list is *"credentials, chat, terminal, browser, editor, documents, version control, tasks"* and then states that *"nothing here is launched from the Dock."* The launcher performs the launching on both hosts. The operator also removed five of those nine applications from this host.
 
-Declare taskbar auto-hide instead, which matches `dock.autohide = true` on Darwin. Auto-hide lives inside a binary value rather than a discrete value, so express it with a `Script` resource that reads, sets, and tests that one flag.
+Declare taskbar auto-hide instead, which matches `dock.autohide = true` on Darwin. Auto-hide lives inside a binary value rather than a discrete value, so express it with a script resource that sets and tests that one flag.
 
 ### 9. Declare no file associations
 
