@@ -141,9 +141,13 @@ This asymmetry is deliberate. Each host uses the idiomatic option for its platfo
 
 ### 10. Mask the console unit and require a clean unit state
 
-A reference NixOS-WSL system reports `degraded`, because `getty@tty1.service` and `user@1000.service` fail. WSL provides no `tty1`.
+A reference NixOS-WSL system reports `degraded`, because `getty@tty1.service` and `user@1000.service` fail. The two failures have different causes. WSL provides no `tty1`, so the console unit is a configuration matter, and this host disables it.
 
-Disable `getty@tty1` and confirm that an interactive session starts the user manager. The host must report a running system with no failed unit, because a permanent `degraded` state hides real failures.
+`user@1000.service` fails only while another distribution with the same user ID runs. WSL places no distribution in its own cgroup namespace, so every running distribution targets `/user.slice/user-1000.slice/user@1000.service`, and the second one to start cannot attach. A measurement on the imported host confirmed this. The Ubuntu distribution holds an active `user@1000.service` and owns that path, and the imported host reports `Failed to spawn executor: Device or resource busy`. An interactive session does not change the result, and neither does a restart of the unit.
+
+The condition therefore belongs to the side-by-side window, not to the host. Require the clean unit state after the Ubuntu distribution is removed, because a permanent `degraded` state hides real failures.
+
+**Alternative:** Give the WSL user a unique user ID. Rejected because it carries a permanent non-default identity to work around a condition that ends with the cutover.
 
 ### 11. Install the editor on Windows and keep it out of the Linux host
 

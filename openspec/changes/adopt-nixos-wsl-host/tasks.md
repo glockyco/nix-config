@@ -45,7 +45,7 @@
 
 - [x] 5.1 Build the tarball inside the current Ubuntu distribution from the reviewed revision.
 - [ ] 5.2 Import the distribution while `Ubuntu-26.04` stays registered, without elevation.
-- [ ] 5.3 Confirm that systemd is process 1, that the declared user owns the session, and that no unit failed.
+- [ ] 5.3 Confirm that systemd is process 1 and that the declared user owns the session.
 - [ ] 5.4 Clone the published revision under the tree that the conditional include names, then run `nixos-rebuild switch --flake .#korolev`.
 - [ ] 5.5 Confirm that Herdr reports `omp: current` and that local verification succeeds.
 - [ ] 5.6 Confirm that an unprivileged build reports no ignored `trusted-public-keys` warning.
@@ -73,6 +73,7 @@
 - [ ] 7.3 Confirm that no alias, wrapper, or documentation preserves the retired command.
 - [ ] 7.4 Set the NixOS profile as the Windows Terminal default and confirm that it opens in the Linux home directory.
 - [ ] 7.5 Remove the `Ubuntu-26.04` distribution only after every gate in sections 5 and 6 passes.
+- [ ] 7.6 Confirm after the removal that the host reports a running system with no failed unit.
 
 ## 8. Update the Documentation
 
