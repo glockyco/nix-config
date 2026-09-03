@@ -15,10 +15,13 @@
     # manager, so the value here is what `wsl.exe` attaches to.
     defaultUser = username;
 
-    # Zed propagates extensions with `wsl.exe --exec cp`. That invocation uses
-    # WSL's fixed FHS PATH rather than the NixOS profile, so expose only the
-    # command that the native WSL integration requires.
-    extraBin = [ { src = "${pkgs.coreutils}/bin/cp"; } ];
+    # Native Windows integrations invoke `cp` and `git` through `wsl.exe`
+    # without a login shell. Those calls use WSL's fixed FHS PATH rather than
+    # the NixOS profile, so expose only the required bridge commands.
+    extraBin = [
+      { src = "${pkgs.coreutils}/bin/cp"; }
+      { src = "${pkgs.git}/bin/git"; }
+    ];
   };
 
   # WSL provides no `tty1`, so this unit cannot start and leaves the system

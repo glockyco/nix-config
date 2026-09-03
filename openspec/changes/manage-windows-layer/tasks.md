@@ -46,6 +46,7 @@
 - [x] 5.7 Declare the standalone Neo2 selection as a converged ReNeo setting and start ReNeo at user logon.
 - [x] 5.8 Install the pinned Zed theme and merge the Catppuccin Mocha scheme into Windows Terminal.
 - [x] 5.9 Support Zed's WSL extension propagation, select `nixd` from the Linux environment, and disable the `nil` fallback.
+- [x] 5.10 Pin `wslgit` and configure Fork to run repository commands inside the NixOS distribution.
 
 ## 6. Add Repository Validation
 

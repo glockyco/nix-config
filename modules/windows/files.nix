@@ -1,6 +1,15 @@
 { pkgs, shared }:
 
 let
+  wslGit = {
+    version = "1.3.1";
+    url = "https://github.com/andy-5/wslgit/releases/download/v1.3.1/wslgit.zip";
+    archiveSha256 = "88c0ad4c41c9fdcc522436fe7d0c808b192c2e47671816eb067a4d9740bc6807";
+    executableSha256 = "f41ca507009b42871c0d55eaab24b41d821d5eb36e109e56e0cbba5020eded58";
+    forkIntegrationSha256 = "cf0fde2c68c9bf891353dcc4f148a0fb3a1dd88b121d7d3e3b4c8577d71b9546";
+  };
+  wslGitJson = builtins.toJSON wslGit;
+
   zedThemeUrl = "https://raw.githubusercontent.com/catppuccin/zed/b54cb81708d06912d50e6bb9fd2fd2103b9dda25/themes/catppuccin-mauve.json";
   zedThemeSha256 = "2dccb9fb3ff888e646407b4f84d400304553e0d9a9688ac75d0f9fcd3f8bdf6a";
   zedThemeSource = pkgs.fetchurl {
@@ -125,6 +134,7 @@ let
   terminalSpecificationJson = builtins.toJSON terminalSettings;
 
   jsonFiles = {
+    "fork-wslgit.json" = wslGitJson;
     "zed-catppuccin-theme.json" = builtins.readFile zedThemeSource;
     "power-toys-settings.json" = builtins.toJSON powerToysSettings;
     "reneo-settings.json" = builtins.toJSON reneoSettings;
@@ -211,6 +221,91 @@ let
       };
       metadata = { inherit description; };
     };
+
+  forkWslGitResource = {
+    type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+    name = "fork-wslgit";
+    dependsOn = [ "package-git-client" ];
+    properties = {
+      testScript = ''
+        $specification = '${wslGitJson}' | ConvertFrom-Json
+        $root = Join-Path $env:LOCALAPPDATA 'wslgit'
+        $executablePaths = @(
+          (Join-Path $root 'cmd\wslgit.exe'),
+          (Join-Path $root 'cmd\git.exe'),
+          (Join-Path $root 'bin\git.exe')
+        )
+        foreach ($path in $executablePaths) {
+          if (-not (Test-Path -LiteralPath $path)) { return $false }
+          if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $specification.executableSha256) { return $false }
+        }
+        $integration = Join-Path $root 'bin\Fork.RI'
+        if (-not (Test-Path -LiteralPath $integration)) { return $false }
+        if ((Get-FileHash -LiteralPath $integration -Algorithm SHA256).Hash.ToLowerInvariant() -ne $specification.forkIntegrationSha256) { return $false }
+        $systemWslHash = (Get-FileHash -LiteralPath (Join-Path $env:SystemRoot 'System32\wsl.exe') -Algorithm SHA256).Hash
+        foreach ($name in @('sh.exe', 'bash.exe')) {
+          $path = Join-Path $root "bin\$name"
+          if (-not (Test-Path -LiteralPath $path)) { return $false }
+          if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ne $systemWslHash) { return $false }
+        }
+        if ([Environment]::GetEnvironmentVariable('WSLGIT_DEFAULT_DIST', 'User') -ne 'NixOS') { return $false }
+        $settingsPath = Join-Path $env:LOCALAPPDATA 'Fork\settings.json'
+        if (-not (Test-Path -LiteralPath $settingsPath)) { return $false }
+        try {
+          $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
+        } catch {
+          return $false
+        }
+        return $settings.GitInstancePath -eq (Join-Path $root 'bin\git.exe')
+      '';
+      setScript = ''
+        $specification = '${wslGitJson}' | ConvertFrom-Json
+        $archive = Join-Path $env:TEMP "wslgit-$($specification.version).zip"
+        $expanded = Join-Path $env:TEMP "wslgit-$($specification.version)"
+        $root = Join-Path $env:LOCALAPPDATA 'wslgit'
+        Get-Process -Name Fork -ErrorAction SilentlyContinue | Stop-Process
+        try {
+          Invoke-WebRequest -Uri $specification.url -OutFile $archive -UseBasicParsing
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $specification.archiveSha256) { throw 'wslgit archive checksum mismatch' }
+          Remove-Item -LiteralPath $expanded -Recurse -Force -ErrorAction SilentlyContinue
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [IO.Compression.ZipFile]::ExtractToDirectory($archive, $expanded)
+          Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path (Join-Path $root 'cmd') -Force | Out-Null
+          New-Item -ItemType Directory -Path (Join-Path $root 'bin') -Force | Out-Null
+          Copy-Item -LiteralPath (Join-Path $expanded 'wslgit\cmd\wslgit.exe') -Destination (Join-Path $root 'cmd\wslgit.exe')
+          Copy-Item -LiteralPath (Join-Path $expanded 'wslgit\cmd\wslgit.exe') -Destination (Join-Path $root 'cmd\git.exe')
+          Copy-Item -LiteralPath (Join-Path $expanded 'wslgit\cmd\wslgit.exe') -Destination (Join-Path $root 'bin\git.exe')
+          Copy-Item -LiteralPath (Join-Path $expanded 'wslgit\cmd\Fork.RI') -Destination (Join-Path $root 'bin\Fork.RI')
+          Copy-Item -LiteralPath (Join-Path $env:SystemRoot 'System32\wsl.exe') -Destination (Join-Path $root 'bin\sh.exe')
+          Copy-Item -LiteralPath (Join-Path $env:SystemRoot 'System32\wsl.exe') -Destination (Join-Path $root 'bin\bash.exe')
+          [Environment]::SetEnvironmentVariable('WSLGIT_DEFAULT_DIST', 'NixOS', 'User')
+
+          $settingsPath = Join-Path $env:LOCALAPPDATA 'Fork\settings.json'
+          New-Item -ItemType Directory -Path (Split-Path -Parent $settingsPath) -Force | Out-Null
+          try {
+            $settings = if (Test-Path -LiteralPath $settingsPath) { Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json } else { $null }
+          } catch {
+            $settings = $null
+          }
+          if ($null -eq $settings) { $settings = [PSCustomObject]@{} }
+          $gitPath = Join-Path $root 'bin\git.exe'
+          if ($null -eq $settings.PSObject.Properties['GitInstancePath']) {
+            $settings | Add-Member -NotePropertyName GitInstancePath -NotePropertyValue $gitPath
+          } else {
+            $settings.GitInstancePath = $gitPath
+          }
+          $json = $settings | ConvertTo-Json -Depth 100
+          [IO.File]::WriteAllText($settingsPath, $json, [Text.UTF8Encoding]::new($false))
+        } finally {
+          Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue
+          Remove-Item -LiteralPath $expanded -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        Start-Process (Join-Path $env:LOCALAPPDATA 'Fork\current\Fork.exe')
+      '';
+    };
+    metadata.description = "Install pinned wslgit and make Fork execute Git inside NixOS";
+  };
 
   zedThemeResource = {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
@@ -307,6 +402,7 @@ in
   files = jsonFiles;
 
   resources = [
+    forkWslGitResource
     zedThemeResource
     terminalResource
     (mergeJsonScript {

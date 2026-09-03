@@ -88,6 +88,7 @@ EXPECTED_POWERTOYS_MODULES = {
 }
 EXPECTED_FILES = {
     "apply-zen-policies.ps1",
+    "fork-wslgit.json",
     "power-toys-settings.json",
     "reneo-settings.json",
     "terminal-settings.json",
@@ -368,6 +369,7 @@ def main() -> None:
         raise ValueError("ReNeo startup must use the exact user-scope package path")
 
     json_resource_names = {
+        "fork wslgit",
         "windows terminal settings",
         "zed settings",
         "reneo settings",
@@ -397,6 +399,32 @@ def main() -> None:
     )
     if missing:
         raise ValueError(f"rendered Windows files are missing: {', '.join(missing)}")
+
+    wsl_git = json.loads(
+        (package_root / "fork-wslgit.json").read_text(encoding="utf-8")
+    )
+    if wsl_git != {
+        "version": "1.3.1",
+        "url": "https://github.com/andy-5/wslgit/releases/download/v1.3.1/wslgit.zip",
+        "archiveSha256": "88c0ad4c41c9fdcc522436fe7d0c808b192c2e47671816eb067a4d9740bc6807",
+        "executableSha256": "f41ca507009b42871c0d55eaab24b41d821d5eb36e109e56e0cbba5020eded58",
+        "forkIntegrationSha256": "cf0fde2c68c9bf891353dcc4f148a0fb3a1dd88b121d7d3e3b4c8577d71b9546",
+    }:
+        raise ValueError("Fork wslgit bridge must match the pinned release")
+    fork_bridge = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "fork wslgit"
+    )
+    fork_scripts = "\n".join(
+        fork_bridge.get("properties", {}).get(name, "")
+        for name in ("testScript", "setScript")
+    )
+    if any(
+        value not in fork_scripts
+        for value in ("GitInstancePath", "WSLGIT_DEFAULT_DIST", "NixOS", "Fork.RI")
+    ):
+        raise ValueError("Fork wslgit resource is missing a required bridge setting")
 
     power_toys = json.loads(
         (package_root / "power-toys-settings.json").read_text(encoding="utf-8")
