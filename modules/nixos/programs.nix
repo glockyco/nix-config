@@ -10,4 +10,8 @@
   # Windows layer owns that. `nano` is not in the NixOS default package set, so
   # it is declared here rather than assumed.
   programs.nano.enable = true;
+
+  # `modules/home/shell.nix` configures zsh for the user. Enabling it here
+  # registers zsh as a login shell, which `users.users.<name>.shell` needs.
+  programs.zsh.enable = true;
 }

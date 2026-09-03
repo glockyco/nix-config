@@ -11,8 +11,8 @@ inputs.nixpkgs.lib.nixosSystem {
   modules = [
     ../../modules/nixos
 
-    # Values that differ per machine. `modules/home/` declares no identity and
-    # names no application, so this host supplies its own here.
+    # Values that differ per machine. `modules/home/` declares no identity, so
+    # this host supplies its own here.
     {
       home-manager.users.${username} = {
         programs.git = {
@@ -27,7 +27,8 @@ inputs.nixpkgs.lib.nixosSystem {
           # Personal repositories use the GitHub no-reply address instead.
           # `programs.git.settings.ghq.root` is `~/src`, and ghq lays a clone
           # out as `~/src/<host>/<owner>/<repo>`, so this condition selects the
-          # personal owner and nothing else.
+          # personal owner and nothing else. A clone placed anywhere else, such
+          # as directly under `~/src`, keeps the employer address above.
           includes = [
             {
               condition = "gitdir:~/src/github.com/glockyco/";
@@ -35,10 +36,6 @@ inputs.nixpkgs.lib.nixosSystem {
             }
           ];
         };
-
-        # `git` and `gh` both fall back to this. `modules/nixos/programs.nix`
-        # declares the program it names.
-        home.sessionVariables.EDITOR = "nano";
       };
     }
   ];

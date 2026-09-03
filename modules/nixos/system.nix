@@ -1,6 +1,7 @@
 {
   hostname,
   inputs,
+  pkgs,
   username,
   ...
 }:
@@ -18,12 +19,27 @@
   # change.
   system.configurationRevision = inputs.self.rev or inputs.self.dirtyRev or null;
 
+  # macOS supplies the time zone and the number formats, so no portable module
+  # declares them. Without these values the host runs on UTC and reports
+  # 12-hour time and US measurement, which `en_US.UTF-8` selects.
+  time.timeZone = "Europe/Vienna";
+
+  # `de_AT.UTF-8` reports `%T` for the time format and `1` for measurement,
+  # which is 24-hour and metric. Declaring the categories is enough, because
+  # the built locale set derives from them; `i18n.supportedLocales` is
+  # deprecated and stays unset.
+  i18n.extraLocaleSettings = {
+    LC_TIME = "de_AT.UTF-8";
+    LC_MEASUREMENT = "de_AT.UTF-8";
+  };
+
+  # `nixos-wsl` already declares this account, including `isNormalUser` and the
+  # `wheel` group that `sudo` needs. Only the values it leaves open belong here.
   users.users.${username} = {
-    isNormalUser = true;
     home = "/home/${username}";
 
-    # `wheel` allows `sudo`, which `nixos-rebuild switch` needs. The host adds
-    # no other group, because it runs no service that requires one.
-    extraGroups = [ "wheel" ];
+    # `modules/home/shell.nix` configures zsh and generates no bash files, so a
+    # bash login shell would read none of its own configuration.
+    shell = pkgs.zsh;
   };
 }

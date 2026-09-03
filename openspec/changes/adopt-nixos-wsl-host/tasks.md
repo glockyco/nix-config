@@ -15,10 +15,10 @@
 - [x] 2.6 Confirm that the configuration declares no SSH server, no other inbound service, and no secret.
 - [x] 2.7 Declare a rootless container runtime with Docker command compatibility.
 - [x] 2.8 Confirm that the runtime needs no nested virtualization and exposes no listening service.
-- [ ] 2.9 Enable zsh at system scope and declare it as the login shell for the declared user.
-- [ ] 2.10 Declare `Europe/Vienna` as the host time zone.
-- [ ] 2.11 Declare `de_AT.UTF-8` for the `LC_TIME` and `LC_MEASUREMENT` locale categories.
-- [ ] 2.12 Remove the duplicate `isNormalUser`, `extraGroups`, and `EDITOR` declarations that NixOS-WSL or `programs.nano` already makes.
+- [x] 2.9 Enable zsh at system scope and declare it as the login shell for the declared user.
+- [x] 2.10 Declare `Europe/Vienna` as the host time zone.
+- [x] 2.11 Declare `de_AT.UTF-8` for the `LC_TIME` and `LC_MEASUREMENT` locale categories.
+- [x] 2.12 Remove the duplicate `isNormalUser`, `extraGroups`, and `EDITOR` declarations that NixOS-WSL or `programs.nano` already makes.
 
 ## 3. Declare the WSL User Scope
 
@@ -29,7 +29,7 @@
 - [x] 3.5 Set `EDITOR` for this host to a program that the host actually provides.
 - [x] 3.6 Exclude `zed` and the Zed part of `catppuccin` from the WSL host, and record that the Windows layer owns the editor.
 - [x] 3.7 Confirm that `reconcileHerdrOmp` and `verifyPersonalOmp` run as activation steps in the correct order.
-- [ ] 3.8 Correct the conditional-include comment to state that a repository outside the personal trees uses the work email.
+- [x] 3.8 Correct the conditional-include comment to state that a repository outside the personal trees uses the work email.
 
 ## 4. Add Deterministic Checks
 
