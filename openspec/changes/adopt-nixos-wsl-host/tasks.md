@@ -1,20 +1,20 @@
 ## 1. Prepare the Host Definition
 
-- [ ] 1.1 Add the `nixos-wsl` input with `inputs.nixpkgs.follows = "nixpkgs"`, and comment why this input follows while `llm-agents` does not.
-- [ ] 1.2 Add `hosts/korolev/default.nix` that supplies the hostname and username and selects the shared modules.
-- [ ] 1.3 Expose `nixosConfigurations.korolev` from `flake.nix`.
-- [ ] 1.4 Create `modules/nixos/default.nix` and confirm that the `moduleImports` check covers the new directory.
+- [x] 1.1 Add the `nixos-wsl` input with `inputs.nixpkgs.follows = "nixpkgs"`, and comment why this input follows while `llm-agents` does not.
+- [x] 1.2 Add `hosts/korolev/default.nix` that supplies the hostname and username and selects the shared modules.
+- [x] 1.3 Expose `nixosConfigurations.korolev` from `flake.nix`.
+- [x] 1.4 Create `modules/nixos/default.nix` and confirm that the `moduleImports` check covers the new directory.
 
 ## 2. Declare the WSL System Scope
 
-- [ ] 2.1 Enable the NixOS-WSL module, set the default user, and declare the WSL runtime settings.
-- [ ] 2.2 Declare the Numtide substituter and its trusted public key in `nix.settings`.
-- [ ] 2.3 Enable flakes and the pinned Nix features that the repository commands require.
-- [ ] 2.4 Disable `getty@tty1.service`.
-- [ ] 2.5 Enable `programs.nix-ld` for prebuilt project executables.
-- [ ] 2.6 Confirm that the configuration declares no SSH server, no other inbound service, and no secret.
-- [ ] 2.7 Declare a rootless container runtime with Docker command compatibility.
-- [ ] 2.8 Confirm that the runtime needs no nested virtualization and exposes no listening service.
+- [x] 2.1 Enable the NixOS-WSL module, set the default user, and declare the WSL runtime settings.
+- [x] 2.2 Declare the Numtide substituter and its trusted public key in `nix.settings`.
+- [x] 2.3 Enable flakes and the pinned Nix features that the repository commands require.
+- [x] 2.4 Disable `getty@tty1.service`.
+- [x] 2.5 Enable `programs.nix-ld` for prebuilt project executables.
+- [x] 2.6 Confirm that the configuration declares no SSH server, no other inbound service, and no secret.
+- [x] 2.7 Declare a rootless container runtime with Docker command compatibility.
+- [x] 2.8 Confirm that the runtime needs no nested virtualization and exposes no listening service.
 
 ## 3. Declare the WSL User Scope
 

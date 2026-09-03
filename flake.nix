@@ -24,6 +24,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Set `inputs.nixpkgs.follows` here, unlike `llm-agents` below. This input is
+    # a module set plus one small Rust package, so following the pinned nixpkgs
+    # costs a local build of that package and keeps one nixpkgs in the lock.
+    # `llm-agents` ships prebuilt outputs from a cache keyed to its own nixpkgs,
+    # where following would cost the cache instead.
+    nixos-wsl = {
+      url = "github:nix-community/NixOS-WSL";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Determinate owns `/etc/nix/nix.conf`; coordinate it with nix-darwin through this module.
     determinate = {
       url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
@@ -91,6 +101,10 @@
 
       flake = {
         darwinConfigurations.macbook-pro = import ./hosts/macbook-pro { inherit inputs; };
+
+        # The WSL host is a NixOS configuration rather than a package, so it
+        # owns a host directory and a system scope like the Darwin host.
+        nixosConfigurations.korolev = import ./hosts/korolev { inherit inputs; };
 
         overlays.default = final: _prev: {
           neo-keyboard-layouts = final.callPackage ./packages/neo-keyboard-layouts.nix { };
