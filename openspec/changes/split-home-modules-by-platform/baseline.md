@@ -106,4 +106,12 @@ The `moduleImports` and `moduleImportsCommand` checks therefore pass on both sup
 
 - `nvd diff` between the parent system and this change's system.
 
-The parent reference is the `git+file:` form with an explicit revision. A line continuation in that command does not survive a paste into zsh, which splits it into an argument-free `nix build` and a second line that the shell tries to run. Assign the reference to a variable on its own line instead.
+Build each endpoint to its own result link and diff the links. This form needs no shell variable, no command substitution, and no line continuation, each of which has already corrupted this command once in transit:
+
+```sh
+nix build --out-link /tmp/parent-sys "git+file:///Users/glockyco/.config/nix-darwin?rev=9222191b93ba5ebb4a0353061861491af037aa22#darwinConfigurations.macbook-pro.system"
+nix build --out-link /tmp/current-sys ".#darwinConfigurations.macbook-pro.system"
+nix run nixpkgs#nvd -- diff /tmp/parent-sys /tmp/current-sys
+```
+
+The gate passes when the diff reports no added package, no removed package, and no version change.
