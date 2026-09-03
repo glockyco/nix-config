@@ -1,4 +1,4 @@
-{ inputs }:
+{ inputs, pkgs }:
 # `nixos-rebuild switch --flake .#korolev` selects this configuration by name,
 # because WSL reports no stable hostname before activation.
 let
@@ -6,9 +6,14 @@ let
   username = "user";
 in
 inputs.nixpkgs.lib.nixosSystem {
-  system = "x86_64-linux";
   specialArgs = { inherit inputs hostname username; };
   modules = [
+    # The flake instantiates one package set per system and hands it to the
+    # host, so this host resolves a package exactly as the flake outputs do.
+    # `nixpkgs.pkgs` also fixes the platform, which is why no `system`
+    # argument and no `nixpkgs.hostPlatform` declaration appears here.
+    { nixpkgs.pkgs = pkgs; }
+
     ../../modules/nixos
 
     # Values that differ per machine. `modules/home/` declares no identity, so

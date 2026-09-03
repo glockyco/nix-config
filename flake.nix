@@ -84,306 +84,351 @@
 
   outputs =
     inputs@{ self, ... }:
-    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [
-        "aarch64-darwin"
-        "x86_64-linux"
-      ];
-
-      imports = [
-        inputs.treefmt-nix.flakeModule
-      ];
-
-      flake = {
-        darwinConfigurations.macbook-pro = import ./hosts/macbook-pro { inherit inputs; };
-
-        # The WSL host is a NixOS configuration rather than a package, so it
-        # owns a host directory and a system scope like the Darwin host.
-        nixosConfigurations.korolev = import ./hosts/korolev { inherit inputs; };
-
-        overlays.default = final: _prev: {
-          neo-keyboard-layouts = final.callPackage ./packages/neo-keyboard-layouts.nix { };
+    let
+      # One place says which host lives on which system. `systems` derives from
+      # it, so a supported system without a host, or a host without a gate,
+      # cannot be expressed. Everything that is genuinely platform-bound reads
+      # `kind` from here instead of comparing the system string again.
+      hosts = {
+        aarch64-darwin = {
+          kind = "darwin";
+          name = "macbook-pro";
+        };
+        x86_64-linux = {
+          kind = "nixos";
+          name = "korolev";
         };
       };
+    in
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } (
+      { withSystem, ... }:
+      {
+        systems = builtins.attrNames hosts;
 
-      perSystem =
-        {
-          config,
-          lib,
-          system,
-          ...
-        }:
-        let
-          isDarwin = system == "aarch64-darwin";
-          isLinux = system == "x86_64-linux";
+        imports = [
+          inputs.treefmt-nix.flakeModule
+        ];
 
-          # Reuse the package set nix-darwin already instantiated for the system, so
-          # the other outputs cannot drift from it and nixpkgs is evaluated once.
-          pkgs =
-            if isDarwin then
-              self.darwinConfigurations.macbook-pro.pkgs
-            else
-              inputs.nixpkgs.legacyPackages.${system}.extend self.overlays.default;
+        flake = {
+          # Each host receives the package set that `perSystem` instantiates for
+          # its system. The dependency runs outward, from one package set to the
+          # hosts and the outputs, rather than from the outputs into a host.
+          darwinConfigurations.macbook-pro = withSystem "aarch64-darwin" (
+            { pkgs, ... }: import ./hosts/macbook-pro { inherit inputs pkgs; }
+          );
 
-          llmAgents = inputs.llm-agents.packages.${system};
-          openspec = llmAgents.openspec;
-          personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
-            inherit (llmAgents) herdr omp;
-            plugin = inputs.personal-omp-plugin.packages.${system}.default;
+          # The WSL host is a NixOS configuration rather than a package, so it
+          # owns a host directory and a system scope like the Darwin host.
+          nixosConfigurations.korolev = withSystem "x86_64-linux" (
+            { pkgs, ... }: import ./hosts/korolev { inherit inputs pkgs; }
+          );
+
+          overlays.default = final: _prev: {
+            neo-keyboard-layouts = final.callPackage ./packages/neo-keyboard-layouts.nix { };
           };
-          moduleImportsCheck = pkgs.callPackage ./packages/module-imports-check.nix { };
-          moduleImportsCommandTest = pkgs.callPackage ./packages/module-imports-check-tests.nix {
-            inherit moduleImportsCheck;
-          };
-          airBatchCheck = pkgs.callPackage ./packages/air-batch-check.nix { };
-          airBatchCommandTest = pkgs.callPackage ./packages/air-batch-check-tests.nix {
-            inherit airBatchCheck;
-          };
-          airBatchConfigCheck = pkgs.callPackage ./packages/air-batch-config-check.nix {
-            homeConfiguration = self.darwinConfigurations.macbook-pro.config.home-manager.users.glockyco;
-          };
-          containerRuntimeCheck = pkgs.callPackage ./packages/container-runtime-check.nix { };
-          containerRuntimeCommandTest = pkgs.callPackage ./packages/container-runtime-check-tests.nix {
-            inherit containerRuntimeCheck;
-          };
-          containerRuntimeConfigCheck = pkgs.callPackage ./packages/container-runtime-config-check.nix {
-            inherit containerRuntimeCheck;
-            homeConfiguration = self.darwinConfigurations.macbook-pro.config.home-manager.users.glockyco;
-          };
+        };
 
-          # `nixosConfigurations.korolev` is the only `x86_64-linux` host. These
-          # bindings are lazy, so the Darwin outputs never force them.
-          korolevConfig = self.nixosConfigurations.korolev.config;
-          korolevUser = korolevConfig.wsl.defaultUser;
-          korolevHome = korolevConfig.home-manager.users.${korolevUser};
-          korolevShell = korolevConfig.users.users.${korolevUser}.shell;
-        in
-        {
-          # `nix fmt` formats every language listed in ./treefmt.nix, tree-wide.
-          # Fail the check when any tracked file is unformatted.
-          treefmt = import ./treefmt.nix pkgs;
+        perSystem =
+          {
+            config,
+            lib,
+            system,
+            ...
+          }:
+          let
+            # The host that this system carries. Only an intrinsically
+            # platform-bound output reads `kind`; a repository output does not.
+            host = hosts.${system};
+            onDarwinHost = lib.optionalAttrs (host.kind == "darwin");
+            onNixosHost = lib.optionalAttrs (host.kind == "nixos");
+            hostConfiguration =
+              if host.kind == "darwin" then
+                self.darwinConfigurations.${host.name}
+              else
+                self.nixosConfigurations.${host.name};
 
-          # flake-parts' default package set does not include this flake's overlay.
-          # Use the Darwin package set above, or extend the per-system package set on Linux.
-          _module.args.pkgs = pkgs;
+            # One package set per system, instantiated here and handed to the
+            # host through `nixpkgs.pkgs`. nixpkgs is evaluated once per system,
+            # and a host cannot resolve a package differently from an output.
+            pkgs = inputs.nixpkgs.legacyPackages.${system}.extend self.overlays.default;
 
-          packages = {
-            inherit openspec;
-            personal-omp = personalOmp;
-          }
-          // lib.optionalAttrs isDarwin {
-            # `meta.platforms` is Darwin only, so `nix flake check` on the WSL
-            # host refuses to evaluate this package outside this branch.
-            inherit (pkgs) neo-keyboard-layouts;
-
-            # Expose pinned `darwin-rebuild` for the first activation, before it is on PATH:
-            #   sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
-            inherit (inputs.nix-darwin.packages.${system}) darwin-rebuild;
-
-            # Walks build plans, so it needs the store and cannot be a check.
-            #   nix run .#check-darwin-build-plans
-            check-darwin-build-plans = pkgs.callPackage ./packages/check-darwin-build-plans.nix { };
-            air-batch-check = airBatchCheck;
-            container-runtime-check = containerRuntimeCheck;
-          };
-
-          checks = {
-            # An unimported module is absent rather than an error.
-            # Assert every module is reachable from its sibling `default.nix`.
-            moduleImports = pkgs.runCommand "check-module-imports" { } ''
-              ${lib.getExe moduleImportsCheck} ${./modules}
-              touch $out
-            '';
-
-            # Prove that the check above can reject, so an empty result means
-            # something.
-            moduleImportsCommand = moduleImportsCommandTest;
-
-            personalOmpShape =
-              pkgs.runCommand "check-personal-omp-shape"
-                {
-                  nativeBuildInputs = [ pkgs.jq ] ++ personalOmp.languageServers;
-                }
-                ''
-                  test -x ${personalOmp}/bin/omp
-                  grep -qF -- ${lib.escapeShellArg (lib.getExe llmAgents.omp)} ${personalOmp}/bin/omp
-                  grep -qF -- ${lib.escapeShellArg "--extension ${personalOmp.plugin}"} ${personalOmp}/bin/omp
-                  grep -qF -- ${lib.escapeShellArg "--plugin-dir ${personalOmp.plugin}/lsp"} ${personalOmp}/bin/omp
-                  ! grep -qF /Users/ ${personalOmp}/bin/omp
-
-                  test "$(jq -r '.omp.extensions | length' ${personalOmp.plugin}/package.json)" = 1
-                  test "$(jq -r '.servers | keys | sort | join(",")' ${personalOmp.plugin}/lsp/lsp.json)" = roslyn-language-server,svelte
-
-                  # The workflow commands ship in the payload, and the LSP root
-                  # must stay free of them so they register exactly once.
-                  test -f ${personalOmp.plugin}/commands/opsx-propose.md
-                  test ! -e ${personalOmp.plugin}/lsp/commands
-
-                  command -v Microsoft.CodeAnalysis.LanguageServer
-                  command -v pyright-langserver
-                  command -v typescript-language-server
-                  command -v svelteserver
-                  command -v nixd
-                  command -v marksman
-                  command -v texlab
-                  test "$(${lib.getExe openspec} --version)" = "${openspec.version}"
-                  touch $out
-                '';
-
-            personalOmpVerification = pkgs.runCommand "check-personal-omp-verification" { } ''
-              omp_stub=$TMPDIR/omp-stub
-              cat > "$omp_stub" <<'EOF'
-              #!${pkgs.runtimeShell}
-              printf '%s\n' "$*" > "$OMP_CALLS"
-              printf '%s\n' '17.2.15'
-              EOF
-              chmod +x "$omp_stub"
-
-              herdr_stub=$TMPDIR/herdr-stub
-              cat > "$herdr_stub" <<'EOF'
-              #!${pkgs.runtimeShell}
-              printf '%s\n' "$*" > "$HERDR_CALLS"
-              printf '%s\n' "''${STATUS:-omp: current (v8)}"
-              EOF
-              chmod +x "$herdr_stub"
-
-              export OMP_BIN="$omp_stub"
-              export HERDR_BIN="$herdr_stub"
-              export OMP_CALLS=$TMPDIR/omp.calls
-              export HERDR_CALLS=$TMPDIR/herdr.calls
-              ${lib.getExe personalOmp.verifyPersonalOmp} > $TMPDIR/output
-
-              test "$(cat "$OMP_CALLS")" = "--extension ${personalOmp.plugin} --plugin-dir ${personalOmp.plugin}/lsp --version"
-              test "$(cat "$HERDR_CALLS")" = "integration status"
-              grep -qF 'OMP: 17.2.15' $TMPDIR/output
-              grep -qF 'Plugin: ${personalOmp.plugin}' $TMPDIR/output
-              grep -qF 'omp: current (v8)' $TMPDIR/output
-
-              if STATUS='omp: outdated (v7)' ${lib.getExe personalOmp.verifyPersonalOmp} >/dev/null 2>&1; then
-                echo 'verification accepted an outdated Herdr integration' >&2
-                exit 1
-              fi
-
-              touch $out
-            '';
-
-            herdrOmpReconciliation = pkgs.runCommand "check-herdr-omp-reconciliation" { } ''
-              stub=$TMPDIR/herdr-stub
-              cat > "$stub" <<'EOF'
-              #!${pkgs.runtimeShell}
-              test -d "$OMP_AGENT_DIR"
-              printf '%s\n' "$*" >> "$CALLS"
-              if [ "$1 $2" = "integration status" ]; then
-                printf '%s\n' "''${STATUS:-}"
-              elif [ "$1 $2 $3" = "integration install omp" ]; then
-                if [ ! -f "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts" ]; then
-                  test ! -e "$OMP_AGENT_DIR/extensions"
-                fi
-                mkdir -p "$OMP_AGENT_DIR/extensions"
-                touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
-              fi
-              EOF
-              chmod +x "$stub"
-              export HERDR_BIN="$stub"
-
-              export OMP_AGENT_DIR=$TMPDIR/missing/agent
-              export CALLS=$TMPDIR/missing.calls
-              ${lib.getExe personalOmp.reconcileHerdrOmp}
-              test "$(cat "$CALLS")" = "integration install omp"
-              test -f "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
-
-              export OMP_AGENT_DIR=$TMPDIR/current/agent
-              mkdir -p "$OMP_AGENT_DIR/extensions"
-              touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
-              export CALLS=$TMPDIR/current.calls
-              STATUS= ${lib.getExe personalOmp.reconcileHerdrOmp}
-              test "$(cat "$CALLS")" = "integration status --outdated-only"
-
-              export OMP_AGENT_DIR=$TMPDIR/stale/agent
-              mkdir -p "$OMP_AGENT_DIR/extensions"
-              touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
-              export CALLS=$TMPDIR/stale.calls
-              STATUS='omp: outdated (v7)' ${lib.getExe personalOmp.reconcileHerdrOmp}
-              test "$(cat "$CALLS")" = "integration status --outdated-only
-              integration install omp"
-
-              touch $out
-            '';
-
-            # Defined once for the whole fleet in the plugin flake, which this
-            # configuration already tracks, so the workstation validates its
-            # artifacts exactly as every repository does.
-            openspecContracts = inputs.personal-omp-plugin.lib.openspecCheck {
-              inherit pkgs;
-              src = ./.;
-              name = "check-openspec-contracts";
+            llmAgents = inputs.llm-agents.packages.${system};
+            openspec = llmAgents.openspec;
+            personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
+              inherit (llmAgents) herdr omp;
+              plugin = inputs.personal-omp-plugin.packages.${system}.default;
+            };
+            moduleImportsCheck = pkgs.callPackage ./packages/module-imports-check.nix { };
+            moduleImportsCommandTest = pkgs.callPackage ./packages/module-imports-check-tests.nix {
+              inherit moduleImportsCheck;
+            };
+            airBatchCheck = pkgs.callPackage ./packages/air-batch-check.nix { };
+            airBatchCommandTest = pkgs.callPackage ./packages/air-batch-check-tests.nix {
+              inherit airBatchCheck;
+            };
+            airBatchConfigCheck = pkgs.callPackage ./packages/air-batch-config-check.nix {
+              homeConfiguration = self.darwinConfigurations.macbook-pro.config.home-manager.users.glockyco;
+            };
+            containerRuntimeCheck = pkgs.callPackage ./packages/container-runtime-check.nix { };
+            containerRuntimeCommandTest = pkgs.callPackage ./packages/container-runtime-check-tests.nix {
+              inherit containerRuntimeCheck;
+            };
+            containerRuntimeConfigCheck = pkgs.callPackage ./packages/container-runtime-config-check.nix {
+              inherit containerRuntimeCheck;
+              homeConfiguration = self.darwinConfigurations.macbook-pro.config.home-manager.users.glockyco;
             };
 
-          }
-          // lib.optionalAttrs isLinux {
-            # The host build is a check, so a host that stops building appears
-            # in review rather than during activation.
-            korolevSystem = korolevConfig.system.build.toplevel;
+            # `nixosConfigurations.korolev` is the only `x86_64-linux` host. These
+            # bindings are lazy, so the Darwin outputs never force them.
+            korolevConfig = self.nixosConfigurations.korolev.config;
+            korolevUser = korolevConfig.wsl.defaultUser;
+            korolevHome = korolevConfig.home-manager.users.${korolevUser};
+            korolevShell = korolevConfig.users.users.${korolevUser}.shell;
+          in
+          {
+            # `nix fmt` formats every language listed in ./treefmt.nix, tree-wide.
+            # Fail the check when any tracked file is unformatted.
+            treefmt = import ./treefmt.nix pkgs;
 
-            # The portable user modules have to build for Linux, not only
-            # evaluate. This is the complete set that the WSL host selects.
-            korolevHomeGeneration = korolevHome.home.activationPackage;
+            # flake-parts' default package set does not include this flake's overlay.
+            # Use the Darwin package set above, or extend the per-system package set on Linux.
+            _module.args.pkgs = pkgs;
 
-            # The accepted evidence for the retired implementation recorded a
-            # repeated warning that Nix ignores a client-specified key. A system
-            # setting removes that cause, so it has to stay declared.
-            korolevNixSettings =
-              assert builtins.elem "https://cache.numtide.com" korolevConfig.nix.settings.extra-substituters;
-              assert builtins.elem "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-                korolevConfig.nix.settings.extra-trusted-public-keys;
-              pkgs.runCommand "check-wsl-host-nix-settings" { } "touch $out";
+            packages = {
+              inherit openspec;
+              personal-omp = personalOmp;
+            }
+            // onDarwinHost {
+              # `meta.platforms` is Darwin only, so `nix flake check` on the WSL
+              # host refuses to evaluate this package outside this branch.
+              inherit (pkgs) neo-keyboard-layouts;
 
-            # No other machine drives this host. It also runs endpoint data loss
-            # prevention, so it holds no decryption material.
-            korolevIsolation =
-              assert !korolevConfig.services.openssh.enable;
-              assert korolevConfig.networking.firewall.allowedTCPPorts == [ ];
-              assert !(korolevConfig ? sops);
-              pkgs.runCommand "check-wsl-host-isolation" { } "touch $out";
+              # Expose pinned `darwin-rebuild` for the first activation, before it is on PATH:
+              #   sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
+              inherit (inputs.nix-darwin.packages.${system}) darwin-rebuild;
 
-            # WSL 2 is already the virtual machine, so the runtime needs no
-            # second one, and it exposes no socket another host could reach.
-            # A Windows container product is not expressible here: Intune owns
-            # Docker Desktop, and review covers that boundary.
-            korolevContainerRuntime =
-              assert korolevConfig.virtualisation.podman.enable;
-              assert korolevConfig.virtualisation.podman.dockerCompat;
-              assert !korolevConfig.virtualisation.podman.dockerSocket.enable;
-              assert !korolevConfig.virtualisation.docker.enable;
-              assert !korolevConfig.virtualisation.libvirtd.enable;
-              pkgs.runCommand "check-wsl-host-container-runtime" { } "touch $out";
+              # Walks build plans, so it needs the store and cannot be a check.
+              #   nix run .#check-darwin-build-plans
+              check-darwin-build-plans = pkgs.callPackage ./packages/check-darwin-build-plans.nix { };
+              air-batch-check = airBatchCheck;
+              container-runtime-check = containerRuntimeCheck;
+            };
 
-            # A login shell that the portable set does not configure would read
-            # none of its own configuration, because that set generates no bash
-            # files at all. `environment.shells` holds binary paths, so the
-            # comparison is a prefix of the declared shell's store path.
-            korolevLoginShell =
-              assert korolevHome.programs.zsh.enable;
-              assert korolevShell.pname == "zsh";
-              assert builtins.any (
-                entry: lib.hasPrefix (toString korolevShell) (toString entry)
-              ) korolevConfig.environment.shells;
-              pkgs.runCommand "check-wsl-host-login-shell" { } "touch $out";
-          }
-          // lib.optionalAttrs isDarwin {
-            airBatchCommand = airBatchCommandTest;
-            airBatchConfiguration = airBatchConfigCheck;
-            containerRuntimeCommand = containerRuntimeCommandTest;
-            containerRuntimeConfiguration = containerRuntimeConfigCheck;
-            darwinSystem = self.darwinConfigurations.macbook-pro.system;
-          };
+            checks = {
+              # An unimported module is absent rather than an error.
+              # Assert every module is reachable from its sibling `default.nix`.
+              moduleImports = pkgs.runCommand "check-module-imports" { } ''
+                ${lib.getExe moduleImportsCheck} ${./modules}
+                touch $out
+              '';
 
-          devShells = lib.optionalAttrs isDarwin {
-            default = pkgs.mkShellNoCC {
+              # Prove that the check above can reject, so an empty result means
+              # something.
+              moduleImportsCommand = moduleImportsCommandTest;
+
+              # Structure already prevents an asymmetric surface: the shell and
+              # the repository checks carry no platform condition, and `systems`
+              # derives from the host table. This asserts what structure cannot,
+              # so a later edit that reintroduces a condition, or a host added
+              # without a table entry, fails in review. It reads other output
+              # attributes only, never `checks` itself.
+              fleetSurface =
+                let
+                  declared = lib.naturalSort (
+                    builtins.attrNames self.darwinConfigurations ++ builtins.attrNames self.nixosConfigurations
+                  );
+                  bound = lib.naturalSort (map (entry: entry.name) (builtins.attrValues hosts));
+                in
+                assert self.devShells.${system} ? default;
+                assert declared == bound;
+                assert hostConfiguration.pkgs.stdenv.hostPlatform.system == system;
+                pkgs.runCommand "check-fleet-surface" { } "touch $out";
+
+              personalOmpShape =
+                pkgs.runCommand "check-personal-omp-shape"
+                  {
+                    nativeBuildInputs = [ pkgs.jq ] ++ personalOmp.languageServers;
+                  }
+                  ''
+                    test -x ${personalOmp}/bin/omp
+                    grep -qF -- ${lib.escapeShellArg (lib.getExe llmAgents.omp)} ${personalOmp}/bin/omp
+                    grep -qF -- ${lib.escapeShellArg "--extension ${personalOmp.plugin}"} ${personalOmp}/bin/omp
+                    grep -qF -- ${lib.escapeShellArg "--plugin-dir ${personalOmp.plugin}/lsp"} ${personalOmp}/bin/omp
+                    ! grep -qF /Users/ ${personalOmp}/bin/omp
+
+                    test "$(jq -r '.omp.extensions | length' ${personalOmp.plugin}/package.json)" = 1
+                    test "$(jq -r '.servers | keys | sort | join(",")' ${personalOmp.plugin}/lsp/lsp.json)" = roslyn-language-server,svelte
+
+                    # The workflow commands ship in the payload, and the LSP root
+                    # must stay free of them so they register exactly once.
+                    test -f ${personalOmp.plugin}/commands/opsx-propose.md
+                    test ! -e ${personalOmp.plugin}/lsp/commands
+
+                    command -v Microsoft.CodeAnalysis.LanguageServer
+                    command -v pyright-langserver
+                    command -v typescript-language-server
+                    command -v svelteserver
+                    command -v nixd
+                    command -v marksman
+                    command -v texlab
+                    test "$(${lib.getExe openspec} --version)" = "${openspec.version}"
+                    touch $out
+                  '';
+
+              personalOmpVerification = pkgs.runCommand "check-personal-omp-verification" { } ''
+                omp_stub=$TMPDIR/omp-stub
+                cat > "$omp_stub" <<'EOF'
+                #!${pkgs.runtimeShell}
+                printf '%s\n' "$*" > "$OMP_CALLS"
+                printf '%s\n' '17.2.15'
+                EOF
+                chmod +x "$omp_stub"
+
+                herdr_stub=$TMPDIR/herdr-stub
+                cat > "$herdr_stub" <<'EOF'
+                #!${pkgs.runtimeShell}
+                printf '%s\n' "$*" > "$HERDR_CALLS"
+                printf '%s\n' "''${STATUS:-omp: current (v8)}"
+                EOF
+                chmod +x "$herdr_stub"
+
+                export OMP_BIN="$omp_stub"
+                export HERDR_BIN="$herdr_stub"
+                export OMP_CALLS=$TMPDIR/omp.calls
+                export HERDR_CALLS=$TMPDIR/herdr.calls
+                ${lib.getExe personalOmp.verifyPersonalOmp} > $TMPDIR/output
+
+                test "$(cat "$OMP_CALLS")" = "--extension ${personalOmp.plugin} --plugin-dir ${personalOmp.plugin}/lsp --version"
+                test "$(cat "$HERDR_CALLS")" = "integration status"
+                grep -qF 'OMP: 17.2.15' $TMPDIR/output
+                grep -qF 'Plugin: ${personalOmp.plugin}' $TMPDIR/output
+                grep -qF 'omp: current (v8)' $TMPDIR/output
+
+                if STATUS='omp: outdated (v7)' ${lib.getExe personalOmp.verifyPersonalOmp} >/dev/null 2>&1; then
+                  echo 'verification accepted an outdated Herdr integration' >&2
+                  exit 1
+                fi
+
+                touch $out
+              '';
+
+              herdrOmpReconciliation = pkgs.runCommand "check-herdr-omp-reconciliation" { } ''
+                stub=$TMPDIR/herdr-stub
+                cat > "$stub" <<'EOF'
+                #!${pkgs.runtimeShell}
+                test -d "$OMP_AGENT_DIR"
+                printf '%s\n' "$*" >> "$CALLS"
+                if [ "$1 $2" = "integration status" ]; then
+                  printf '%s\n' "''${STATUS:-}"
+                elif [ "$1 $2 $3" = "integration install omp" ]; then
+                  if [ ! -f "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts" ]; then
+                    test ! -e "$OMP_AGENT_DIR/extensions"
+                  fi
+                  mkdir -p "$OMP_AGENT_DIR/extensions"
+                  touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
+                fi
+                EOF
+                chmod +x "$stub"
+                export HERDR_BIN="$stub"
+
+                export OMP_AGENT_DIR=$TMPDIR/missing/agent
+                export CALLS=$TMPDIR/missing.calls
+                ${lib.getExe personalOmp.reconcileHerdrOmp}
+                test "$(cat "$CALLS")" = "integration install omp"
+                test -f "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
+
+                export OMP_AGENT_DIR=$TMPDIR/current/agent
+                mkdir -p "$OMP_AGENT_DIR/extensions"
+                touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
+                export CALLS=$TMPDIR/current.calls
+                STATUS= ${lib.getExe personalOmp.reconcileHerdrOmp}
+                test "$(cat "$CALLS")" = "integration status --outdated-only"
+
+                export OMP_AGENT_DIR=$TMPDIR/stale/agent
+                mkdir -p "$OMP_AGENT_DIR/extensions"
+                touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
+                export CALLS=$TMPDIR/stale.calls
+                STATUS='omp: outdated (v7)' ${lib.getExe personalOmp.reconcileHerdrOmp}
+                test "$(cat "$CALLS")" = "integration status --outdated-only
+                integration install omp"
+
+                touch $out
+              '';
+
+              # Defined once for the whole fleet in the plugin flake, which this
+              # configuration already tracks, so the workstation validates its
+              # artifacts exactly as every repository does.
+              openspecContracts = inputs.personal-omp-plugin.lib.openspecCheck {
+                inherit pkgs;
+                src = ./.;
+                name = "check-openspec-contracts";
+              };
+
+            }
+            // onNixosHost {
+              # The host build is a check, so a host that stops building appears
+              # in review rather than during activation.
+              korolevSystem = korolevConfig.system.build.toplevel;
+
+              # The portable user modules have to build for Linux, not only
+              # evaluate. This is the complete set that the WSL host selects.
+              korolevHomeGeneration = korolevHome.home.activationPackage;
+
+              # The accepted evidence for the retired implementation recorded a
+              # repeated warning that Nix ignores a client-specified key. A system
+              # setting removes that cause, so it has to stay declared.
+              korolevNixSettings =
+                assert builtins.elem "https://cache.numtide.com" korolevConfig.nix.settings.extra-substituters;
+                assert builtins.elem "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+                  korolevConfig.nix.settings.extra-trusted-public-keys;
+                pkgs.runCommand "check-wsl-host-nix-settings" { } "touch $out";
+
+              # No other machine drives this host. It also runs endpoint data loss
+              # prevention, so it holds no decryption material.
+              korolevIsolation =
+                assert !korolevConfig.services.openssh.enable;
+                assert korolevConfig.networking.firewall.allowedTCPPorts == [ ];
+                assert !(korolevConfig ? sops);
+                pkgs.runCommand "check-wsl-host-isolation" { } "touch $out";
+
+              # WSL 2 is already the virtual machine, so the runtime needs no
+              # second one, and it exposes no socket another host could reach.
+              # A Windows container product is not expressible here: Intune owns
+              # Docker Desktop, and review covers that boundary.
+              korolevContainerRuntime =
+                assert korolevConfig.virtualisation.podman.enable;
+                assert korolevConfig.virtualisation.podman.dockerCompat;
+                assert !korolevConfig.virtualisation.podman.dockerSocket.enable;
+                assert !korolevConfig.virtualisation.docker.enable;
+                assert !korolevConfig.virtualisation.libvirtd.enable;
+                pkgs.runCommand "check-wsl-host-container-runtime" { } "touch $out";
+
+              # A login shell that the portable set does not configure would read
+              # none of its own configuration, because that set generates no bash
+              # files at all. `environment.shells` holds binary paths, so the
+              # comparison is a prefix of the declared shell's store path.
+              korolevLoginShell =
+                assert korolevHome.programs.zsh.enable;
+                assert korolevShell.pname == "zsh";
+                assert builtins.any (
+                  entry: lib.hasPrefix (toString korolevShell) (toString entry)
+                ) korolevConfig.environment.shells;
+                pkgs.runCommand "check-wsl-host-login-shell" { } "touch $out";
+            }
+            // onDarwinHost {
+              airBatchCommand = airBatchCommandTest;
+              airBatchConfiguration = airBatchConfigCheck;
+              containerRuntimeCommand = containerRuntimeCommandTest;
+              containerRuntimeConfiguration = containerRuntimeConfigCheck;
+              darwinSystem = self.darwinConfigurations.macbook-pro.system;
+            };
+
+            # Declared for every system, with no platform condition. `.envrc` and
+            # `lefthook.yml` both enter this shell, and the shell is what installs
+            # the commit hook, so a system without it has no local gate.
+            devShells.default = pkgs.mkShellNoCC {
               packages = [
-                inputs.nix-darwin.packages.${system}.darwin-rebuild
                 pkgs.git
-                pkgs.dnscontrol
                 pkgs.lefthook
 
                 # The commit hook runs this wrapper through `nix develop`, and
@@ -398,6 +443,15 @@
                 # parse the `X | None` annotations these scripts use and fails
                 # in a way that reads like a code bug.
                 pkgs.python3
+              ]
+              # Host tools, not repository tools. `darwin-rebuild` activates the
+              # Darwin host, and `dnsconfig.js` needs the credential that
+              # `modules/home/darwin/secrets.nix` decrypts through sops. The WSL
+              # host declares no secret, so shipping `dnscontrol` there would move
+              # the failure from shell entry into the middle of a DNS operation.
+              ++ lib.optionals (host.kind == "darwin") [
+                inputs.nix-darwin.packages.${system}.darwin-rebuild
+                pkgs.dnscontrol
               ];
 
               # Install the commit hook on entry. The grep keeps this cheap on
@@ -411,6 +465,6 @@
               '';
             };
           };
-        };
-    };
+      }
+    );
 }

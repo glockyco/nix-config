@@ -7,9 +7,9 @@
 }:
 
 {
-  nixpkgs.hostPlatform = "aarch64-darwin";
-  nixpkgs.overlays = [ inputs.self.overlays.default ];
-
+  # `nixpkgs.hostPlatform` and `nixpkgs.overlays` are absent on purpose. The
+  # flake supplies a complete package set through `nixpkgs.pkgs`, which fixes
+  # both, and declaring either here is an evaluation error.
   system.stateVersion = 7;
 
   # `system.primaryUser` is required by options targeting a user's macOS
