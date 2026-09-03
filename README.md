@@ -1,10 +1,19 @@
 # nix-config
 
-Declarative macOS config: Determinate Nix, nix-darwin, Home Manager, Apple Silicon.
+Declarative configuration for two machines. `macbook-pro` is an Apple Silicon Mac
+that runs Determinate Nix and nix-darwin. `korolev` is an `x86_64` WSL machine
+that runs NixOS. Both import the same Home Manager user scope.
 
 `hosts/` is one directory per machine, owning that machine's name, user, and the
-values that differ per machine, such as the commit identity and `EDITOR`.
-`modules/darwin/` is system scope, `modules/home/` user scope, and `packages/` local derivations.
+values that differ per machine, such as the commit identity and `EDITOR`. Each
+host directory produces one entry point: `hosts/macbook-pro/` a
+`darwinConfigurations` attribute that `darwin-rebuild` activates, and
+`hosts/korolev/` a `nixosConfigurations` attribute that `nixos-rebuild`
+activates.
+
+`modules/darwin/` and `modules/nixos/` are system scope for their own platform,
+`modules/home/` is the user scope both hosts share, and `packages/` holds local
+derivations.
 
 `modules/home/` holds the user-scope modules any host can import. `modules/home/darwin/`
 holds those that need a macOS interface, and only the Darwin host imports them. A module
@@ -16,13 +25,16 @@ No global toolchains: project flakes use `direnv`. Symbolic PathFinder needs JDK
 ## Use
 
 ```sh
-darwin-switch                           # apply, then diff the closure
-sudo darwin-rebuild switch --flake .    # apply, without the diff
+darwin-switch                           # macbook-pro: apply, then diff the closure
+sudo darwin-rebuild switch --flake .    # macbook-pro: apply, without the diff
 nix flake check                         # build, and verify formatting, without applying
                                         # checks only this system; CI covers the others
 nix flake update                        # bump inputs
 nix fmt                                 # format the tree; see ./treefmt.nix
 ```
+
+The WSL machine has its own installation and update procedure. Use the
+[WSL runbook](docs/operations/wsl-omp-bootstrap.md) for that host.
 
 `omp` is a Nix wrapper around the `llm-agents` package and the independently pinned
 `personal-omp-plugin` flake. Do not run `omp update` or install the personal plugin
