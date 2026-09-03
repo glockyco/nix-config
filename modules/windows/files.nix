@@ -8,19 +8,30 @@ let
     hash = "sha256-Lcy5+z/4iOZGQHtPhNQAMEVT4NmpaIrHXQ+fzT+L32o=";
   };
 
-  zedSettings = shared.zedSettings {
-    ompCommand = "C:\\Windows\\System32\\wsl.exe";
-    fontFamily = "JetBrainsMonoNL NF";
-    ompArgs = [
-      "--distribution"
-      "NixOS"
-      "--cd"
-      "~"
-      "--"
-      "omp"
-      "acp"
-    ];
-  };
+  zedSettings =
+    (shared.zedSettings {
+      ompCommand = "C:\\Windows\\System32\\wsl.exe";
+      fontFamily = "JetBrainsMonoNL NF";
+      ompArgs = [
+        "--distribution"
+        "NixOS"
+        "--cd"
+        "~"
+        "--"
+        "omp"
+        "acp"
+      ];
+    })
+    // {
+      languages.Nix.language_servers = [
+        "nixd"
+        "!nil"
+      ];
+      lsp.nixd.binary = {
+        path = "nixd";
+        ignore_system_version = false;
+      };
+    };
 
   powerToysSettings = {
     startup = true;

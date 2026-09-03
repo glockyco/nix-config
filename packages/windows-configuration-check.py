@@ -455,6 +455,14 @@ def main() -> None:
         "light": "Catppuccin Mocha",
     }:
         raise ValueError("Zed must select Catppuccin Mocha")
+    if zed.get("languages", {}).get("Nix", {}).get("language_servers") != [
+        "nixd",
+        "!nil",
+    ] or zed.get("lsp", {}).get("nixd", {}).get("binary") != {
+        "path": "nixd",
+        "ignore_system_version": False,
+    }:
+        raise ValueError("Zed must use nixd from the WSL environment")
     zed_theme_digest = hashlib.sha256(
         (package_root / "zed-catppuccin-theme.json").read_bytes()
     ).hexdigest()

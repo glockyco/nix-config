@@ -45,6 +45,7 @@
 - [x] 5.6 Declare the PowerToys settings as a converged file and restart PowerToys around a locked-file update.
 - [x] 5.7 Declare the standalone Neo2 selection as a converged ReNeo setting and start ReNeo at user logon.
 - [x] 5.8 Install the pinned Zed theme and merge the Catppuccin Mocha scheme into Windows Terminal.
+- [x] 5.9 Support Zed's WSL extension propagation, select `nixd` from the Linux environment, and disable the `nil` fallback.
 
 ## 6. Add Repository Validation
 

@@ -74,7 +74,7 @@ The document SHALL declare Windows settings by explicit named keys. For a bundle
 
 ### Requirement: Application configuration files
 
-The document and policy script SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the owning artifact SHALL enforce the complete file content. For an application that rewrites its own configuration, the owning artifact SHALL converge only the declared values and SHALL preserve the application's own writes. The Zed and Windows Terminal configurations SHALL select Catppuccin Mocha from pinned upstream theme data.
+The document and policy script SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the owning artifact SHALL enforce the complete file content. For an application that rewrites its own configuration, the owning artifact SHALL converge only the declared values and SHALL preserve the application's own writes. The Zed and Windows Terminal configurations SHALL select Catppuccin Mocha from pinned upstream theme data. Zed SHALL select `nixd` from the WSL environment for Nix files and SHALL disable its `nil` fallback.
 
 #### Scenario: Enforce a stable configuration file
 
@@ -86,6 +86,13 @@ The document and policy script SHALL declare application configuration in two cl
 - **WHEN** the operator applies the document
 - **THEN** Zed and Windows Terminal select Catppuccin Mocha
 - **AND** the rendered theme data matches its pinned upstream source
+
+#### Scenario: Start the Nix language server
+
+- **WHEN** the operator opens a Nix file in a Zed WSL workspace
+- **THEN** Zed propagates the locally installed Nix extension through its native WSL transport
+- **AND** Zed starts `nixd` from the Linux environment
+- **AND** the workflow requires no SSH server
 
 #### Scenario: Preserve application-owned state
 

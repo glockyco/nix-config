@@ -1,4 +1,11 @@
+{ pkgs, ... }:
+
 {
+  # Zed's Windows UI starts language servers in its WSL remote process. Keep
+  # nixd in the system closure so that process can resolve it without entering
+  # a repository development shell.
+  environment.systemPackages = [ pkgs.nixd ];
+
   # Project work uses prebuilt executables that expect a conventional dynamic
   # loader: .NET tooling, Unity, and game loader toolchains. `nix-ld` supplies
   # that loader, which replaces the escape hatch a distribution package manager
