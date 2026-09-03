@@ -136,7 +136,7 @@ Windows provides no supported per-user mechanism. The pinned list is an opaque s
 
 The Darwin configuration also makes this a small loss. `modules/darwin/defaults.nix` records that the Dock list is *"credentials, chat, terminal, browser, editor, documents, version control, tasks"* and then states that *"nothing here is launched from the Dock."* The launcher performs the launching on both hosts. The operator also removed five of those nine applications from this host.
 
-Declare taskbar auto-hide instead, which matches `dock.autohide = true` on Darwin. Auto-hide lives inside a binary value rather than a discrete value, so express it with a script resource that sets and tests that one flag.
+Keep the taskbar visible. The live auto-hide check behaved inconsistently, and the operator chose not to debug that opaque binary state. Visibility still lives inside a binary value rather than a discrete value, so express it with a script resource that sets and tests only that flag.
 
 ### 9. Declare no file associations
 

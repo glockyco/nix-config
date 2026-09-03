@@ -147,21 +147,21 @@ in
   })
   {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
-    name = "taskbar-auto-hide";
+    name = "taskbar-visible";
     properties = {
       testScript = ''
         $path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3'
         $bytes = (Get-ItemProperty -Path $path -Name Settings).Settings
-        return ($bytes[8] -eq 3)
+        return ($bytes[8] -eq 2)
       '';
       setScript = ''
         $path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3'
         $bytes = (Get-ItemProperty -Path $path -Name Settings).Settings
-        $bytes[8] = 3
+        $bytes[8] = 2
         Set-ItemProperty -Path $path -Name Settings -Value $bytes
         Stop-Process -Name explorer -Force
       '';
     };
-    metadata.description = "Enable taskbar auto-hide while preserving the rest of its binary settings";
+    metadata.description = "Keep the taskbar visible while preserving the rest of its binary settings";
   }
 ]

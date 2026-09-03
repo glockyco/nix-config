@@ -30,7 +30,7 @@
 - [x] 4.3 Declare the regional settings for 24-hour time, metric units, and Celsius.
 - [x] 4.4 Declare the window-snapping behavior and the screenshot folder location.
 - [x] 4.5 Enable only Command Palette and Grab And Move in PowerToys, and declare every other discovered module as disabled.
-- [x] 4.6 Declare taskbar auto-hide with a resource that sets and tests that single flag.
+- [x] 4.6 Keep the taskbar visible with a resource that sets and tests only that flag.
 - [x] 4.7 Declare the browser enterprise policies from the shared expression.
 - [x] 4.8 Verify that the installed browser policy path is `C:\Program Files\Zen Browser\distribution\policies.json`, and record its required elevation.
 
