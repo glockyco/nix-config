@@ -33,10 +33,25 @@ jobs:
             extra-substituters = https://cache.numtide.com
             extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
 
-      # On macOS this builds `darwinSystem`; on Linux it is the module-import
-      # and formatting checks. Evaluation errors, build failures, an unimported
-      # module and unformatted files all fail here.
-      - run: nix flake check --print-build-logs
+      # On macOS this builds `darwinSystem`; on Linux it is the host closure,
+      # the module-import and the formatting checks. Evaluation errors, build
+      # failures, an unimported module and unformatted files all fail here.
+      #
+      # Each leg runs the Nix that its host runs, because `nix flake check` is
+      # implementation-sensitive: revision f24e147 passed on this runner under
+      # Determinate Nix and failed on the WSL host under the pinned Nix, which
+      # refuses to evaluate a package whose `meta.platforms` excludes the
+      # system. The macOS runner and the Darwin host both use Determinate Nix,
+      # so only the Linux leg has to fetch its host's Nix.
+      - if: runner.os == 'macOS'
+        run: nix flake check --print-build-logs
+
+      - if: runner.os == 'Linux'
+        run: |
+          nix build .#nixosConfigurations.korolev.config.nix.package --out-link "$RUNNER_TEMP/host-nix"
+          "$RUNNER_TEMP/host-nix/bin/nix" \
+            --extra-experimental-features 'nix-command flakes' \
+            flake check --print-build-logs
 
       # Nixpkgs publishes no aarch64-darwin binary for the source-built .NET SDK
       # or for Swift, so an output that reaches either compiles both toolchains
