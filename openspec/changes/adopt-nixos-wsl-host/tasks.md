@@ -46,7 +46,7 @@
 - [x] 5.1 Build the tarball inside the current Ubuntu distribution from the reviewed revision.
 - [x] 5.2 Import the distribution while `Ubuntu-26.04` stays registered, without elevation.
 - [x] 5.3 Confirm that systemd is process 1 and that the declared user owns the session.
-- [ ] 5.4 Clone the published revision under the tree that the conditional include names, then run `nixos-rebuild switch --flake .#korolev` with no other distribution running.
+- [x] 5.4 Clone the published revision under the tree that the conditional include names, then run `nixos-rebuild switch --flake .#korolev` with no other distribution running and with `user@1000.service` active.
 - [ ] 5.5 Confirm that Herdr reports `omp: current` and that local verification succeeds.
 - [ ] 5.6 Confirm that an unprivileged build reports no ignored `trusted-public-keys` warning.
 - [ ] 5.7 Re-activate the same revision and confirm that nothing changes and no duplicate entry appears.
