@@ -15,6 +15,10 @@
 - [x] 2.6 Confirm that the configuration declares no SSH server, no other inbound service, and no secret.
 - [x] 2.7 Declare a rootless container runtime with Docker command compatibility.
 - [x] 2.8 Confirm that the runtime needs no nested virtualization and exposes no listening service.
+- [ ] 2.9 Enable zsh at system scope and declare it as the login shell for the declared user.
+- [ ] 2.10 Declare `Europe/Vienna` as the host time zone.
+- [ ] 2.11 Declare `de_AT.UTF-8` for the `LC_TIME` and `LC_MEASUREMENT` locale categories.
+- [ ] 2.12 Remove the duplicate `isNormalUser`, `extraGroups`, and `EDITOR` declarations that NixOS-WSL or `programs.nano` already makes.
 
 ## 3. Declare the WSL User Scope
 
@@ -25,6 +29,7 @@
 - [x] 3.5 Set `EDITOR` for this host to a program that the host actually provides.
 - [x] 3.6 Exclude `zed` and the Zed part of `catppuccin` from the WSL host, and record that the Windows layer owns the editor.
 - [x] 3.7 Confirm that `reconcileHerdrOmp` and `verifyPersonalOmp` run as activation steps in the correct order.
+- [ ] 3.8 Correct the conditional-include comment to state that a repository outside the personal trees uses the work email.
 
 ## 4. Add Deterministic Checks
 
@@ -34,6 +39,7 @@
 - [ ] 4.4 Add a check that asserts the host configuration declares no SSH server and no secret.
 - [ ] 4.5 Confirm that the retained `personalOmpShape`, `personalOmpVerification`, and `herdrOmpReconciliation` checks still pass on `x86_64-linux`.
 - [ ] 4.6 Add a check that asserts the host declares the container runtime and declares no Windows container product.
+- [ ] 4.7 Add a check that asserts the declared login shell is the shell that the portable module set configures.
 
 ## 5. Provision the Host Side by Side
 
@@ -45,6 +51,9 @@
 - [ ] 5.6 Confirm that an unprivileged build reports no ignored `trusted-public-keys` warning.
 - [ ] 5.7 Re-activate the same revision and confirm that nothing changes and no duplicate entry appears.
 - [ ] 5.8 Confirm that name resolution, both substituters, and GitHub authentication work with the corporate VPN connected.
+- [ ] 5.9 Confirm with `getent passwd` and a new session that the login shell is the declared shell.
+- [ ] 5.10 Confirm that the prompt, the shared history, and the completion behavior are active in that session.
+- [ ] 5.11 Confirm the time zone with `date`, and confirm the time and measurement categories with `locale`.
 
 ## 6. Prove the Runtime Behavior
 
@@ -52,7 +61,7 @@
 - [ ] 6.2 Run the real-session smoke in a disposable repository and confirm the plugin path under `/nix/store`.
 - [ ] 6.3 Confirm that the personal policy is active and that `personal_commit` is registered.
 - [ ] 6.4 Confirm that the `personal_commit` preview changes no repository state.
-- [ ] 6.5 Confirm the Git identity in a personal tree, outside a personal tree, and in a fresh clone.
+- [ ] 6.5 Confirm the Git identity in a personal tree, outside a personal tree, in a fresh clone, and in a clone directly under `~/src`.
 - [ ] 6.6 Activate a deliberately failing generation and confirm that the previous generation stays selectable.
 - [ ] 6.7 Confirm that rollback changes no OMP-owned authentication, configuration, session, history, or database.
 - [ ] 6.8 Run a container image through the Docker command name and confirm that it starts and exits with its own status.
@@ -73,6 +82,7 @@
 - [ ] 8.4 Update `README.md` for the second host and the two entry-point kinds.
 - [ ] 8.5 Add a dated architecture decision entry that reverses the profile-entry decision and states the three-layer ownership model.
 - [ ] 8.6 State that the operator holds durable local administrator credentials and that the declarative layer deliberately does not use them.
+- [ ] 8.7 State in the runbook that a personal repository clone belongs under the tree that the conditional include names.
 
 ## 9. Verify the Complete Change
 

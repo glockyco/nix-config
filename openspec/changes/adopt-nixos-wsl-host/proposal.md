@@ -15,6 +15,7 @@ Verification spikes proved the replacement. A NixOS-WSL system built against the
 - Add `modules/nixos/` for WSL system scope, and consume the portable user modules through the Home Manager NixOS module.
 - Declare the Numtide substituter and its trusted key in system Nix configuration.
 - Declare the work Git identity globally, and select the GitHub no-reply address for personal repository trees.
+- Declare the host defaults that macOS supplies by default: the login shell, the time zone, and the time and measurement locale categories.
 - Enable `nix-ld` for prebuilt executables that project work requires.
 - Provide a rootless container runtime on the WSL host with Docker command compatibility.
 - Replace `nix run .#bootstrap-omp-on-wsl` with a tarball import and `nixos-rebuild switch`.
@@ -30,7 +31,7 @@ None.
 
 ### Modified Capabilities
 
-- `personal-omp-workstation`: replaces the user-profile bootstrap with a declarative NixOS-WSL host, moves the binary cache to system configuration, makes the Git identity declarative, and adds host configuration, activation, rollback, shared user modules, network isolation, and a container runtime.
+- `personal-omp-workstation`: replaces the user-profile bootstrap with a declarative NixOS-WSL host, moves the binary cache to system configuration, makes the Git identity declarative, and adds host configuration, host defaults, activation, rollback, shared user modules, network isolation, and a container runtime.
 
 ## Impact
 

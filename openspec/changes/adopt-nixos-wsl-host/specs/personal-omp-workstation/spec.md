@@ -94,6 +94,22 @@ The WSL host SHALL provide a rootless container runtime that accepts Docker comm
 - **THEN** it declares no Windows container product
 - **AND** it declares no listening container service that another host can reach
 
+### Requirement: Declared host defaults
+
+The WSL host SHALL declare the login shell, the time zone, and the time and measurement formats that its interactive session uses.
+
+#### Scenario: Inspect the interactive session
+
+- **WHEN** the declared user starts a new interactive session
+- **THEN** the session runs the shell that the portable module set configures
+- **AND** the prompt, the shared history, and the completion behavior of that set are active
+
+#### Scenario: Report local time and formats
+
+- **WHEN** the host reports the date, the time, and a measured quantity
+- **THEN** it uses the declared time zone
+- **AND** it uses 24-hour time and metric measurement
+
 ## MODIFIED Requirements
 
 ### Requirement: Explicit WSL prerequisite boundary

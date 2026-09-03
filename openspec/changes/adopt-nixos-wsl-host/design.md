@@ -46,6 +46,7 @@ Intune manages no policy for Zed, Zen, or Fork. The elevated policy tree also ho
 - Remove the hand-written activation, replacement, and rollback implementation.
 - Remove the distribution package manager and the separate Nix installer from the procedure.
 - Keep provisioning possible for a standard Windows user.
+- Declare the host defaults that macOS supplies by default.
 
 **Non-Goals:**
 
@@ -54,6 +55,7 @@ Intune manages no policy for Zed, Zen, or Fork. The elevated policy tree also ho
 - Change the Darwin host behavior.
 - Add a network service, a secret, or an inbound path to the WSL host.
 - Select a permanent editor for the WSL host.
+- Match the macOS temperature setting. glibc has no locale category for it.
 
 ## Decisions
 
@@ -90,6 +92,8 @@ Keep the root flake `nixConfig` for the Darwin host and for a first evaluation o
 Declare `johann.glock@scch.at` as the global Git email on the WSL host. Declare the GitHub no-reply address for personal repository trees with a conditional Git include.
 
 The previous implementation wrote repository-local configuration during activation. A conditional include covers every present and future checkout under the named trees, and it needs no mutation.
+
+The include condition names a directory tree, so the layout decides the identity. `programs.git.settings.ghq.root` sets `~/src`, and ghq creates `~/src/<host>/<owner>/<repo>`. The condition matches that layout. A clone placed directly under `~/src` does not match, and it reports the work email. The runbook therefore clones through the ghq layout.
 
 **Alternative:** Keep repository-local configuration for each checkout. Rejected because activation then mutates a repository, and a new clone silently gets the wrong identity.
 
@@ -163,6 +167,24 @@ This decision also keeps the Intune rule from decision 12. Intune manages update
 
 The container runtime is system scope on a host that this change already creates, so it belongs here rather than in a separate change. The added surface is one module and one acceptance gate.
 
+### 14. Review the host defaults that macOS supplies
+
+`modules/home/` carries only what Nix declares. macOS supplies the login shell, the time zone, the number and date formats, and a URL opener. NixOS does not inherit those macOS choices, so a Linux host needs an explicit review of those defaults.
+
+The portable module set builds on `x86_64-linux`. That result says nothing about a default that no module declares. An audit of `korolev` found these defaults. The login shell is `bash`, and Home Manager configures only zsh. `time.timeZone` is null, and the host declares no time or measurement category, so `en_US.UTF-8` renders 12-hour time and US measurement. No package opens a URL.
+
+Declare the login shell, the time zone, and the two locale categories in this change. Declare `de_AT.UTF-8` for `LC_TIME` and `LC_MEASUREMENT`, which gives 24-hour time and metric measurement. NixOS derives the built locale set from the declared categories, so the categories need no second list. `i18n.supportedLocales` is deprecated and hidden, and this host leaves it unset.
+
+Temperature has no locale category in glibc, so temperature is application-dependent on this host. The Darwin host sets Celsius through a macOS interface, and the WSL host cannot match that value. The Darwin host also forces 24-hour time over an `en_US` base, which uses the `%m/%d/%Y` date order. `de_AT.UTF-8` uses `%Y-%m-%d`, so the declared locale changes the date order as well as the clock.
+
+### 15. Keep Git out of the WSL system scope
+
+`modules/darwin/system.nix` installs Git in system scope, and its comment states that root needs Git during `darwin-rebuild switch`. Do not copy that decision to this host.
+
+Three measurements contradict the stated reason. `nix flake metadata` succeeds with Git absent from `PATH`, because Determinate Nix resolves a local flake through libgit2. `nixos-rebuild-ng` contains no reference to Git. `darwin-rebuild` also contains none.
+
+The portable module set supplies Git for the interactive user. Record this result so that a later reader does not add a system package for a reason that no longer holds.
+
 ## Risks / Trade-offs
 
 - **A module classified as portable holds a hidden macOS assumption.** Mitigation: build the complete portable set for `x86_64-linux` as a flake check, not only the four modules that the spike covered.
@@ -171,11 +193,14 @@ The container runtime is system scope on a host that this change already creates
 - **The Windows Terminal profile identifier changes with the distribution name.** Mitigation: prove the new profile and set it as default before removing the Ubuntu distribution.
 - **A future Intune policy restricts WSL.** Mitigation: none available. Record it as an accepted external dependency, because Windows owns that policy.
 - **The reduced Windows layer looks like an omission.** Mitigation: the later change states the IT-owned inventory as an explicit non-goal with its evidence.
+- **The host declares no URL opener and no clipboard command.** No declared package provides `wslview`, and no variable names a browser. Mitigation: none in this change. `gh` may print a URL instead of opening one, so record the real behavior in section 6 and add a package only after a command fails.
+- **The portable set declares no SSH client configuration.** `modules/home/ssh.nix` is Darwin-only, so this host loses connection multiplexing. Mitigation: none in this change. The system closure provides the OpenSSH client, so the loss is connection reuse only.
 
 ## Migration Plan
 
 1. Complete `split-home-modules-by-platform`.
 1. Add the `nixos-wsl` input with `follows`, and add `hosts/korolev/` and `modules/nixos/`.
+1. Declare the host defaults: the login shell, the time zone, and the locale categories.
 1. Add host checks for the system closure and the portable user set.
 1. Build the tarball inside the current Ubuntu distribution and import it beside that distribution.
 1. Activate, reconcile Herdr, and run local verification.
@@ -184,4 +209,4 @@ The container runtime is system scope on a host that this change already creates
 1. Delete the three packages, the two checks, and the obsolete runbook sections.
 1. Record the release evidence, then remove the Ubuntu distribution.
 
-Rollback before step 9 is a distribution switch, because the Ubuntu environment stays intact. Rollback after step 9 uses the previous NixOS generation.
+Rollback before the Ubuntu distribution is removed is a distribution switch, because the Ubuntu environment stays intact. Rollback after that removal uses the previous NixOS generation.
