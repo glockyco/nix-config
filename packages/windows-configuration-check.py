@@ -86,14 +86,28 @@ EXPECTED_POWERTOYS_MODULES = {
     "Workspaces",
     "ZoomIt",
 }
+FORBIDDEN_PROFILE_PATHS = (
+    "HKCU:\\",
+    "$ENV:LOCALAPPDATA",
+    "$ENV:USERPROFILE",
+    "$ENV:APPDATA",
+)
 EXPECTED_FILES = {
+    "altsnap-package.json",
+    "altsnap-settings.json",
+    "apply-kbdneo.ps1",
     "apply-zen-policies.ps1",
     "fork-wslgit.json",
+    "kbdneo.json",
     "power-toys-settings.json",
     "reneo-settings.json",
     "terminal-settings.json",
     "zed-catppuccin-theme.json",
     "zed-settings.json",
+    "zen-catppuccin-logo.svg",
+    "zen-catppuccin-userChrome.css",
+    "zen-catppuccin-userContent.css",
+    "zen-catppuccin.json",
     "zen-policies.json",
 }
 
@@ -367,6 +381,34 @@ def main() -> None:
         != expected_startup
     ):
         raise ValueError("ReNeo startup must use the exact user-scope package path")
+    native_neo = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "native neo input method"
+    )
+    native_neo_scripts = "\n".join(
+        native_neo.get("properties", {}).get(name, "")
+        for name in ("testScript", "setScript")
+    )
+    if any(
+        value not in native_neo_scripts
+        for value in (
+            "0407:b0000407",
+            "Keyboard Layouts\\b0000407",
+            "Set-WinDefaultInputMethodOverride",
+        )
+    ):
+        raise ValueError("native Neo input selection is missing a required guard")
+    alt_snap_startup = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "window tool startup"
+    )
+    if (
+        alt_snap_startup.get("properties", {}).get("valueData", {}).get("ExpandString")
+        != '"%APPDATA%\\AltSnap\\AltSnap.exe"'
+    ):
+        raise ValueError("AltSnap startup must use the user-scope package path")
 
     json_resource_names = {
         "fork wslgit",
@@ -400,6 +442,86 @@ def main() -> None:
     if missing:
         raise ValueError(f"rendered Windows files are missing: {', '.join(missing)}")
 
+    zen_theme = json.loads(
+        (package_root / "zen-catppuccin.json").read_text(encoding="utf-8")
+    )
+    if {
+        "commit": zen_theme.get("commit"),
+        "flavor": zen_theme.get("flavor"),
+        "accent": zen_theme.get("accent"),
+        "files": {
+            name: specification.get("sha256")
+            for name, specification in zen_theme.get("files", {}).items()
+        },
+    } != {
+        "commit": "c855685442c6040c4dda9c8d3ddc7b708de1cbaa",
+        "flavor": "Mocha",
+        "accent": "Mauve",
+        "files": {
+            "userChrome.css": "98ba97510bf2ecd8636686238242cb0f2e43552e2bb93c520818ed89da92189b",
+            "userContent.css": "297a3c45e624792892482ab45552625b2765e6d44947e878fe5c5731eb7cd44a",
+            "zen-logo.svg": "b41be8bf6c8659c532a0b1b984488696073adb31aec7a089211d4f4a7ecd9a83",
+        },
+    }:
+        raise ValueError(
+            "Zen Catppuccin theme must match the pinned Mocha Mauve sources"
+        )
+    zen_policies = json.loads(
+        (package_root / "zen-policies.json").read_text(encoding="utf-8")
+    )
+    user_styles = (
+        zen_policies.get("policies", {})
+        .get("Preferences", {})
+        .get("toolkit.legacyUserProfileCustomizations.stylesheets", {})
+    )
+    if user_styles != {"Value": True, "Status": "locked"}:
+        raise ValueError("Zen policy must enable profile user styles")
+    zen_theme_resource = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "zen catppuccin theme"
+    )
+    zen_theme_scripts = "\n".join(
+        zen_theme_resource.get("properties", {}).get(name, "")
+        for name in ("testScript", "setScript")
+    )
+    if any(
+        value not in zen_theme_scripts
+        for value in ("profiles.ini", "Get-FileHash", "sha256", "Zen Browser\\zen.exe")
+    ):
+        raise ValueError("Zen Catppuccin resource is missing a required profile guard")
+
+    kbd_neo = json.loads((package_root / "kbdneo.json").read_text(encoding="utf-8"))
+    if kbd_neo != {
+        "version": "2022-10-04",
+        "url": "https://dl.neo-layout.org/kbdneo64.zip",
+        "archiveSha256": "66f8e7f18c95a9a4416acc3d3eb52afcdbc2a3278a7286136c574b3271add84c",
+        "system32Sha256": "c5248c7b4024a2fdac956311a73a17428eab5fd54d59908a4a020501a49b775d",
+        "sysWow64Sha256": "c10dfdb1ffd19f1a21b76f7288d3dde200ee19907bacd3acad8a70b19d887480",
+        "layoutId": "b0000407",
+        "layoutFile": "kbdneo2.dll",
+        "layoutText": "Deutsch (Neo)",
+    }:
+        raise ValueError("kbdneo artifact must match the pinned 64-bit driver")
+    kbd_neo_script = (package_root / "apply-kbdneo.ps1").read_text(encoding="utf-8")
+    if any(
+        value not in kbd_neo_script
+        for value in (
+            "WindowsBuiltInRole]::Administrator",
+            "Is64BitProcess",
+            "System32",
+            "SysWOW64",
+            "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Keyboard Layouts",
+            "archiveSha256",
+            "system32Sha256",
+            "sysWow64Sha256",
+            "kbdneo: desired",
+        )
+    ):
+        raise ValueError("kbdneo administrator script is missing a required guard")
+    if any(path in kbd_neo_script.upper() for path in FORBIDDEN_PROFILE_PATHS):
+        raise ValueError("kbdneo script refers to an interactive-user profile path")
+
     wsl_git = json.loads(
         (package_root / "fork-wslgit.json").read_text(encoding="utf-8")
     )
@@ -426,6 +548,46 @@ def main() -> None:
     ):
         raise ValueError("Fork wslgit resource is missing a required bridge setting")
 
+    alt_snap_package = json.loads(
+        (package_root / "altsnap-package.json").read_text(encoding="utf-8")
+    )
+    if alt_snap_package != {
+        "version": "1.68",
+        "url": "https://github.com/RamonUnch/AltSnap/releases/download/1.68/AltSnap1.68bin_x64.zip",
+        "archiveSha256": "7db3dad3746e7b23857db92fc05ee2d3e17eee1b28e237709a612366ba909c79",
+        "executableSha256": "dba17fbfc2633aac31f5faedb992f4f24ddee3092bb4c803d2b8db83d58255b9",
+        "hooksSha256": "fa2ff5c2f76267ab6a1d80e432649da023b94e2183fe2f8c27f254f1b0637ed7",
+    }:
+        raise ValueError("AltSnap must match the pinned portable release")
+    alt_snap_resource = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "package window tool"
+    )
+    alt_snap_scripts = "\n".join(
+        alt_snap_resource.get("properties", {}).get(name, "")
+        for name in ("testScript", "setScript")
+    )
+    if any(
+        value not in alt_snap_scripts
+        for value in ("archiveSha256", "executableSha256", "hooksSha256", "AltSnap.ini")
+    ):
+        raise ValueError("portable AltSnap resource is missing a checksum or setting")
+
+    alt_snap = json.loads(
+        (package_root / "altsnap-settings.json").read_text(encoding="utf-8")
+    )
+    if alt_snap != {
+        "General": {
+            "Aero": "1",
+            "SmartAero": "1",
+            "AutoSnap": "2",
+            "AeroHoffset": "50",
+            "AeroVoffset": "50",
+        }
+    }:
+        raise ValueError("AltSnap must enable 50/50 edge snapping")
+
     power_toys = json.loads(
         (package_root / "power-toys-settings.json").read_text(encoding="utf-8")
     )
@@ -435,8 +597,8 @@ def main() -> None:
             "PowerToys module keys must match the installed version's schema"
         )
     enabled_modules = {name for name, enabled in module_flags.items() if enabled}
-    if enabled_modules != {"CmdPal", "GrabAndMove"}:
-        raise ValueError("PowerToys must enable only Command Palette and Grab And Move")
+    if enabled_modules != {"CmdPal"}:
+        raise ValueError("PowerToys must enable only Command Palette")
     if {
         "startup": power_toys.get("startup"),
         "run_elevated": power_toys.get("run_elevated"),
@@ -447,8 +609,15 @@ def main() -> None:
     reneo = json.loads(
         (package_root / "reneo-settings.json").read_text(encoding="utf-8")
     )
-    if reneo != {"standaloneLayout": "Neo", "standaloneMode": True}:
-        raise ValueError("ReNeo must select the standalone Neo2 layout")
+    if reneo != {"standaloneLayout": "Neo", "standaloneMode": False}:
+        raise ValueError("ReNeo must extend the native Neo2 layout")
+    reneo_resource = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "reneo settings"
+    )
+    if "native neo input method" not in reneo_resource.get("dependsOn", []):
+        raise ValueError("ReNeo settings must wait for native Neo input selection")
 
     terminal = json.loads(
         (package_root / "terminal-settings.json").read_text(encoding="utf-8")
@@ -503,8 +672,7 @@ def main() -> None:
     policy_script = (package_root / "apply-zen-policies.ps1").read_text(
         encoding="utf-8"
     )
-    forbidden_profile_paths = ("HKCU", "LOCALAPPDATA", "USERPROFILE", "APPDATA")
-    if any(path in policy_script.upper() for path in forbidden_profile_paths):
+    if any(path in policy_script.upper() for path in FORBIDDEN_PROFILE_PATHS):
         raise ValueError("Zen policy script refers to an interactive-user profile path")
     if (
         "Zen Browser\\distribution\\policies.json" not in policy_script

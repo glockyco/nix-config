@@ -132,6 +132,30 @@ in
     description = "Show snap layouts over a maximize button";
   })
   (registry {
+    name = "window-tool-startup";
+    keyPath = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+    valueName = "AltSnap";
+    valueData.ExpandString = ''"%APPDATA%\AltSnap\AltSnap.exe"'';
+    description = "Start AltSnap for the interactive user at logon";
+  })
+  {
+    type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+    name = "native-neo-input-method";
+    properties = {
+      testScript = ''
+        $override = Get-WinDefaultInputMethodOverride
+        return $null -ne $override -and $override.InputMethodTip -eq '0407:b0000407'
+      '';
+      setScript = ''
+        if (-not (Test-Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layouts\b0000407')) {
+          throw 'Run apply-kbdneo.ps1 as Administrator and restart Windows before applying the WinGet document'
+        }
+        Set-WinDefaultInputMethodOverride -InputTip '0407:b0000407'
+      '';
+    };
+    metadata.description = "Select the native Neo2 layout for the interactive user";
+  }
+  (registry {
     name = "keyboard-layout-startup";
     keyPath = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
     valueName = "ReNeo";

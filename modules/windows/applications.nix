@@ -26,10 +26,17 @@
   {
     name = "PowerToys";
     role = "launcher";
-    provides = [ "window-tool" ];
     id = "Microsoft.PowerToys";
     version = "0.101.2362.0";
     source = "winget";
+    scope = "user";
+  }
+  {
+    name = "AltSnap";
+    role = "window-tool";
+    id = "AltSnap.AltSnap";
+    version = "1.68";
+    source = "github-release";
     scope = "user";
   }
   {

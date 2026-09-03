@@ -1,6 +1,15 @@
 { pkgs, shared }:
 
 let
+  altSnapPackage = {
+    version = "1.68";
+    url = "https://github.com/RamonUnch/AltSnap/releases/download/1.68/AltSnap1.68bin_x64.zip";
+    archiveSha256 = "7db3dad3746e7b23857db92fc05ee2d3e17eee1b28e237709a612366ba909c79";
+    executableSha256 = "dba17fbfc2633aac31f5faedb992f4f24ddee3092bb4c803d2b8db83d58255b9";
+    hooksSha256 = "fa2ff5c2f76267ab6a1d80e432649da023b94e2183fe2f8c27f254f1b0637ed7";
+  };
+  altSnapPackageJson = builtins.toJSON altSnapPackage;
+
   wslGit = {
     version = "1.3.1";
     url = "https://github.com/andy-5/wslgit/releases/download/v1.3.1/wslgit.zip";
@@ -16,6 +25,37 @@ let
     url = zedThemeUrl;
     hash = "sha256-Lcy5+z/4iOZGQHtPhNQAMEVT4NmpaIrHXQ+fzT+L32o=";
   };
+
+  zenTheme = {
+    commit = "c855685442c6040c4dda9c8d3ddc7b708de1cbaa";
+    flavor = "Mocha";
+    accent = "Mauve";
+    files = {
+      "userChrome.css" = {
+        url = "https://raw.githubusercontent.com/catppuccin/zen-browser/c855685442c6040c4dda9c8d3ddc7b708de1cbaa/themes/Mocha/Mauve/userChrome.css";
+        sha256 = "98ba97510bf2ecd8636686238242cb0f2e43552e2bb93c520818ed89da92189b";
+        sri = "sha256-mLqXUQvy7NhjZoYjgkLLDy5DVS4ruTxSCBjtidqSGJs=";
+      };
+      "userContent.css" = {
+        url = "https://raw.githubusercontent.com/catppuccin/zen-browser/c855685442c6040c4dda9c8d3ddc7b708de1cbaa/themes/Mocha/Mauve/userContent.css";
+        sha256 = "297a3c45e624792892482ab45552625b2765e6d44947e878fe5c5731eb7cd44a";
+        sri = "sha256-KXo8ReYkeSiSSCq0VVJiWydl5tRJR+h4/lxXMet81Eo=";
+      };
+      "zen-logo.svg" = {
+        url = "https://raw.githubusercontent.com/catppuccin/zen-browser/c855685442c6040c4dda9c8d3ddc7b708de1cbaa/themes/Mocha/Mauve/zen-logo-mocha.svg";
+        sha256 = "b41be8bf6c8659c532a0b1b984488696073adb31aec7a089211d4f4a7ecd9a83";
+        sri = "sha256-tBvov2yGWcUyoLG5hEiGlgc62zGux6CJIR1PSn7NmoM=";
+      };
+    };
+  };
+  zenThemeSources = builtins.mapAttrs (
+    _: file:
+    pkgs.fetchurl {
+      inherit (file) url;
+      hash = file.sri;
+    }
+  ) zenTheme.files;
+  zenThemeJson = builtins.toJSON zenTheme;
 
   zedSettings =
     (shared.zedSettings {
@@ -81,13 +121,21 @@ let
       CursorWrap = false;
       LightSwitch = false;
       PowerDisplay = false;
-      GrabAndMove = true;
+      GrabAndMove = false;
     };
+  };
+
+  altSnapSettings.General = {
+    Aero = "1";
+    SmartAero = "1";
+    AutoSnap = "2";
+    AeroHoffset = "50";
+    AeroVoffset = "50";
   };
 
   reneoSettings = {
     standaloneLayout = "Neo";
-    standaloneMode = true;
+    standaloneMode = false;
   };
 
   catppuccinMocha = {
@@ -128,18 +176,29 @@ let
   };
 
   zenPolicies = {
-    policies = builtins.removeAttrs shared.zenPolicies [ "EnterprisePoliciesEnabled" ];
+    policies = (builtins.removeAttrs shared.zenPolicies [ "EnterprisePoliciesEnabled" ]) // {
+      Preferences."toolkit.legacyUserProfileCustomizations.stylesheets" = {
+        Value = true;
+        Status = "locked";
+      };
+    };
   };
 
   terminalSpecificationJson = builtins.toJSON terminalSettings;
 
   jsonFiles = {
+    "altsnap-package.json" = altSnapPackageJson;
+    "altsnap-settings.json" = builtins.toJSON altSnapSettings;
     "fork-wslgit.json" = wslGitJson;
     "zed-catppuccin-theme.json" = builtins.readFile zedThemeSource;
     "power-toys-settings.json" = builtins.toJSON powerToysSettings;
     "reneo-settings.json" = builtins.toJSON reneoSettings;
     "terminal-settings.json" = builtins.toJSON terminalSettings;
     "zed-settings.json" = builtins.toJSON zedSettings;
+    "zen-catppuccin.json" = zenThemeJson;
+    "zen-catppuccin-userChrome.css" = builtins.readFile zenThemeSources."userChrome.css";
+    "zen-catppuccin-userContent.css" = builtins.readFile zenThemeSources."userContent.css";
+    "zen-catppuccin-logo.svg" = builtins.readFile zenThemeSources."zen-logo.svg";
     "zen-policies.json" = builtins.toJSON zenPolicies;
   };
 
@@ -221,6 +280,80 @@ let
       };
       metadata = { inherit description; };
     };
+
+  altSnapResource = {
+    type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+    name = "package-window-tool";
+    properties = {
+      testScript = ''
+        $package = '${altSnapPackageJson}' | ConvertFrom-Json
+        $desired = '${builtins.toJSON altSnapSettings}' | ConvertFrom-Json
+        $root = Join-Path $env:APPDATA 'AltSnap'
+        $path = Join-Path $root 'AltSnap.ini'
+        $executable = Join-Path $root 'AltSnap.exe'
+        $hooks = Join-Path $root 'hooks.dll'
+        if (-not (Test-Path -LiteralPath $executable) -or (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.executableSha256) { return $false }
+        if (-not (Test-Path -LiteralPath $hooks) -or (Get-FileHash -LiteralPath $hooks -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.hooksSha256) { return $false }
+        if (-not (Test-Path -LiteralPath $path)) { return $false }
+        $ini = Add-Type -Namespace WindowsConfiguration -Name AltSnapIniReadApi -MemberDefinition @'
+          [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+          public static extern uint GetPrivateProfileString(string section, string key, string defaultValue, System.Text.StringBuilder value, uint size, string filePath);
+        '@ -PassThru
+        foreach ($section in $desired.PSObject.Properties) {
+          foreach ($setting in $section.Value.PSObject.Properties) {
+            $value = New-Object Text.StringBuilder 256
+            [void]$ini::GetPrivateProfileString($section.Name, $setting.Name, [string]::Empty, $value, $value.Capacity, $path)
+            if ($value.ToString() -ne [string]$setting.Value) { return $false }
+          }
+        }
+        return $true
+      '';
+      setScript = ''
+        $package = '${altSnapPackageJson}' | ConvertFrom-Json
+        $desired = '${builtins.toJSON altSnapSettings}' | ConvertFrom-Json
+        $root = Join-Path $env:APPDATA 'AltSnap'
+        $path = Join-Path $root 'AltSnap.ini'
+        $archive = Join-Path $env:TEMP "AltSnap-$($package.version).zip"
+        $expanded = Join-Path $env:TEMP "AltSnap-$($package.version)"
+        Get-Process -Name AltSnap -ErrorAction SilentlyContinue | Stop-Process
+        try {
+          Invoke-WebRequest -Uri $package.url -OutFile $archive -UseBasicParsing
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.archiveSha256) { throw 'AltSnap archive checksum mismatch' }
+          Remove-Item -LiteralPath $expanded -Recurse -Force -ErrorAction SilentlyContinue
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [IO.Compression.ZipFile]::ExtractToDirectory($archive, $expanded)
+          if ((Get-FileHash -LiteralPath (Join-Path $expanded 'AltSnap.exe') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.executableSha256) { throw 'AltSnap executable checksum mismatch' }
+          if ((Get-FileHash -LiteralPath (Join-Path $expanded 'hooks.dll') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.hooksSha256) { throw 'AltSnap hooks checksum mismatch' }
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+          Get-ChildItem -LiteralPath $expanded -Force | Where-Object Name -ne 'AltSnap.ini' | Copy-Item -Destination $root -Recurse -Force
+          if (-not (Test-Path -LiteralPath $path)) { Copy-Item -LiteralPath (Join-Path $expanded 'AltSnap.ini') -Destination $path }
+        } finally {
+          Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue
+          Remove-Item -LiteralPath $expanded -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        $ini = Add-Type -Namespace WindowsConfiguration -Name AltSnapIniWriteApi -MemberDefinition @'
+          [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+          public static extern bool WritePrivateProfileString(string section, string key, string value, string filePath);
+        '@ -PassThru
+        foreach ($section in $desired.PSObject.Properties) {
+          foreach ($setting in $section.Value.PSObject.Properties) {
+            if (-not $ini::WritePrivateProfileString($section.Name, $setting.Name, [string]$setting.Value, $path)) { throw "Could not write AltSnap setting $($section.Name).$($setting.Name)" }
+          }
+        }
+        Start-Process (Join-Path $root 'AltSnap.exe')
+      '';
+    };
+    metadata = {
+      description = "Install portable AltSnap with modifier dragging and 50/50 edge snapping";
+      application = {
+        id = "AltSnap.AltSnap";
+        roles = [ "window-tool" ];
+        source = "github-release";
+        version = altSnapPackage.version;
+        scope = "user";
+      };
+    };
+  };
 
   forkWslGitResource = {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
@@ -333,6 +466,59 @@ let
     metadata.description = "Install the pinned Catppuccin theme for Zed";
   };
 
+  zenThemeResource = {
+    type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+    name = "zen-catppuccin-theme";
+    dependsOn = [ "package-browser" ];
+    properties = {
+      testScript = ''
+        $specification = '${zenThemeJson}' | ConvertFrom-Json
+        $profilesIni = Join-Path $env:APPDATA 'zen\profiles.ini'
+        if (-not (Test-Path -LiteralPath $profilesIni)) { return $false }
+        $profilePaths = @(Select-String -LiteralPath $profilesIni -Pattern '^Path=(.+)$' | ForEach-Object { $_.Matches[0].Groups[1].Value })
+        if ($profilePaths.Count -eq 0) { return $false }
+        foreach ($profilePath in $profilePaths) {
+          $chrome = Join-Path (Join-Path (Split-Path -Parent $profilesIni) $profilePath.Replace('/', '\')) 'chrome'
+          foreach ($file in $specification.files.PSObject.Properties) {
+            $path = Join-Path $chrome $file.Name
+            if (-not (Test-Path -LiteralPath $path)) { return $false }
+            if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $file.Value.sha256) { return $false }
+          }
+        }
+        return $true
+      '';
+      setScript = ''
+        $specification = '${zenThemeJson}' | ConvertFrom-Json
+        $profilesIni = Join-Path $env:APPDATA 'zen\profiles.ini'
+        if (-not (Test-Path -LiteralPath $profilesIni)) { throw 'Launch Zen once to create its user profile, then reapply the configuration' }
+        $profilePaths = @(Select-String -LiteralPath $profilesIni -Pattern '^Path=(.+)$' | ForEach-Object { $_.Matches[0].Groups[1].Value })
+        if ($profilePaths.Count -eq 0) { throw 'Zen profiles.ini contains no profile path' }
+        $temporary = Join-Path $env:TEMP 'zen-catppuccin-mocha-mauve'
+        Get-Process -Name zen -ErrorAction SilentlyContinue | Stop-Process
+        try {
+          Remove-Item -LiteralPath $temporary -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $temporary -Force | Out-Null
+          foreach ($file in $specification.files.PSObject.Properties) {
+            $download = Join-Path $temporary $file.Name
+            Invoke-WebRequest -Uri $file.Value.url -OutFile $download -UseBasicParsing
+            if ((Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant() -ne $file.Value.sha256) { throw "Zen Catppuccin checksum mismatch for $($file.Name)" }
+          }
+          foreach ($profilePath in $profilePaths) {
+            $chrome = Join-Path (Join-Path (Split-Path -Parent $profilesIni) $profilePath.Replace('/', '\')) 'chrome'
+            New-Item -ItemType Directory -Path $chrome -Force | Out-Null
+            foreach ($file in $specification.files.PSObject.Properties) {
+              Copy-Item -LiteralPath (Join-Path $temporary $file.Name) -Destination (Join-Path $chrome $file.Name) -Force
+            }
+          }
+        } finally {
+          Remove-Item -LiteralPath $temporary -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        Start-Process (Join-Path $env:ProgramFiles 'Zen Browser\zen.exe')
+      '';
+    };
+    metadata.description = "Install the pinned Catppuccin Mocha Mauve theme in every Zen profile";
+  };
+
   terminalResource = {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
     name = "windows-terminal-settings";
@@ -402,8 +588,10 @@ in
   files = jsonFiles;
 
   resources = [
+    altSnapResource
     forkWslGitResource
     zedThemeResource
+    zenThemeResource
     terminalResource
     (mergeJsonScript {
       name = "zed-settings";
@@ -421,7 +609,10 @@ in
       description = "Select the Neo2 layout while preserving ReNeo state";
       destination = "Join-Path $env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages\\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\\ReNeo\\config.json'";
       desired = reneoSettings;
-      dependsOn = [ "package-keyboard-layout" ];
+      dependsOn = [
+        "package-keyboard-layout"
+        "native-neo-input-method"
+      ];
       beforeSet = ''
         $packagePath = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\ReNeo\*'
         Get-Process -Name reneo -ErrorAction SilentlyContinue | Where-Object { $_.Path -like $packagePath } | Stop-Process
@@ -432,7 +623,7 @@ in
     })
     (mergeJsonScript {
       name = "power-toys-settings";
-      description = "Enable only Command Palette and Grab And Move in PowerToys";
+      description = "Enable only Command Palette in PowerToys";
       destination = "Join-Path $env:LOCALAPPDATA 'Microsoft\\PowerToys\\settings.json'";
       desired = powerToysSettings;
       dependsOn = [ "package-launcher" ];

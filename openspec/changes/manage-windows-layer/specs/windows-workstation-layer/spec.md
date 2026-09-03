@@ -2,12 +2,12 @@
 
 ### Requirement: Rendered Windows configuration artifacts
 
-The repository SHALL render one Windows configuration document and one Administrator Zen policy script from the same Nix expressions. Together they SHALL be the single source for the Windows application set, the declared Windows settings, and the declared application configuration files. Nix activation on any host SHALL NOT write to a Windows path and SHALL NOT apply either artifact.
+The repository SHALL render one Windows configuration document, one Administrator Zen policy script, and one Administrator native Neo driver script from the same Nix expressions. Together they SHALL be the single source for the Windows application set, the declared Windows settings, and the declared application configuration files. Nix activation on any host SHALL NOT write to a Windows path and SHALL NOT apply any artifact.
 
 #### Scenario: Render the artifacts
 
 - **WHEN** the Windows configuration output is built from the locked repository
-- **THEN** the result contains one WinGet Configuration document, one Zen policy script, and the review files that describe their settings
+- **THEN** the result contains one WinGet Configuration document, one Zen policy script, one native Neo driver script, and the review files that describe their settings
 - **AND** the build reads no mutable Windows state
 
 #### Scenario: Keep the operating-system boundary
@@ -16,9 +16,9 @@ The repository SHALL render one Windows configuration document and one Administr
 - **THEN** activation writes no file under the Windows user profile
 - **AND** activation does not start the Windows apply operation
 
-### Requirement: User scope with one browser exception
+### Requirement: User scope with explicit machine exceptions
 
-Every document resource SHALL apply in the interactive user's own scope except the Zen package. The official Zen installer SHALL be the only document resource that requests elevation. The Administrator script SHALL own only the Zen policy file under Program Files, refuse a non-administrator token, and read no Administrator-profile path.
+Every document resource SHALL apply in the interactive user's own scope except the Zen package. The official Zen installer SHALL be the only document resource that requests elevation. One Administrator script SHALL own only the Zen policy file under Program Files. The other SHALL own only the native Neo DLLs and keyboard-layout registration. Both scripts SHALL refuse a non-administrator token and SHALL read no Administrator-profile path.
 
 #### Scenario: Apply user-scope resources
 
@@ -29,13 +29,18 @@ Every document resource SHALL apply in the interactive user's own scope except t
 #### Scenario: Apply the browser exception
 
 - **WHEN** the Zen installer requests the administrator credential and the operator later applies the policy script from an Administrator PowerShell session
-- **THEN** those are the only two privileged operations
-- **AND** both write only to the machine-wide Zen installation under Program Files
+- **THEN** both operations write only to the machine-wide Zen installation under Program Files
+
+#### Scenario: Apply the keyboard driver exception
+
+- **WHEN** the operator applies the native Neo script from a 64-bit Administrator PowerShell session
+- **THEN** it writes only the checksum-pinned DLLs and `b0000407` machine registration
+- **AND** the operator restarts Windows before the document selects input tip `0407:b0000407`
 
 #### Scenario: Reject another privileged declaration
 
 - **WHEN** the document declares another machine-scope package, elevated resource, machine-scope registry value, or Windows feature
-- **OR** the Administrator script refers to an interactive-user profile path
+- **OR** either Administrator script refers to an interactive-user profile path or a machine path outside its declared ownership
 - **THEN** the repository validation fails
 
 ### Requirement: Pinned application set
@@ -74,7 +79,7 @@ The document SHALL declare Windows settings by explicit named keys. For a bundle
 
 ### Requirement: Application configuration files
 
-The document and policy script SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the owning artifact SHALL enforce the complete file content. For an application that rewrites its own configuration, the owning artifact SHALL converge only the declared values and SHALL preserve the application's own writes. The Zed and Windows Terminal configurations SHALL select Catppuccin Mocha from pinned upstream theme data. Zed SHALL select `nixd` from the WSL environment for Nix files and SHALL disable its `nil` fallback. Fork SHALL execute Git inside the NixOS distribution through a checksum-pinned `wslgit` bridge.
+The document and companion scripts SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the owning artifact SHALL enforce the complete file content. For an application that rewrites its own configuration, the owning artifact SHALL converge only the declared values and SHALL preserve the application's own writes. Zed, Windows Terminal, and Zen SHALL select Catppuccin Mocha from pinned upstream theme data. Zed SHALL select `nixd` from the WSL environment for Nix files and SHALL disable its `nil` fallback. Fork SHALL execute Git inside the NixOS distribution through a checksum-pinned `wslgit` bridge. AltSnap SHALL own modifier-drag movement and 50/50 edge or corner snapping; overlapping PowerToys window-movement modules SHALL remain disabled. The native Neo driver SHALL provide the base layout in elevated surfaces, and ReNeo SHALL run in extension mode for higher Neo layers.
 
 #### Scenario: Enforce a stable configuration file
 
@@ -84,8 +89,8 @@ The document and policy script SHALL declare application configuration in two cl
 #### Scenario: Apply the application themes
 
 - **WHEN** the operator applies the document
-- **THEN** Zed and Windows Terminal select Catppuccin Mocha
-- **AND** the rendered theme data matches its pinned upstream source
+- **THEN** Zed, Windows Terminal, and Zen select Catppuccin Mocha with Mauve accents
+- **AND** each rendered theme matches its pinned upstream source
 
 #### Scenario: Start the Nix language server
 
@@ -99,6 +104,18 @@ The document and policy script SHALL declare application configuration in two cl
 - **WHEN** Fork operates on a repository under `\\wsl.localhost\NixOS`
 - **THEN** its pinned Git bridge runs the repository command inside NixOS
 - **AND** Fork preserves its other application-owned settings
+
+#### Scenario: Snap a modifier-dragged window
+
+- **WHEN** the operator modifier-drags a window to a screen edge or corner
+- **THEN** AltSnap moves and snaps the window to the configured 50/50 region
+- **AND** no PowerToys movement module handles the same gesture
+
+#### Scenario: Use Neo in ordinary and elevated surfaces
+
+- **WHEN** Windows restarts after the native driver apply and the interactive-user document selects the Neo input method
+- **THEN** the native Neo base layout works in ordinary and elevated surfaces
+- **AND** ReNeo supplies higher Neo layers in ordinary windows without replacing the native layout
 
 #### Scenario: Preserve application-owned state
 
@@ -119,7 +136,7 @@ The Windows layer SHALL declare nothing about the taskbar pinned-application lis
 
 ### Requirement: Validation before and after apply
 
-The repository SHALL validate the rendered document and privilege boundary without a Windows machine. The operator SHALL test the document and policy script before their first apply and SHALL confirm each applied state after the apply.
+The repository SHALL validate the rendered document and privilege boundary without a Windows machine. The operator SHALL test the document and both Administrator scripts before their first apply and SHALL confirm each applied state after the apply.
 
 #### Scenario: Validate without Windows
 
@@ -129,6 +146,6 @@ The repository SHALL validate the rendered document and privilege boundary witho
 
 #### Scenario: Preview and confirm on the machine
 
-- **WHEN** the operator tests the document and policy script on `korolev`
+- **WHEN** the operator tests the document and both Administrator scripts on `korolev`
 - **THEN** each test reports drift without applying it
-- **AND** later test operations report that the applied state matches both artifacts
+- **AND** later test operations report that the applied state matches all three artifacts
