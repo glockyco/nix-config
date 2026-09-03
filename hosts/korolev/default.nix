@@ -15,6 +15,12 @@ inputs.nixpkgs.lib.nixosSystem {
     # this host supplies its own here.
     {
       home-manager.users.${username} = {
+        # This host holds no GitHub key, because it declares no secret and
+        # copies no key. `gh` therefore drives Git over HTTPS here, and its
+        # declared credential helper answers the prompt. `modules/home/gh.nix`
+        # keeps `ssh` for the Darwin host, which does hold a key.
+        programs.gh.settings.git_protocol = "https";
+
         programs.git = {
           settings.user = {
             name = "Johann Glock";

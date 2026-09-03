@@ -50,7 +50,7 @@
 - [ ] 5.5 Confirm that Herdr reports `omp: current` and that local verification succeeds.
 - [x] 5.6 Confirm that an unprivileged build reports no ignored `trusted-public-keys` warning.
 - [x] 5.7 Re-activate the same revision and confirm that nothing changes and no duplicate entry appears.
-- [ ] 5.8 Confirm that name resolution, both substituters, and GitHub authentication work with the corporate VPN connected.
+- [x] 5.8 Confirm that name resolution, both substituters, and GitHub authentication work with the corporate VPN connected.
 - [x] 5.9 Confirm with `getent passwd` and a new session that the login shell is the declared shell.
 - [x] 5.10 Confirm that the prompt, the shared history, and the completion behavior are active in that session.
 - [x] 5.11 Confirm the time zone with `date`, and confirm the time and measurement categories with `locale`.
