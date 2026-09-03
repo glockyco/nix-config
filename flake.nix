@@ -164,6 +164,13 @@
             inherit containerRuntimeCheck;
             homeConfiguration = self.darwinConfigurations.macbook-pro.config.home-manager.users.glockyco;
           };
+
+          # `nixosConfigurations.korolev` is the only `x86_64-linux` host. These
+          # bindings are lazy, so the Darwin outputs never force them.
+          korolevConfig = self.nixosConfigurations.korolev.config;
+          korolevUser = korolevConfig.wsl.defaultUser;
+          korolevHome = korolevConfig.home-manager.users.${korolevUser};
+          korolevShell = korolevConfig.users.users.${korolevUser}.shell;
         in
         {
           # `nix fmt` formats every language listed in ./treefmt.nix, tree-wide.
@@ -349,6 +356,56 @@
               name = "check-openspec-contracts";
             };
 
+          }
+          // lib.optionalAttrs isLinux {
+            # The host build is a check, so a host that stops building appears
+            # in review rather than during activation.
+            korolevSystem = korolevConfig.system.build.toplevel;
+
+            # The portable user modules have to build for Linux, not only
+            # evaluate. This is the complete set that the WSL host selects.
+            korolevHomeGeneration = korolevHome.home.activationPackage;
+
+            # The accepted evidence for the retired implementation recorded a
+            # repeated warning that Nix ignores a client-specified key. A system
+            # setting removes that cause, so it has to stay declared.
+            korolevNixSettings =
+              assert builtins.elem "https://cache.numtide.com" korolevConfig.nix.settings.extra-substituters;
+              assert builtins.elem "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+                korolevConfig.nix.settings.extra-trusted-public-keys;
+              pkgs.runCommand "check-wsl-host-nix-settings" { } "touch $out";
+
+            # No other machine drives this host. It also runs endpoint data loss
+            # prevention, so it holds no decryption material.
+            korolevIsolation =
+              assert !korolevConfig.services.openssh.enable;
+              assert korolevConfig.networking.firewall.allowedTCPPorts == [ ];
+              assert !(korolevConfig ? sops);
+              pkgs.runCommand "check-wsl-host-isolation" { } "touch $out";
+
+            # WSL 2 is already the virtual machine, so the runtime needs no
+            # second one, and it exposes no socket another host could reach.
+            # A Windows container product is not expressible here: Intune owns
+            # Docker Desktop, and review covers that boundary.
+            korolevContainerRuntime =
+              assert korolevConfig.virtualisation.podman.enable;
+              assert korolevConfig.virtualisation.podman.dockerCompat;
+              assert !korolevConfig.virtualisation.podman.dockerSocket.enable;
+              assert !korolevConfig.virtualisation.docker.enable;
+              assert !korolevConfig.virtualisation.libvirtd.enable;
+              pkgs.runCommand "check-wsl-host-container-runtime" { } "touch $out";
+
+            # A login shell that the portable set does not configure would read
+            # none of its own configuration, because that set generates no bash
+            # files at all. `environment.shells` holds binary paths, so the
+            # comparison is a prefix of the declared shell's store path.
+            korolevLoginShell =
+              assert korolevHome.programs.zsh.enable;
+              assert korolevShell.pname == "zsh";
+              assert builtins.any (
+                entry: lib.hasPrefix (toString korolevShell) (toString entry)
+              ) korolevConfig.environment.shells;
+              pkgs.runCommand "check-wsl-host-login-shell" { } "touch $out";
           }
           // lib.optionalAttrs isDarwin {
             airBatchCommand = airBatchCommandTest;

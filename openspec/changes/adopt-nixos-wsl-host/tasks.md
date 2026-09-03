@@ -33,13 +33,13 @@
 
 ## 4. Add Deterministic Checks
 
-- [ ] 4.1 Add a check that builds `nixosConfigurations.korolev.config.system.build.toplevel`.
-- [ ] 4.2 Add a check that builds the complete portable user-scope set for `x86_64-linux`.
-- [ ] 4.3 Add a check that asserts the host declares the Numtide substituter and trusted key.
-- [ ] 4.4 Add a check that asserts the host configuration declares no SSH server and no secret.
-- [ ] 4.5 Confirm that the retained `personalOmpShape`, `personalOmpVerification`, and `herdrOmpReconciliation` checks still pass on `x86_64-linux`.
-- [ ] 4.6 Add a check that asserts the host declares the container runtime and declares no Windows container product.
-- [ ] 4.7 Add a check that asserts the declared login shell is the shell that the portable module set configures.
+- [x] 4.1 Add a check that builds `nixosConfigurations.korolev.config.system.build.toplevel`.
+- [x] 4.2 Add a check that builds the complete portable user-scope set for `x86_64-linux`.
+- [x] 4.3 Add a check that asserts the host declares the Numtide substituter and trusted key.
+- [x] 4.4 Add a check that asserts the host configuration declares no SSH server and no secret.
+- [x] 4.5 Confirm that the retained `personalOmpShape`, `personalOmpVerification`, and `herdrOmpReconciliation` checks still pass on `x86_64-linux`.
+- [x] 4.6 Add a check that asserts the host declares the container runtime, exposes no socket, and needs no nested virtualization.
+- [x] 4.7 Add a check that asserts the declared login shell is the shell that the portable module set configures.
 
 ## 5. Provision the Host Side by Side
 
@@ -91,4 +91,4 @@
 - [ ] 9.3 Run `nix build .#darwinConfigurations.macbook-pro.system` and confirm that the Darwin host still builds.
 - [ ] 9.4 Run `nix run .#check-darwin-build-plans`.
 - [ ] 9.5 Run `openspec validate adopt-nixos-wsl-host --strict`.
-- [ ] 9.6 Review the final diff by host, module, check, deletion, and documentation.
+- [ ] 9.6 Review the final diff by host, module, check, deletion, and documentation, and confirm that no module declares a Windows container product.
