@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import pathlib
 import sys
@@ -24,6 +25,29 @@ EXPECTED_ROLES = {
     "terminal",
     "terminal-font",
     "window-tool",
+}
+CATPPUCCIN_MOCHA = {
+    "name": "Catppuccin Mocha",
+    "cursorColor": "#F5E0DC",
+    "selectionBackground": "#585B70",
+    "background": "#1E1E2E",
+    "foreground": "#CDD6F4",
+    "black": "#45475A",
+    "red": "#F38BA8",
+    "green": "#A6E3A1",
+    "yellow": "#F9E2AF",
+    "blue": "#89B4FA",
+    "purple": "#F5C2E7",
+    "cyan": "#94E2D5",
+    "white": "#BAC2DE",
+    "brightBlack": "#585B70",
+    "brightRed": "#F38BA8",
+    "brightGreen": "#A6E3A1",
+    "brightYellow": "#F9E2AF",
+    "brightBlue": "#89B4FA",
+    "brightPurple": "#F5C2E7",
+    "brightCyan": "#94E2D5",
+    "brightWhite": "#A6ADC8",
 }
 EXPECTED_POWERTOYS_MODULES = {
     "AdvancedPaste",
@@ -67,6 +91,7 @@ EXPECTED_FILES = {
     "power-toys-settings.json",
     "reneo-settings.json",
     "terminal-settings.json",
+    "zed-catppuccin-theme.json",
     "zed-settings.json",
     "zen-policies.json",
 }
@@ -390,6 +415,29 @@ def main() -> None:
         zed.get("terminal", {}).get("font_family"),
     } != {"JetBrainsMonoNL NF"}:
         raise ValueError("Zed must use the font's embedded Windows family name")
+    if terminal.get("scheme") != CATPPUCCIN_MOCHA or (
+        terminal.get("settings", {})
+        .get("profiles", {})
+        .get("defaults", {})
+        .get("colorScheme")
+        != "Catppuccin Mocha"
+    ):
+        raise ValueError(
+            "Windows Terminal must use the official Catppuccin Mocha scheme"
+        )
+    if zed.get("theme") != {
+        "dark": "Catppuccin Mocha",
+        "light": "Catppuccin Mocha",
+    }:
+        raise ValueError("Zed must select Catppuccin Mocha")
+    zed_theme_digest = hashlib.sha256(
+        (package_root / "zed-catppuccin-theme.json").read_bytes()
+    ).hexdigest()
+    if (
+        zed_theme_digest
+        != "2dccb9fb3ff888e646407b4f84d400304553e0d9a9688ac75d0f9fcd3f8bdf6a"
+    ):
+        raise ValueError("rendered Zed theme does not match the pinned upstream source")
 
     policy_script = (package_root / "apply-zen-policies.ps1").read_text(
         encoding="utf-8"

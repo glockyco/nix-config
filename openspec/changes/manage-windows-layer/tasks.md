@@ -43,6 +43,7 @@
 - [x] 5.5 Keep mouse window control in the converged PowerToys settings instead of a separate application file.
 - [x] 5.6 Declare the PowerToys settings as a converged file and restart PowerToys around a locked-file update.
 - [x] 5.7 Declare the standalone Neo2 selection as a converged ReNeo setting and start ReNeo at user logon.
+- [x] 5.8 Install the pinned Zed theme and merge the Catppuccin Mocha scheme into Windows Terminal.
 
 ## 6. Add Repository Validation
 
@@ -52,6 +53,7 @@
 - [x] 6.4 Extend the check to fail when the document declares machine scope.
 - [x] 6.5 Add rejected fixtures for the unpinned, managed-collision, and machine-scope cases.
 - [x] 6.6 Add an allowed fixture that proves a correct document passes.
+- [x] 6.7 Validate the pinned Zed theme and exact Windows Terminal Catppuccin palette.
 
 ## 7. Apply and Prove on the Machine
 

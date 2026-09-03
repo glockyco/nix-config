@@ -1,6 +1,13 @@
-{ shared }:
+{ pkgs, shared }:
 
 let
+  zedThemeUrl = "https://raw.githubusercontent.com/catppuccin/zed/b54cb81708d06912d50e6bb9fd2fd2103b9dda25/themes/catppuccin-mauve.json";
+  zedThemeSha256 = "2dccb9fb3ff888e646407b4f84d400304553e0d9a9688ac75d0f9fcd3f8bdf6a";
+  zedThemeSource = pkgs.fetchurl {
+    url = zedThemeUrl;
+    hash = "sha256-Lcy5+z/4iOZGQHtPhNQAMEVT4NmpaIrHXQ+fzT+L32o=";
+  };
+
   zedSettings = shared.zedSettings {
     ompCommand = "C:\\Windows\\System32\\wsl.exe";
     fontFamily = "JetBrainsMonoNL NF";
@@ -63,12 +70,40 @@ let
     standaloneMode = true;
   };
 
+  catppuccinMocha = {
+    name = "Catppuccin Mocha";
+    cursorColor = "#F5E0DC";
+    selectionBackground = "#585B70";
+    background = "#1E1E2E";
+    foreground = "#CDD6F4";
+    black = "#45475A";
+    red = "#F38BA8";
+    green = "#A6E3A1";
+    yellow = "#F9E2AF";
+    blue = "#89B4FA";
+    purple = "#F5C2E7";
+    cyan = "#94E2D5";
+    white = "#BAC2DE";
+    brightBlack = "#585B70";
+    brightRed = "#F38BA8";
+    brightGreen = "#A6E3A1";
+    brightYellow = "#F9E2AF";
+    brightBlue = "#89B4FA";
+    brightPurple = "#F5C2E7";
+    brightCyan = "#94E2D5";
+    brightWhite = "#A6ADC8";
+  };
+
   terminalSettings = {
     defaultProfileName = "NixOS";
+    scheme = catppuccinMocha;
     settings = {
       copyFormatting = "none";
       copyOnSelect = false;
-      profiles.defaults.font.face = "JetBrainsMonoNL NF";
+      profiles.defaults = {
+        colorScheme = "Catppuccin Mocha";
+        font.face = "JetBrainsMonoNL NF";
+      };
     };
   };
 
@@ -79,6 +114,7 @@ let
   terminalSpecificationJson = builtins.toJSON terminalSettings;
 
   jsonFiles = {
+    "zed-catppuccin-theme.json" = builtins.readFile zedThemeSource;
     "power-toys-settings.json" = builtins.toJSON powerToysSettings;
     "reneo-settings.json" = builtins.toJSON reneoSettings;
     "terminal-settings.json" = builtins.toJSON terminalSettings;
@@ -165,6 +201,32 @@ let
       metadata = { inherit description; };
     };
 
+  zedThemeResource = {
+    type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+    name = "zed-catppuccin-theme";
+    dependsOn = [ "package-editor" ];
+    properties = {
+      testScript = ''
+        $path = Join-Path $env:APPDATA 'Zed\themes\catppuccin-mauve.json'
+        if (-not (Test-Path -LiteralPath $path)) { return $false }
+        return (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -eq '${zedThemeSha256}'
+      '';
+      setScript = ''
+        $path = Join-Path $env:APPDATA 'Zed\themes\catppuccin-mauve.json'
+        $temporary = Join-Path $env:TEMP 'zed-catppuccin-mauve.json'
+        try {
+          Invoke-WebRequest -Uri '${zedThemeUrl}' -OutFile $temporary -UseBasicParsing
+          if ((Get-FileHash -LiteralPath $temporary -Algorithm SHA256).Hash.ToLowerInvariant() -ne '${zedThemeSha256}') { throw 'Zed Catppuccin theme checksum mismatch' }
+          New-Item -ItemType Directory -Path (Split-Path -Parent $path) -Force | Out-Null
+          Move-Item -LiteralPath $temporary -Destination $path -Force
+        } finally {
+          Remove-Item -LiteralPath $temporary -Force -ErrorAction SilentlyContinue
+        }
+      '';
+    };
+    metadata.description = "Install the pinned Catppuccin theme for Zed";
+  };
+
   terminalResource = {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
     name = "windows-terminal-settings";
@@ -196,6 +258,8 @@ let
         $specification = '${terminalSpecificationJson}' | ConvertFrom-Json
         $profile = $actual.profiles.list | Where-Object name -eq $specification.defaultProfileName | Select-Object -First 1
         if ($null -eq $profile -or $actual.defaultProfile -ne $profile.guid) { return $false }
+        $scheme = $actual.schemes | Where-Object name -eq $specification.scheme.name | Select-Object -First 1
+        if ($null -eq $scheme -or -not (Test-Subset $scheme $specification.scheme)) { return $false }
         return Test-Subset $actual $specification.settings
       '';
       setScript = ''
@@ -218,6 +282,7 @@ let
         $profile = $actual.profiles.list | Where-Object name -eq $specification.defaultProfileName | Select-Object -First 1
         if ($null -eq $profile) { throw "Windows Terminal has no $($specification.defaultProfileName) profile" }
         $actual.defaultProfile = $profile.guid
+        $actual.schemes = @($actual.schemes | Where-Object name -ne $specification.scheme.name) + @($specification.scheme)
         Merge-Object $actual $specification.settings
         $json = $actual | ConvertTo-Json -Depth 100
         [IO.File]::WriteAllText($path, $json, [Text.UTF8Encoding]::new($false))
@@ -231,6 +296,7 @@ in
   files = jsonFiles;
 
   resources = [
+    zedThemeResource
     terminalResource
     (mergeJsonScript {
       name = "zed-settings";
@@ -240,6 +306,7 @@ in
       dependsOn = [
         "package-editor"
         "package-terminal-font"
+        "zed-catppuccin-theme"
       ];
     })
     (mergeJsonScript {

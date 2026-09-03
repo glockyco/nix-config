@@ -60,7 +60,7 @@ The document SHALL declare an explicit version for every application it manages.
 
 ### Requirement: Declared Windows settings
 
-The document SHALL declare Windows settings by explicit named keys. For a bundled utility that provides several modules, the document SHALL declare the enabled module and SHALL also declare every other module as disabled.
+The document SHALL declare Windows settings by explicit named keys. For a bundled utility that provides several modules, the document SHALL declare the enabled modules and SHALL also declare every other module as disabled.
 
 #### Scenario: Apply the declared settings
 
@@ -74,12 +74,18 @@ The document SHALL declare Windows settings by explicit named keys. For a bundle
 
 ### Requirement: Application configuration files
 
-The document and policy script SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the owning artifact SHALL enforce the complete file content. For an application that rewrites its own configuration, the owning artifact SHALL converge only the declared values and SHALL preserve the application's own writes.
+The document and policy script SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the owning artifact SHALL enforce the complete file content. For an application that rewrites its own configuration, the owning artifact SHALL converge only the declared values and SHALL preserve the application's own writes. The Zed and Windows Terminal configurations SHALL select Catppuccin Mocha from pinned upstream theme data.
 
 #### Scenario: Enforce a stable configuration file
 
 - **WHEN** a file in the enforced class differs from the declaration
 - **THEN** the apply operation restores the declared content
+
+#### Scenario: Apply the application themes
+
+- **WHEN** the operator applies the document
+- **THEN** Zed and Windows Terminal select Catppuccin Mocha
+- **AND** the rendered theme data matches its pinned upstream source
 
 #### Scenario: Preserve application-owned state
 

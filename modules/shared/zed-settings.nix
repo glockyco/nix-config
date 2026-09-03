@@ -8,6 +8,10 @@
   buffer_font_family = fontFamily;
   buffer_font_size = 14;
   terminal.font_family = fontFamily;
+  theme = {
+    dark = "Catppuccin Mocha";
+    light = "Catppuccin Mocha";
+  };
 
   vim_mode = true;
   base_keymap = "VSCode";

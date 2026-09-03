@@ -4,7 +4,7 @@ let
   applications = import ./applications.nix;
   managedApplications = import ./managed-applications.nix;
   shared = import ../shared;
-  applicationFiles = import ./files.nix { inherit shared; };
+  applicationFiles = import ./files.nix { inherit pkgs shared; };
   font = import ./font.nix;
   settingsResources = import ./settings.nix;
 
