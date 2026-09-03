@@ -38,7 +38,7 @@ Session transcripts, OMP memory, chat summaries, and issue comments are supporti
 | Delete the old Air Mnemopi state     | complete | explicit maintenance operation; no migration artifact                                                                   | none                                    |
 | Package the personal OMP plugin      | complete | archived `omp-agent-setup` OpenSpec change `package-personal-omp-plugin`                                                | none                                    |
 | Consume the plugin from `nix-darwin` | complete | archived `nix-darwin` OpenSpec change `consume-personal-omp-plugin`                                                     | verified plugin output contract         |
-| Bootstrap OMP on WSL 2               | complete | archived `nix-darwin` OpenSpec change `2026-09-01-bootstrap-omp-on-wsl` and `docs/operations/wsl-omp-bootstrap.md`      | accepted WSL release evidence           |
+| Adopt the NixOS WSL host             | complete | `nix-darwin` OpenSpec change `adopt-nixos-wsl-host` and `docs/operations/wsl-omp-bootstrap.md`                          | accepted WSL release evidence           |
 | Migrate HotRepl                      | ready    | future HotRepl OpenSpec change `nix-development-environment`                                                            | workstation base                        |
 | Migrate Ardenfall                    | blocked  | future Ardenfall OpenSpec change `nix-development-environment`                                                          | HotRepl and workstation base            |
 | Migrate Ancient Kingdoms             | blocked  | future Ancient Kingdoms OpenSpec change `nix-development-environment`                                                   | HotRepl and workstation base            |
@@ -158,7 +158,7 @@ This repository owns the workstation contract:
 - a curated language-server executable path;
 - Herdr's supported integration reconciliation;
 - the signed Numtide substituter contract;
-- the WSL OMP environment package, transactional bootstrap application, and operator runbook;
+- the `korolev` NixOS WSL host, its checks, and the operator runbook;
 - CrossOver and Rosetta prerequisites;
 - checks that the selected packages and wrapper compose correctly.
 
@@ -166,11 +166,13 @@ It does not copy personal-plugin source. It consumes the plugin's flake output. 
 
 ### WSL work machine
 
-Windows owns Windows Terminal, WSL enablement, employer policy, and native applications. Ubuntu WSL 2 owns the Linux user, Nix profile, Git configuration, repositories, and mutable OMP state. Repositories stay under the Linux home directory, not `/mnt/c`.
+Windows owns Windows Terminal, WSL enablement, employer policy, native applications, and the editor. The NixOS host `korolev` owns the Linux system scope, the user scope, and every executable path. OMP owns its mutable state. Repositories stay under the Linux home directory, not `/mnt/c`.
 
-The root flake exposes one `personal-omp-wsl` profile package and one `bootstrap-omp-on-wsl` application for `x86_64-linux`. The bootstrap rejects native Linux, WSL 1, and unsupported architectures before profile mutation. It migrates exact locked OMP and OpenSpec entries into its named profile entry, rolls back after reconciliation or verification failure, and preserves unrelated entries.
+The root flake exposes `nixosConfigurations.korolev` for `x86_64-linux`. `nixos-rebuild switch --flake .#korolev` provides ordered activation, generation replacement, failure rollback, and a retained rollback target. The host declares no SSH server, no other inbound service, and no secret.
 
-For a user who has never started OMP, the reconciliation helper can create the missing `~/.omp/agent` directory. Herdr remains the only writer of its generated extension. The bootstrap does not create authentication, configuration, sessions, or databases. It sets the `nix-config` checkout's local Git email to the GitHub no-reply address and leaves the global work email unchanged.
+The Git identity is declarative. The host declares the employer address globally, and a conditional include declares the GitHub no-reply address for every clone under the personal tree. Activation writes no repository-local configuration.
+
+For a user who has never started OMP, the reconciliation helper can create the missing `~/.omp/agent` directory. Herdr remains the only writer of its generated extension. Activation does not create authentication, configuration, sessions, or databases.
 
 ### OMP
 
@@ -393,11 +395,13 @@ Repository: `nix-darwin`.
 
 Delivered: the pinned plugin output, wrapped upstream OMP, curated language-server path, Herdr reconciliation, local activation verifier, package-shape checks, representative LSP scenarios, and a real wrapped-session smoke. Activation leaves OMP-owned configuration and databases as regular writable files.
 
-### `bootstrap-omp-on-wsl`
+### `adopt-nixos-wsl-host`
 
 Repository: `nix-darwin`.
 
-The [WSL OMP bootstrap runbook](../operations/wsl-omp-bootstrap.md) owns the manual Windows and Linux prerequisites, cache review, one post-Nix command, recovery, and real-session proof. The archived OpenSpec change records the accepted implementation. WSL support does not imply a Linux Home Manager host or native Windows application management.
+Delivered: the NixOS host `korolev`, its WSL system scope, the portable user scope under Home Manager, host checks for the closure and the portable module set, and the deletion of the imperative bootstrap implementation. The [korolev provisioning runbook](../operations/wsl-omp-bootstrap.md) owns the Windows prerequisites, the image build, the import, the side-by-side cutover, both rollback paths, and the real-session proof.
+
+Both supported hosts now share one model: a system configuration that imports Home Manager as a module. WSL support does not imply native Windows application management.
 
 ### Project migrations
 
@@ -604,9 +608,9 @@ A plugin or OMP release changes immutable inputs only. Use this sequence from `n
 1. Read the activation output. `verifyPersonalOmp` must print the OMP version, immutable plugin store path, and `omp: current` Herdr status.
 1. Start a fresh wrapped OMP session. Ask it to report the loaded `@glockyco/personal-omp-plugin` source path, quote the personal policy, and run `personal_commit` with `action=preview`. The path must be under `/nix/store`, and preview must not change the repository.
 
-On WSL, follow the [WSL OMP bootstrap runbook](../operations/wsl-omp-bootstrap.md) and run `nix run .#bootstrap-omp-on-wsl` from the reviewed checkout. Retain the previous user-profile generation until the installed verifier and real-session smoke pass. The bootstrap owns profile rollback; it does not copy or restore mutable OMP state.
+On WSL, follow the [korolev provisioning runbook](../operations/wsl-omp-bootstrap.md) and run `sudo nixos-rebuild switch --flake .#korolev` from the reviewed clone. Run one distribution at a time, and confirm that `user@1000.service` reports `active` before the activation. Retain the previous NixOS generation until local verification and the real-session smoke pass. `nixos-rebuild` owns generation rollback; it does not copy or restore mutable OMP state.
 
-For an activation-mutation audit, stop other OMP sessions and capture file type, mode, modification time, and size before and after activation:
+For an activation-mutation audit, stop other OMP sessions and capture file type, mode, modification time, and size before and after activation. This form is BSD `stat` for the Darwin host, and the runbook states the Linux form:
 
 ```sh
 stat -f '%N type=%HT mode=%Sp mtime=%Sm size=%z' \
@@ -694,6 +698,17 @@ The environment is complete when:
 - Publish the signed Numtide cache from the root flake because input flake cache settings are not inherited.
 - Let the bootstrap create only a missing OMP agent directory. Herdr remains the owner of its generated extension, and OMP remains the owner of all other mutable state.
 - Keep the employer email as the WSL global Git identity and use the GitHub no-reply email only in the `nix-config` checkout.
+
+### 2026-09-03
+
+- Reverse the 2026-09-01 decision to install the WSL environment as one named user-profile entry with a hand-written bootstrap. Define the WSL machine as `nixosConfigurations.korolev`, and let `nixos-rebuild` own ordered activation, generation replacement, failure rollback, and the retained rollback target.
+- State three layers of ownership for that machine. Windows owns Windows Terminal, WSL enablement, employer policy, native applications, and the editor. The NixOS host owns the Linux system scope, the user scope, and every executable path. OMP owns authentication, configuration, sessions, history, caches, logs, and databases.
+- Reverse the 2026-09-01 decision to publish the signed Numtide cache from the root flake. Each host declares that substituter and key in system scope, because Nix discards a flake-provided key for a user who is not in `trusted-users` and warns on every command. A machine with neither host configuration passes both values as command-line flags.
+- Keep `trusted-users` at `root` alone on the WSL host. Adding the interactive user would let any flake it evaluates add a substituter and a signing key.
+- Run one WSL distribution at a time during the cutover. WSL shares one cgroup tree, so a second distribution with the same user ID cannot start its user manager, and an activation fails at its user unit reload.
+- Record that the operator holds durable credentials for the local `Administrator` account, and that the declarative layer deliberately does not use them. Import, activation, and both rollback paths run as the standard user.
+- Install the editor on Windows and keep it out of the Linux closure. Zed for Windows runs its remote server under `wsl.exe`, so every language server stays in the Nix closure without an SSH server or a display path.
+- Declare a rootless container runtime with Docker command compatibility inside the NixOS host. WSL 2 already provides the Linux virtual machine that Colima provides on macOS.
 
 ## Primary references
 

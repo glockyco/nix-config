@@ -70,20 +70,20 @@
 
 - [x] 7.1 Delete `packages/personal-omp-wsl.nix`, `packages/bootstrap-omp-on-wsl.nix`, and `packages/bootstrap-omp-on-wsl-tests.nix`.
 - [x] 7.2 Remove the `wslOmpEnvironment` and `bootstrapOmpOnWslCommand` checks and the `bootstrap-omp-on-wsl` application and package outputs.
-- [ ] 7.3 Confirm that no alias, wrapper, or documentation preserves the retired command.
+- [x] 7.3 Confirm that no alias, wrapper, or documentation preserves the retired command.
 - [ ] 7.4 Set the NixOS profile as the Windows Terminal default and confirm that it opens in the Linux home directory.
 - [ ] 7.5 Remove the `Ubuntu-26.04` distribution only after every gate in sections 5 and 6 passes.
 - [ ] 7.6 Confirm after the removal that the host reports a running system with no failed unit.
 
 ## 8. Update the Documentation
 
-- [ ] 8.1 Rewrite `docs/operations/wsl-omp-bootstrap.md` for import and NixOS activation, and delete the package-manager and Nix-installer sections.
-- [ ] 8.2 Document the side-by-side cutover, generation rollback, and distribution rollback.
+- [x] 8.1 Rewrite `docs/operations/wsl-omp-bootstrap.md` for import and NixOS activation, and delete the package-manager and Nix-installer sections.
+- [x] 8.2 Document the side-by-side cutover, generation rollback, and distribution rollback.
 - [ ] 8.3 Record the release evidence, including the NixOS release and the locked revision.
 - [x] 8.4 Update `README.md` for the second host and the two entry-point kinds.
-- [ ] 8.5 Add a dated architecture decision entry that reverses the profile-entry decision and states the three-layer ownership model.
-- [ ] 8.6 State that the operator holds durable local administrator credentials and that the declarative layer deliberately does not use them.
-- [ ] 8.7 State in the runbook that a personal repository clone belongs under the tree that the conditional include names.
+- [x] 8.5 Add a dated architecture decision entry that reverses the profile-entry decision and states the three-layer ownership model.
+- [x] 8.6 State that the operator holds durable local administrator credentials and that the declarative layer deliberately does not use them.
+- [x] 8.7 State in the runbook that a personal repository clone belongs under the tree that the conditional include names.
 
 ## 9. Verify the Complete Change
 
