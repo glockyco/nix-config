@@ -168,11 +168,14 @@
           _module.args.pkgs = pkgs;
 
           packages = {
-            inherit (pkgs) neo-keyboard-layouts;
             inherit openspec;
             personal-omp = personalOmp;
           }
           // lib.optionalAttrs isDarwin {
+            # `meta.platforms` is Darwin only, so `nix flake check` on the WSL
+            # host refuses to evaluate this package outside this branch.
+            inherit (pkgs) neo-keyboard-layouts;
+
             # Expose pinned `darwin-rebuild` for the first activation, before it is on PATH:
             #   sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
             inherit (inputs.nix-darwin.packages.${system}) darwin-rebuild;

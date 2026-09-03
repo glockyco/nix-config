@@ -4,11 +4,11 @@
 
 This procedure makes an `x86_64` Windows work machine run the NixOS host `korolev` under WSL 2. Three layers own separate state.
 
-| Layer                    | Owns                                                                                   |
-| ------------------------ | -------------------------------------------------------------------------------------- |
-| Windows                  | Windows Terminal, WSL enablement, employer policy, native applications, and the editor |
-| NixOS host `korolev`     | the Linux system scope, the user scope, and every executable path                      |
-| OMP                      | authentication, configuration, sessions, history, caches, logs, and databases          |
+| Layer                | Owns                                                                                   |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| Windows              | Windows Terminal, WSL enablement, employer policy, native applications, and the editor |
+| NixOS host `korolev` | the Linux system scope, the user scope, and every executable path                      |
+| OMP                  | authentication, configuration, sessions, history, caches, logs, and databases          |
 
 Repositories stay under the Linux home directory, not under `/mnt/c`.
 
@@ -330,19 +330,19 @@ printf 'configuration-revision=%s\n' "$(nixos-version --configuration-revision)"
 
 ### Accepted evidence: 2026-09-03
 
-| Item                    | Accepted value                        |
-| ----------------------- | ------------------------------------- |
-| Windows Terminal        | `1.24.11911.0`                        |
-| Windows                 | `10.0.26100.9168`                     |
-| WSL                     | `2.7.12.0`                            |
-| WSL kernel              | `6.18.33.2-microsoft-standard-WSL2`   |
-| WSLg                    | `1.0.73.2`                            |
-| Distribution            | `NixOS 26.05 (Yarara)`                |
-| NixOS build             | `26.05.20260814.02e0898`              |
-| Architecture            | `x86_64`                              |
-| Nix                     | `2.34.8`                              |
-| OMP                     | `18.0.10`                             |
-| OpenSpec                | `1.11.0`                              |
-| Implementation revision | pending the final release gates       |
+| Item                    | Accepted value                      |
+| ----------------------- | ----------------------------------- |
+| Windows Terminal        | `1.24.11911.0`                      |
+| Windows                 | `10.0.26100.9168`                   |
+| WSL                     | `2.7.12.0`                          |
+| WSL kernel              | `6.18.33.2-microsoft-standard-WSL2` |
+| WSLg                    | `1.0.73.2`                          |
+| Distribution            | `NixOS 26.05 (Yarara)`              |
+| NixOS build             | `26.05.20260814.02e0898`            |
+| Architecture            | `x86_64`                            |
+| Nix                     | `2.34.8`                            |
+| OMP                     | `18.0.10`                           |
+| OpenSpec                | `1.11.0`                            |
+| Implementation revision | pending the final release gates     |
 
 The imported host activated the reviewed revision, and a second activation of the same clean revision registered no further generation. An unprivileged build reached `cache.numtide.com` with no ignored-setting warning. Both providers answered a real request through fresh subscription logins. A real wrapped session in a disposable repository loaded the plugin from `/nix/store`, quoted the personal commit policy, completed a `personal_commit` preview, and left the repository unchanged. A deliberately failing generation kept the previous generation selectable, and the rollback preserved every OMP-owned inode. A container image ran through the `docker` command name and exited with its own status.
