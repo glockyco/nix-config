@@ -131,15 +131,6 @@
             inherit (llmAgents) herdr omp;
             plugin = inputs.personal-omp-plugin.packages.${system}.default;
           };
-          personalOmpWsl = pkgs.callPackage ./packages/personal-omp-wsl.nix {
-            inherit openspec personalOmp;
-          };
-          bootstrapOmpOnWsl = pkgs.callPackage ./packages/bootstrap-omp-on-wsl.nix {
-            environment = personalOmpWsl;
-          };
-          bootstrapOmpOnWslTest = pkgs.callPackage ./packages/bootstrap-omp-on-wsl-tests.nix {
-            inherit bootstrapOmpOnWsl;
-          };
           moduleImportsCheck = pkgs.callPackage ./packages/module-imports-check.nix { };
           moduleImportsCommandTest = pkgs.callPackage ./packages/module-imports-check-tests.nix {
             inherit moduleImportsCheck;
@@ -181,10 +172,6 @@
             inherit openspec;
             personal-omp = personalOmp;
           }
-          // lib.optionalAttrs isLinux {
-            bootstrap-omp-on-wsl = bootstrapOmpOnWsl;
-            personal-omp-wsl = personalOmpWsl;
-          }
           // lib.optionalAttrs isDarwin {
             # Expose pinned `darwin-rebuild` for the first activation, before it is on PATH:
             #   sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
@@ -195,13 +182,6 @@
             check-darwin-build-plans = pkgs.callPackage ./packages/check-darwin-build-plans.nix { };
             air-batch-check = airBatchCheck;
             container-runtime-check = containerRuntimeCheck;
-          };
-
-          apps = lib.optionalAttrs isLinux {
-            bootstrap-omp-on-wsl = {
-              type = "app";
-              program = lib.getExe bootstrapOmpOnWsl;
-            };
           };
 
           checks = {
@@ -215,21 +195,6 @@
             # Prove that the check above can reject, so an empty result means
             # something.
             moduleImportsCommand = moduleImportsCommandTest;
-
-            wslOmpEnvironment = pkgs.runCommand "check-personal-omp-wsl-environment" { } ''
-              commands=
-              for command in ${personalOmpWsl}/bin/*; do
-                commands="$commands $(basename "$command")"
-              done
-              test "$commands" = " omp openspec reconcile-herdr-omp verify-personal-omp"
-              test "$(readlink -f ${personalOmpWsl}/bin/omp)" = "$(readlink -f ${personalOmp}/bin/omp)"
-              test "$(readlink -f ${personalOmpWsl}/bin/openspec)" = "$(readlink -f ${openspec}/bin/openspec)"
-              test "$(readlink -f ${personalOmpWsl}/bin/reconcile-herdr-omp)" = "$(readlink -f ${personalOmp.reconcileHerdrOmp}/bin/reconcile-herdr-omp)"
-              test "$(readlink -f ${personalOmpWsl}/bin/verify-personal-omp)" = "$(readlink -f ${personalOmp.verifyPersonalOmp}/bin/verify-personal-omp)"
-              touch $out
-            '';
-
-            bootstrapOmpOnWslCommand = bootstrapOmpOnWslTest;
 
             personalOmpShape =
               pkgs.runCommand "check-personal-omp-shape"

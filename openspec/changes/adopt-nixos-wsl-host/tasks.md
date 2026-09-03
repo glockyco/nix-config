@@ -68,8 +68,8 @@
 
 ## 7. Remove the Superseded Implementation
 
-- [ ] 7.1 Delete `packages/personal-omp-wsl.nix`, `packages/bootstrap-omp-on-wsl.nix`, and `packages/bootstrap-omp-on-wsl-tests.nix`.
-- [ ] 7.2 Remove the `wslOmpEnvironment` and `bootstrapOmpOnWslCommand` checks and the `bootstrap-omp-on-wsl` application and package outputs.
+- [x] 7.1 Delete `packages/personal-omp-wsl.nix`, `packages/bootstrap-omp-on-wsl.nix`, and `packages/bootstrap-omp-on-wsl-tests.nix`.
+- [x] 7.2 Remove the `wslOmpEnvironment` and `bootstrapOmpOnWslCommand` checks and the `bootstrap-omp-on-wsl` application and package outputs.
 - [ ] 7.3 Confirm that no alias, wrapper, or documentation preserves the retired command.
 - [ ] 7.4 Set the NixOS profile as the Windows Terminal default and confirm that it opens in the Linux home directory.
 - [ ] 7.5 Remove the `Ubuntu-26.04` distribution only after every gate in sections 5 and 6 passes.
