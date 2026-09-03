@@ -34,7 +34,7 @@
 - [x] 5.2 Run `nix fmt -- --fail-on-change`.
 - [x] 5.3 Run `nix flake check --print-build-logs` on `x86_64-linux` and inspect the `moduleImports` output.
 - [ ] 5.4 On the Mac, run `nvd diff` between the parent system and this change's system, and confirm no added package, no removed package, and no version change.
-- [ ] 5.5 On the Mac, run `nix flake check --print-build-logs` and `nix run .#check-darwin-build-plans`, because both realize Darwin-only outputs.
+- [x] 5.5 On the Mac, run `nix flake check --print-build-logs` and `nix run .#check-darwin-build-plans`, because both realize Darwin-only outputs.
 - [x] 5.6 Build the portable module set as a standalone Home Manager generation for `x86_64-linux` and confirm success.
 - [x] 5.7 Update the `modules/home/` layout description in `README.md`.
 - [x] 5.8 Review the final diff and confirm that it contains only moves, import lists, host values, and the check.

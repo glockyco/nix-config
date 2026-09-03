@@ -94,8 +94,16 @@ Two of those encode bugs that the first implementation had, and each was reprodu
 
 The check now reads each list once per directory and matches with a shell pattern, so no pipeline carries the result.
 
+## Darwin checks
+
+Both ran on the Mac and passed.
+
+`nix flake check` reported every `aarch64-darwin` output green, including `darwinSystem`, `moduleImports`, and `moduleImportsCommand`, and it named `x86_64-linux` as the omitted system. `nix run .#check-darwin-build-plans` reported 22 outputs, none reaching a source-built .NET package or a Swift compiler.
+
+The `moduleImports` and `moduleImportsCommand` checks therefore pass on both supported systems.
+
 ## Outstanding, on the Mac
 
 - `nvd diff` between the parent system and this change's system.
-- `nix flake check` for `aarch64-darwin`, which the Linux run reported as an omitted system.
-- `nix run .#check-darwin-build-plans`.
+
+The parent reference is the `git+file:` form with an explicit revision. A line continuation in that command does not survive a paste into zsh, which splits it into an argument-free `nix build` and a second line that the shell tries to run. Assign the reference to a variable on its own line instead.
