@@ -1,12 +1,13 @@
 {
   ompCommand,
   ompArgs ? [ "acp" ],
+  fontFamily ? "JetBrainsMonoNL Nerd Font",
 }:
 
 {
-  buffer_font_family = "JetBrainsMonoNL Nerd Font";
+  buffer_font_family = fontFamily;
   buffer_font_size = 14;
-  terminal.font_family = "JetBrainsMonoNL Nerd Font";
+  terminal.font_family = fontFamily;
 
   vim_mode = true;
   base_keymap = "VSCode";

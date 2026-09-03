@@ -76,7 +76,7 @@ Elevation on this machine means running as a different account, because the oper
 
 The official Zen WinGet manifest declares machine scope, and the live apply installed it under `C:\Program Files\Zen Browser`. Zen reads Windows enterprise policy from its installation's `distribution\policies.json`, which the standard user cannot write. Mark the Zen package as the only elevated document resource; its official installer requests the administrator credential. Render the policy file into the single Administrator script and apply that script separately. Both operations use fixed machine paths and read no administrator-profile environment value.
 
-All other applications and files remain in the interactive user's profile. Validation rejects every additional elevated resource, every machine registry value, and every Windows feature. This keeps the exception narrow and reviewable if Intune or Group Policy later claims Zen.
+All other applications are registered to the interactive user and keep their mutable files in that user's profile. Windows Terminal is a per-user AppX registration whose immutable payload resides in the protected `WindowsApps` package store. PowerToys keeps its payload in `%LOCALAPPDATA%` but also creates a hidden machine-wide MSI registration. Neither exception elevates the document resource or creates machine-wide mutable state. Validation rejects every additional elevated resource, every machine registry value, and every Windows feature. This keeps the exception narrow and reviewable if Intune or Group Policy later claims Zen.
 
 **Alternative:** Replace Zen with Vivaldi. Rejected because the operator selected Zen and accepted its narrow privilege exception.
 
@@ -94,18 +94,20 @@ Use `Microsoft.Windows/Registry` and name every key. This mirrors how `modules/d
 
 **Alternative:** The community `Microsoft.Windows.Developer` PowerShell resource. Rejected because it needs a gallery module and hides which keys it writes.
 
-Declare the disabled state explicitly. `modules/darwin/defaults.nix` records the reason directly: *"Explicitly disable this key: omitting it leaves a previous `true` value."* The same hazard applies to a bundled utility, so the document declares one enabled module and every other module as disabled.
+Declare the disabled state explicitly. `modules/darwin/defaults.nix` records the reason directly: *"Explicitly disable this key: omitting it leaves a previous `true` value."* The same hazard applies to a bundled utility, so the document enables only Command Palette and Grab And Move and disables every other module. PowerToys still installs the other utilities because it is one monolithic package. Its settings parser rejects the entire root document when the enabled map contains an unknown module key, so validation requires the exact module-key set from pinned version 0.101.2362.0.
 
 ### 6. Separate enforced configuration files from converged ones
 
 Use `Microsoft.DSC.Transitional/WindowsPowerShellScript` to converge the interactive-user files. Declare test and set operations; omit the affected get operation. The resource does not need the Windows PowerShell adapter, and every instance runs without elevation. The separate Administrator script enforces the complete Zen policy file because the Administrator profile cannot run the per-user DSC processor. PowerToys holds its settings file open, so its set operation stops the user's PowerToys processes, recovers an empty or invalid file, writes the declared values, and restarts PowerToys.
 
+Write every JSON file as UTF-8 without a byte-order mark. PowerToys 0.101 rejects a root settings file with a byte-order mark and silently falls back to its enabled-by-default modules; Zed also reports the mark as an invalid first character.
+
 This distinction already exists on Darwin. `modules/home/darwin/karabiner.nix` copies rather than symlinks because the application rewrites its file, and `modules/home/darwin/zed.nix` keeps `mutableUserSettings = true` so that declared values reapply while interface state survives.
 
-| Class              | Files                                                       |
-| ------------------ | ----------------------------------------------------------- |
-| Enforced content   | Zen policies                                                |
-| Converged by merge | Windows Terminal settings, Zed settings, PowerToys settings |
+| Class              | Files                                                |
+| ------------------ | ---------------------------------------------------- |
+| Enforced content   | Zen policies                                         |
+| Converged by merge | Windows Terminal, Zed, ReNeo, and PowerToys settings |
 
 **Alternative:** Use the adapted `PSDesiredStateConfiguration/File` and `/Script` resources. Rejected after the live dry run failed because the adapter tried to connect through unavailable WS-Management. Enabling that machine service would need administration and violate the user-scope boundary.
 
@@ -117,16 +119,16 @@ This distinction already exists on Darwin. `modules/home/darwin/karabiner.nix` c
 
 The operator confirmed each role. The rejected options are recorded so that the choice is not repeated.
 
-| Role                          | Selected                                | Rejected, and why                                                                                                                                                                                                              |
-| ----------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Editor                        | Zed, from the Windows package manager   | The nixpkgs package would reverse the recorded decision that Zed follows its vendor updater. Zed on Windows runs its remote server under `wsl.exe`, so language servers stay in the Linux closure and no SSH server is needed. |
-| Browser                       | Zen                                     | —                                                                                                                                                                                                                              |
-| Git client                    | Fork                                    | Measured cost of the `\\wsl.localhost` path: 0.165 ms per file against 0.021 ms native, about eight times, plus a fixed connection cost near 0.6 s. Acceptable.                                                                |
-| Launcher and window switching | PowerToys, with Command Palette enabled | Flow Launcher needs a community plugin for window switching, and its plugin manager installs outside the declarative layer. PowerToys provides launching, window switching, and a calculator in the pinned package.            |
-| Mouse window move and resize  | PowerToys, with Grab And Move enabled   | Grab And Move provides modifier-plus-drag move and resize anywhere inside a window. It reuses the launcher package and removes the extra AltSnap installer and process. FancyZones remains disabled.                           |
-| Neo2 keyboard layout          | ReNeo, Neo2 variant                     | The `kbdneo` layout driver needs administrator rights and a machine-scope registration. ReNeo installs per user.                                                                                                               |
-| Terminal                      | Windows Terminal                        | Ghostty publishes no Windows build. WezTerm's package-manager release is from February 2024 and its WSL integration is manual. Alacritty offers no tabs and no WSL profile concept.                                            |
-| Terminal font                 | JetBrainsMono Nerd Font                 | Same face as the Darwin host. Install four faces from the checksum-pinned upstream archive because the only WinGet package self-elevates.                                                                                      |
+| Role                          | Selected                                | Rejected, and why                                                                                                                                                                                                                                          |
+| ----------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Editor                        | Zed, from the Windows package manager   | The nixpkgs package would reverse the recorded decision that Zed follows its vendor updater. Zed on Windows runs its remote server under `wsl.exe`, so language servers stay in the Linux closure and no SSH server is needed.                             |
+| Browser                       | Zen                                     | —                                                                                                                                                                                                                                                          |
+| Git client                    | Fork                                    | Measured cost of the `\\wsl.localhost` path: 0.165 ms per file against 0.021 ms native, about eight times, plus a fixed connection cost near 0.6 s. Acceptable.                                                                                            |
+| Launcher and window switching | PowerToys, with Command Palette enabled | Flow Launcher needs a community plugin for window switching, and its plugin manager installs outside the declarative layer. PowerToys provides launching, window switching, and a calculator in the pinned package.                                        |
+| Mouse window move and resize  | PowerToys, with Grab And Move enabled   | Grab And Move provides modifier-plus-drag move and resize anywhere inside a window. It reuses the launcher package and removes the extra AltSnap installer and process. FancyZones remains disabled.                                                       |
+| Neo2 keyboard layout          | ReNeo, Neo2 variant                     | The `kbdneo` layout driver needs administrator rights and a machine-scope registration. ReNeo installs per user.                                                                                                                                           |
+| Terminal                      | Windows Terminal                        | Ghostty publishes no Windows build. WezTerm's package-manager release is from February 2024 and its WSL integration is manual. Alacritty offers no tabs and no WSL profile concept.                                                                        |
+| Terminal font                 | JetBrainsMono Nerd Font                 | Same face as the Darwin host. Install four faces from the checksum-pinned upstream archive because the only WinGet package self-elevates. Windows exposes the archive's embedded family name as `JetBrainsMonoNL NF`; Terminal and Zed must use that name. |
 
 ### 8. Declare no taskbar pinned-application list
 

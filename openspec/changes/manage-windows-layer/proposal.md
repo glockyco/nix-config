@@ -12,7 +12,7 @@ Microsoft DSC v3 reached general availability in April 2026, and WinGet Configur
 - Add `modules/shared/` for settings that more than one host renderer consumes.
 - Declare a pinned application set: user-scope Zed, Fork, PowerToys with Command Palette and Grab And Move, ReNeo for Neo2, Windows Terminal, and JetBrainsMono Nerd Font, plus machine-scope Zen.
 - Declare Windows settings with registry resources, naming every key.
-- Declare the Windows Terminal, Zed, and PowerToys configuration files.
+- Declare the Windows Terminal, Zed, ReNeo, and PowerToys configuration files.
 - Add a flake check that validates the rendered document and the narrow privilege boundary.
 - Extend the operator runbook with the apply and verify procedure.
 

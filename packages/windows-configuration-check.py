@@ -25,9 +25,47 @@ EXPECTED_ROLES = {
     "terminal-font",
     "window-tool",
 }
+EXPECTED_POWERTOYS_MODULES = {
+    "AdvancedPaste",
+    "AltWindowCycle",
+    "AlwaysOnTop",
+    "Awake",
+    "CmdNotFound",
+    "CmdPal",
+    "ColorPicker",
+    "CropAndLock",
+    "CursorWrap",
+    "EnvironmentVariables",
+    "FancyZones",
+    "File Explorer Preview",
+    "File Locksmith",
+    "FindMyMouse",
+    "GrabAndMove",
+    "Hosts",
+    "Image Resizer",
+    "Keyboard Manager",
+    "LightSwitch",
+    "Measure Tool",
+    "MouseHighlighter",
+    "MouseJump",
+    "MousePointerCrosshairs",
+    "MouseWithoutBorders",
+    "NewPlus",
+    "Peek",
+    "PowerDisplay",
+    "PowerRename",
+    "PowerToys Run",
+    "QuickAccent",
+    "RegistryPreview",
+    "Shortcut Guide",
+    "TextExtractor",
+    "Workspaces",
+    "ZoomIt",
+}
 EXPECTED_FILES = {
     "apply-zen-policies.ps1",
     "power-toys-settings.json",
+    "reneo-settings.json",
     "terminal-settings.json",
     "zed-settings.json",
     "zen-policies.json",
@@ -264,6 +302,46 @@ def main() -> None:
     if elevated_resources != ["package browser"]:
         raise ValueError("only the Zen package may be elevated in the WinGet document")
 
+    reneo_startup = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "keyboard layout startup"
+    )
+    expected_startup = (
+        '"%LOCALAPPDATA%\\Microsoft\\WinGet\\Packages\\'
+        'Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\\ReNeo\\reneo.exe"'
+    )
+    if (
+        reneo_startup.get("properties", {}).get("valueData", {}).get("ExpandString")
+        != expected_startup
+    ):
+        raise ValueError("ReNeo startup must use the exact user-scope package path")
+
+    json_resource_names = {
+        "windows terminal settings",
+        "zed settings",
+        "reneo settings",
+        "power toys settings",
+    }
+    for resource in document.get("resources", []):
+        if resource.get("name") not in json_resource_names:
+            continue
+        set_script = resource.get("properties", {}).get("setScript", "")
+        if "WriteAllText" not in set_script or "UTF8Encoding" not in set_script:
+            raise ValueError("application JSON writers must emit UTF-8 without a BOM")
+
+    font_resource = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "package terminal font"
+    )
+    font_set_script = font_resource.get("properties", {}).get("setScript", "")
+    if (
+        "AddFontResourceEx" not in font_set_script
+        or "SendMessageTimeout" not in font_set_script
+    ):
+        raise ValueError("font installation must activate faces in the current session")
+
     missing = sorted(
         name for name in EXPECTED_FILES if not (package_root / name).is_file()
     )
@@ -273,11 +351,45 @@ def main() -> None:
     power_toys = json.loads(
         (package_root / "power-toys-settings.json").read_text(encoding="utf-8")
     )
-    enabled_modules = {
-        name for name, enabled in power_toys.get("enabled", {}).items() if enabled
-    }
+    module_flags = power_toys.get("enabled", {})
+    if set(module_flags) != EXPECTED_POWERTOYS_MODULES:
+        raise ValueError(
+            "PowerToys module keys must match the installed version's schema"
+        )
+    enabled_modules = {name for name, enabled in module_flags.items() if enabled}
     if enabled_modules != {"CmdPal", "GrabAndMove"}:
         raise ValueError("PowerToys must enable only Command Palette and Grab And Move")
+    if {
+        "startup": power_toys.get("startup"),
+        "run_elevated": power_toys.get("run_elevated"),
+        "enable_quick_access": power_toys.get("enable_quick_access"),
+    } != {"startup": True, "run_elevated": False, "enable_quick_access": False}:
+        raise ValueError("PowerToys must start unelevated without Quick Access")
+
+    reneo = json.loads(
+        (package_root / "reneo-settings.json").read_text(encoding="utf-8")
+    )
+    if reneo != {"standaloneLayout": "Neo", "standaloneMode": True}:
+        raise ValueError("ReNeo must select the standalone Neo2 layout")
+
+    terminal = json.loads(
+        (package_root / "terminal-settings.json").read_text(encoding="utf-8")
+    )
+    zed = json.loads((package_root / "zed-settings.json").read_text(encoding="utf-8"))
+    if (
+        terminal.get("settings", {})
+        .get("profiles", {})
+        .get("defaults", {})
+        .get("font", {})
+        .get("face")
+        != "JetBrainsMonoNL NF"
+    ):
+        raise ValueError("Windows Terminal must use the font's embedded family name")
+    if {
+        zed.get("buffer_font_family"),
+        zed.get("terminal", {}).get("font_family"),
+    } != {"JetBrainsMonoNL NF"}:
+        raise ValueError("Zed must use the font's embedded Windows family name")
 
     policy_script = (package_root / "apply-zen-policies.ps1").read_text(
         encoding="utf-8"

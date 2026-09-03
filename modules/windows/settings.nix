@@ -135,7 +135,7 @@ in
     name = "keyboard-layout-startup";
     keyPath = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
     valueName = "ReNeo";
-    valueData.ExpandString = ''"%LOCALAPPDATA%\\Microsoft\\WinGet\\Packages\\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\\ReNeo\\reneo.exe"'';
+    valueData.ExpandString = ''"%LOCALAPPDATA%\Microsoft\WinGet\Packages\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\ReNeo\reneo.exe"'';
     description = "Start the Neo2 keyboard layout for the interactive user at logon";
   })
   (registry {

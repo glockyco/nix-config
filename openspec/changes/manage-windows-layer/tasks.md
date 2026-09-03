@@ -42,6 +42,7 @@
 - [x] 5.4 Resolve the Zed agent-server command for `omp acp` so that it reaches `omp` inside WSL, and record the value.
 - [x] 5.5 Keep mouse window control in the converged PowerToys settings instead of a separate application file.
 - [x] 5.6 Declare the PowerToys settings as a converged file and restart PowerToys around a locked-file update.
+- [x] 5.7 Declare the standalone Neo2 selection as a converged ReNeo setting and start ReNeo at user logon.
 
 ## 6. Add Repository Validation
 
@@ -54,11 +55,11 @@
 
 ## 7. Apply and Prove on the Machine
 
-- [ ] 7.1 Test the document and Zen policy script before apply, and inspect the reported changes.
-- [ ] 7.2 Apply the document as the interactive user and the policy script from an Administrator PowerShell session.
-- [ ] 7.3 Confirm with each test operation that the applied state matches both artifacts.
-- [ ] 7.4 Confirm that every non-Zen application and file belongs to the interactive user's profile, and that only Zen uses Program Files.
-- [ ] 7.5 Reapply the document and policy script and confirm that the second run reports no change.
+- [x] 7.1 Test the document and Zen policy script before apply, and inspect the reported changes.
+- [x] 7.2 Apply the document as the interactive user and the policy script from an Administrator PowerShell session.
+- [x] 7.3 Confirm with each test operation that the applied state matches both artifacts.
+- [x] 7.4 Confirm the package scopes and record the WindowsApps payload and PowerToys installer-registration exceptions to the user-scope rule.
+- [x] 7.5 Reapply the document and policy script and confirm that the second run reports no change.
 
 ## 8. Verify Each Role by Use
 

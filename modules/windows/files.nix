@@ -3,6 +3,7 @@
 let
   zedSettings = shared.zedSettings {
     ompCommand = "C:\\Windows\\System32\\wsl.exe";
+    fontFamily = "JetBrainsMonoNL NF";
     ompArgs = [
       "--distribution"
       "NixOS"
@@ -17,10 +18,10 @@ let
   powerToysSettings = {
     startup = true;
     run_elevated = false;
+    enable_quick_access = false;
     enabled = {
       FancyZones = false;
       "Image Resizer" = false;
-      "File Explorer" = false;
       "File Explorer Preview" = false;
       "Shortcut Guide" = false;
       PowerRename = false;
@@ -57,12 +58,17 @@ let
     };
   };
 
+  reneoSettings = {
+    standaloneLayout = "Neo";
+    standaloneMode = true;
+  };
+
   terminalSettings = {
     defaultProfileName = "NixOS";
     settings = {
       copyFormatting = "none";
       copyOnSelect = false;
-      profiles.defaults.font.face = "JetBrainsMonoNL Nerd Font";
+      profiles.defaults.font.face = "JetBrainsMonoNL NF";
     };
   };
 
@@ -74,6 +80,7 @@ let
 
   jsonFiles = {
     "power-toys-settings.json" = builtins.toJSON powerToysSettings;
+    "reneo-settings.json" = builtins.toJSON reneoSettings;
     "terminal-settings.json" = builtins.toJSON terminalSettings;
     "zed-settings.json" = builtins.toJSON zedSettings;
     "zen-policies.json" = builtins.toJSON zenPolicies;
@@ -113,6 +120,8 @@ let
 
           $path = ${destination}
           if (-not (Test-Path -LiteralPath $path)) { return $false }
+          $bytes = [IO.File]::ReadAllBytes($path)
+          if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xef -and $bytes[1] -eq 0xbb -and $bytes[2] -eq 0xbf) { return $false }
           try {
             $actual = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
           } catch {
@@ -148,7 +157,8 @@ let
           if ($null -eq $actual) { $actual = [PSCustomObject]@{} }
           $desired = '${desiredJson}' | ConvertFrom-Json
           Merge-Object $actual $desired
-          $actual | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $path -Encoding utf8
+          $json = $actual | ConvertTo-Json -Depth 100
+          [IO.File]::WriteAllText($path, $json, [Text.UTF8Encoding]::new($false))
           ${afterSet}
         '';
       };
@@ -180,6 +190,8 @@ let
 
         $path = Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'
         if (-not (Test-Path -LiteralPath $path)) { return $false }
+        $bytes = [IO.File]::ReadAllBytes($path)
+        if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xef -and $bytes[1] -eq 0xbb -and $bytes[2] -eq 0xbf) { return $false }
         $actual = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
         $specification = '${terminalSpecificationJson}' | ConvertFrom-Json
         $profile = $actual.profiles.list | Where-Object name -eq $specification.defaultProfileName | Select-Object -First 1
@@ -207,7 +219,8 @@ let
         if ($null -eq $profile) { throw "Windows Terminal has no $($specification.defaultProfileName) profile" }
         $actual.defaultProfile = $profile.guid
         Merge-Object $actual $specification.settings
-        $actual | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $path -Encoding utf8
+        $json = $actual | ConvertTo-Json -Depth 100
+        [IO.File]::WriteAllText($path, $json, [Text.UTF8Encoding]::new($false))
       '';
     };
     metadata.description = "Converge Windows Terminal settings while preserving generated profiles";
@@ -230,13 +243,29 @@ in
       ];
     })
     (mergeJsonScript {
+      name = "reneo-settings";
+      description = "Select the Neo2 layout while preserving ReNeo state";
+      destination = "Join-Path $env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages\\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\\ReNeo\\config.json'";
+      desired = reneoSettings;
+      dependsOn = [ "package-keyboard-layout" ];
+      beforeSet = ''
+        $packagePath = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\ReNeo\*'
+        Get-Process -Name reneo -ErrorAction SilentlyContinue | Where-Object { $_.Path -like $packagePath } | Stop-Process
+      '';
+      afterSet = ''
+        Start-Process (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\ReNeo\reneo.exe')
+      '';
+    })
+    (mergeJsonScript {
       name = "power-toys-settings";
       description = "Enable only Command Palette and Grab And Move in PowerToys";
       destination = "Join-Path $env:LOCALAPPDATA 'Microsoft\\PowerToys\\settings.json'";
       desired = powerToysSettings;
       dependsOn = [ "package-launcher" ];
       beforeSet = ''
-        Get-Process -Name 'PowerToys*' -ErrorAction SilentlyContinue | Stop-Process -Force
+        $processes = Get-Process -Name 'PowerToys*' -ErrorAction SilentlyContinue
+        $processes | Stop-Process -Force
+        $processes | Wait-Process -Timeout 10 -ErrorAction SilentlyContinue
       '';
       afterSet = ''
         Start-Process (Join-Path $env:LOCALAPPDATA 'PowerToys\PowerToys.exe')
@@ -246,6 +275,7 @@ in
 
   inherit
     powerToysSettings
+    reneoSettings
     terminalSettings
     zedSettings
     zenPolicies
