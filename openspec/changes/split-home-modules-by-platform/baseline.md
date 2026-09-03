@@ -102,8 +102,15 @@ Both ran on the Mac and passed.
 
 The `moduleImports` and `moduleImportsCommand` checks therefore pass on both supported systems.
 
-## Outstanding, on the Mac
+## Closure diff
 
-- `nvd diff` between the parent system and this change's system.
+Each endpoint was built from its own revision on the Mac, and the two results were compared:
 
-Build each endpoint from its own revision rather than from the working tree, then compare the two results. The gate passes when the diff reports no added package, no removed package, and no version change.
+```text
+No version or selection state changes.
+Closure size: 5842 -> 5842 (15 paths added, 15 paths removed, delta +0, disk usage +24B).
+```
+
+The gate passes. No package was added, removed, or changed version.
+
+The replaced paths match the predicted cause. The closure holds the same number of paths, and the whole difference is 24 bytes, which is the size of changed hash text rather than of changed content. Evaluation had already named the paths that carry it: the path aggregate, the fonts and applications aggregates, the fonts-version file, and the activation script and generation that name them.
