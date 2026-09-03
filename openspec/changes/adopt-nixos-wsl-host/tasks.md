@@ -43,7 +43,7 @@
 
 ## 5. Provision the Host Side by Side
 
-- [ ] 5.1 Build the tarball inside the current Ubuntu distribution, using `--extra-files` to seed the configuration reference.
+- [ ] 5.1 Build the tarball inside the current Ubuntu distribution from the reviewed revision.
 - [ ] 5.2 Import the distribution while `Ubuntu-26.04` stays registered, without elevation.
 - [ ] 5.3 Confirm that systemd is process 1, that the declared user owns the session, and that no unit failed.
 - [ ] 5.4 Run `nixos-rebuild switch` from the locked repository inside the new host.

@@ -111,7 +111,15 @@ Import the NixOS distribution while `Ubuntu-26.04` stays registered. Prove the n
 
 This matches the existing rule to keep the previous generation until all applicable gates pass. The current Ubuntu installation also builds the first tarball, because the Darwin host cannot cross-build an `x86_64-linux` system.
 
-Seed the first boot with the `--extra-files` option of the tarball builder, so the imported distribution already carries its configuration reference. Do not edit `/etc/nixos` by hand.
+The image carries no configuration reference. The tarball builder writes the reviewed system closure, and the operator then clones this repository and runs `nixos-rebuild switch --flake .#korolev` from that clone, as the Darwin host rebuilds from its own checkout. Do not edit `/etc/nixos` by hand, and do not seed it.
+
+One repository holds one lock. A seeded `/etc/nixos` needs its own `flake.nix` and `flake.lock`, and that lock is stale as soon as the clone moves ahead of it. A seed without a lock is worse, because the first rebuild resolves an unpinned reference and can activate a revision that no review covered.
+
+Recovery does not need a seed. The tarball is itself the recovery artifact, the previous generation stays selectable after every activation, and `Ubuntu-26.04` stays registered until the smoke passes.
+
+**Alternative:** Seed `/etc/nixos` with a flake and its lock. Rejected because it adds a second lock that is stale on arrival, and because that lock can pin only a revision that already reached the remote.
+
+**Alternative:** Copy this repository into the image. Rejected because it puts repository history in a system image, needs an ownership fixup, and replaces a resolved reference with a snapshot that has no update path of its own.
 
 ### 7. Enable `nix-ld`
 
