@@ -1,5 +1,9 @@
 { username, ... }:
 
+let
+  shared = import ../../shared;
+in
+
 {
   programs.zed-editor = {
     enable = true;
@@ -11,27 +15,10 @@
     # settings.json, preserving UI state while reapplying declared values on each switch.
     extensions = [ "latex" ];
 
-    userSettings = {
-      # The theme comes from modules/home/catppuccin.nix.
-      buffer_font_family = "JetBrainsMonoNL Nerd Font";
-      buffer_font_size = 14;
-      terminal.font_family = "JetBrainsMonoNL Nerd Font";
-
-      # Carried from the previous machine.
-      vim_mode = true;
-      base_keymap = "VSCode";
-      ui_font_size = 16;
-      show_edit_predictions = false;
-      diff_view_style = "unified";
-
-      # `omp acp` speaks ACP over stdio; Zed routes tool calls and permission requests through its agent panel.
-      # Use an absolute path because GUI-launched Zed does not inherit the login shell's PATH.
-      agent_servers.omp = {
-        type = "custom";
-        command = "/etc/profiles/per-user/${username}/bin/omp";
-        args = [ "acp" ];
-        env = { };
-      };
+    # The theme comes from `modules/home/darwin/catppuccin.nix`. Use an
+    # absolute command because GUI-launched Zed does not inherit the shell's PATH.
+    userSettings = shared.zedSettings {
+      ompCommand = "/etc/profiles/per-user/${username}/bin/omp";
     };
   };
 }

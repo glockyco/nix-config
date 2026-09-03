@@ -1,10 +1,10 @@
 ## 1. Share Cross-Platform Settings
 
-- [ ] 1.1 Create `modules/shared/default.nix` and confirm that the `moduleImports` check covers the new directory.
-- [ ] 1.2 Move the Zed user settings into `modules/shared/zed-settings.nix` as platform-free data.
-- [ ] 1.3 Make `modules/home/zed.nix` consume that expression, and confirm that the Darwin values stay identical.
-- [ ] 1.4 Move the Zen enterprise policies into `modules/shared/zen-policies.nix` as platform-free data.
-- [ ] 1.5 Make `modules/darwin/zen.nix` consume that expression, and confirm that the Darwin values stay identical.
+- [x] 1.1 Create `modules/shared/default.nix` and confirm that the `moduleImports` check covers the new directory.
+- [x] 1.2 Move the Zed user settings into `modules/shared/zed-settings.nix` as platform-free data.
+- [x] 1.3 Make `modules/home/zed.nix` consume that expression, and confirm that the Darwin values stay identical.
+- [x] 1.4 Move the Zen enterprise policies into `modules/shared/zen-policies.nix` as platform-free data.
+- [x] 1.5 Make `modules/darwin/zen.nix` consume that expression, and confirm that the Darwin values stay identical.
 - [ ] 1.6 Build `.#darwinConfigurations.macbook-pro.system` and confirm that only the intended values changed.
 
 ## 2. Render the Windows Document
