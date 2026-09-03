@@ -94,6 +94,8 @@ Use `Microsoft.Windows/Registry` and name every key. This mirrors how `modules/d
 
 **Alternative:** The community `Microsoft.Windows.Developer` PowerShell resource. Rejected because it needs a gallery module and hides which keys it writes.
 
+Select the built-in Windows dark appearance, the dark Bloom wallpaper, and transparency. Preserve the current standard blue accent by leaving the custom accent-palette binary data untouched. The appearance resource names and tests the exact per-user registry values, applies the wallpaper through `SystemParametersInfo`, and broadcasts the supported setting-change notification.
+
 Declare the disabled state explicitly. `modules/darwin/defaults.nix` records the reason directly: *"Explicitly disable this key: omitting it leaves a previous `true` value."* The same hazard applies to a bundled utility, so the document enables only Command Palette and Grab And Move and disables every other module. PowerToys still installs the other utilities because it is one monolithic package. Its settings parser rejects the entire root document when the enabled map contains an unknown module key, so validation requires the exact module-key set from pinned version 0.101.2362.0.
 
 ### 6. Separate enforced configuration files from converged ones
@@ -148,7 +150,13 @@ The operator performs a manual one-time pass. The Darwin list holds 153 extensio
 
 **Alternative:** Reproduce the protection hash with a third-party tool. Rejected because the interface is unsupported and has broken across Windows updates.
 
-### 10. Share cross-platform settings through one expression
+### 10. Keep Night Light manual
+
+Windows stores Night Light state, schedule, strength, and timestamps in opaque `CloudStore` binary payloads. No supported per-user API exposes those values. Rewriting the payload would couple the repository to an undocumented format that Windows mutates, so the document must not own it.
+
+The operator enabled Night Light, selected sunset-to-sunrise scheduling, and kept 50% strength through Settings. Record that one-time state in the runbook.
+
+### 11. Share cross-platform settings through one expression
 
 Add `modules/shared/` for platform-free data that more than one renderer consumes. The Zed settings and the Zen policies belong there. Home Manager consumes them on Darwin, and the Windows renderer consumes the same values.
 

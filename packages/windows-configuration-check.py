@@ -327,6 +327,31 @@ def main() -> None:
     if elevated_resources != ["package browser"]:
         raise ValueError("only the Zen package may be elevated in the WinGet document")
 
+    dark_appearance = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "windows dark appearance"
+    )
+    dark_scripts = "\n".join(
+        dark_appearance.get("properties", {}).get(name, "")
+        for name in ("testScript", "setScript")
+    )
+    required_appearance_values = {
+        "AppsUseLightTheme",
+        "SystemUsesLightTheme",
+        "EnableTransparency",
+        "dark.theme",
+        "img19.jpg",
+        "SystemParametersInfo",
+        "ImmersiveColorSet",
+    }
+    if any(value not in dark_scripts for value in required_appearance_values):
+        raise ValueError("dark appearance resource is missing a declared setting")
+    if "CloudStore" in document_path.read_text(encoding="utf-8"):
+        raise ValueError(
+            "the document must not rewrite Night Light CloudStore payloads"
+        )
+
     reneo_startup = next(
         resource
         for resource in document.get("resources", [])

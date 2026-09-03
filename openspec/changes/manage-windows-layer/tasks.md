@@ -33,6 +33,7 @@
 - [x] 4.6 Keep the taskbar visible with a resource that sets and tests only that flag.
 - [x] 4.7 Declare the browser enterprise policies from the shared expression.
 - [x] 4.8 Verify that the installed browser policy path is `C:\Program Files\Zen Browser\distribution\policies.json`, and record its required elevation.
+- [x] 4.9 Declare the built-in Windows dark appearance and Bloom wallpaper without owning custom accent data.
 
 ## 5. Declare Application Configuration Files
 
@@ -80,6 +81,7 @@
 - [ ] 9.2 Record that the PDF handler stays with the centrally managed reader.
 - [ ] 9.3 Record that the LaTeX previewer decision belongs to `evaluate-pdf-toolset`.
 - [ ] 9.4 Record the taskbar pinned-list exclusion and its reason.
+- [ ] 9.5 Record Night Light as enabled from sunset to sunrise at 50% strength and explain the CloudStore exclusion.
 
 ## 10. Verify the Complete Change
 

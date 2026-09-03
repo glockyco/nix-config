@@ -65,7 +65,7 @@ The document SHALL declare Windows settings by explicit named keys. For a bundle
 #### Scenario: Apply the declared settings
 
 - **WHEN** the operator applies the document
-- **THEN** the declared keyboard, file-manager, regional, window-snapping, and screenshot-location settings match the declaration
+- **THEN** the declared keyboard, file-manager, regional, window-snapping, screenshot-location, and dark-appearance settings match the declaration
 
 #### Scenario: Resist an upstream default change
 
@@ -95,13 +95,14 @@ The document and policy script SHALL declare application configuration in two cl
 
 ### Requirement: Excluded Windows surface
 
-The Windows layer SHALL declare nothing about the taskbar pinned-application list, per-extension default application associations, or any application that the device management policy manages. The repository SHALL record the reason for each exclusion.
+The Windows layer SHALL declare nothing about the taskbar pinned-application list, per-extension default application associations, Night Light CloudStore payloads, or any application that the device management policy manages. The repository SHALL record the reason for each exclusion and the selected manual Night Light state.
 
 #### Scenario: Inspect the excluded surface
 
 - **WHEN** a reader reviews the Windows layer
 - **THEN** each exclusion names its reason
-- **AND** no part of the layer attempts to set a taskbar pinned-application list or a per-extension association
+- **AND** no part of the layer attempts to set a taskbar pinned-application list, a per-extension association, or a Night Light CloudStore payload
+- **AND** the runbook records Night Light as enabled from sunset to sunrise at 50% strength
 
 ### Requirement: Validation before and after apply
 

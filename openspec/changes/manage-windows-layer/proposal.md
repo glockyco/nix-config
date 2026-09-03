@@ -11,7 +11,8 @@ Microsoft DSC v3 reached general availability in April 2026, and WinGet Configur
 - Add `modules/windows/` that renders one WinGet Configuration document and a narrow Administrator script from one Nix declaration. The document owns every DSC resource and the script owns only Zen's Program Files policy file.
 - Add `modules/shared/` for settings that more than one host renderer consumes.
 - Declare a pinned application set: user-scope Zed, Fork, PowerToys with Command Palette and Grab And Move, ReNeo for Neo2, Windows Terminal, and JetBrainsMono Nerd Font, plus machine-scope Zen.
-- Declare Windows settings with registry resources, naming every key.
+- Declare Windows settings with registry resources and narrow scripts that name every key, including the built-in dark appearance and Bloom wallpaper.
+- Record the manual Night Light state because Windows exposes it only through unsupported CloudStore binary payloads.
 - Declare the Windows Terminal, Zed, ReNeo, and PowerToys configuration files, including pinned Catppuccin Mocha themes for Terminal and Zed.
 - Add a flake check that validates the rendered document and the narrow privilege boundary.
 - Extend the operator runbook with the apply and verify procedure.

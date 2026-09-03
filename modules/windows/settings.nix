@@ -147,6 +147,46 @@ in
   })
   {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+    name = "windows-dark-appearance";
+    properties = {
+      testScript = ''
+        $personalize = Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -ErrorAction SilentlyContinue
+        $themes = Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes' -ErrorAction SilentlyContinue
+        $desktop = Get-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -ErrorAction SilentlyContinue
+        $theme = Join-Path $env:WINDIR 'Resources\Themes\dark.theme'
+        $wallpaper = Join-Path $env:WINDIR 'Web\Wallpaper\Windows\img19.jpg'
+        return $personalize.AppsUseLightTheme -eq 0 `
+          -and $personalize.SystemUsesLightTheme -eq 0 `
+          -and $personalize.EnableTransparency -eq 1 `
+          -and $themes.CurrentTheme -ieq $theme `
+          -and $desktop.WallPaper -ieq $wallpaper
+      '';
+      setScript = ''
+        $personalizePath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+        $themesPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes'
+        $theme = Join-Path $env:WINDIR 'Resources\Themes\dark.theme'
+        $wallpaper = Join-Path $env:WINDIR 'Web\Wallpaper\Windows\img19.jpg'
+        New-Item -Path $personalizePath -Force | Out-Null
+        New-Item -Path $themesPath -Force | Out-Null
+        New-ItemProperty -Path $personalizePath -Name AppsUseLightTheme -Value 0 -PropertyType DWord -Force | Out-Null
+        New-ItemProperty -Path $personalizePath -Name SystemUsesLightTheme -Value 0 -PropertyType DWord -Force | Out-Null
+        New-ItemProperty -Path $personalizePath -Name EnableTransparency -Value 1 -PropertyType DWord -Force | Out-Null
+        New-ItemProperty -Path $themesPath -Name CurrentTheme -Value $theme -PropertyType String -Force | Out-Null
+        $native = Add-Type -Namespace WindowsConfiguration -Name AppearanceApi -MemberDefinition @'
+          [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+          public static extern bool SystemParametersInfo(uint action, uint parameter, string value, uint flags);
+          [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+          public static extern System.IntPtr SendMessageTimeout(System.IntPtr window, uint message, System.UIntPtr wParam, string lParam, uint flags, uint timeout, out System.UIntPtr result);
+        '@ -PassThru
+        if (-not $native::SystemParametersInfo(20, 0, $wallpaper, 3)) { throw 'Could not apply the Windows dark wallpaper' }
+        $broadcastResult = [UIntPtr]::Zero
+        [void]$native::SendMessageTimeout([IntPtr]0xffff, 0x001a, [UIntPtr]::Zero, 'ImmersiveColorSet', 0x0002, 5000, [ref]$broadcastResult)
+      '';
+    };
+    metadata.description = "Apply the built-in Windows dark theme and Bloom wallpaper";
+  }
+  {
+    type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
     name = "taskbar-visible";
     properties = {
       testScript = ''
