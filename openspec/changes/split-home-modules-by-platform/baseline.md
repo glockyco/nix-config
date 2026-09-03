@@ -74,6 +74,26 @@ The intended host-scope moves are present. `programs.git.settings.user` holds th
 
 The Darwin system path at `b0f91c59ee55` is `/nix/store/49f89hn1n09d43gc9g84zar837cs9ycl-darwin-system-26.05.c3e90c8`. That value belongs to that revision only, because `system.configurationRevision` enters the derivation. The Mac gate SHALL build the system from the final revision of this change rather than reuse this path.
 
+## Import check fixtures
+
+The check runs against synthetic trees, so an empty result on the real tree means something. Six fixtures cover it:
+
+| Fixture              | Expectation                                                       |
+| -------------------- | ----------------------------------------------------------------- |
+| accepted             | a nested tree with every module imported, and a data file ignored |
+| accepted, large list | an early match followed by a list larger than the pipe buffer     |
+| rejected, nested     | a module that its own nested list omits                           |
+| rejected, root       | a module that the top-level list omits                            |
+| rejected, comment    | an import that only appears inside a comment                      |
+| usage                | a missing module-root argument                                    |
+
+Two of those encode bugs that the first implementation had, and each was reproduced before the fix:
+
+- Matching the raw file accepted a commented-out import, so disabling a module read as importing it.
+- Piping into `grep -q` reported an imported module as missing once the list outgrew the pipe buffer. `grep -q` exits at its first match, the producer then takes SIGPIPE, and `pipefail` fails the pipeline. Restoring that form makes the large fixture report `portable.nix` as unimported although the list imports it on its third line.
+
+The check now reads each list once per directory and matches with a shell pattern, so no pipeline carries the result.
+
 ## Outstanding, on the Mac
 
 - `nvd diff` between the parent system and this change's system.

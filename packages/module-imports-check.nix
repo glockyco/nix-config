@@ -1,7 +1,6 @@
 {
   coreutils,
   findutils,
-  gnugrep,
   gnused,
   writeShellApplication,
 }:
@@ -12,7 +11,6 @@ writeShellApplication {
   runtimeInputs = [
     coreutils
     findutils
-    gnugrep
     gnused
   ];
 
@@ -42,15 +40,25 @@ writeShellApplication {
       find . -type f -name default.nix | sort | while IFS= read -r default; do
         dir=$(dirname "$default")
 
+        # Read the list once per directory, with line comments removed. A
+        # commented-out import must not satisfy the rule, because that turns
+        # "someone disabled this module" into a silent pass.
+        #
+        # The match is a shell pattern rather than a pipe into `grep -q`.
+        # `grep -q` exits at its first match, which can leave the producer in
+        # the pipe holding unwritten output; it then takes SIGPIPE, and
+        # `pipefail` reports the whole pipeline as failed. That would report an
+        # imported module as missing once a list outgrew the pipe buffer.
+        imports=$(sed 's/#.*//' "$default")
+
         for module in "$dir"/*.nix; do
           name=$(basename "$module")
 
           if [ "$name" != default.nix ]; then
-            # Drop line comments before matching. A commented-out import used to
-            # satisfy the rule, which turned "someone disabled this module" into
-            # a silent pass.
-            sed 's/#.*//' "$default" | grep -qF "./$name" ||
-              printf '%s\n' "''${module#./}"
+            case "$imports" in
+              *"./$name"*) ;;
+              *) printf '%s\n' "''${module#./}" ;;
+            esac
           fi
         done
       done

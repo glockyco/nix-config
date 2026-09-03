@@ -28,6 +28,28 @@ runCommand "check-module-imports-command"
     "$check" "$accepted"
     echo 'accepted fixture: passed'
 
+    # An import list whose match appears early and whose remainder exceeds the
+    # pipe buffer. Piping into `grep -q` fails here: `grep -q` exits at the
+    # first match, the producer then takes SIGPIPE, and `pipefail` reports the
+    # pipeline as failed, so an imported module reads as missing.
+    accepted_large=$TMPDIR/accepted-large
+    mkdir -p "$accepted_large"
+    {
+      printf '{\n  imports = [\n    ./portable.nix\n  ];\n'
+      line=0
+      while [ "$line" -lt 4000 ]; do
+        printf '  # padding that pushes this list past the pipe buffer, line %s\n' "$line"
+        line=$((line + 1))
+      done
+      printf '}\n'
+    } > "$accepted_large/default.nix"
+    printf '{ }\n' > "$accepted_large/portable.nix"
+
+    test "$(wc -c < "$accepted_large/default.nix")" -gt 65536
+
+    "$check" "$accepted_large"
+    echo 'accepted large fixture: passed'
+
     # A module inside a nested directory that its own list omits. The previous
     # check read one directory level, so this case escaped it.
     rejected_nested=$TMPDIR/rejected-nested
