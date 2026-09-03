@@ -22,5 +22,6 @@
     ./karabiner.nix
     ./keyboard-shortcuts.nix
     ./screenshots.nix
+    ./zed.nix
   ];
 }

@@ -18,13 +18,13 @@
 
 ## 3. Declare the WSL User Scope
 
-- [ ] 3.1 Import Home Manager as a NixOS module with the same options the Darwin host uses.
-- [ ] 3.2 Select the portable user modules and confirm that no Darwin-only module is reachable.
-- [ ] 3.3 Declare `johann.glock@scch.at` as the global Git email for this host.
-- [ ] 3.4 Declare the GitHub no-reply address for personal repository trees with a conditional Git include.
-- [ ] 3.5 Set `EDITOR` for this host to a program that the host actually provides.
-- [ ] 3.6 Exclude `zed` and the Zed part of `catppuccin` from the WSL host, and record that the Windows layer owns the editor.
-- [ ] 3.7 Confirm that `reconcileHerdrOmp` and `verifyPersonalOmp` run as activation steps in the correct order.
+- [x] 3.1 Import Home Manager as a NixOS module with the same options the Darwin host uses.
+- [x] 3.2 Select the portable user modules and confirm that no Darwin-only module is reachable.
+- [x] 3.3 Declare `johann.glock@scch.at` as the global Git email for this host.
+- [x] 3.4 Declare the GitHub no-reply address for personal repository trees with a conditional Git include.
+- [x] 3.5 Set `EDITOR` for this host to a program that the host actually provides.
+- [x] 3.6 Exclude `zed` and the Zed part of `catppuccin` from the WSL host, and record that the Windows layer owns the editor.
+- [x] 3.7 Confirm that `reconcileHerdrOmp` and `verifyPersonalOmp` run as activation steps in the correct order.
 
 ## 4. Add Deterministic Checks
 

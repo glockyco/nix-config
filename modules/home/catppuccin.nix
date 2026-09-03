@@ -30,7 +30,6 @@
     # segments from the `catppuccin-powerline` preset in modules/home/shell.nix.
     # That preset is already Catppuccin.
 
-    zed.enable = true;
     zsh-syntax-highlighting.enable = true;
   };
 }

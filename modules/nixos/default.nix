@@ -8,5 +8,6 @@
     ./nix.nix
     ./programs.nix
     ./containers.nix
+    ./home-manager.nix
   ];
 }

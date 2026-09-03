@@ -3,8 +3,9 @@
   # on a macOS interface belongs in `./darwin`, which only the Darwin host
   # imports.
   #
-  # `catppuccin.nix` and `zed.nix` stay here because their settings are portable
-  # while their package selection is host scope.
+  # `catppuccin.nix` stays here because its palette and its ports for portable
+  # programs apply to any host. Ports for a platform-specific program live
+  # beside that program.
   imports = [
     ./shell.nix
     ./catppuccin.nix
@@ -17,7 +18,6 @@
     ./omp.nix
     ./typst.nix
     ./tex.nix
-    ./zed.nix
   ];
 
   # Matches the pinned nixpkgs/Home Manager release; changing it changes option defaults.
