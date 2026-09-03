@@ -72,8 +72,8 @@
 - [x] 7.2 Remove the `wslOmpEnvironment` and `bootstrapOmpOnWslCommand` checks and the `bootstrap-omp-on-wsl` application and package outputs.
 - [x] 7.3 Confirm that no alias, wrapper, or documentation preserves the retired command.
 - [x] 7.4 Set the NixOS profile as the Windows Terminal default and confirm that it opens in the Linux home directory.
-- [ ] 7.5 Remove the `Ubuntu-26.04` distribution only after every gate in sections 5 and 6 passes.
-- [ ] 7.6 Confirm after the removal that the host reports a running system with no failed unit.
+- [x] 7.5 Remove the `Ubuntu-26.04` distribution only after every gate in sections 5 and 6 passes.
+- [x] 7.6 Confirm after the removal that the host reports a running system with no failed unit.
 
 ## 8. Update the Documentation
 
@@ -89,7 +89,7 @@
 
 - [x] 9.1 Run `nix fmt -- --fail-on-change`.
 - [x] 9.2 Run `nix flake check --print-build-logs` on `x86_64-linux` and inspect the new host checks.
-- [ ] 9.3 Run `nix build .#darwinConfigurations.macbook-pro.system` and confirm that the Darwin host still builds.
-- [ ] 9.4 Run `nix run .#check-darwin-build-plans`.
+- [x] 9.3 Run `nix build .#darwinConfigurations.macbook-pro.system` and confirm that the Darwin host still builds.
+- [x] 9.4 Run `nix run .#check-darwin-build-plans`.
 - [x] 9.5 Run `openspec validate adopt-nixos-wsl-host --strict`.
 - [x] 9.6 Review the final diff by host, module, check, deletion, and documentation, and confirm that no module declares a Windows container product.
