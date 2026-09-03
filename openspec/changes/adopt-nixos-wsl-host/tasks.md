@@ -48,7 +48,7 @@
 - [x] 5.3 Confirm that systemd is process 1 and that the declared user owns the session.
 - [x] 5.4 Clone the published revision under the tree that the conditional include names, then run `nixos-rebuild switch --flake .#korolev` with no other distribution running and with `user@1000.service` active.
 - [ ] 5.5 Confirm that Herdr reports `omp: current` and that local verification succeeds.
-- [ ] 5.6 Confirm that an unprivileged build reports no ignored `trusted-public-keys` warning.
+- [x] 5.6 Confirm that an unprivileged build reports no ignored `trusted-public-keys` warning.
 - [x] 5.7 Re-activate the same revision and confirm that nothing changes and no duplicate entry appears.
 - [ ] 5.8 Confirm that name resolution, both substituters, and GitHub authentication work with the corporate VPN connected.
 - [x] 5.9 Confirm with `getent passwd` and a new session that the login shell is the declared shell.
@@ -57,13 +57,13 @@
 
 ## 6. Prove the Runtime Behavior
 
-- [ ] 6.1 Authenticate the OpenAI and Anthropic providers on the new host without copying any state.
+- [x] 6.1 Authenticate the OpenAI and Anthropic providers on the new host without copying any state.
 - [x] 6.2 Run the real-session smoke in a disposable repository and confirm the plugin path under `/nix/store`.
 - [x] 6.3 Confirm that the personal policy is active and that `personal_commit` is registered.
 - [x] 6.4 Confirm that the `personal_commit` preview changes no repository state.
 - [x] 6.5 Confirm the Git identity in a personal tree, outside a personal tree, in a fresh clone, and in a clone directly under `~/src`.
-- [ ] 6.6 Activate a deliberately failing generation and confirm that the previous generation stays selectable.
-- [ ] 6.7 Confirm that rollback changes no OMP-owned authentication, configuration, session, history, or database.
+- [x] 6.6 Activate a deliberately failing generation and confirm that the previous generation stays selectable.
+- [x] 6.7 Confirm that rollback changes no OMP-owned authentication, configuration, session, history, or database.
 - [x] 6.8 Run a container image through the Docker command name and confirm that it starts and exits with its own status.
 
 ## 7. Remove the Superseded Implementation

@@ -1,7 +1,7 @@
 {
-  # The root flake advertises this cache through `nixConfig`, which reaches Nix
-  # as a client-specified setting. A daemon setting states it once for the host,
-  # so a repository command does not have to carry it.
+  # A daemon setting is the only source of this cache on this host. The root
+  # flake declares no `nixConfig`, because Nix ignores a flake-provided key for
+  # a user who is not in `trusted-users`, and it warns on every command.
   #
   # These supplement the default NixOS substituter rather than replacing it.
   nix.settings = {

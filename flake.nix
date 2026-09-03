@@ -1,15 +1,10 @@
 {
   description = "Apple Silicon workstation: Determinate Nix + nix-darwin + Home Manager";
 
-  # Root flakes do not inherit an input flake's cache settings. Publish the
-  # llm-agents cache here so Linux installs substitute OMP instead of compiling it.
-  nixConfig = {
-    extra-substituters = [ "https://cache.numtide.com" ];
-    extra-trusted-public-keys = [
-      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-    ];
-  };
-
+  # This flake declares no `nixConfig`. Each host declares the Numtide
+  # substituter and its trusted public key in system scope, and Nix ignores a
+  # flake-provided key for a user who is not in `trusted-users`. A machine that
+  # has neither host configuration passes both values as command-line flags.
   inputs = {
     # Pin nixpkgs to 26.05 to keep nix-darwin and Home Manager on the same release.
     nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2605";

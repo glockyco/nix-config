@@ -83,9 +83,15 @@ The `llm-agents` input keeps its documented exception, because that input ships 
 
 Declare the Numtide substituter and its trusted public key in the host's `nix.settings`.
 
-The accepted evidence for the previous implementation records a repeated warning that Nix ignores a client-specified `trusted-public-keys` setting for an untrusted user. That warning exists because the root flake advertises the cache through `nixConfig`. A system setting removes the cause instead of tolerating the symptom.
+The accepted evidence for the previous implementation records a repeated warning that Nix ignores a client-specified `trusted-public-keys` setting for an untrusted user. That warning exists because the root flake advertises the cache through `nixConfig`.
 
-Keep the root flake `nixConfig` for the Darwin host and for a first evaluation on a foreign machine.
+A measurement on `korolev` showed that the system setting alone does not remove the warning. `trusted-users` holds `root` alone, so the default path reports `ignoring untrusted flake configuration setting 'extra-trusted-public-keys'`. `--no-accept-flake-config` reports the same message. `--accept-flake-config` reports `ignoring the client-specified setting 'trusted-public-keys', because it is a restricted setting and you are not a trusted user`.
+
+Delete `nixConfig` from the root flake. Both hosts declare the same substituter and key in system scope: `modules/darwin/nix.nix` through `customSettings`, and `modules/nixos/nix.nix` through `nix.settings`. A first build on a machine that has neither host configuration passes `--extra-substituters` and `--extra-trusted-public-keys` on the command line, and the runbook states both flags.
+
+**Alternative:** Add the interactive user to `trusted-users` on the WSL host. Rejected because it grants daemon trust to every flake that the user evaluates, and because the warning stays until an interactive prompt writes the accepted value into `~/.local/share/nix/trusted-settings.json`.
+
+**Alternative:** Keep `nixConfig` and accept the warning. Rejected because that warning is the symptom this decision exists to remove.
 
 ### 4. Make the Git identity declarative and conditional
 
