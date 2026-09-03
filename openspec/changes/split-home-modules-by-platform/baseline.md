@@ -113,4 +113,6 @@ Closure size: 5842 -> 5842 (15 paths added, 15 paths removed, delta +0, disk usa
 
 The gate passes. No package was added, removed, or changed version.
 
-The replaced paths match the predicted cause. The closure holds the same number of paths, and the whole difference is 24 bytes, which is the size of changed hash text rather than of changed content. Evaluation had already named the paths that carry it: the path aggregate, the fonts and applications aggregates, the fonts-version file, and the activation script and generation that name them.
+The diff establishes one thing: no package or version selection changed. The reported churn of fifteen replaced paths, an unchanged path count, and 24 bytes of disk-usage difference is consistent with the evaluated cause, and it is not by itself evidence of that cause. The contents of those fifteen paths were not compared.
+
+The direct evidence for the cause is the evaluation recorded above. The package set, the file targets, and the activation entry names are unchanged, and the three activation texts that do differ were compared and differ only in a package-derived hash.
