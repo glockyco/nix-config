@@ -5,6 +5,7 @@
   imports = [
     ./wsl.nix
     ./system.nix
+    ./tailscale.nix
     ./nix.nix
     ./programs.nix
     ./containers.nix

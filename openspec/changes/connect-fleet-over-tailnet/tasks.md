@@ -32,7 +32,7 @@
 
 ## 5. Linux Host
 
-- [ ] 5.1 Add `modules/nixos/tailscale.nix` per design decision 5, import it, and confirm by evaluation that `extraSetFlags == [ "--shields-up" ]`, that `openFirewall` is false, and that `disableTaildrop` is true.
+- [x] 5.1 Add `modules/nixos/tailscale.nix` per design decision 5, import it, and confirm by evaluation that `extraSetFlags == [ "--shields-up" ]`, that `openFirewall` is false, and that `disableTaildrop` is true.
 - [ ] 5.2 Set `wsl.wslConf.network.generateResolvConf = false`, enable `services.resolved`, and declare `networking.nameservers = [ "10.255.255.254" ]`; activate, restart the distribution, and confirm that `resolvectl status` names that upstream and that an employer name and a public name both resolve.
 - [ ] 5.3 Add `packages/tailnet-known-hosts.nix` and `packages/tailnet-known-hosts-tests.nix` per design decision 4, wire the test as `tailnetKnownHostsCommand`, and confirm that the fixture for a matching peer prints one `known_hosts` line per key and the other two fixtures exit nonzero.
 - [ ] 5.4 Add the `Host macbook-pro` block to `programs.ssh.extraConfig` with `KnownHostsCommand`, `BatchMode yes`, `ConnectTimeout 8`, `ControlMaster no`, and `ControlPath none`; confirm with `ssh -G macbook-pro` as root that every value is present.
