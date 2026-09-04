@@ -271,6 +271,10 @@
                 pkgs.runCommand "check-fleet-surface" { } "touch $out";
 
               personalOmpShape =
+                let
+                  zshInit = hostConfiguration.config.home-manager.users.${host.username}.programs.zsh.initContent;
+                in
+                assert lib.hasInfix "path=(\"/etc/profiles/per-user/${host.username}/bin\"" zshInit;
                 pkgs.runCommand "check-personal-omp-shape"
                   {
                     nativeBuildInputs = [ pkgs.jq ] ++ personalOmp.languageServers;

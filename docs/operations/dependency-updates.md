@@ -158,8 +158,8 @@ verify-personal-omp
 Homebrew can recover an earlier release from the official tap history. Replace `<version>` with the release number without a leading `v`:
 
 ```sh
+brew unlink can1357/tap/omp
 brew version-install can1357/tap/omp <version>
-brew unlink omp
 brew link --overwrite --force "omp@<version>"
 verify-personal-omp
 ```

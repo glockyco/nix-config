@@ -37,7 +37,7 @@ Source installation through Bun was rejected because OMP publishes host binaries
 
 Make the wrapper accept a runtime executable path instead of an OMP package object. Darwin passes `/opt/homebrew/bin/omp`. NixOS/WSL passes a fixed path below the interactive user's home directory. The wrapper continues to embed the plugin store path and add only curated language servers to `PATH`.
 
-The WSL path must not be `~/.local/bin/omp`, because the Nix-managed wrapper also provides the public `omp` command. A dedicated directory prevents path-order dependence and recursion.
+The WSL path must not be `~/.local/bin/omp`, because the Nix-managed wrapper also provides the public `omp` command. A dedicated directory prevents path-order dependence and recursion. On Darwin, nix-homebrew prepends its prefix during system shell initialization, so the user shell must put the Home Manager profile first again. The wrapper still invokes Homebrew through its explicit absolute path.
 
 A separate wrapper per host was rejected because it would duplicate plugin flags, language-server composition, and verification behavior. A generic `PATH` lookup was rejected because it could recurse into the wrapper or select an unintended installation.
 
