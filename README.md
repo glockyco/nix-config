@@ -1,91 +1,60 @@
 # nix-config
 
-Declarative configuration for two machines and three operating-system layers. `macbook-pro` is an Apple Silicon Mac that runs Determinate Nix and nix-darwin. `korolev` is an `x86_64` WSL machine, and this repository defines both its NixOS host and a rendered WinGet Configuration document. Both Nix hosts import the same Home Manager user scope.
+Nix flake for two personal workstations: an Apple Silicon MacBook Pro under nix-darwin, and a NixOS host under WSL 2 on an `x86_64` Windows work machine. Each host is a system configuration that imports Home Manager as a module. Both hosts select the same portable user modules and supply their own identity values.
 
-`hosts/` is one directory per machine, owning that machine's name, user, and the
-values that differ per machine, such as the commit identity and `EDITOR`. Each
-host directory produces one entry point: `hosts/macbook-pro/` a
-`darwinConfigurations` attribute that `darwin-rebuild` activates, and
-`hosts/korolev/` a `nixosConfigurations` attribute that `nixos-rebuild`
-activates.
+The flake also renders a reviewable Windows declaration for the work machine, and it manages the DNS records for `glockyco.com`.
 
-`modules/darwin/` and `modules/nixos/` are system scope for their own platform. `modules/home/` is the user scope both Nix hosts share. `modules/windows/` renders one WinGet Configuration document, narrow Zen-policy and native-Neo Administrator scripts, and their review files; Nix builds that artifact but never applies it. `modules/shared/` holds platform-free settings used by more than one renderer. `packages/` holds local derivations.
+## Hosts
 
-`modules/home/` holds the user-scope modules any host can import. `modules/home/darwin/`
-holds those that need a macOS interface, and only the Darwin host imports them. A module
-belongs in the second directory when it names `launchd`, LaunchServices, `osascript`,
-`~/Library`, a Homebrew-supplied binary, or `darwin-rebuild`.
+| Output                             | System           | Activation                                    |
+| ---------------------------------- | ---------------- | --------------------------------------------- |
+| `darwinConfigurations.macbook-pro` | `aarch64-darwin` | `darwin-switch`                               |
+| `nixosConfigurations.korolev`      | `x86_64-linux`   | `sudo nixos-rebuild switch --flake .#korolev` |
 
-No global toolchains: project flakes use `direnv`. Symbolic PathFinder needs JDK 8; current JPF needs JDK 11.
+One table in `flake.nix` binds each system to its host. The supported systems, the per-system package set, and the checks derive from that table.
 
-## Use
+## Ownership
 
-```sh
-darwin-switch                           # macbook-pro: apply, then diff the closure
-sudo darwin-rebuild switch --flake .    # macbook-pro: apply, without the diff
-nix flake check                         # build, and verify formatting, without applying
-                                        # checks only this system; CI covers the others
-nix flake update                        # bump inputs
-nix fmt                                 # format the tree; see ./treefmt.nix
-```
+| Owner              | State                                                                                                                                                 |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| This flake         | Host closures, the `omp` wrapper, the personal plugin pin, Herdr, OpenSpec, language servers, `verify-personal-omp`, the rendered Windows declaration |
+| Platform installer | The OMP executable: Homebrew at `/opt/homebrew/bin/omp` on Darwin, the official installer at `~/.local/lib/oh-my-pi/omp` on WSL                       |
+| OMP                | Authentication, `~/.omp/agent/config.yml`, sessions, history, caches, logs, databases                                                                 |
+| Windows            | Windows Terminal, WSL enablement, employer policy, native applications, the editor                                                                    |
+| Project repository | Its development shell, build commands, and deployment commands                                                                                        |
 
-The WSL machine and its Windows layer have their own installation and update procedure. Build the Windows artifact with `nix build .#windows-configuration`, then follow the [WSL runbook](docs/operations/wsl-omp-bootstrap.md) to preview and apply it from Windows. DSC converges resources in place; unlike nix-darwin and NixOS, it has no generation or transactional rollback. Every document resource uses user scope except the official Zen package, whose installer requests elevation. Two Administrator scripts own only Zen's Program Files policy file and the checksum-pinned native Neo keyboard driver. No user setting resolves into the Administrator profile.
+Activation does not install, update, or restore the OMP executable. It does not read or write OMP-owned state. Nix does not execute Windows resources. See [the architecture document](docs/architecture/personal-omp-environment.md) for the complete boundary and the decision log.
 
-`omp` is a Nix-managed wrapper around a platform-owned oh-my-pi executable and the independently pinned `personal-omp-plugin` flake. Homebrew owns the executable on Darwin. The official prebuilt installer owns it in NixOS/WSL. An OMP update replaces only that executable; the existing wrapper continues to load the immutable personal plugin and curated language servers.
+## Layout
 
-Update OMP without changing this repository or reapplying Nix:
+| Path                 | Content                                                                                         |
+| -------------------- | ----------------------------------------------------------------------------------------------- |
+| `flake.nix`          | Inputs, the host table, host outputs, packages, checks, and the development shell               |
+| `hosts/`             | One directory per host with its identity values                                                 |
+| `modules/darwin/`    | nix-darwin system scope                                                                         |
+| `modules/nixos/`     | NixOS system scope for WSL                                                                      |
+| `modules/home/`      | Portable Home Manager modules. `modules/home/darwin/` holds the Darwin-only user modules        |
+| `modules/shared/`    | Data shared by the Nix hosts and the Windows declaration, such as Zed settings and Zen policies |
+| `modules/windows/`   | The WinGet Configuration document and the two Administrator scripts                             |
+| `packages/`          | The OMP wrapper, the verifiers, and the check programs                                          |
+| `docs/architecture/` | Cross-repository architecture, ownership, and decisions                                         |
+| `docs/operations/`   | Runbooks for korolev provisioning, the container runtime, and dependency updates                |
+| `docs/plans/`        | Tracked planning records. `docs/plans/INDEX.md` states their status                             |
+| `openspec/`          | Accepted specifications and active changes                                                      |
+| `dns/`               | DNSControl configuration for `glockyco.com`                                                     |
+| `secrets/`           | SOPS-encrypted values for the Darwin host                                                       |
 
-```sh
-brew update && brew upgrade can1357/tap/omp
-# NixOS/WSL:
-curl -fsSL https://omp.sh/install | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary
-omp --version
-```
+## Develop
 
-Do not install the personal plugin through OMP's mutable plugin manager. Update `personal-omp-plugin`, Herdr, and OpenSpec through their locked Nix inputs. Home Manager reconciles Herdr and runs a local OMP/plugin verifier on every activation.
-Use the [dependency-update runbook](docs/operations/dependency-updates.md) for automation, manual updates, activation, the conditional real-session smoke, and rollback.
-
-Use the [container runtime runbook](docs/operations/container-runtime.md) for Colima startup, acceptance, shutdown, upgrades, recovery, and profile recreation.
-
-## MacBook Air SSH
-
-The temporary MacBook Air has two SSH aliases. Use `air` for an interactive
-session. It inherits the shared control master and its one-hour persistence.
-Use `air-batch` for unattended commands and protocol clients such as `rsync`.
-This alias does not allocate a terminal, prompt for authentication, or create a
-control socket. It keeps standard input available for protocol data. A direct
-command that does not supply input must detach it explicitly:
+Enter the development shell:
 
 ```sh
-ssh -n air-batch true
+nix develop
 ```
 
-After a configuration activation, run the bounded acceptance command with the
-reviewed Docker executable on the Air:
+`.envrc` enters the same shell through direnv. The shell installs the lefthook pre-commit hook. The hook runs `treefmt --fail-on-change` on staged files through the pinned shell.
 
-```sh
-AIR_BATCH_DOCKER=/Applications/Docker.app/Contents/Resources/bin/docker \
-  air-batch-check
-```
-
-Each probe has a 15-second deadline. The command checks detached-input command
-completion, exact remote failure status, a read-only `rsync` transfer, read-only
-Docker access, and the absence of a persistent master. It removes its local
-temporary directory after success or failure and does not write to the Air.
-A failure prints recovery commands. Start with these checks:
-
-```sh
-ssh -n air-batch true
-ssh -G air-batch
-ssh -n air-batch /Applications/Docker.app/Contents/Resources/bin/docker info
-```
-
-The Docker path is explicit because the Air's non-interactive shell does not
-provide Docker on `PATH`.
-
-## Release gates
-
-Run the inactive-generation gates before activation:
+Run the release gates from the repository root:
 
 ```sh
 nix fmt -- --fail-on-change
@@ -94,97 +63,101 @@ nix run .#check-darwin-build-plans
 nix build .#darwinConfigurations.macbook-pro.system
 ```
 
-After activation, start Colima and run the real container boundary gate:
+`nix flake check` checks the current system only. CI runs one macOS leg and one Linux leg, and each leg uses the Nix implementation that its host runs. `check-darwin-build-plans` reads build plans, which a check derivation cannot do. It fails when a Darwin output reaches a source-built .NET package or a Swift compiler.
 
-```sh
-colima start
-container-runtime-check
-```
+Permanent behavior changes use OpenSpec. Read the artifacts of the active change before you edit implementation files.
 
-Cloudflare projects opt into the SOPS-managed deployment token explicitly in
-their `.envrc`; it is never exported to the global shell:
+## Activate
 
-```sh
-use flake
-use cloudflare_workers
-```
+### macbook-pro
 
-Only enable this in trusted projects. The token can edit Workers, D1, Queues,
-and Worker routes across all Cloudflare accounts and zones.
-
-Fresh-machine bootstrap, before `darwin-rebuild` exists and while the host has its factory name:
+`darwin-switch` expects the clone at `~/.config/nix-darwin`. For the first activation, `darwin-rebuild` is not on `PATH` yet:
 
 ```sh
 sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
 ```
 
-Delete `/etc/nix/nix.custom.conf` if Determinate left it; nix-darwin will not overwrite unmanaged `/etc` files.
-
-## Architecture
-
-The canonical cross-repository design for OMP, Herdr, OpenSpec, language
-servers, project environments, and the planned frontend and memory experiments
-is [Personal OMP Environment Architecture](docs/architecture/personal-omp-environment.md).
-Resume multi-session work from its current-state table, then read the named
-repository's active OpenSpec change.
-
-## Manual steps
-
-macOS cannot declare these:
-
-- Add *Deutsch (Neo 2)* under Input Sources, then restart; Apple TN2056 and neo-layout.org require a fresh login session after layout installation.
-- Approve Karabiner's driver extension, Input Monitoring and login items.
-- Confirm the default-app prompts on first switch.
-- Paste the Rectangle Pro licence code into the app and grant it Accessibility.
-- Grant LaunchBar Accessibility and confirm its search shortcut is `⌘Space`. `defaults.nix` frees
-  the key from Spotlight, but LaunchBar cannot sync a hotkey, so check it per machine. Avoid Option
-  for any rebinding: Neo 2 emits it to build layers 3 and 4, and hotkey masks cannot tell left from
-  right. `⌃Space` and `⌃⌥Space` switch input sources.
-- Authenticate `omp` via `/login`.
-- Generate this machine's age key before the first switch, then add its public half to `.sops.yaml`:
-  `age-keygen -o ~/.config/sops/age/keys.txt && age-keygen -y ~/.config/sops/age/keys.txt`.
-  Without it `sops-nix` cannot decrypt and the launchd agent fails.
-- On the MacBook Air, enable SMB File Sharing for `joaichberger`. On this Mac, connect once to
-  `smb://joaichberger@MacBook-Air-von-ISYS.local/Macintosh%20HD` and save the password in
-  Keychain. Home Manager then reconnects the share and exposes the Air's home directory at `~/Air`;
-  the credential never enters Nix.
-
-## DNS
-
-`glockyco.com` sends through Fastmail while its DNS lives at Cloudflare.
-`dns/dnsconfig.js` is the source of truth for the zone; the zone-scoped token
-is encrypted in `secrets/cloudflare.yaml`. From the repository root, enter the
-pinned development shell and opt into the token before reviewing the diff:
+For every later activation:
 
 ```sh
-nix develop
-use_cloudflare_dns
-dnscontrol preview --creds=dns/creds.json --config=dns/dnsconfig.js
-dnscontrol push --creds=dns/creds.json --config=dns/dnsconfig.js
+darwin-switch
+verify-personal-omp
 ```
 
-Always `preview` before `push`. This deliberately sits outside activation: a
-`darwin-rebuild switch` must never mutate external shared state, and mail on
-this domain is the recovery channel for every other account.
+`darwin-switch` prints an `nvd` diff of the closure. `verify-personal-omp` prints the observed OMP version, the plugin path under `/nix/store`, and `omp: current` from Herdr.
 
-The record set is documented in `dns/dnsconfig.js` rather than repeated here,
-because a second copy is a second thing to get wrong. Three constraints the
-zone file cannot enforce on its own:
+### korolev
 
-- The DKIM `CNAME`s must stay grey-clouded. Proxying one replaces the answer
-  with Cloudflare's, so the key never reaches the verifier.
-- Keep exactly one SPF record. Two is a permanent error, not a merge.
-- The `100::` `AAAA` records belong to Workers and Cloudflare marks them
-  read-only, which is why `dnsconfig.js` lists them as `IGNORE` rather than
-  managing them.
+Follow [the provisioning runbook](docs/operations/wsl-omp-bootstrap.md) for the image build, the import, and the cutover. Activate from a committed tree:
 
-## Gotchas
+```sh
+sudo nixos-rebuild switch --flake .#korolev
+verify-personal-omp
+```
 
-- Determinate owns `/etc/nix/nix.conf`: use `determinateNix.customSettings`; `nix.settings` is inert and `nix.gc` throws. `determinate-nixd` handles GC. `nix.registry` is inert too -- pin flake references through `determinateNix.registry`.
-- `karabiner.json` and the Neo bundle are **copied**, not symlinked: Karabiner rewrites its config and macOS rejects keylayouts through store symlinks. UI changes revert on switch; edit the module.
-- `homebrew.onActivation.cleanup = "uninstall"`: dropping a cask uninstalls it.
-- SSH keys stay out: Secure Enclave via Secretive, YubiKey for recovery; neither is exportable.
-- Secrets are committed **encrypted** under `secrets/`. The age private key is per machine, lives at `~/.config/sops/age/keys.txt` and is never committed; a second machine gets its own key and is added to `.sops.yaml` as another recipient. Decrypted values appear at `~/.config/sops-nix/secrets/` and never touch the repository.
-- `secrets/` is for credentials a **program** reads: every entry there has a consumer, and the test for a new one is naming it. Account passwords and TOTP seeds go in Bitwarden instead. Break-glass material — two-factor recovery codes, the Bitwarden master password, a backup of the age key — goes offline and off this machine: it has no consumer, and `.sops.yaml` lists a single recipient, so anything encrypted to it dies with the host, which is the exact failure it exists for. Where it lives is deliberately not written down here.
-- Terminal.app's font is an archived `NSFont`, not a string; `modules/home/apple-terminal.nix` applies it. Terminal rewrites preferences on quit, so quit and reopen after a switch if it was open.
-- macOS caches installed layouts in `$(getconf DARWIN_USER_CACHE_DIR)/com.apple.IntlDataCache.le{,.kbdx}`; bundle changes do not invalidate the cache. Delete both files and restart if a layout change does not take effect.
+Run one WSL distribution at a time. A second distribution with the same user ID cannot start its user manager, and the activation fails.
+
+### Windows layer
+
+Build the declaration in NixOS and copy the result to a writable Windows directory:
+
+```sh
+nix build .#windows-configuration
+```
+
+Apply the result with `winget configure` as the interactive user. Step 12 of the provisioning runbook states the preview, apply, and post-apply test commands. WinGet has no generation rollback.
+
+## Update
+
+### OMP
+
+An OMP update does not change this repository and does not need Nix activation. The wrapper uses the updated executable with the same immutable plugin.
+
+On Darwin:
+
+```sh
+brew upgrade can1357/tap/omp
+verify-personal-omp
+```
+
+On WSL:
+
+```sh
+curl -fsSL https://omp.sh/install \
+  | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary
+verify-personal-omp
+```
+
+### Nix inputs
+
+The `glockyco/dependency-automation` control plane opens a review-only pull request for `flake.lock` every Saturday. Renovate owns GitHub Actions. Neither system merges. [The dependency-update runbook](docs/operations/dependency-updates.md) states the manual commands, the required checks, and the credential rotation.
+
+## Roll back
+
+Keep the previous generation until every gate and the real wrapped-session smoke pass.
+
+On Darwin:
+
+```sh
+sudo darwin-rebuild --list-generations | cat
+sudo darwin-rebuild --rollback
+```
+
+On korolev:
+
+```sh
+sudo nixos-rebuild list-generations | cat
+sudo nixos-rebuild switch --rollback --no-reexec
+```
+
+A rollback restores the wrapper, plugin, Herdr, OpenSpec, and language-server paths. It does not change the OMP executable or OMP-owned state. Recover an OMP release through its platform installer.
+
+## Documentation
+
+- [Personal OMP environment architecture](docs/architecture/personal-omp-environment.md)
+- [Provision the korolev NixOS WSL host](docs/operations/wsl-omp-bootstrap.md)
+- [Container runtime](docs/operations/container-runtime.md)
+- [Dependency updates](docs/operations/dependency-updates.md)
+- [Planning index](docs/plans/INDEX.md)
+- [Accepted specifications](openspec/specs/)
+- [Repository guidance for agents](AGENTS.md)
