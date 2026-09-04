@@ -27,7 +27,7 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run `nix fmt -- --fail-on-change`.
-- [ ] 5.2 Run `nix flake check --print-build-logs` on `korolev` and confirm exit 0.
-- [ ] 5.3 Run `openspec validate enable-omp-browser-on-wsl --strict`.
-- [ ] 5.4 Review the final diff. Confirm that it contains no browser binary, OMP cache or profile path ownership, wrapper-level library path, extension deployment, Windows startup entry, or per-extension default-browser association.
+- [x] 5.1 Run `nix fmt -- --fail-on-change`.
+- [x] 5.2 Run `nix flake check --print-build-logs` on `korolev` and confirm exit 0.
+- [x] 5.3 Run `openspec validate enable-omp-browser-on-wsl --strict`.
+- [x] 5.4 Review the final diff. Confirm that it contains no browser binary, OMP cache or profile path ownership, wrapper-level library path, extension deployment, Windows startup entry, or per-extension default-browser association.
