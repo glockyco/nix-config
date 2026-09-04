@@ -740,6 +740,7 @@ The environment is complete when:
 - Supply the shared-library ABI for OMP's downloaded Chromium through `programs.nix-ld.libraries`. Do not package Chromium with Nix, wrap the OMP executable with a browser-specific environment, or move OMP's browser cache and profile into the Nix store.
 - Declare pinned, user-scope Brave as the dedicated Windows `browser-relay` application. Keep Zen as the interactive browser, keep Brave out of startup and default-browser resources, and do not use employer-managed Edge or Chrome for relay.
 - Install the relay extension manually into Windows LocalAppData and load it only in a dedicated `OMP Relay` Brave profile. OMP and the browser own that mutable profile and extension state; Nix owns only the reviewed package declaration and rejection gates.
+- Track nix-darwin pull request [#1815](https://github.com/nix-darwin/nix-darwin/pull/1815) for `services.tailscale.extraSetFlags`. Keep the compatible local option and launch daemon until an upstream release includes it.
 
 ## Primary references
 
