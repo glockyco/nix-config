@@ -19,6 +19,8 @@ Distribution import, NixOS activation, generation rollback, and distribution rol
 
 ## 1. Confirm the prerequisites
 
+Use tailnet ID `TEHFqtX6D121CNTRL` (`glockyco.github`) with the DNS name `tail8768af.ts.net`. MagicDNS must remain enabled. The control-plane baseline recorded on 2026-09-04 had zero nodes.
+
 Install or update Windows Terminal Stable through the Microsoft-supported or employer-managed channel. Confirm WSL 2 and the architecture:
 
 ```powershell
