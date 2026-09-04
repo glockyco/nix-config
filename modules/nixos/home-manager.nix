@@ -1,5 +1,7 @@
 {
   inputs,
+  ompExecutable,
+  ompInstallCommand,
   username,
   ...
 }:
@@ -18,9 +20,16 @@
     # Move conflicting dotfiles aside instead of aborting activation.
     backupFileExtension = "hm-backup";
 
-    # `../home` modules read these. `omp.nix`, `packages.nix`, `catppuccin.nix`,
-    # and `nix-index.nix` all take `inputs`.
-    extraSpecialArgs = { inherit inputs username; };
+    # `../home` modules read these. `omp.nix` also needs the platform-owned
+    # executable path and its installation command.
+    extraSpecialArgs = {
+      inherit
+        inputs
+        ompExecutable
+        ompInstallCommand
+        username
+        ;
+    };
 
     # Only the portable list. `../home/darwin` is absent here, so a module that
     # names a macOS interface cannot reach this host.

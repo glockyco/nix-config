@@ -93,10 +93,20 @@
         aarch64-darwin = {
           kind = "darwin";
           name = "macbook-pro";
+          username = "glockyco";
+          ompRuntime = {
+            executable = "/opt/homebrew/bin/omp";
+            installCommand = "brew install can1357/tap/omp";
+          };
         };
         x86_64-linux = {
           kind = "nixos";
           name = "korolev";
+          username = "user";
+          ompRuntime = {
+            executable = "$HOME/.local/lib/oh-my-pi/omp";
+            installCommand = ''curl -fsSL https://omp.sh/install | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary'';
+          };
         };
       };
     in
@@ -114,13 +124,21 @@
           # its system. The dependency runs outward, from one package set to the
           # hosts and the outputs, rather than from the outputs into a host.
           darwinConfigurations.macbook-pro = withSystem "aarch64-darwin" (
-            { pkgs, ... }: import ./hosts/macbook-pro { inherit inputs pkgs; }
+            { pkgs, ... }:
+            import ./hosts/macbook-pro {
+              inherit inputs pkgs;
+              host = hosts.aarch64-darwin;
+            }
           );
 
           # The WSL host is a NixOS configuration rather than a package, so it
           # owns a host directory and a system scope like the Darwin host.
           nixosConfigurations.korolev = withSystem "x86_64-linux" (
-            { pkgs, ... }: import ./hosts/korolev { inherit inputs pkgs; }
+            { pkgs, ... }:
+            import ./hosts/korolev {
+              inherit inputs pkgs;
+              host = hosts.x86_64-linux;
+            }
           );
 
           overlays.default = final: _prev: {
@@ -154,8 +172,11 @@
 
             llmAgents = inputs.llm-agents.packages.${system};
             openspec = llmAgents.openspec;
+            ompExecutable = host.ompRuntime.executable;
+            ompInstallCommand = host.ompRuntime.installCommand;
             personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
-              inherit (llmAgents) herdr omp;
+              inherit ompExecutable ompInstallCommand;
+              inherit (llmAgents) herdr;
               plugin = inputs.personal-omp-plugin.packages.${system}.default;
             };
             moduleImportsCheck = pkgs.callPackage ./packages/module-imports-check.nix { };
@@ -256,7 +277,9 @@
                   }
                   ''
                     test -x ${personalOmp}/bin/omp
-                    grep -qF -- ${lib.escapeShellArg (lib.getExe llmAgents.omp)} ${personalOmp}/bin/omp
+                    grep -qF -- ${lib.escapeShellArg personalOmp.ompExecutable} ${personalOmp}/bin/omp
+                    grep -qF -- ${lib.escapeShellArg personalOmp.ompInstallCommand} ${personalOmp}/bin/omp
+                    ! grep -Eq '/nix/store/[^ ]+/bin/omp' ${personalOmp}/bin/omp
                     grep -qF -- ${lib.escapeShellArg "--extension ${personalOmp.plugin}"} ${personalOmp}/bin/omp
                     grep -qF -- ${lib.escapeShellArg "--plugin-dir ${personalOmp.plugin}/lsp"} ${personalOmp}/bin/omp
                     ! grep -qF /Users/ ${personalOmp}/bin/omp
@@ -313,6 +336,14 @@
                   echo 'verification accepted an outdated Herdr integration' >&2
                   exit 1
                 fi
+
+                missing_omp=$TMPDIR/missing-omp
+                if OMP_BIN="$missing_omp" ${lib.getExe personalOmp.verifyPersonalOmp} >/dev/null 2>$TMPDIR/missing.err; then
+                  echo 'verification accepted a missing OMP executable' >&2
+                  exit 1
+                fi
+                grep -qF "$missing_omp" $TMPDIR/missing.err
+                grep -qF -- ${lib.escapeShellArg personalOmp.ompInstallCommand} $TMPDIR/missing.err
 
                 touch $out
               '';

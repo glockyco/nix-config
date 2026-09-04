@@ -1,7 +1,8 @@
 {
   herdr,
   lib,
-  omp,
+  ompExecutable,
+  ompInstallCommand,
   pkgs,
   plugin,
 }:
@@ -30,6 +31,14 @@ let
     texlab
     typescript-language-server
   ];
+
+  requireOmpExecutable = ''
+    if [ ! -x "$omp_bin" ]; then
+      printf 'oh-my-pi executable not found at %s.\nInstall it with:\n  %s\n' \
+        "$omp_bin" ${lib.escapeShellArg ompInstallCommand} >&2
+      exit 1
+    fi
+  '';
 
   reconcileHerdrOmp = pkgs.writeShellApplication {
     name = "reconcile-herdr-omp";
@@ -61,9 +70,11 @@ let
     name = "verify-personal-omp";
     runtimeInputs = [ pkgs.gnugrep ];
     text = ''
-      omp_bin="''${OMP_BIN:-${lib.getExe omp}}"
+      omp_bin="''${OMP_BIN:-${ompExecutable}}"
       herdr_bin="''${HERDR_BIN:-${lib.getExe herdr}}"
       plugin_dir="''${PERSONAL_OMP_PLUGIN_DIR:-${plugin}}"
+
+      ${requireOmpExecutable}
 
       test -f "$plugin_dir/package.json"
       test -f "$plugin_dir/extensions/personal-commit.ts"
@@ -95,7 +106,9 @@ let
       # the scoped lsp/ root: aiming it at the package root would rescan
       # commands/ and register every workflow command a second time under a
       # store-derived name.
-      exec ${lib.getExe omp} --extension ${plugin} --plugin-dir ${plugin}/lsp "$@"
+      omp_bin="${ompExecutable}"
+      ${requireOmpExecutable}
+      exec "$omp_bin" --extension ${plugin} --plugin-dir ${plugin}/lsp "$@"
     '';
   };
 in
@@ -107,6 +120,6 @@ wrapper.overrideAttrs (old: {
       reconcileHerdrOmp
       verifyPersonalOmp
       ;
-    upstreamOmp = omp;
+    inherit ompExecutable ompInstallCommand;
   };
 })

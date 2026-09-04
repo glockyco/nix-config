@@ -1,6 +1,6 @@
 # Repository Guidance
 
-This repository owns the Apple Silicon workstation configuration. It also owns the immutable OMP wrapper, the personal plugin pin, Home Manager activation, and Nix-generation rollback.
+This repository owns the Apple Silicon and NixOS/WSL workstation configurations. It also owns the immutable OMP wrapper, the personal plugin pin, host activation, and Nix-generation rollback. Homebrew owns the OMP executable on Darwin. The official prebuilt installer owns it in NixOS/WSL.
 
 ## Sources of truth
 
@@ -13,7 +13,7 @@ Use OpenSpec for permanent behavior changes. Read all artifacts for the active c
 
 ## Boundaries
 
-Nix owns executable and plugin store paths. OMP owns writable authentication, configuration, sessions, history, caches, logs, and databases. Do not make activation write or restore that mutable state. Do not install Nix inside CrossOver bottles.
+Nix owns the OMP wrapper, plugin, Herdr, OpenSpec, and language-server store paths. The platform installer owns the mutable OMP executable. OMP owns writable authentication, configuration, sessions, history, caches, logs, and databases. Do not make activation install, update, or restore the executable or runtime state. Do not install Nix inside CrossOver bottles.
 
 Project repositories own their development environments, build commands, and game-specific deployment commands. This repository can install CrossOver and create an empty bottle, but it does not authenticate Steam, update games, install mod loaders, deploy mods, or launch games during activation.
 
@@ -34,6 +34,6 @@ reaches a source-built .NET package or a Swift compiler, which Nixpkgs does not
 cache for `aarch64-darwin`: one such dependency once cost this repository a five
 hour CI run.
 
-Use `darwin-switch` only after review and merge. Read its activation output. For an OMP or plugin behavior change, also run the real wrapped-session smoke in the architecture document. Keep the previous generation until all applicable gates pass.
+Use `darwin-switch` only after review and merge. Read its activation output. An OMP executable update does not require Nix activation. Run deterministic verification and the real wrapped-session smoke after an OMP or plugin behavior change. Keep the previous generation until all applicable Nix gates pass.
 
 Do not add an update wrapper. Renovate owns GitHub Actions. The official flake updater owns Nix inputs. Both create review-only pull requests.

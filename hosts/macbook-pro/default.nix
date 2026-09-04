@@ -1,11 +1,25 @@
-{ inputs, pkgs }:
+{
+  host,
+  inputs,
+  pkgs,
+}:
 # `darwin-rebuild --flake .` resolves `darwinConfigurations.<LocalHostName>` after activation.
 let
-  hostname = "macbook-pro";
-  username = "glockyco";
+  hostname = host.name;
+  inherit (host) username;
+  ompExecutable = host.ompRuntime.executable;
+  ompInstallCommand = host.ompRuntime.installCommand;
 in
 inputs.nix-darwin.lib.darwinSystem {
-  specialArgs = { inherit inputs hostname username; };
+  specialArgs = {
+    inherit
+      inputs
+      hostname
+      ompExecutable
+      ompInstallCommand
+      username
+      ;
+  };
   modules = [
     # The flake instantiates one package set per system and hands it to the
     # host, so the host and the flake outputs cannot resolve a package

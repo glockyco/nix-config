@@ -30,14 +30,14 @@ The default `omp` command SHALL invoke the platform-owned OMP executable with th
 
 ### Requirement: WSL host activation and rollback
 
-The WSL host SHALL activate a new generation with the supported NixOS command. Activation SHALL reconcile Herdr through its supported integration interface and SHALL run deterministic local verification without a model call. A failed verification SHALL leave the previous generation available for selection. Activation and Nix generation rollback SHALL preserve the platform-owned OMP executable.
+The WSL host SHALL activate a new generation with the supported NixOS command. Activation SHALL reconcile Herdr through its supported integration interface and SHALL remain independent of the platform-owned OMP executable's presence or version. A failed Nix activation SHALL leave the previous generation available for selection. Activation and Nix generation rollback SHALL preserve the platform-owned OMP executable.
 
 #### Scenario: Activate a reviewed revision
 
 - **WHEN** the operator activates the WSL host from a reviewed repository revision
 - **THEN** the host selects the wrapper, plugin, Herdr, OpenSpec, and language-server closures from the current lock
-- **AND** Herdr reports its OMP integration as current
-- **AND** deterministic verification exercises the user-local OMP executable without provider authentication
+- **AND** Herdr reconciliation completes
+- **AND** activation does not install, update, or invoke the user-local OMP executable
 
 #### Scenario: Re-activate the same revision
 
@@ -109,20 +109,20 @@ OMP executable updates SHALL remain explicit operations outside Nix activation. 
 - **THEN** the installer replaces the OMP executable at the wrapper's fixed user-local target
 - **AND** the update needs no repository change or Nix generation
 
-### Requirement: Platform-aware activation verification
+### Requirement: Explicit platform verification
 
-The local verifier SHALL exercise the platform-owned OMP executable through the immutable wrapper configuration. Verification SHALL fail clearly when the expected executable is absent. Both platforms SHALL verify the immutable personal plugin and current Herdr integration.
+The local verifier SHALL be an explicit command outside Nix activation. It SHALL exercise the platform-owned OMP executable through the immutable wrapper configuration and fail clearly when the expected executable is absent. Both platforms SHALL verify the immutable personal plugin and current Herdr integration.
 
 #### Scenario: Verify a platform installation
 
-- **WHEN** activation runs with the expected platform-owned OMP executable installed
+- **WHEN** the operator runs the verifier with the expected platform-owned OMP executable installed
 - **THEN** the verifier reports the executable version
 - **AND** it reports the personal plugin path under `/nix/store`
 - **AND** Herdr reports its OMP integration as current
 
 #### Scenario: Reject a missing executable
 
-- **WHEN** activation runs without the expected platform-owned OMP executable
+- **WHEN** the operator runs the verifier without the expected platform-owned OMP executable
 - **THEN** verification fails with an actionable error that names the expected path and installation command
 
 ### Requirement: Platform-owned OMP rollback

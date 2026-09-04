@@ -23,6 +23,14 @@
   homebrew = {
     enable = true;
 
+    taps = [ "can1357/tap" ];
+
+    brews = [
+      # OMP releases frequently. Homebrew owns the mutable executable while
+      # Nix keeps the wrapper, personal plugin, and language servers immutable.
+      "can1357/tap/omp"
+    ];
+
     casks = [
       # The vendor cask supplies the signed pkg required by Karabiner's DriverKit extension.
       "karabiner-elements"

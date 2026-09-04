@@ -4,11 +4,12 @@
 
 This procedure makes an `x86_64` Windows work machine run the NixOS host `korolev` under WSL 2. Three layers own separate state.
 
-| Layer                | Owns                                                                                   |
-| -------------------- | -------------------------------------------------------------------------------------- |
-| Windows              | Windows Terminal, WSL enablement, employer policy, native applications, and the editor |
-| NixOS host `korolev` | the Linux system scope, the user scope, and every executable path                      |
-| OMP                  | authentication, configuration, sessions, history, caches, logs, and databases          |
+| Layer                | Owns                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------- |
+| Windows              | Windows Terminal, WSL enablement, employer policy, native applications, and the editor      |
+| NixOS host `korolev` | Linux system scope, user scope, OMP wrapper and plugin, Herdr, OpenSpec, and language tools |
+| OMP binary installer | the user-local oh-my-pi executable                                                          |
+| OMP                  | authentication, configuration, sessions, history, caches, logs, and databases               |
 
 Repositories stay under the Linux home directory, not under `/mnt/c`.
 
@@ -126,7 +127,15 @@ test -f .git/hooks/pre-commit && printf '%s\n' 'commit-gate=installed'
 
 Run `nix develop --command true` instead when `direnv` is not active. A host with no development shell for its system installs no hook, and a commit there passes no formatting gate and reports nothing.
 
-## 7. Activate the host
+## 7. Install OMP and activate the host
+
+Install the official prebuilt oh-my-pi release at the wrapper's fixed user-local target. The explicit `--binary` mode prevents a Bun source installation:
+
+```sh
+curl -fsSL https://omp.sh/install \
+  | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary
+"$HOME/.local/lib/oh-my-pi/omp" --version
+```
 
 Activate from a committed tree:
 
@@ -134,9 +143,15 @@ Activate from a committed tree:
 sudo nixos-rebuild switch --flake .#korolev
 ```
 
-Read the output. The Home Manager activation runs Herdr reconciliation and then local verification, and the verifier prints the OMP version, the immutable plugin path, and `omp: current`.
+Home Manager reconciles Herdr during activation. It does not install, update, or invoke the mutable OMP executable. Verify the complete wrapped environment explicitly:
 
-Confirm the result:
+```sh
+verify-personal-omp
+```
+
+The verifier prints the observed OMP version, the immutable plugin path, and `omp: current`.
+
+Confirm the host result:
 
 ```sh
 sudo nixos-rebuild list-generations | cat
@@ -147,6 +162,14 @@ herdr integration status
 ```
 
 The system must report `running` with no failed unit. A dirty worktree marks the generation revision with a `-dirty` suffix, and each edit produces another closure. A second activation of the same clean revision registers no second generation.
+
+To update OMP later, rerun the binary installer command and then run `verify-personal-omp`. No Nix activation is required. To recover release `v<version>`, use the same target with an explicit tag:
+
+```sh
+curl -fsSL https://omp.sh/install \
+  | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary --ref v<version>
+verify-personal-omp
+```
 
 ## 8. Authenticate providers
 
@@ -399,7 +422,7 @@ Rollback after its removal uses a retained NixOS generation.
 
 ### OMP-owned state
 
-Rollback changes immutable wrapper, plugin, OMP, and language-server paths. It does not roll back, copy, or delete OMP-owned authentication, preferences, sessions, history, caches, or databases.
+Generation rollback changes the immutable wrapper, plugin, Herdr, OpenSpec, and language-server paths. It does not change the user-local OMP executable or OMP-owned runtime state. Use the explicit tagged installer command in step 7 to change the OMP version.
 
 For a mutation audit, stop other OMP sessions and capture type, mode, owner, and inode before and after the change:
 

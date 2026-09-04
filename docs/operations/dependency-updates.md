@@ -120,7 +120,7 @@ nix flake check --print-build-logs
 nix build .#darwinConfigurations.macbook-pro.system
 ```
 
-For an OMP, Herdr, or OpenSpec update, update the shared package source:
+For a Herdr or OpenSpec update, update the shared package source:
 
 ```sh
 nix flake update llm-agents
@@ -136,12 +136,51 @@ OpenSpec 1.9 adds strict task-numbering and scenario checks plus `validate --arc
 Inspect selected versions and revisions:
 
 ```sh
-nix eval --raw .#packages.aarch64-darwin.personal-omp.upstreamOmp.version
 nix eval --raw .#packages.aarch64-darwin.openspec.version
 nix flake metadata --json | jq -r '.locks.nodes["personal-omp-plugin"].locked.rev'
 ```
 
-Do not run `omp update`. Do not install the personal plugin through OMP's mutable plugin manager.
+Do not install the personal plugin through OMP's mutable plugin manager.
+
+## Manual OMP update
+
+OMP updates do not change the repository or require Nix activation. The existing Nix wrapper immediately uses the updated platform executable with the same immutable personal plugin.
+
+On Darwin, install or update the official formula:
+
+```sh
+brew install can1357/tap/omp
+brew update
+brew upgrade can1357/tap/omp
+verify-personal-omp
+```
+
+Homebrew can recover an earlier release from the official tap history. Replace `<version>` with the release number without a leading `v`:
+
+```sh
+brew version-install can1357/tap/omp <version>
+brew unlink omp
+brew link --overwrite --force "omp@<version>"
+verify-personal-omp
+```
+
+On NixOS/WSL, install or update the official prebuilt binary at the wrapper's fixed target:
+
+```sh
+curl -fsSL https://omp.sh/install \
+  | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary
+verify-personal-omp
+```
+
+To recover an earlier WSL release, include its tag. This command writes the same target and does not build from source:
+
+```sh
+curl -fsSL https://omp.sh/install \
+  | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary --ref v<version>
+verify-personal-omp
+```
+
+After each OMP update or recovery, run the real wrapped-session smoke below. Nix generation rollback does not change the platform-owned OMP executable.
 
 ## Activation and smoke
 
@@ -151,9 +190,15 @@ Merging changes does not update the workstation. Activate deliberately:
 darwin-switch
 ```
 
-Read the activation output. `verifyPersonalOmp` must report:
+Read the activation output, then run the explicit verifier:
 
-- the expected OMP version;
+```sh
+verify-personal-omp
+```
+
+It must report:
+
+- the observed platform-owned OMP version;
 - a personal plugin path under `/nix/store`;
 - `omp: current` from Herdr.
 
@@ -181,7 +226,7 @@ Or select a retained generation:
 sudo darwin-rebuild --switch-generation <number>
 ```
 
-Then run `omp --version`, `herdr integration status`, and any required real-session smoke again. Rollback changes immutable package paths. It does not copy, restore, or delete OMP-owned authentication, preferences, sessions, history, caches, logs, or databases.
+Then run `verify-personal-omp` and any required real-session smoke again. Rollback changes the immutable wrapper, plugin, Herdr, OpenSpec, and language-server paths. It does not change the platform-owned OMP executable or copy, restore, or delete OMP-owned runtime state. Use the platform recovery command above to change the OMP version.
 
 ## Policy inspection
 

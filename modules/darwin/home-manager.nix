@@ -1,5 +1,7 @@
 {
   inputs,
+  ompExecutable,
+  ompInstallCommand,
   username,
   ...
 }:
@@ -18,7 +20,14 @@
     # Move conflicting dotfiles aside instead of aborting activation.
     backupFileExtension = "hm-backup";
 
-    extraSpecialArgs = { inherit inputs username; };
+    extraSpecialArgs = {
+      inherit
+        inputs
+        ompExecutable
+        ompInstallCommand
+        username
+        ;
+    };
 
     # `../home` holds the portable user-scope modules, and `../home/darwin`
     # holds the modules that depend on a macOS interface. Only this host imports

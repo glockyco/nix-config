@@ -38,6 +38,7 @@ Session transcripts, OMP memory, chat summaries, and issue comments are supporti
 | Delete the old Air Mnemopi state     | complete | explicit maintenance operation; no migration artifact                                                                   | none                                    |
 | Package the personal OMP plugin      | complete | archived `omp-agent-setup` OpenSpec change `package-personal-omp-plugin`                                                | none                                    |
 | Consume the plugin from `nix-darwin` | complete | archived `nix-darwin` OpenSpec change `consume-personal-omp-plugin`                                                     | verified plugin output contract         |
+| Decouple OMP executable updates      | active   | `nix-darwin` OpenSpec change `manage-omp-with-homebrew`                                                                 | platform-owned prebuilt executables     |
 | Adopt the NixOS WSL host             | complete | `nix-darwin` OpenSpec change `adopt-nixos-wsl-host` and `docs/operations/wsl-omp-bootstrap.md`                          | accepted WSL release evidence           |
 | Manage the Windows layer             | active   | `nix-darwin` OpenSpec change `manage-windows-layer` and `docs/operations/wsl-omp-bootstrap.md`                          | adopted NixOS WSL host                  |
 | Migrate HotRepl                      | ready    | future HotRepl OpenSpec change `nix-development-environment`                                                            | workstation base                        |
@@ -52,9 +53,10 @@ HotRepl is the next migration. Erenshor may proceed independently on the stable 
 
 ## Goals
 
-- One reproducible OMP environment for one user on each supported host: Apple Silicon macOS and `x86_64` WSL 2.
+- One consistent personal OMP environment for one user on each supported host: Apple Silicon macOS and `x86_64` WSL 2.
 - One independently packaged personal OMP plugin.
-- Nix-managed OMP, Herdr, OpenSpec, language-server executables, and plugin revisions.
+- Platform-managed prebuilt OMP executables with explicit updates outside Nix activation.
+- Nix-managed wrappers, Herdr, OpenSpec, language-server executables, and plugin revisions.
 - Mutable OMP authentication, preferences, sessions, history, and caches remain under OMP ownership.
 - Project-specific toolchains, commands, facts, and domain skills remain in their repositories.
 - CrossOver and Steam remain the mutable Windows runtime. Nix and project commands automate around that boundary.
@@ -67,8 +69,8 @@ The target contains no:
 - personal specialist agents or generated agent bundle;
 - local-model installation, configuration, or evaluation;
 - Nix installation inside a CrossOver bottle;
-- OMP source patching or executable repointing;
-- mutable global package installers;
+- OMP source patching, executable fallback, or `PATH`-based wrapper resolution;
+- repository-owned mutable global package installers;
 - YAML surgery against OMP-owned configuration;
 - fleet-wide repository scanner;
 - custom planning runtime, `omp-plans`, or `omp-skill`;
@@ -82,9 +84,9 @@ These are exclusions, not deferred work.
 
 | Area                            | Decision                                                                                                       |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| OMP                             | Use the unmodified, Nix-pinned package                                                                         |
-| Supported hosts                 | Activate the complete host with nix-darwin on Apple Silicon; bootstrap only the OMP environment on WSL 2       |
-| Linux binary cache              | Publish the signed Numtide cache from the root flake because input cache settings are not inherited            |
+| OMP                             | Use the official prebuilt platform executable; update it explicitly outside Nix activation                     |
+| Supported hosts                 | Activate complete nix-darwin and NixOS/WSL hosts; use the wrapped WSL OMP environment from Windows Zed         |
+| Linux binary cache              | Configure the signed Numtide cache in NixOS system scope for Herdr, OpenSpec, and other cached packages        |
 | Personal behavior               | Load one Nix-pinned plugin from `omp-agent-setup`                                                              |
 | Plugin location                 | Keep the source and flake in `omp-agent-setup`; do not copy it into `nix-darwin`                               |
 | Mutable OMP state               | Leave it writable and under OMP ownership                                                                      |
@@ -154,8 +156,8 @@ Do not create empty directories. `lsp.json` contains only proven overrides. A fr
 
 This repository owns the workstation contract:
 
-- pinned OMP, Herdr, OpenSpec, and personal-plugin revisions;
-- the OMP wrapper and immutable launch policy;
+- pinned Herdr, OpenSpec, and personal-plugin revisions;
+- the OMP wrapper, platform executable paths, and immutable launch policy;
 - a curated language-server executable path;
 - Herdr's supported integration reconciliation;
 - the signed Numtide substituter contract;
@@ -167,7 +169,7 @@ It does not copy personal-plugin source. It consumes the plugin's flake output. 
 
 ### WSL work machine
 
-Windows owns Windows Terminal, WSL enablement, employer policy, native application state, and the editor runtime. This repository owns the reviewed Windows declaration and uses Nix to render it; the operator applies that artifact with WinGet and DSC. The NixOS host `korolev` owns the Linux system scope, the user scope, and every Linux executable path. OMP owns its mutable state. Repositories stay under the Linux home directory, not `/mnt/c`.
+Windows owns Windows Terminal, WSL enablement, employer policy, native application state, and the editor runtime. This repository owns the reviewed Windows declaration and uses Nix to render it; the operator applies that artifact with WinGet and DSC. The NixOS host `korolev` owns the Linux system scope, user scope, OMP wrapper and plugin, Herdr, OpenSpec, and language tools. The official oh-my-pi installer owns the user-local OMP executable. OMP owns its mutable runtime state. Repositories stay under the Linux home directory, not `/mnt/c`.
 
 The root flake exposes `nixosConfigurations.korolev` for `x86_64-linux`. `nixos-rebuild switch --flake .#korolev` provides ordered activation, generation replacement, failure rollback, and a retained rollback target. The host declares no SSH server, no other inbound service, and no secret.
 
@@ -177,7 +179,7 @@ For a user who has never started OMP, the reconciliation helper can create the m
 
 ### OMP
 
-OMP owns:
+Platform installers own the OMP executable: Homebrew on Darwin and the official binary installer in NixOS/WSL. OMP owns:
 
 - provider authentication and OAuth state;
 - `~/.omp/agent/config.yml`;
@@ -185,7 +187,7 @@ OMP owns:
 - sessions, blobs, history, and usage databases;
 - caches and browser runtime state.
 
-Nix supplies the executable wrapper, plugin path, extension path, and language-server executables. It does not overlay or rewrite OMP configuration. User preferences remain mutable.
+Nix supplies the executable wrapper, plugin path, extension path, and language-server executables. The wrapper invokes one explicit platform path and never searches `PATH` or falls back to a Nix OMP package. Nix does not overlay or rewrite OMP configuration. User preferences remain mutable.
 
 ### Project repositories
 
@@ -606,16 +608,13 @@ After the base and project-independent acceptance gates pass, run the frontend a
 
 The [dependency-update runbook](../operations/dependency-updates.md) owns schedules, automation credentials, native update commands, and remote merge policy.
 
-A plugin or OMP release changes immutable inputs only. Use this sequence from `nix-darwin`:
+A plugin release changes an immutable input. Update `personal-omp-plugin`, run the repository gates, activate the reviewed generation, and run `verify-personal-omp` explicitly. The verifier must print the observed OMP version, immutable plugin store path, and `omp: current` Herdr status.
 
-1. Publish the reviewed `omp-agent-setup` revision when the plugin changed.
-1. Update only the intended input: `nix flake update personal-omp-plugin` or `nix flake update llm-agents`.
-1. Run `nix flake check` and build `.#darwinConfigurations.macbook-pro.system`.
-1. Run `darwin-switch`, or run `sudo darwin-rebuild switch --flake .#macbook-pro` when closure diff output is not needed.
-1. Read the activation output. `verifyPersonalOmp` must print the OMP version, immutable plugin store path, and `omp: current` Herdr status.
-1. Start a fresh wrapped OMP session. Ask it to report the loaded `@glockyco/personal-omp-plugin` source path, quote the personal policy, and run `personal_commit` with `action=preview`. The path must be under `/nix/store`, and preview must not change the repository.
+An OMP release changes only the platform-owned executable. Use Homebrew on Darwin or the official binary installer in NixOS/WSL. Do not change `flake.lock` or activate Nix for an OMP-only update. Run `verify-personal-omp` after every OMP update.
 
-On WSL, follow the [korolev provisioning runbook](../operations/wsl-omp-bootstrap.md) and run `sudo nixos-rebuild switch --flake .#korolev` from the reviewed clone. Run one distribution at a time, and confirm that `user@1000.service` reports `active` before the activation. Retain the previous NixOS generation until local verification and the real-session smoke pass. `nixos-rebuild` owns generation rollback; it does not copy or restore mutable OMP state.
+After an OMP or plugin behavior change, start a fresh wrapped OMP session. Ask it to report the loaded `@glockyco/personal-omp-plugin` source path, quote the personal policy, and run `personal_commit` with `action=preview`. The path must be under `/nix/store`, and preview must not change the repository.
+
+On WSL, follow the [korolev provisioning runbook](../operations/wsl-omp-bootstrap.md) and run `sudo nixos-rebuild switch --flake .#korolev` from the reviewed clone. Run one distribution at a time, and confirm that `user@1000.service` reports `active` before activation. NixOS activation reconciles Herdr but does not install, update, or invoke OMP. Run `verify-personal-omp` explicitly after activation. Retain the previous NixOS generation until local verification and the real-session smoke pass.
 
 For an activation-mutation audit, stop other OMP sessions and capture file type, mode, modification time, and size before and after activation. This form is BSD `stat` for the Darwin host, and the runbook states the Linux form:
 
@@ -629,19 +628,20 @@ stat -f '%N type=%HT mode=%Sp mtime=%Sm size=%z' \
 
 The directory and files remain user-owned, writable, and non-symlinked. A normal OMP session can change database times and sizes; the activation itself must not replace or rewrite them. Herdr alone owns `~/.omp/agent/extensions/herdr-omp-agent-state.ts` through its supported integration command.
 
-Retain the previous Nix generation until the new generation passes the local verifier and real-session smoke. Confirm the rollback target without a pager:
+Retain the previous Nix generation until the new generation passes the explicit local verifier and real-session smoke. Confirm the rollback target without a pager:
 
 ```sh
 sudo darwin-rebuild --list-generations | cat
 ```
 
-Restore the immediately previous generation with `sudo darwin-rebuild --rollback`, or select one with `sudo darwin-rebuild --switch-generation <number>`. Then rerun `omp --version`, `herdr integration status`, and the real-session smoke. Rollback changes immutable wrapper, plugin, OMP, and language-server paths. It does not roll back or delete OMP-owned authentication, preferences, sessions, history, caches, or databases.
+Restore the immediately previous generation with `sudo darwin-rebuild --rollback`, or select one with `sudo darwin-rebuild --switch-generation <number>`. Then run `verify-personal-omp` and the real-session smoke. Nix rollback changes immutable wrapper, plugin, Herdr, OpenSpec, and language-server paths. It does not change the platform-owned OMP executable or OMP-owned runtime state. Recover an OMP release through its platform installer.
 
 ## Acceptance gates
 
 The environment is complete when:
 
-- one Nix generation selects OMP, Herdr, OpenSpec, language servers, and the personal plugin;
+- one Nix generation selects the OMP wrapper, Herdr, OpenSpec, language servers, and the personal plugin;
+- each wrapper invokes one explicit platform-owned OMP executable without a fallback;
 - the plugin loads from an immutable store path without a mutable checkout;
 - mutable OMP authentication, preferences, sessions, history, and caches survive activation unchanged;
 - no global Bun, npm, Python, .NET tool, or Homebrew toolchain is required by the plugin;
@@ -650,12 +650,12 @@ The environment is complete when:
 - the commit extension creates a real hooked commit with one correctly formatted causal body;
 - the representative LSP matrix passes;
 - Herdr starts a real session through the wrapped OMP binary;
-- the WSL bootstrap substitutes the published OMP output, preserves the global work Git identity and OMP-owned state, reports current Herdr integration, and passes the real Windows Terminal session smoke;
+- the WSL bootstrap installs the official prebuilt OMP binary at its fixed user-local path, preserves the global work Git identity and OMP-owned state, reports current Herdr integration, and passes the real Windows Terminal session smoke;
 - native image generation succeeds with the configured provider;
 - each migrated game repository proves its complete host-to-game workflow;
 - experiments produce reviewable results and no experimental state remains active accidentally;
 - removing the legacy deployment does not remove any accepted capability;
-- rolling back a Nix generation restores the prior immutable environment without changing mutable OMP state.
+- rolling back a Nix generation restores the prior immutable wrapper environment without changing the platform-owned OMP executable or mutable OMP state.
 
 ## Decision log
 
@@ -727,6 +727,14 @@ The environment is complete when:
 - Provide the development shell on every supported system, because that shell installs the commit hook. A host without it has no local formatting gate and reports nothing.
 - Run each continuous-integration leg with the Nix implementation that its host runs. `nix flake check` is implementation-sensitive, so a green leg under a different Nix is not evidence for the host.
 - Derive the supported systems from one host binding table, so a supported system without a host, or a host without a gate, cannot be declared.
+
+### 2026-09-04
+
+- Transfer OMP executable ownership from Nix to the official platform distribution path. Homebrew owns Darwin; the official binary installer owns NixOS/WSL.
+- Keep one Nix-managed wrapper and independently pinned personal plugin on both hosts. The wrapper names one platform path and has no fallback or `PATH` lookup.
+- Keep Windows Zed on the wrapped NixOS/WSL `omp acp` command. Do not install a duplicate native Windows executable.
+- Reverse the 2026-08-14 activation-verifier decision. Expose `verify-personal-omp` as an explicit command so Nix activation does not depend on mutable executable state.
+- Recover OMP versions through the owning platform installer. Nix generation rollback restores the wrapper environment but does not change OMP.
 
 ## Primary references
 

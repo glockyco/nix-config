@@ -49,11 +49,13 @@ The Windows Zed configuration continues to invoke `omp acp` inside NixOS/WSL. Th
 
 A fallback was rejected because it would hide an incomplete platform installation and make the active OMP version depend on path or failure conditions.
 
-### Verify behavior instead of a pinned OMP version
+### Verify explicitly instead of during Nix activation
 
-The verifier checks that the expected platform executable exists and starts with the immutable plugin and LSP configuration. It reports the observed version. Package-shape checks use an explicit stub executable and do not require Homebrew or mutable user state inside a Nix sandbox.
+Install `verify-personal-omp` beside the wrapper. The command checks that the expected platform executable exists and starts with the immutable plugin and LSP configuration. It reports the observed version. Operators run it after an OMP update and after Nix activation.
 
-An exact OMP version assertion was rejected because the platform installer owns version selection after this cutover.
+Nix activation continues to reconcile Herdr but does not invoke OMP. This lets a fresh WSL image activate before its user-local binary exists and keeps Nix activation independent of mutable executable state. A conditional activation check was rejected because absence would only produce a warning and create two verification modes.
+
+Package-shape checks use an explicit stub executable and do not require Homebrew or mutable user state inside a Nix sandbox. An exact OMP version assertion was rejected because the platform installer owns version selection after this cutover.
 
 ### Keep OMP updates explicit
 

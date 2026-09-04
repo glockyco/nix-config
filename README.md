@@ -31,19 +31,18 @@ nix fmt                                 # format the tree; see ./treefmt.nix
 
 The WSL machine and its Windows layer have their own installation and update procedure. Build the Windows artifact with `nix build .#windows-configuration`, then follow the [WSL runbook](docs/operations/wsl-omp-bootstrap.md) to preview and apply it from Windows. DSC converges resources in place; unlike nix-darwin and NixOS, it has no generation or transactional rollback. Every document resource uses user scope except the official Zen package, whose installer requests elevation. Two Administrator scripts own only Zen's Program Files policy file and the checksum-pinned native Neo keyboard driver. No user setting resolves into the Administrator profile.
 
-`omp` is a Nix wrapper around the `llm-agents` package and the independently pinned
-`personal-omp-plugin` flake. Do not run `omp update` or install the personal plugin
-through OMP's mutable plugin manager. Update either input deliberately:
+`omp` is a Nix-managed wrapper around a platform-owned oh-my-pi executable and the independently pinned `personal-omp-plugin` flake. Homebrew owns the executable on Darwin. The official prebuilt installer owns it in NixOS/WSL. An OMP update replaces only that executable; the existing wrapper continues to load the immutable personal plugin and curated language servers.
+
+Update OMP without changing this repository or reapplying Nix:
 
 ```sh
-nix flake update llm-agents
-# or: nix flake update personal-omp-plugin
-nix flake check
-darwin-switch
+brew update && brew upgrade can1357/tap/omp
+# NixOS/WSL:
+curl -fsSL https://omp.sh/install | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary
 omp --version
 ```
 
-Home Manager reconciles Herdr and runs a local OMP/plugin verifier on every activation.
+Do not install the personal plugin through OMP's mutable plugin manager. Update `personal-omp-plugin`, Herdr, and OpenSpec through their locked Nix inputs. Home Manager reconciles Herdr and runs a local OMP/plugin verifier on every activation.
 Use the [dependency-update runbook](docs/operations/dependency-updates.md) for automation, manual updates, activation, the conditional real-session smoke, and rollback.
 
 Use the [container runtime runbook](docs/operations/container-runtime.md) for Colima startup, acceptance, shutdown, upgrades, recovery, and profile recreation.

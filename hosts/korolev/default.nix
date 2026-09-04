@@ -1,12 +1,26 @@
-{ inputs, pkgs }:
+{
+  host,
+  inputs,
+  pkgs,
+}:
 # `nixos-rebuild switch --flake .#korolev` selects this configuration by name,
 # because WSL reports no stable hostname before activation.
 let
-  hostname = "korolev";
-  username = "user";
+  hostname = host.name;
+  inherit (host) username;
+  ompExecutable = host.ompRuntime.executable;
+  ompInstallCommand = host.ompRuntime.installCommand;
 in
 inputs.nixpkgs.lib.nixosSystem {
-  specialArgs = { inherit inputs hostname username; };
+  specialArgs = {
+    inherit
+      inputs
+      hostname
+      ompExecutable
+      ompInstallCommand
+      username
+      ;
+  };
   modules = [
     # The flake instantiates one package set per system and hands it to the
     # host, so this host resolves a package exactly as the flake outputs do.
