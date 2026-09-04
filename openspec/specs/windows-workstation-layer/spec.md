@@ -1,4 +1,10 @@
-## ADDED Requirements
+# windows-workstation-layer Specification
+
+## Purpose
+
+Define a reviewable Windows workstation configuration layer with explicit ownership, privilege boundaries, application state, and verification requirements.
+
+## Requirements
 
 ### Requirement: Rendered Windows configuration artifacts
 

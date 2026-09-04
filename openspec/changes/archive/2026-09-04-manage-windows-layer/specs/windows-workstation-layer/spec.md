@@ -1,0 +1,172 @@
+## Purpose
+
+Define a reviewable Windows workstation configuration layer with explicit ownership, privilege boundaries, application state, and verification requirements.
+
+## ADDED Requirements
+
+### Requirement: Rendered Windows configuration artifacts
+
+The repository SHALL render one Windows configuration document, one Administrator Zen policy script, and one Administrator native Neo driver script from the same Nix expressions. Together they SHALL be the single source for the Windows application set, the declared Windows settings, and the declared application configuration files. Nix activation on any host SHALL NOT write to a Windows path and SHALL NOT apply any artifact.
+
+#### Scenario: Render the artifacts
+
+- **WHEN** the Windows configuration output is built from the locked repository
+- **THEN** the result contains one WinGet Configuration document, one Zen policy script, one native Neo driver script, and the review files that describe their settings
+- **AND** the build reads no mutable Windows state
+
+#### Scenario: Keep the operating-system boundary
+
+- **WHEN** either host activates a Nix generation
+- **THEN** activation writes no file under the Windows user profile
+- **AND** activation does not start the Windows apply operation
+
+### Requirement: User scope with explicit machine exceptions
+
+Every document resource SHALL apply in the interactive user's own scope except the Zen package. The official Zen installer SHALL be the only document resource that requests elevation. One Administrator script SHALL own only the Zen policy file under Program Files. The other SHALL own only the native Neo DLLs and keyboard-layout registration. Both scripts SHALL refuse a non-administrator token and SHALL read no Administrator-profile path.
+
+#### Scenario: Apply user-scope resources
+
+- **WHEN** the interactive user applies the document with standard user rights
+- **THEN** every resource except the Zen package completes without elevation
+- **AND** every other installed application and written file belongs to that user's profile
+
+#### Scenario: Apply the browser exception
+
+- **WHEN** the Zen installer requests the administrator credential and the operator later applies the policy script from an Administrator PowerShell session
+- **THEN** both operations write only to the machine-wide Zen installation under Program Files
+
+#### Scenario: Apply the keyboard driver exception
+
+- **WHEN** the operator applies the native Neo script from a 64-bit Administrator PowerShell session
+- **THEN** it writes only the checksum-pinned DLLs and `b0000407` machine registration
+- **AND** the operator restarts Windows before the document selects input tip `0407:b0000407`
+
+#### Scenario: Reject another privileged declaration
+
+- **WHEN** the document declares another machine-scope package, elevated resource, machine-scope registry value, or Windows feature
+- **OR** either Administrator script refers to an interactive-user profile path or a machine path outside its declared ownership
+- **THEN** the repository validation fails
+
+### Requirement: Pinned application set
+
+The document SHALL declare an explicit version for every application it manages. The set SHALL cover the operator's confirmed roles: code editor, web browser, Git client, application launcher with window switching, mouse-driven window move and resize, Neo2 keyboard layout, terminal host, and the terminal font. The document SHALL NOT declare an application that the device management policy already manages.
+
+#### Scenario: Install the declared set
+
+- **WHEN** the operator applies the document on a machine without those applications
+- **THEN** each application installs at its declared version
+- **AND** each role above has exactly one declared application
+
+#### Scenario: Detect an unpinned application
+
+- **WHEN** a declared application has no explicit version
+- **THEN** the repository validation fails
+
+#### Scenario: Detect a managed-application conflict
+
+- **WHEN** a declared application appears in the recorded set of centrally managed applications
+- **THEN** the repository validation fails
+
+### Requirement: Declared Windows settings
+
+The document SHALL declare Windows settings by explicit named keys. It SHALL keep the centrally managed Firefox package's interactive-user startup value absent. It SHALL put `en-GB` first in the user's preferred language list and set it as the Windows UI override while the English entry has no input method. It SHALL preserve the existing `de-DE` and `de-AT` entries and their input methods. The document SHALL disable Windows transparency and animation effects. For a bundled utility that provides several modules, the document SHALL declare the enabled modules and SHALL also declare every other module as disabled.
+
+#### Scenario: Apply the declared settings
+
+- **WHEN** the operator applies the document
+- **THEN** the declared keyboard, file-manager, regional, window-snapping, screenshot-location, and dark-appearance settings match the declaration
+- **AND** transparency and animation effects are disabled
+- **AND** the short date uses ISO 8601 `yyyy-MM-dd`
+
+#### Scenario: Prevent Firefox from starting at sign-in
+
+- **WHEN** the operator applies the document and signs in again
+- **THEN** Firefox does not start through its interactive-user launch-on-login entry
+- **AND** the centrally managed Firefox package remains installed
+
+#### Scenario: Separate interface and input languages
+
+- **WHEN** the operator applies the document and signs in again
+- **THEN** Windows and PowerToys use English (United Kingdom)
+- **AND** the Austrian region and German keyboard layouts remain available
+- **AND** no English input method is added
+- **AND** native Neo is selected after sign-in
+
+#### Scenario: Resist an upstream default change
+
+- **WHEN** a bundled utility update would enable a module that the document declares as disabled
+- **THEN** the next apply returns that module to the declared state
+
+### Requirement: Application configuration files
+
+The document and companion scripts SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the owning artifact SHALL enforce the complete file content. For an application that rewrites its own configuration, the owning artifact SHALL converge only the declared values and SHALL preserve the application's own writes. Zed, Windows Terminal, and Zen SHALL select Catppuccin Mocha from pinned upstream theme data. Zed SHALL select `nixd` from the WSL environment for Nix files and SHALL disable its `nil` fallback. Fork SHALL execute Git inside the NixOS distribution through a checksum-pinned `wslgit` bridge. AltSnap SHALL own modifier-drag movement and 50/50 edge or corner snapping; overlapping PowerToys window-movement modules SHALL remain disabled. The native Neo driver SHALL provide the base layout in elevated surfaces. ReNeo SHALL run in extension mode through a reviewed `RunAs` launcher so that its higher Neo layers work in ordinary and elevated applications.
+
+#### Scenario: Enforce a stable configuration file
+
+- **WHEN** a file in the enforced class differs from the declaration
+- **THEN** the apply operation restores the declared content
+
+#### Scenario: Apply the application themes
+
+- **WHEN** the operator applies the document
+- **THEN** Zed, Windows Terminal, and Zen select Catppuccin Mocha with Mauve accents
+- **AND** each rendered theme matches its pinned upstream source
+
+#### Scenario: Start the Nix language server
+
+- **WHEN** the operator opens a Nix file in a Zed WSL workspace
+- **THEN** Zed propagates the locally installed Nix extension through its native WSL transport
+- **AND** Zed starts `nixd` from the Linux environment
+- **AND** the workflow requires no SSH server
+
+#### Scenario: Run Fork Git operations in WSL
+
+- **WHEN** Fork operates on a repository under `\\wsl.localhost\NixOS`
+- **THEN** its pinned Git bridge runs the repository command inside NixOS
+- **AND** Fork preserves its other application-owned settings
+
+#### Scenario: Snap a modifier-dragged window
+
+- **WHEN** the operator modifier-drags a window to a screen edge or corner
+- **THEN** AltSnap moves and snaps the window to the configured 50/50 region
+- **AND** no PowerToys movement module handles the same gesture
+
+#### Scenario: Use Neo in ordinary and elevated surfaces
+
+- **WHEN** Windows restarts after the native driver apply, the document selects the Neo input method, and the operator accepts the ReNeo `RunAs` prompt
+- **THEN** the native Neo base layout works in ordinary applications, elevated applications, and UAC
+- **AND** ReNeo supplies higher Neo layers in ordinary and elevated applications without replacing the native layout
+- **AND** UAC remains limited to the native base layout because its secure desktop rejects process injection
+
+#### Scenario: Preserve application-owned state
+
+- **WHEN** an application in the converged class has written its own state, such as a generated profile identifier or interface state
+- **THEN** the apply operation sets the declared values
+- **AND** the apply operation preserves the application's own values
+
+### Requirement: Excluded Windows surface
+
+The Windows layer SHALL declare nothing about the taskbar pinned-application list, per-extension default application associations, Night Light CloudStore payloads, or any application that the device management policy manages. The repository SHALL record the reason for each exclusion and the selected manual Night Light state.
+
+#### Scenario: Inspect the excluded surface
+
+- **WHEN** a reader reviews the Windows layer
+- **THEN** each exclusion names its reason
+- **AND** no part of the layer attempts to set a taskbar pinned-application list, a per-extension association, or a Night Light CloudStore payload
+- **AND** the runbook records Night Light as enabled from sunset to sunrise at 50% strength
+
+### Requirement: Validation before and after apply
+
+The repository SHALL validate the rendered document and privilege boundary without a Windows machine. The operator SHALL test the document and both Administrator scripts before their first apply and SHALL confirm each applied state after the apply.
+
+#### Scenario: Validate without Windows
+
+- **WHEN** the repository checks run on a supported build platform
+- **THEN** they validate the document structure, the narrow script boundary, the version pin of every application, and the absence of a centrally managed application
+- **AND** they require no Windows machine and no network service
+
+#### Scenario: Preview and confirm on the machine
+
+- **WHEN** the operator tests the document and both Administrator scripts on `korolev`
+- **THEN** each test reports drift without applying it
+- **AND** later test operations report that the applied state matches all three artifacts
