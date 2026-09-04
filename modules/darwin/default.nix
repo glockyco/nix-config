@@ -1,6 +1,7 @@
 {
   imports = [
     ./system.nix
+    ./tailscale.nix
     ./nix.nix
     ./rosetta.nix
     ./defaults.nix
