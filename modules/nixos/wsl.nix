@@ -18,6 +18,10 @@ in
     # manager, so the value here is what `wsl.exe` attaches to.
     defaultUser = username;
 
+    # systemd-resolved owns the file so Tailscale can install its split DNS
+    # domain without WSL replacing the file at the next start.
+    wslConf.network.generateResolvConf = false;
+
     # Native Windows integrations invoke `cp` and `git` through `wsl.exe`
     # without a login shell. Those calls use WSL's fixed FHS PATH rather than
     # the NixOS profile, so expose only the required bridge commands.
@@ -26,6 +30,11 @@ in
       { src = "${pkgs.git}/bin/git"; }
     ];
   };
+
+  # Keep Windows DNS tunneling as the upstream resolver. Tailscale adds only
+  # its split MagicDNS domain to systemd-resolved.
+  services.resolved.enable = true;
+  networking.nameservers = [ "10.255.255.254" ];
 
   # WSL provides no `tty1`, so this unit cannot start and leaves the system
   # permanently `degraded`. A degraded system hides a real failure, so the unit
