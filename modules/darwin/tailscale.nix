@@ -1,10 +1,14 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
   cfg = config.services.tailscale;
+  tailscaleSetAfterLogin = pkgs.callPackage ../../packages/tailscale-set-after-login.nix {
+    tailscale = cfg.package;
+  };
 in
 {
   options.services.tailscale.extraSetFlags = lib.mkOption {
@@ -24,14 +28,8 @@ in
     };
 
     launchd.daemons.tailscaled-set = lib.mkIf (cfg.extraSetFlags != [ ]) {
-      script = ''
-        until ${lib.getExe cfg.package} status --json --peers=false >/dev/null 2>&1; do
-          sleep 0.5
-        done
-
-        exec ${lib.getExe cfg.package} set ${lib.escapeShellArgs cfg.extraSetFlags}
-      '';
       serviceConfig = {
+        ProgramArguments = [ (lib.getExe tailscaleSetAfterLogin) ] ++ cfg.extraSetFlags;
         RunAtLoad = true;
         KeepAlive.SuccessfulExit = false;
       };

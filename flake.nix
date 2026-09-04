@@ -181,6 +181,7 @@
               inherit managedHosts tailnetPolicyRenderer;
               peers = tailnetPeers;
             };
+            tailscaleSetAfterLoginTest = pkgs.callPackage ./packages/tailscale-set-after-login-tests.nix { };
             personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
               inherit (configuredHost) ompRuntime;
               inherit (llmAgents) herdr;
@@ -271,6 +272,7 @@
 
               tailnetPolicy = tailnetPolicyCheck;
               tailnetPolicyRejects = tailnetPolicyRejectsCheck;
+              tailscaleSetAfterLogin = tailscaleSetAfterLoginTest;
 
               hostNixSettings =
                 let
@@ -499,8 +501,11 @@
               macbookProTailnet =
                 let
                   darwinConfig = self.darwinConfigurations.macbook-pro.config;
+                  setArguments = darwinConfig.launchd.daemons.tailscaled-set.serviceConfig.ProgramArguments;
                 in
                 assert darwinConfig.services.tailscale.enable;
+                assert lib.hasSuffix "/bin/tailscale-set-after-login" (builtins.head setArguments);
+                assert builtins.tail setArguments == darwinConfig.services.tailscale.extraSetFlags;
                 assert lib.elem "--ssh" darwinConfig.services.tailscale.extraSetFlags;
                 assert darwinConfig.services.openssh.enable == null;
                 assert lib.elem "glockyco" darwinConfig.determinateNix.customSettings.trusted-users;
