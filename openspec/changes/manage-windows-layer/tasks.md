@@ -115,4 +115,4 @@
 - [x] 10.5 Run `openspec validate manage-windows-layer --strict`.
 - [x] 10.6 Extend the operator runbook with the render, preview, apply, and confirm procedure, and state that DSC provides no rollback.
 - [x] 10.7 Update `README.md` for the third layer and its different guarantee set.
-- [ ] 10.8 Review the final diff by shared settings, document, validation, and documentation.
+- [x] 10.8 Review the final diff by shared settings, document, validation, and documentation.

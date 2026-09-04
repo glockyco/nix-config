@@ -329,7 +329,7 @@ Configure Night Light manually under **Settings > System > Display > Night light
 
 After the new sign-in, confirm these behaviors:
 
-- Windows, PowerToys, and weather text use English; the taskbar date uses `yyyy-MM-dd`.
+- Windows and PowerToys use English, and the taskbar date uses `yyyy-MM-dd`. Weather text remains German because the Austrian region controls Microsoft-hosted widget content.
 - `Deutsch (Neo)` remains the default input method. Its base layer works in ordinary applications, elevated applications, and UAC. The elevated ReNeo process supplies higher layers in ordinary and elevated applications. UAC remains base-layer-only.
 - PowerToys Command Palette launches an application and switches to an existing window. No other PowerToys module is enabled.
 - AltSnap modifier-drag moves a window and snaps it to a 50/50 edge or corner region.
