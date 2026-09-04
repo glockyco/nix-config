@@ -17,7 +17,7 @@
 - [x] 3.3 Add the `tailnetPolicy` check and confirm that `nix build .#checks.x86_64-linux.tailnetPolicy` passes.
 - [x] 3.4 Add `tailnetPolicyRejects` with fixtures that name `korolev` as a destination, contain an `@`, and omit a temporary peer's lifecycle or purpose. Confirm every rejection, then remove one renderer assertion temporarily and confirm the check fails before reverting the probe.
 - [x] 3.5 Add a policy fixture without the temporary Air peer. Confirm that no tag owner, grant, SSH rule, or test names `tag:air` and that every durable topology invariant passes.
-- [ ] 3.6 Add `.github/workflows/tailnet-policy.yml` with `test` on pull requests and `apply` on `main`, using the federated identity and `policy-file: result/policy.hujson`; open a pull request and confirm that the `test` job passes against the live tailnet.
+- [x] 3.6 Add `.github/workflows/tailnet-policy.yml` with `test` on pull requests and `apply` on `main`, using the federated identity and `policy-file: result/policy.hujson`; open a pull request and confirm that the `test` job passes against the live tailnet.
 - [ ] 3.7 Merge and confirm in the admin console that the applied policy equals the rendered file and that the tests block passed.
 
 ## 4. Darwin Host
