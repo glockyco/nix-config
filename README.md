@@ -27,22 +27,23 @@ Activation does not install, update, or restore the OMP executable. It does not 
 
 ## Layout
 
-| Path                 | Content                                                                                         |
-| -------------------- | ----------------------------------------------------------------------------------------------- |
-| `flake.nix`          | Inputs, the host table, host outputs, packages, checks, and the development shell               |
-| `hosts/`             | One directory per host with its identity values                                                 |
-| `modules/darwin/`    | nix-darwin system scope                                                                         |
-| `modules/nixos/`     | NixOS system scope for WSL                                                                      |
-| `modules/home/`      | Portable Home Manager modules. `modules/home/darwin/` holds the Darwin-only user modules        |
-| `modules/shared/`    | Data shared by the Nix hosts and the Windows declaration, such as Zed settings and Zen policies |
-| `modules/windows/`   | The WinGet Configuration document and the two Administrator scripts                             |
-| `packages/`          | The OMP wrapper, the verifiers, and the check programs                                          |
-| `docs/architecture/` | Cross-repository architecture, ownership, and decisions                                         |
-| `docs/operations/`   | Runbooks for korolev provisioning, the container runtime, and dependency updates                |
-| `docs/plans/`        | Tracked planning records. `docs/plans/INDEX.md` states their status                             |
-| `openspec/`          | Accepted specifications and active changes                                                      |
-| `dns/`               | DNSControl configuration for `glockyco.com`                                                     |
-| `secrets/`           | SOPS-encrypted values for the Darwin host                                                       |
+| Path                 | Content                                                                                  |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `flake.nix`          | Inputs, the host table, host outputs, packages, checks, and the development shell        |
+| `hosts/`             | One directory per host with its identity values                                          |
+| `modules/darwin/`    | nix-darwin system scope                                                                  |
+| `modules/nixos/`     | NixOS system scope for WSL                                                               |
+| `modules/fleet/`     | Typed host options and system wiring shared by both Nix hosts                            |
+| `modules/home/`      | Portable Home Manager modules. `modules/home/darwin/` holds the Darwin-only user modules |
+| `modules/shared/`    | Shared data, including binary caches, Zed settings, and Zen policies                     |
+| `modules/windows/`   | The WinGet Configuration document and the two Administrator scripts                      |
+| `packages/`          | The OMP wrapper, the verifiers, and the check programs                                   |
+| `docs/architecture/` | Cross-repository architecture, ownership, and decisions                                  |
+| `docs/operations/`   | Runbooks for korolev provisioning, the container runtime, and dependency updates         |
+| `docs/plans/`        | Tracked planning records. `docs/plans/INDEX.md` states their status                      |
+| `openspec/`          | Accepted specifications and active changes                                               |
+| `dns/`               | DNSControl configuration for `glockyco.com`                                              |
+| `secrets/`           | SOPS-encrypted values for the Darwin host                                                |
 
 ## Develop
 

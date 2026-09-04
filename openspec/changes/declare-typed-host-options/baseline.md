@@ -128,3 +128,14 @@ Both hosts evaluate:
   "trustedPublicKeys": ["niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="]
 }
 ```
+
+## Final derivation comparison
+
+On 2026-09-04, the revision-independent gate command returned:
+
+```text
+/nix/store/7jyhmhg9ky49h1asr7j789v21djngpwk-darwin-system-26.05.c3e90c8.drv
+/nix/store/qh2rfd9idccmxv07dbw47v6d5rpa6f97-nixos-system-korolev-26.05.20260814.02e0898.drv
+```
+
+Both derivations match the parent baseline exactly. No closure diff was required.

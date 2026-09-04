@@ -37,15 +37,15 @@
 
 ## 7. Verify the Complete Change
 
-- [ ] 7.1 Run `nix fmt -- --fail-on-change`.
-- [ ] 7.2 Run `nix flake check --print-build-logs` on `x86_64-linux` with the Nix the host declares, and confirm that `moduleImports`, `hostDeclaration`, and `hostNixSettings` are among the passing checks.
-- [ ] 7.3 Evaluate both pinned-revision `toplevel.drvPath` values as in task 1.2 against the working tree, confirm that both equal the values in `baseline.md`, and record the result in `baseline.md`; if either differs, trace the difference to an evaluated cause and record the `nvd` closure diff for that host before continuing.
-- [ ] 7.4 Confirm that `flake.lock` is unchanged from the parent commit.
+- [x] 7.1 Run `nix fmt -- --fail-on-change`.
+- [x] 7.2 Run `nix flake check --print-build-logs` on `x86_64-linux` with the Nix the host declares, and confirm that `moduleImports`, `hostDeclaration`, and `hostNixSettings` are among the passing checks.
+- [x] 7.3 Evaluate both pinned-revision `toplevel.drvPath` values as in task 1.2 against the working tree, confirm that both equal the values in `baseline.md`, and record the result in `baseline.md`; if either differs, trace the difference to an evaluated cause and record the `nvd` closure diff for that host before continuing.
+- [x] 7.4 Confirm that `flake.lock` is unchanged from the parent commit.
 - [ ] 7.5 Run `nix flake check --print-build-logs`, `nix build .#darwinConfigurations.macbook-pro.system`, and `nix run .#check-darwin-build-plans` on the Darwin host, and record in `baseline.md` that `hostDeclaration` and `hostNixSettings` passed there.
-- [ ] 7.6 Run `openspec validate declare-typed-host-options --strict`.
-- [ ] 7.7 Review the final diff and confirm that `specialArgs` and `extraSpecialArgs` name `inputs` alone in every file, that no module declares `hostname`, `username`, `ompExecutable`, or `ompInstallCommand` as an argument, and that the flake table rows hold `kind` and `name` alone.
+- [x] 7.6 Run `openspec validate declare-typed-host-options --strict`.
+- [x] 7.7 Review the final diff and confirm that `specialArgs` and `extraSpecialArgs` name `inputs` alone in every file, that no module declares `hostname`, `username`, `ompExecutable`, or `ompInstallCommand` as an argument, and that the flake table rows hold `kind` and `name` alone.
 
 ## 8. Documentation
 
-- [ ] 8.1 Add the changed invariants to the architecture decision log: one typed host declaration read through `config.host` and `osConfig.host`, and one declaration per shared fact; confirm that the entry names the date and the two invariants.
-- [ ] 8.2 Update the `modules/` rows of the README layout table to name `modules/fleet/` and the shared cache data, and confirm that `nix fmt -- --fail-on-change README.md` passes.
+- [x] 8.1 Add the changed invariants to the architecture decision log: one typed host declaration read through `config.host` and `osConfig.host`, and one declaration per shared fact; confirm that the entry names the date and the two invariants.
+- [x] 8.2 Update the `modules/` rows of the README layout table to name `modules/fleet/` and the shared cache data, and confirm that `nix fmt -- --fail-on-change README.md` passes.

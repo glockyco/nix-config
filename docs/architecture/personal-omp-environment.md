@@ -735,6 +735,8 @@ The environment is complete when:
 - Keep Windows Zed on the wrapped NixOS/WSL `omp acp` command. Let Zed's native WSL remote start the agent with a Linux working directory. Do not configure an explicit local `wsl.exe` bridge or install a duplicate native Windows executable.
 - Reverse the 2026-08-14 activation-verifier decision. Expose `verify-personal-omp` as an explicit command so Nix activation does not depend on mutable executable state.
 - Recover OMP versions through the owning platform installer. Nix generation rollback restores the wrapper environment but does not change OMP.
+- Declare each host's identity and OMP runtime once through typed `host.*` options. System modules read `config.host`, and user modules read `osConfig.host`.
+- Keep one declaration for each shared fact. Both host scopes read the binary-cache values from shared data instead of copying them.
 
 ## Primary references
 
