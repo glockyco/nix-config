@@ -19,7 +19,7 @@
     name = "Brave";
     role = "browser-relay";
     id = "Brave.Brave";
-    version = "151.1.93.138";
+    version = "152.1.94.119";
     source = "winget";
     scope = "user";
   }

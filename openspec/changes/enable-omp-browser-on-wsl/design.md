@@ -43,7 +43,7 @@ Alternative rejected: fetch a second Chrome archive in a Nix check. That would d
 
 ### 3. Declare Brave as a separate user-scope role
 
-The Windows application declaration adds `Brave.Brave` version `151.1.93.138` with role `browser-relay` and user scope. Validators require that identity, version, role, and scope. Zen remains the only application with role `browser`.
+The Windows application declaration adds `Brave.Brave` version `152.1.94.119` with role `browser-relay` and user scope. Validators require that identity, version, role, and scope. Zen remains the only application with role `browser`.
 
 Brave matches the Darwin relay host and is not in the centrally managed application list. Microsoft Edge is rejected because employer policy owns it. Google Chrome is rejected because the audit assigns it to central management and its executable is currently absent.
 
@@ -68,5 +68,6 @@ The live check restarts Windows and confirms that neither Brave nor the relay da
 - [OMP changes Chromium's ABI] → The live browser smoke fails after the OMP update. Add only the newly required shared-library provider through a reviewed NixOS change.
 - [The relay extension can control browser tabs] → Load it only in the dedicated `OMP Relay` profile and keep unrelated tabs out of that profile.
 - [Windows-to-WSL loopback forwarding changes] → The relay connection check fails before an authenticated task starts. Keep the daemon on loopback and do not expose a LAN listener.
+- [Brave self-updates ahead of the declaration] → WinGet Configuration reports version drift. Update the declared version and rendered artifact through the normal dependency review path; do not disable browser security updates or force a downgrade.
 - [The pinned Brave release becomes unavailable] → Update the declared version and rendered WinGet artifact through the normal dependency review path.
 - [A second browser adds maintenance] → Its role is narrow, it does not start automatically, and removal does not affect Zen or headless Chromium.

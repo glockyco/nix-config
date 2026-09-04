@@ -284,7 +284,7 @@ $kbdNeo = 'C:\Temp\windows-configuration\apply-kbdneo.ps1'
 $zenPolicies = 'C:\Temp\windows-configuration\apply-zen-policies.ps1'
 ```
 
-Test all three artifacts before the first apply. Exit status 1 means that the test found drift; resource errors are not expected. The WinGet output must show a shield on exactly `package browser`.
+Test all three artifacts before the first apply. Exit status 1 means that the test found drift; resource errors are not expected. The WinGet output must show a shield on exactly `package browser`. Brave can install a security update before the repository pin changes. If only `package browser relay` reports drift and `winget list --id Brave.Brave --exact` shows a newer version, update the declared version through review. Do not disable Brave updates or force a downgrade.
 
 ```powershell
 winget configure test `

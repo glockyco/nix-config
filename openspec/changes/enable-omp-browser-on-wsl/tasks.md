@@ -6,7 +6,7 @@
 
 ## 2. Windows Relay Browser
 
-- [x] 2.1 Add `Brave.Brave` version `151.1.93.138` to the Windows application declaration with role `browser-relay` and user scope. Confirm that Zen remains the only application with role `browser` and that Brave is absent from the centrally managed application audit.
+- [x] 2.1 Add `Brave.Brave` version `152.1.94.119` to the Windows application declaration with role `browser-relay` and user scope. Confirm that Zen remains the only application with role `browser` and that Brave is absent from the centrally managed application audit.
 - [x] 2.2 Update the Windows configuration renderer and validator for exactly one pinned, user-scope `browser-relay` application. Reject a missing relay browser, `Brave.Brave` with another role or scope, an unpinned declaration, and any startup resource for Brave.
 - [x] 2.3 Build `packages.windows-configuration` and `checks.x86_64-linux.windowsConfiguration`. Confirm that the rendered WinGet document contains the pinned Brave package without elevation and contains no Brave startup or default-browser resource.
 - [x] 2.4 Remove the Brave declaration temporarily and confirm that the Windows validation gate fails. Restore the declaration and confirm that the gate passes again.
