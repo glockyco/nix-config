@@ -44,5 +44,5 @@
 - [x] 6.1 After review and merge, install the official Darwin OMP formula, run `darwin-switch`, and verify the wrapper reports the Homebrew OMP version, immutable plugin path, and current Herdr status.
 - [x] 6.2 Start a fresh wrapped Darwin OMP session and verify the plugin source path, personal policy, and harmless `personal_commit` preview.
 - [x] 6.3 On `korolev`, install the official prebuilt OMP binary, activate the reviewed NixOS generation, and verify the wrapper reports the user-local executable version, immutable plugin path, and current Herdr status.
-- [ ] 6.4 Start OMP from Windows Zed in a native WSL workspace and from a fresh WSL terminal, and verify both use the same wrapped oh-my-pi environment without a native Windows installation.
+- [x] 6.4 Start OMP from Windows Zed in a native WSL workspace and from a fresh WSL terminal, and verify both use the same wrapped oh-my-pi environment without a native Windows installation.
 - [x] 6.5 Exercise the documented previous-release recovery on each host or a disposable equivalent, and verify Nix generation rollback is not required to change the OMP version.
