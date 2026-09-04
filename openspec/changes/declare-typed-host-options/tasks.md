@@ -1,7 +1,7 @@
 ## 1. Baseline
 
-- [ ] 1.1 Record the parent commit, the SHA-256 of `flake.lock`, and the current wrapper text of `packages.<system>.personal-omp` for both systems in `baseline.md`, and confirm the file names the gate command from design decision 8.
-- [ ] 1.2 Evaluate `config.system.build.toplevel.drvPath` for both hosts at the parent commit with `system.configurationRevision` forced to one constant through `extendModules`, record both values in `baseline.md`, and confirm that a second evaluation of the same commit returns the same values.
+- [x] 1.1 Record the parent commit, the SHA-256 of `flake.lock`, and the current wrapper text of `packages.<system>.personal-omp` for both systems in `baseline.md`, and confirm the file names the gate command from design decision 8.
+- [x] 1.2 Evaluate `config.system.build.toplevel.drvPath` for both hosts at the parent commit with `system.configurationRevision` forced to one constant through `extendModules`, record both values in `baseline.md`, and confirm that a second evaluation of the same commit returns the same values.
 
 ## 2. Host Declaration
 
