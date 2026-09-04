@@ -182,6 +182,7 @@
               peers = tailnetPeers;
             };
             tailscaleSetAfterLoginTest = pkgs.callPackage ./packages/tailscale-set-after-login-tests.nix { };
+            tailnetKnownHostsCommandTest = pkgs.callPackage ./packages/tailnet-known-hosts-tests.nix { };
             personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
               inherit (configuredHost) ompRuntime;
               inherit (llmAgents) herdr;
@@ -455,6 +456,7 @@
               # Keep OMP's browser mutable while supplying its foreign-binary ABI
               # from the rollback-safe NixOS generation.
               ompBrowserRuntime = ompBrowserRuntimeCheck;
+              tailnetKnownHostsCommand = tailnetKnownHostsCommandTest;
 
               # The portable user modules have to build for Linux, not only
               # evaluate. This is the complete set that the WSL host selects.
