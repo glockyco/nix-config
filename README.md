@@ -15,35 +15,37 @@ One table in `flake.nix` binds each system to its host. The supported systems, t
 
 ## Ownership
 
-| Owner              | State                                                                                                                                                 |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| This flake         | Host closures, the `omp` wrapper, the personal plugin pin, Herdr, OpenSpec, language servers, `verify-personal-omp`, the rendered Windows declaration |
-| Platform installer | The OMP executable: Homebrew at `/opt/homebrew/bin/omp` on Darwin, the official installer at `~/.local/lib/oh-my-pi/omp` on WSL                       |
-| OMP                | Authentication, `~/.omp/agent/config.yml`, sessions, history, caches, logs, databases                                                                 |
-| Windows            | Windows Terminal, WSL enablement, employer policy, native applications, the editor                                                                    |
-| Project repository | Its development shell, build commands, and deployment commands                                                                                        |
+| Owner              | State                                                                                                                                                                                                                |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| This flake         | Host closures, Tailscale service and access policy, the Darwin remote-builder declaration, the `omp` wrapper, plugin pin, Herdr, OpenSpec, language servers, verification commands, and rendered Windows declaration |
+| Platform installer | The OMP executable: Homebrew at `/opt/homebrew/bin/omp` on Darwin, the official installer at `~/.local/lib/oh-my-pi/omp` on WSL                                                                                      |
+| Tailscale          | Writable node authentication, peer state, MagicDNS, and the policy control plane                                                                                                                                     |
+| OMP                | Authentication, `~/.omp/agent/config.yml`, sessions, history, caches, logs, databases                                                                                                                                |
+| Windows            | Windows Terminal, WSL enablement, employer policy, native applications, the editor                                                                                                                                   |
+| Project repository | Its development shell, build commands, and deployment commands                                                                                                                                                       |
 
 Activation does not install, update, or restore the OMP executable. It does not read or write OMP-owned state. Nix does not execute Windows resources. See [the architecture document](docs/architecture/personal-omp-environment.md) for the complete boundary and the decision log.
 
 ## Layout
 
-| Path                 | Content                                                                                  |
-| -------------------- | ---------------------------------------------------------------------------------------- |
-| `flake.nix`          | Inputs, the host table, host outputs, packages, checks, and the development shell        |
-| `hosts/`             | One directory per host with its identity values                                          |
-| `modules/darwin/`    | nix-darwin system scope                                                                  |
-| `modules/nixos/`     | NixOS system scope for WSL                                                               |
-| `modules/fleet/`     | Typed host options and system wiring shared by both Nix hosts                            |
-| `modules/home/`      | Portable Home Manager modules. `modules/home/darwin/` holds the Darwin-only user modules |
-| `modules/shared/`    | Shared data, including binary caches, Zed settings, and Zen policies                     |
-| `modules/windows/`   | The WinGet Configuration document and the two Administrator scripts                      |
-| `packages/`          | The OMP wrapper, the verifiers, and the check programs                                   |
-| `docs/architecture/` | Cross-repository architecture, ownership, and decisions                                  |
-| `docs/operations/`   | Runbooks for korolev provisioning, the container runtime, and dependency updates         |
-| `docs/plans/`        | Tracked planning records. `docs/plans/INDEX.md` states their status                      |
-| `openspec/`          | Accepted specifications and active changes                                               |
-| `dns/`               | DNSControl configuration for `glockyco.com`                                              |
-| `secrets/`           | SOPS-encrypted values for the Darwin host                                                |
+| Path                                   | Content                                                                                  |
+| -------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `flake.nix`                            | Inputs, the host table, host outputs, packages, checks, and the development shell        |
+| `hosts/`                               | One directory per host with its identity values                                          |
+| `modules/darwin/`                      | nix-darwin system scope                                                                  |
+| `modules/nixos/`                       | NixOS system scope for WSL                                                               |
+| `modules/fleet/`                       | Typed host options and system wiring shared by both Nix hosts                            |
+| `modules/home/`                        | Portable Home Manager modules. `modules/home/darwin/` holds the Darwin-only user modules |
+| `modules/shared/`                      | Shared data, including binary caches, tailnet peers, Zed settings, and Zen policies      |
+| `modules/windows/`                     | The WinGet Configuration document and the two Administrator scripts                      |
+| `packages/`                            | The OMP wrapper, tailnet policy renderer, verifiers, and check programs                  |
+| `.github/workflows/tailnet-policy.yml` | Pull-request policy tests and the main-branch policy apply job                           |
+| `docs/architecture/`                   | Cross-repository architecture, ownership, and decisions                                  |
+| `docs/operations/`                     | Runbooks for korolev provisioning, the container runtime, and dependency updates         |
+| `docs/plans/`                          | Tracked planning records. `docs/plans/INDEX.md` states their status                      |
+| `openspec/`                            | Accepted specifications and active changes                                               |
+| `dns/`                                 | DNSControl configuration for `glockyco.com`                                              |
+| `secrets/`                             | SOPS-encrypted values for the Darwin host                                                |
 
 ## Develop
 
@@ -64,7 +66,13 @@ nix run .#check-darwin-build-plans
 nix build .#darwinConfigurations.macbook-pro.system
 ```
 
-`nix flake check` checks the current system only. CI runs one macOS leg and one Linux leg, and each leg uses the Nix implementation that its host runs. `check-darwin-build-plans` reads build plans, which a check derivation cannot do. It fails when a Darwin output reaches a source-built .NET package or a Swift compiler.
+`nix flake check` checks the current system only. CI runs one macOS leg and one Linux leg, and each leg uses the Nix implementation that its host runs. After both managed hosts join the tailnet, `korolev` can send Darwin derivations to the Mac over the declared `ssh-ng` builder:
+
+```sh
+nix flake check --all-systems --print-build-logs
+```
+
+The [tailnet policy workflow](.github/workflows/tailnet-policy.yml) tests the rendered access policy on pull requests and applies it after changes reach `main`. `check-darwin-build-plans` reads build plans, which a check derivation cannot do. It fails when a Darwin output reaches a source-built .NET package or a Swift compiler.
 
 Permanent behavior changes use OpenSpec. Read the artifacts of the active change before you edit implementation files.
 
