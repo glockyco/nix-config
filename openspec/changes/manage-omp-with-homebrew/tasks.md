@@ -3,15 +3,15 @@
 - [x] 1.1 Add the official `can1357/tap` tap and `can1357/tap/omp` formula to the Darwin Homebrew declaration, and verify the evaluated Brewfile contains one OMP formula.
 - [x] 1.2 Change `packages/personal-omp.nix` to accept one explicit runtime executable path, and verify its wrapper embeds that path plus the existing immutable plugin flags.
 - [x] 1.3 Pass `/opt/homebrew/bin/omp` on Darwin and one dedicated user-local binary path on NixOS/WSL, and verify both host evaluations select the intended path.
-- [ ] 1.4 Remove every host installation, passthrough value, assertion, and wrapper reference for the Nix-packaged OMP executable, and verify a repository search finds no obsolete `upstreamOmp` or `llmAgents.omp` consumer.
+- [x] 1.4 Remove every host installation, passthrough value, assertion, and wrapper reference for the Nix-packaged OMP executable, and verify a repository search finds no obsolete `upstreamOmp` or `llmAgents.omp` consumer.
 - [x] 1.5 Keep `llm-agents` only for Herdr and OpenSpec, and verify both packages still resolve on Darwin and NixOS/WSL.
 
 ## 2. Preserve Wrapper and Windows Integration
 
-- [ ] 2.1 Make the wrapper fail with an actionable error when its platform executable is absent, and verify deterministic tests cover the expected Darwin and WSL paths.
-- [ ] 2.2 Expose the local verifier as an explicit command outside activation, make it exercise the platform executable with the immutable plugin, and verify its success and missing-binary cases.
-- [ ] 2.3 Update package-shape checks to use an explicit stub executable instead of a Nix OMP package, and verify the checks still reject missing plugin flags, mutable paths, and duplicate command payloads.
-- [ ] 2.4 Preserve Windows Zed's `wsl.exe` route to the wrapped `omp acp` command, and verify the rendered Windows settings contain no native Windows OMP command or fallback.
+- [x] 2.1 Make the wrapper fail with an actionable error when its platform executable is absent, and verify deterministic tests cover the expected Darwin and WSL paths.
+- [x] 2.2 Expose the local verifier as an explicit command outside activation, make it exercise the platform executable with the immutable plugin, and verify its success and missing-binary cases.
+- [x] 2.3 Update package-shape checks to use an explicit stub executable instead of a Nix OMP package, and verify the checks still reject missing plugin flags, mutable paths, and duplicate command payloads.
+- [x] 2.4 Preserve Windows Zed's `wsl.exe` route to the wrapped `omp acp` command, and verify the rendered Windows settings contain no native Windows OMP command or fallback.
 
 ## 3. Define Manual Install and Recovery Operations
 

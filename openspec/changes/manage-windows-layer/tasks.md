@@ -5,7 +5,7 @@
 - [x] 1.3 Make `modules/home/darwin/zed.nix` consume that expression, and confirm that the Darwin values stay identical.
 - [x] 1.4 Move the Zen enterprise policies into `modules/shared/zen-policies.nix` as platform-free data.
 - [x] 1.5 Make `modules/darwin/zen.nix` consume that expression, and confirm that the Darwin values stay identical.
-- [ ] 1.6 Build `.#darwinConfigurations.macbook-pro.system` and confirm that only the intended values changed.
+- [x] 1.6 Build `.#darwinConfigurations.macbook-pro.system` and confirm that only the intended values changed.
 
 ## 2. Render the Windows Document
 
@@ -110,8 +110,8 @@
 
 - [x] 10.1 Run `nix fmt -- --fail-on-change`.
 - [x] 10.2 Run `nix flake check --print-build-logs` and inspect the new Windows document checks.
-- [ ] 10.3 Run `nix build .#darwinConfigurations.macbook-pro.system` and confirm that the Darwin host still builds.
-- [ ] 10.4 Run `nix run .#check-darwin-build-plans`.
+- [x] 10.3 Run `nix build .#darwinConfigurations.macbook-pro.system` and confirm that the Darwin host still builds.
+- [x] 10.4 Run `nix run .#check-darwin-build-plans`.
 - [x] 10.5 Run `openspec validate manage-windows-layer --strict`.
 - [x] 10.6 Extend the operator runbook with the render, preview, apply, and confirm procedure, and state that DSC provides no rollback.
 - [x] 10.7 Update `README.md` for the third layer and its different guarantee set.
