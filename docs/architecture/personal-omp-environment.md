@@ -74,7 +74,7 @@ The target contains no:
 - YAML surgery against OMP-owned configuration;
 - fleet-wide repository scanner;
 - custom planning runtime, `omp-plans`, or `omp-skill`;
-- browser relay or desktop-control integration;
+- desktop-control integration or automatically started browser relay;
 - globally enabled security scan;
 - compatibility shims after cutover.
 
@@ -99,7 +99,7 @@ These are exclusions, not deferred work.
 | Frontend design                 | Run the planned controlled comparison before installing a permanent skill                                      |
 | Persistent memory               | Delete the old database; run a planned clean comparison after the base is stable                               |
 | Image generation                | Use OMP's native tool only after a real provider smoke test                                                    |
-| Browser and desktop             | Keep the browser relay and desktop control disabled                                                            |
+| Browser and desktop             | Run managed Chromium headlessly on WSL; use a dedicated Brave relay on demand; keep desktop control disabled   |
 | Secret obfuscation              | Keep it mutable and disabled initially                                                                         |
 | Security review                 | Invoke it explicitly for a scoped review; do not enable it globally                                            |
 | CrossOver                       | Preserve the bottle as mutable runtime state; mutate loaders and mods only through explicit project commands   |
@@ -169,7 +169,7 @@ It does not copy personal-plugin source. It consumes the plugin's flake output. 
 
 ### WSL work machine
 
-Windows owns Windows Terminal, WSL enablement, employer policy, native application state, and the editor runtime. This repository owns the reviewed Windows declaration and uses Nix to render it; the operator applies that artifact with WinGet and DSC. The NixOS host `korolev` owns the Linux system scope, user scope, OMP wrapper and plugin, Herdr, OpenSpec, and language tools. The official oh-my-pi installer owns the user-local OMP executable. OMP owns its mutable runtime state. Repositories stay under the Linux home directory, not `/mnt/c`.
+Windows owns Windows Terminal, WSL enablement, employer policy, native application state, and the editor runtime. This repository owns the reviewed Windows declaration and uses Nix to render it; the operator applies that artifact with WinGet and DSC. The declaration installs pinned, user-scope Brave only for browser relay, while Zen remains the interactive browser. The NixOS host `korolev` owns the Linux system scope, user scope, OMP wrapper and plugin, Chromium shared-library ABI, Herdr, OpenSpec, and language tools. The official oh-my-pi installer owns the user-local OMP executable. OMP owns its downloaded Chromium, caches, profiles, relay extension, and other mutable runtime state. Repositories stay under the Linux home directory, not `/mnt/c`.
 
 The root flake exposes `nixosConfigurations.korolev` for `x86_64-linux`. `nixos-rebuild switch --flake .#korolev` provides ordered activation, generation replacement, failure rollback, and a retained rollback target. The host declares no SSH server, no other inbound service, and no secret.
 
@@ -187,7 +187,7 @@ Platform installers own the OMP executable: Homebrew on Darwin and the official 
 - sessions, blobs, history, and usage databases;
 - caches and browser runtime state.
 
-Nix supplies the executable wrapper, plugin path, extension path, and language-server executables. The wrapper invokes one explicit platform path and never searches `PATH` or falls back to a Nix OMP package. Nix does not overlay or rewrite OMP configuration. User preferences remain mutable.
+Nix supplies the executable wrapper, plugin path, personal extension path, language-server executables, and the shared-library ABI for foreign Linux binaries. The wrapper invokes one explicit platform path and never searches `PATH` or falls back to a Nix OMP package. Nix does not package Chromium or overlay or rewrite OMP configuration. User preferences remain mutable.
 
 ### Project repositories
 
@@ -737,6 +737,9 @@ The environment is complete when:
 - Recover OMP versions through the owning platform installer. Nix generation rollback restores the wrapper environment but does not change OMP.
 - Declare each host's identity and OMP runtime once through typed `host.*` options. System modules read `config.host`, and user modules read `osConfig.host`.
 - Keep one declaration for each shared fact. Both host scopes read the binary-cache values from shared data instead of copying them.
+- Supply the shared-library ABI for OMP's downloaded Chromium through `programs.nix-ld.libraries`. Do not package Chromium with Nix, wrap the OMP executable with a browser-specific environment, or move OMP's browser cache and profile into the Nix store.
+- Declare pinned, user-scope Brave as the dedicated Windows `browser-relay` application. Keep Zen as the interactive browser, keep Brave out of startup and default-browser resources, and do not use employer-managed Edge or Chrome for relay.
+- Install the relay extension manually into Windows LocalAppData and load it only in a dedicated `OMP Relay` Brave profile. OMP and the browser own that mutable profile and extension state; Nix owns only the reviewed package declaration and rejection gates.
 
 ## Primary references
 

@@ -13,9 +13,9 @@
 
 ## 3. Operating Procedures
 
-- [ ] 3.1 Add a WSL runbook section for the managed-browser smoke. State that OMP owns its Chromium download and require the smoke after each OMP update.
-- [ ] 3.2 Add a WSL runbook section for the one-time relay setup. Generate the extension under the Windows user's local application data, create the dedicated `OMP Relay` Brave profile, load the unpacked extension manually, and keep relay use on demand.
-- [ ] 3.3 Add an architecture decision that records the `nix-ld` boundary, the dedicated Brave role, the manual extension boundary, and the rejection of wrapper library paths and employer-managed browsers.
+- [x] 3.1 Add a WSL runbook section for the managed-browser smoke. State that OMP owns its Chromium download and require the smoke after each OMP update.
+- [x] 3.2 Add a WSL runbook section for the one-time relay setup. Generate the extension under the Windows user's local application data, create the dedicated `OMP Relay` Brave profile, load the unpacked extension manually, and keep relay use on demand.
+- [x] 3.3 Add an architecture decision that records the `nix-ld` boundary, the dedicated Brave role, the manual extension boundary, and the rejection of wrapper library paths and employer-managed browsers.
 
 ## 4. Live Acceptance
 

@@ -4,12 +4,12 @@
 
 This procedure makes an `x86_64` Windows work machine run the NixOS host `korolev` under WSL 2. Three layers own separate state.
 
-| Layer                | Owns                                                                                        |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| Windows              | Windows Terminal, WSL enablement, employer policy, native applications, and the editor      |
-| NixOS host `korolev` | Linux system scope, user scope, OMP wrapper and plugin, Herdr, OpenSpec, and language tools |
-| OMP binary installer | the user-local oh-my-pi executable                                                          |
-| OMP                  | authentication, configuration, sessions, history, caches, logs, and databases               |
+| Layer                | Owns                                                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Windows              | Windows Terminal, WSL enablement, employer policy, native applications, and the editor                      |
+| NixOS host `korolev` | Linux system scope, user scope, OMP wrapper and plugin, browser ABI, Herdr, OpenSpec, and language tools    |
+| OMP binary installer | the user-local oh-my-pi executable                                                                          |
+| OMP                  | authentication, configuration, sessions, history, browser runtime and profiles, caches, logs, and databases |
 
 Repositories stay under the Linux home directory, not under `/mnt/c`.
 
@@ -164,7 +164,7 @@ herdr integration status
 
 The system must report `running` with no failed unit. A dirty worktree marks the generation revision with a `-dirty` suffix, and each edit produces another closure. A second activation of the same clean revision registers no second generation.
 
-To update OMP later, rerun the binary installer command and then run `verify-personal-omp`. No Nix activation is required. To recover release `v<version>`, use the same target with an explicit tag:
+To update OMP later, rerun the binary installer command, run `verify-personal-omp`, and repeat the managed-browser smoke in step 10. No Nix activation is required. Repeat that browser smoke after any NixOS activation that changes the browser ABI. To recover release `v<version>`, use the same target with an explicit tag:
 
 ```sh
 curl -fsSL https://omp.sh/install \
@@ -229,7 +229,17 @@ This is the WSL release smoke. Do not modify the repository.
 4. Report whether the preview changed the repository.
 ```
 
-The plugin path must be under `/nix/store`. The policy and `personal_commit` tool must be active. After leaving OMP, confirm that the preview created no state:
+The plugin path must be under `/nix/store`. The policy and `personal_commit` tool must be active.
+
+In the same OMP session, run the managed-browser smoke:
+
+```text
+Use OMP's managed browser, not the browser relay. Open https://example.com, report the document heading, capture a screenshot, and close the browser.
+```
+
+The reported heading must be `Example Domain`, and the screenshot must show the same page. OMP must start its downloaded Chromium without a missing-library error. OMP owns the downloaded Chromium version, cache, and browser profile. NixOS supplies only the dynamic loader and shared-library ABI.
+
+After leaving OMP, confirm that the commit preview created no repository state:
 
 ```sh
 git status --short
@@ -263,7 +273,7 @@ rm -rf /mnt/c/Temp/windows-configuration
 cp -rL result /mnt/c/Temp/windows-configuration
 ```
 
-Enable WinGet Configuration once. The artifact has one document and two narrow Administrator scripts. WinGet 1.29.290 displays the declared elevation shield but does not change a DSC script resource's token on this machine. The separate Administrator account also cannot use the interactive user's per-user DSC package. The official Zen installer can elevate itself, so the document owns the package. The generated scripts own only `C:\Program Files\Zen Browser\distribution\policies.json` and the native Neo DLLs and keyboard-layout registration.
+Enable WinGet Configuration once. The artifact has one document and two narrow Administrator scripts. WinGet 1.29.290 displays the declared elevation shield but does not change a DSC script resource's token on this machine. The separate Administrator account also cannot use the interactive user's per-user DSC package. The official Zen installer can elevate itself, so the document owns the package. Brave installs in user scope without elevation and serves only as the OMP relay browser; Zen remains the interactive default. The generated scripts own only `C:\Program Files\Zen Browser\distribution\policies.json` and the native Neo DLLs and keyboard-layout registration.
 
 Set the artifact paths in a standard PowerShell session:
 
@@ -348,6 +358,46 @@ Keep taskbar pins in user control. The supported taskbar-layout mechanism is a d
 Keep **Country or region** set to Austria. The installed Widgets build uses that region to select German Microsoft-hosted cards and taskbar-weather text, even though the Widgets interface follows the `en-GB` culture. It exposes no separate content-language control. Accept that content language instead of changing regional Microsoft services.
 
 Configure Night Light manually under **Settings > System > Display > Night light**. The accepted state is enabled from sunset to sunrise at 50% strength. Windows stores this state in an undocumented CloudStore binary payload, so the document does not write it.
+
+### Configure the OMP browser relay once
+
+Confirm that the Windows apply installed the pinned user-scope browser:
+
+```powershell
+winget list --id Brave.Brave --exact
+```
+
+Install the OMP-owned unpacked extension under Windows LocalAppData from NixOS:
+
+```sh
+windows_local_app_data="$(
+  powershell.exe -NoProfile -Command \
+    '[Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)' |
+    tr -d '\r'
+)"
+relay_extension="$(wslpath "$windows_local_app_data")/OMP/browser-relay-extension"
+omp browser-relay install --dir "$relay_extension"
+wslpath -w "$relay_extension"
+```
+
+Copy the printed Windows path. Open Brave manually and create a profile named `OMP Relay`. In that profile, open `brave://extensions`, enable **Developer mode**, select **Load unpacked**, and select the printed directory. Do not install the extension in an employer-managed Edge or Chrome profile. Do not add Brave or the relay to Windows or OMP startup.
+
+Keep only the intended page open in the `OMP Relay` profile. Start an OMP session in NixOS and ask it:
+
+```text
+Use the browser relay, not the managed browser. Adopt the current Brave tab, report its title and URL, capture a screenshot, and leave the page unchanged.
+```
+
+The reported title, URL, and screenshot must match the visible Brave tab. Close Brave after the session. This profile and unpacked extension are mutable browser and OMP state; Nix renders neither one. Start Brave and request the relay only when a task needs an authenticated Windows browser session.
+
+After the next Windows restart, do not start Brave or OMP before this check. Run it in standard PowerShell:
+
+```powershell
+Get-Process brave -ErrorAction SilentlyContinue
+wsl --distribution NixOS -- pgrep -af 'omp browser-relay'
+```
+
+Both commands must produce no process output. An exit status of 1 from `pgrep` means that the relay is off. Starting NixOS for the check must not start the relay.
 
 ### Verify the Windows roles
 
