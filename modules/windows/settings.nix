@@ -171,8 +171,7 @@ in
         $override = Get-WinUILanguageOverride
         return $languages.Count -eq 3 `
           -and $languages[0].LanguageTag -eq 'en-GB' `
-          -and $languages[0].InputMethodTips.Count -eq 1 `
-          -and $languages[0].InputMethodTips[0] -eq '0809:00000809' `
+          -and $languages[0].InputMethodTips.Count -eq 0 `
           -and $languages[1].LanguageTag -eq 'de-DE' `
           -and $languages[2].LanguageTag -eq 'de-AT' `
           -and $null -ne $override `
@@ -181,10 +180,15 @@ in
       setScript = ''
         $existing = Get-WinUserLanguageList
         $desired = New-WinUserLanguageList -Language 'en-GB'
+        $desired[0].InputMethodTips.Clear()
+        # Windows restores the UK keyboard for a directly empty English entry.
+        # It discards this German placeholder and leaves the display entry keyboard-free.
+        $desired[0].InputMethodTips.Add('0407:b0000407')
+        $desired.Add('de-DE')
+        $desired.Add('de-AT')
         foreach ($languageTag in @('de-DE', 'de-AT')) {
           $matches = @($existing | Where-Object { $_.LanguageTag -eq $languageTag })
           if ($matches.Count -ne 1) { throw "The user language list must contain exactly one $languageTag entry" }
-          $desired.Add($languageTag)
           $target = @($desired | Where-Object { $_.LanguageTag -eq $languageTag })[0]
           $target.InputMethodTips.Clear()
           foreach ($inputTip in $matches[0].InputMethodTips) { $target.InputMethodTips.Add($inputTip) }
@@ -193,7 +197,7 @@ in
         Set-WinUILanguageOverride -Language 'en-GB'
       '';
     };
-    metadata.description = "Prefer English for Windows and applications without changing the German keyboard layouts";
+    metadata.description = "Use an English Windows UI without adding an English input method";
   }
   {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";

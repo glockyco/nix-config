@@ -38,6 +38,7 @@
 - [x] 4.11 Declare English (United Kingdom) as the preferred interface language while preserving the German keyboard layouts.
 - [x] 4.12 Declare ISO 8601 as the Windows short-date format.
 - [x] 4.13 Keep the centrally managed Firefox package out of interactive-user startup.
+- [x] 4.14 Keep English as a UI override without adding its input method.
 
 ## 5. Declare Application Configuration Files
 
@@ -75,6 +76,7 @@
 - [x] 7.8 Apply the English language resource and confirm that its test reports desired state.
 - [x] 7.9 Apply the ISO short-date resources and confirm that their tests report desired state.
 - [x] 7.10 Apply the Firefox startup exclusion and confirm that its test reports desired state.
+- [x] 7.11 Apply the corrected input-language list and confirm that its test reports desired state.
 
 ## 8. Verify Each Role by Use
 
@@ -88,8 +90,8 @@
 - [x] 8.8 Browse a repository in the Git client and record the observed responsiveness.
 - [x] 8.9 Open Zen and confirm that its profile renders the Catppuccin Mocha Mauve theme.
 - [x] 8.10 Confirm that one elevated ReNeo process supplies higher layers to both ordinary and elevated applications.
-- [ ] 8.11 Sign in again and confirm that Windows and PowerToys use English while native Neo remains the default input method.
-- [ ] 8.12 Confirm that the taskbar renders the short date as `yyyy-MM-dd`.
+- [ ] 8.11 Sign in again and confirm that Windows and PowerToys use English while native Neo is selected.
+- [x] 8.12 Confirm that the taskbar renders the short date as `yyyy-MM-dd`.
 - [ ] 8.13 Restart Windows and confirm that Firefox does not start automatically.
 
 ## 9. Record the Manual Surface
