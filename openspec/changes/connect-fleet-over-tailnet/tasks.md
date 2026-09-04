@@ -6,9 +6,9 @@
 
 ## 2. Host Declarations
 
-- [ ] 2.1 Add `host.tailnet.tag` and `host.tailnet.reachable` to `modules/fleet/host.nix`, declare `tag:macbook-pro` and `tag:korolev` with `reachable = false` for `korolev` in `hosts/*/default.nix`, and confirm both hosts evaluate the new values.
-- [ ] 2.2 Extend `packages/host-declaration-check.nix` with a fixture that omits the tag and one with a malformed tag, and confirm that both are rejected under `deepSeq`.
-- [ ] 2.3 Add `modules/shared/tailnet-peers.nix` with each peer's tag, lifecycle, and purpose. Mark the desktop durable and the Air temporary for research-result access. Export the data from `modules/shared/default.nix`, and confirm that `moduleImports` still passes.
+- [x] 2.1 Add `host.tailnet.tag` and `host.tailnet.reachable` to `modules/fleet/host.nix`, declare `tag:macbook-pro` and `tag:korolev` with `reachable = false` for `korolev` in `hosts/*/default.nix`, and confirm both hosts evaluate the new values.
+- [x] 2.2 Extend `packages/host-declaration-check.nix` with a fixture that omits the tag and one with a malformed tag, and confirm that both are rejected under `deepSeq`.
+- [x] 2.3 Add `modules/shared/tailnet-peers.nix` with each peer's tag, lifecycle, and purpose. Mark the desktop durable and the Air temporary for research-result access. Export the data from `modules/shared/default.nix`, and confirm that `moduleImports` still passes.
 
 ## 3. Policy Renderer
 

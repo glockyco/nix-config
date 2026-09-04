@@ -24,6 +24,7 @@ let
   absolute = evaluate {
     name = "absolute-host";
     username = "absolute-user";
+    tailnet.tag = "tag:absolute-host";
     ompRuntime = {
       executable.absolute = "/opt/homebrew/bin/omp";
       installCommand = "install absolute omp";
@@ -33,6 +34,7 @@ let
   homeRelative = evaluate {
     name = "relative-host";
     username = "relative-user";
+    tailnet.tag = "tag:relative-host";
     ompRuntime = {
       executable.homeRelative = ".local/lib/oh-my-pi/omp";
       installCommand = "install relative omp";
@@ -41,6 +43,7 @@ let
 
   missingUsername = force {
     name = "missing-user";
+    tailnet.tag = "tag:missing-user";
     ompRuntime = {
       executable.absolute = "/opt/homebrew/bin/omp";
       installCommand = "install omp";
@@ -50,6 +53,7 @@ let
   bareExecutable = force {
     name = "bare-executable";
     username = "user";
+    tailnet.tag = "tag:bare-executable";
     ompRuntime = {
       executable = "/opt/homebrew/bin/omp";
       installCommand = "install omp";
@@ -59,8 +63,28 @@ let
   relativeAbsolute = force {
     name = "relative-absolute";
     username = "user";
+    tailnet.tag = "tag:relative-absolute";
     ompRuntime = {
       executable.absolute = "relative/omp";
+      installCommand = "install omp";
+    };
+  };
+
+  missingTag = force {
+    name = "missing-tag";
+    username = "user";
+    ompRuntime = {
+      executable.absolute = "/opt/homebrew/bin/omp";
+      installCommand = "install omp";
+    };
+  };
+
+  malformedTag = force {
+    name = "malformed-tag";
+    username = "user";
+    tailnet.tag = "malformed-tag";
+    ompRuntime = {
+      executable.absolute = "/opt/homebrew/bin/omp";
       installCommand = "install omp";
     };
   };
@@ -69,6 +93,10 @@ assert
   absolute == {
     name = "absolute-host";
     username = "absolute-user";
+    tailnet = {
+      tag = "tag:absolute-host";
+      reachable = true;
+    };
     ompRuntime = {
       executable.absolute = "/opt/homebrew/bin/omp";
       installCommand = "install absolute omp";
@@ -78,6 +106,10 @@ assert
   homeRelative == {
     name = "relative-host";
     username = "relative-user";
+    tailnet = {
+      tag = "tag:relative-host";
+      reachable = true;
+    };
     ompRuntime = {
       executable.homeRelative = ".local/lib/oh-my-pi/omp";
       installCommand = "install relative omp";
@@ -88,4 +120,6 @@ assert render homeRelative.ompRuntime.executable == ''"$HOME/.local/lib/oh-my-pi
 assert !missingUsername.success;
 assert !bareExecutable.success;
 assert !relativeAbsolute.success;
+assert !missingTag.success;
+assert !malformedTag.success;
 runCommand "check-host-declaration" { } "touch $out"

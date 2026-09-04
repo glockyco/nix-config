@@ -25,6 +25,7 @@ inputs.nix-darwin.lib.darwinSystem {
     {
       host = {
         inherit name username;
+        tailnet.tag = "tag:macbook-pro";
         ompRuntime = {
           executable.absolute = "/opt/homebrew/bin/omp";
           installCommand = "brew install can1357/tap/omp";

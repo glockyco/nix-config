@@ -15,6 +15,19 @@ in
       description = "Interactive user managed by the host configuration.";
     };
 
+    tailnet = {
+      tag = mkOption {
+        type = types.strMatching "^tag:[a-z0-9-]+$";
+        description = "Stable tailnet policy tag assigned to this host.";
+      };
+
+      reachable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Whether tailnet policy may name this host as a destination.";
+      };
+    };
+
     ompRuntime = {
       executable = mkOption {
         type = types.attrTag {

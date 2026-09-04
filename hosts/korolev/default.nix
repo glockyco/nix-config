@@ -25,6 +25,10 @@ inputs.nixpkgs.lib.nixosSystem {
     {
       host = {
         inherit name username;
+        tailnet = {
+          tag = "tag:korolev";
+          reachable = false;
+        };
         ompRuntime = {
           executable.homeRelative = ".local/lib/oh-my-pi/omp";
           installCommand = ''curl -fsSL https://omp.sh/install | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary'';
