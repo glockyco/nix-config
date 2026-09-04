@@ -2,7 +2,7 @@
 
 - [x] 1.1 Create the tailnet, enable MagicDNS, and record the tailnet ID in the runbook; confirm that the admin console shows MagicDNS enabled and zero nodes.
 - [x] 1.2 Create a federated identity for `glockyco/nix-config` with the `policy_file` scope and add `TS_OAUTH_ID`, `TS_AUDIENCE`, and `TS_TAILNET` as repository secrets; confirm with `gh api repos/glockyco/nix-config/actions/secrets` that exactly those three names exist.
-- [ ] 1.3 Enable "Prevent edits in the admin console" with this repository as the external reference, and confirm that the policy editor shows the lock.
+- [x] 1.3 Enable "Prevent edits in the admin console" with this repository as the external reference, and confirm that the policy editor shows the lock.
 
 ## 2. Host Declarations
 
