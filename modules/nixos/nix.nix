@@ -1,6 +1,17 @@
+{
+  inputs,
+  lib,
+  ...
+}:
+
 let
   inherit (import ../shared) binaryCaches;
+  macHost = inputs.self.darwinConfigurations.macbook-pro.config.host;
+  macLogicalCores = macHost.build.logicalCores;
 in
+assert lib.assertMsg (
+  macLogicalCores != null
+) "the Darwin remote builder must declare host.build.logicalCores";
 {
   # A daemon setting is the only source of this cache on this host. The root
   # flake declares no `nixConfig`, because Nix ignores a flake-provided key for
@@ -17,7 +28,21 @@ in
       "nix-command"
       "flakes"
     ];
+    builders-use-substitutes = true;
   };
+
+  nix.distributedBuilds = true;
+  nix.buildMachines = [
+    {
+      hostName = macHost.name;
+      sshUser = macHost.username;
+      system = "aarch64-darwin";
+      protocol = "ssh-ng";
+      maxJobs = macLogicalCores;
+      speedFactor = macLogicalCores;
+      supportedFeatures = [ "big-parallel" ];
+    }
+  ];
 
   # `trusted-users` stays at its default of `root` alone. Adding the interactive
   # user would let any flake it evaluates add a substituter and a signing key,

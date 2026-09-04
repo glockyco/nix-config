@@ -216,6 +216,8 @@
             # `nixosConfigurations.korolev` is the only `x86_64-linux` host. These
             # bindings are lazy, so the Darwin outputs never force them.
             korolevConfig = self.nixosConfigurations.korolev.config;
+            korolevBuildMachines = korolevConfig.nix.buildMachines;
+            korolevBuildMachine = builtins.head korolevBuildMachines;
             korolevUser = korolevConfig.wsl.defaultUser;
             korolevHome = korolevConfig.home-manager.users.${korolevUser};
             korolevShell = korolevConfig.users.users.${korolevUser}.shell;
@@ -462,12 +464,22 @@
               # evaluate. This is the complete set that the WSL host selects.
               korolevHomeGeneration = korolevHome.home.activationPackage;
 
-              # No other machine drives this host. It also runs endpoint data loss
-              # prevention, so it holds no decryption material.
+              # This host initiates build traffic but remains unreachable. It runs
+              # endpoint data loss prevention, so it also holds no decryption material.
               korolevIsolation =
                 assert !korolevConfig.services.openssh.enable;
                 assert korolevConfig.networking.firewall.allowedTCPPorts == [ ];
+                assert korolevConfig.networking.firewall.allowedUDPPorts == [ ];
                 assert !(korolevConfig ? sops);
+                assert korolevConfig.services.tailscale.enable;
+                assert !korolevConfig.services.tailscale.openFirewall;
+                assert korolevConfig.services.tailscale.disableTaildrop;
+                assert builtins.elem "--shields-up" korolevConfig.services.tailscale.extraSetFlags;
+                assert !(builtins.elem "--ssh" korolevConfig.services.tailscale.extraSetFlags);
+                assert korolevConfig.nix.distributedBuilds;
+                assert builtins.length korolevBuildMachines == 1;
+                assert korolevBuildMachine.hostName == "macbook-pro";
+                assert korolevBuildMachine.sshKey == null;
                 pkgs.runCommand "check-wsl-host-isolation" { } "touch $out";
 
               # WSL 2 is already the virtual machine, so the runtime needs no

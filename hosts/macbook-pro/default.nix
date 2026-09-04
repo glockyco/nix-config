@@ -25,6 +25,7 @@ inputs.nix-darwin.lib.darwinSystem {
     {
       host = {
         inherit name username;
+        build.logicalCores = 15;
         tailnet.tag = "tag:macbook-pro";
         ompRuntime = {
           executable.absolute = "/opt/homebrew/bin/omp";

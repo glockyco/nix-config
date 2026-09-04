@@ -15,6 +15,12 @@ in
       description = "Interactive user managed by the host configuration.";
     };
 
+    build.logicalCores = mkOption {
+      type = types.nullOr types.ints.positive;
+      default = null;
+      description = "Measured logical CPU count when this host serves as a remote builder.";
+    };
+
     tailnet = {
       tag = mkOption {
         type = types.strMatching "^tag:[a-z0-9-]+$";
