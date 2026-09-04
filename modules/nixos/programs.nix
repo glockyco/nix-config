@@ -1,13 +1,25 @@
-{ lib, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
+  macHost = inputs.self.darwinConfigurations.macbook-pro.config.host;
+  tailnetBuilderCheck = pkgs.callPackage ../../packages/tailnet-builder-check.nix {
+    hostName = macHost.name;
+  };
   tailnetKnownHosts = pkgs.callPackage ../../packages/tailnet-known-hosts.nix { };
 in
 {
   # Zed's Windows UI starts language servers in its WSL remote process. Keep
   # nixd in the system closure so that process can resolve it without entering
   # a repository development shell.
-  environment.systemPackages = [ pkgs.nixd ];
+  environment.systemPackages = [
+    pkgs.nixd
+    tailnetBuilderCheck
+  ];
 
   # Project work uses prebuilt executables that expect a conventional dynamic
   # loader: .NET tooling, Unity, game loader toolchains, and OMP's managed
