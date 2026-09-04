@@ -19,9 +19,9 @@
 
 ## 4. Live Acceptance
 
-- [ ] 4.1 Build and activate `nixosConfigurations.korolev`. Confirm that activation does not change the OMP Chromium, profile, cache, or configuration paths.
-- [ ] 4.2 Use the actual OMP managed-browser interface to open `https://example.com` and capture a screenshot. Confirm that the page renders and that the browser daemon reports no missing shared library.
-- [ ] 4.3 Test and apply the rendered WinGet configuration as the interactive Windows user. Confirm that the pinned Brave version installs without elevation and that Zen remains the declared interactive browser.
+- [x] 4.1 Build and activate `nixosConfigurations.korolev`. Confirm that activation does not change the OMP Chromium, profile, cache, or configuration paths.
+- [x] 4.2 Use the actual OMP managed-browser interface to open `https://example.com` and capture a screenshot. Confirm that the page renders and that the browser daemon reports no missing shared library.
+- [x] 4.3 Test and apply the rendered WinGet configuration as the interactive Windows user. Confirm that the pinned Brave version installs without elevation and that Zen remains the declared interactive browser.
 - [ ] 4.4 Run the documented extension installer, create the dedicated Brave profile, and load the unpacked extension. Open one dedicated tab and confirm that an OMP relay session adopts that tab without controlling a Zen tab or another Brave profile.
 - [ ] 4.5 Restart Windows and sign in. Confirm that Brave and the relay daemon remain stopped until requested, then repeat the relay connection check.
 
