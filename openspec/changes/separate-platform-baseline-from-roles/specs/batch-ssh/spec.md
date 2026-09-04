@@ -2,7 +2,7 @@
 
 ### Requirement: Explicit remote tool resolution
 
-Automation that invokes a tool absent from the Air's non-interactive `PATH` SHALL receive the reviewed absolute executable path from the Air endpoint declaration. The module that owns the endpoint SHALL pass that path to the packaged command and its check. The batch endpoint SHALL NOT modify remote shell initialization to discover such tools.
+While the temporary Air client role is enabled, automation that invokes a tool absent from the Air's non-interactive `PATH` SHALL receive the reviewed absolute executable path from the Air endpoint declaration. The role SHALL pass that path to the packaged command and its check. The batch endpoint SHALL NOT modify remote shell initialization to discover such tools. Removing the role and declaration SHALL remove this endpoint completely.
 
 #### Scenario: Remote Docker command
 

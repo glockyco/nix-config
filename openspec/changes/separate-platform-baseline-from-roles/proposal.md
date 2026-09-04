@@ -2,7 +2,7 @@
 
 The platform module lists mix operating-system baseline with one machine's roles and identity. That structure makes a second Darwin or NixOS host inherit services, applications, paths, and names that belong only to `macbook-pro` or `korolev`.
 
-The same facts also have several declarations. Examples include the screenshot directory, Git identity, Air endpoint, Dock applications, container sizing, and Nix settings. Several copies have already drifted or become ineffective.
+The same facts also have several declarations. Examples include the screenshot directory, Git identity, Air endpoint, Dock applications, container sizing, and Nix settings. Several copies have already drifted or become ineffective. The Air is a borrowed research machine that will be returned after the PhD thesis and TOSEM results are retrieved, so its integration must also be removable as one unit.
 
 ## What Changes
 
@@ -12,6 +12,7 @@ The same facts also have several declarations. Examples include the screenshot d
 - Declare each Homebrew application once with its cask, application path, Dock position, and rationale. Generate the cask set and Dock entries from that list.
 - Give the Air share an explicit mount point. Derive every use from the mount declaration instead of relying on the order-dependent `/Volumes/...-1` name.
 - Make the Air batch checker receive the declared remote Docker path as a package argument. Derive the checker expectations from the evaluated SSH configuration.
+- Isolate every Air endpoint, mount, package, check, and credential reference behind one temporary `air-client` role. Prove that removing the role and declaration leaves the durable workstation configuration valid.
 - Pin the Nix registry on both platforms, disable legacy channels, and apply the same garbage-collection and store-optimisation policy where each platform supports it.
 - Remove the redundant NixOS `nano` and normal-user home declarations after proving the pinned module defaults.
 - Move the macOS-only Zen policy and nix-homebrew path adjustment out of shared modules.

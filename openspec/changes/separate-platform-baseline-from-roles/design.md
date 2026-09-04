@@ -22,7 +22,8 @@ Several declarations already disagree. `modules/home/darwin/network-shares.nix` 
 - Adding `air` or the Windows desktop as Nix-managed hosts. `connect-fleet-over-tailnet` declares them as tailnet nodes only.
 - Changing activation program behavior. `package-user-programs` owns that work.
 - Changing Windows artifact rendering. `derive-windows-check-from-declaration` owns that work.
-- Replacing the Air's Apple SSH service or SMB service.
+- Replacing the temporary Air's Apple SSH service or SMB service before the machine is returned.
+- Keeping any Air integration after its research results are preserved and the borrowed machine is returned.
 
 ## Decisions
 
@@ -57,7 +58,7 @@ Alternative rejected: encode role names as `host.roles` and compute `imports` fr
 - `git.authorName`, `git.defaultEmail`, and `git.githubNoreplyEmail`;
 - `darwin.applications`, where each item has `cask`, `appPath`, optional `dockPosition`, and `rationale`;
 - `darwin.containerProfile`, with positive CPU, memory, and disk values plus mounts;
-- `remote.air`, with MagicDNS host, user, batch alias, remote Docker path, SMB share, and explicit mount point.
+- nullable `remote.air`, with MagicDNS host, user, batch alias, remote Docker path, SMB share, explicit mount point, and the temporary peer purpose inherited from the tailnet declaration.
 
 Platform-only fields use nullable submodules whose assertions require them only when the selected role reads them. The host file assigns the values beside its role imports.
 
@@ -89,7 +90,9 @@ The nix-homebrew profile fragment moves from portable `modules/home/shell.nix` i
 
 Alternative rejected: guard the portable fragment with `osConfig ? homebrew`. A platform probe in portable code hides ownership and keeps Darwin behavior in the shared module.
 
-### 6. The Air declaration owns SSH, batch Docker, and SMB data
+### 6. The temporary Air declaration owns one removable integration
+
+The `air-client` role is the only consumer of `host.remote.air`. It owns the SSH aliases, batch program, batch configuration check, SMB mount agent, `~/Air` link, and their mutable credential references. No baseline, durable role, release gate, builder, storage declaration, or authentication path depends on them.
 
 The Air client role renders both SSH aliases from `host.remote.air`. It passes `remoteDockerExecutable` directly to `pkgs.air-batch-check`. The package has a required `remoteDockerExecutable` argument and no `AIR_BATCH_DOCKER` fallback. Its fixture test overrides the argument.
 
@@ -98,6 +101,8 @@ The Air client role renders both SSH aliases from `host.remote.air`. It passes `
 The SMB mount uses the declared MagicDNS name and an explicit directory such as `~/Library/Mounts/air`. The mount program creates that directory and calls `/sbin/mount_smbfs -N` with the declared share. The operator keeps the credential in the macOS SMB credential store. `~/Air` points to the explicit mount point. No code discovers or predicts a numbered `/Volumes` path.
 
 Alternative rejected: find the first `/Volumes/Macintosh HD*` directory. That turns mount order into an implicit selector and can bind the wrong server.
+
+A temporary evaluation removes the `air-client` import and sets `remote.air = null`. The Mac must still evaluate, and no generated package, check, launchd agent, SSH alias, Home Manager file, or policy consumer may reference the Air. This is the implementation proof for the offboarding issue created by `connect-fleet-over-tailnet`.
 
 Alternative rejected: keep `osascript mount volume` and inspect Finder's selected path. Finder still owns the unstable suffix, so consumers cannot have a declared target.
 
@@ -164,4 +169,4 @@ Alternative rejected: add `korolev` as recovery recipient. The tailnet design in
 1. Add the secret fixture check and all declaration-driven checks.
 1. Run the static gates, activate each affected host, and run the Air mount and batch checks.
 
-Rollback is a Git revert plus activation of the previous generation. Keep the prior encrypted files and both private age keys until each decrypt proof passes. Keep the old Air mount available until the explicit mount completes once.
+Rollback is a Git revert plus activation of the previous generation. Keep the prior encrypted files and both private age keys until each decrypt proof passes. Keep the old Air mount available until the explicit mount completes once. The future Air offboarding removes the role and declaration instead of preserving either mount path.

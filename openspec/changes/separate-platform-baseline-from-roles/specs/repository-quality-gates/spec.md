@@ -21,6 +21,12 @@ A platform baseline SHALL contain only configuration required by every host of t
 - **WHEN** repository validation inspects a shared module
 - **THEN** the module contains no Darwin, NixOS, WSL, or Windows condition
 
+#### Scenario: Remove a temporary role
+
+- **WHEN** a host removes the temporary Air role and its nullable declaration
+- **THEN** the host still evaluates with every durable role and release gate
+- **AND** no package, check, launchd agent, SSH alias, Home Manager file, policy entry, or credential reference names the Air
+
 ### Requirement: One declaration owns each host fact
 
 A host-specific fact SHALL have one typed declaration. Every module, generated file, and check that uses the fact SHALL derive it from that declaration. A check SHALL read its expected value from the evaluated configuration rather than repeat a machine name, user name, path, application, or resource value.

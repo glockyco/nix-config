@@ -36,6 +36,8 @@
 - [ ] 5.3 Make `air-batch-config-check` derive the destination and account from the evaluated SSH settings. Confirm that a temporary host or user change needs no check edit and that one mismatched batch alias fails the check.
 - [ ] 5.4 Replace the Finder-selected `/Volumes` path with the declared mount point and `mount_smbfs -N`. Confirm on the Mac that the Air share mounts at that exact path without a prompt and that `~/Air` resolves into it.
 - [ ] 5.5 Re-run the documented batch acceptance on the reachable Air. Confirm success, remote failure propagation, protocol transfer, and the declared remote Docker executable.
+- [ ] 5.6 Evaluate a temporary Mac configuration without the `air-client` import and with `host.remote.air = null`. Confirm that it retains every durable role and gate and contains no Air package, check, launchd agent, SSH alias, Home Manager file, policy entry, or credential reference, then remove the probe.
+- [ ] 5.7 Link this clean-removal proof from the Air offboarding issue created by `connect-fleet-over-tailnet`. Confirm the issue's done-when boundary names removal of both the role and declaration.
 
 ## 6. Unify Nix Policy
 
@@ -65,5 +67,5 @@
 
 ## 9. Documentation
 
-- [ ] 9.1 Add a dated architecture decision for platform baselines, explicit host roles, declaration-owned machine facts, and complete secret encryption.
+- [ ] 9.1 Add a dated architecture decision for platform baselines, explicit host roles, declaration-owned machine facts, complete secret encryption, and the temporary Air role's clean-removal boundary.
 - [ ] 9.2 Update the README module and host layout rows. Name the role directories and the typed host declaration, and confirm `nix fmt -- --fail-on-change README.md` passes.
