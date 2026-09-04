@@ -3,6 +3,7 @@
   coreutils,
   gnugrep,
   runCommand,
+  tailscale,
   writeShellApplication,
 }:
 
@@ -25,7 +26,7 @@ let
             printf '%s\n' '{"BackendState":"Running"}'
           fi
           ;;
-        "set --ssh --advertise-tags=tag:macbook-pro")
+        "set --ssh")
           if [ "$(cat "$state_file")" -lt 2 ]; then
             printf '%s\n' 'set ran before authentication completed' >&2
             exit 1
@@ -57,12 +58,18 @@ runCommand "check-tailscale-set-after-login"
 
     TAILSCALE_FIXTURE_STATE=$PWD/state \
       TAILSCALE_FIXTURE_SET_LOG=$PWD/set.log \
-      timeout 5 ${command}/bin/tailscale-set-after-login \
-        --ssh \
-        --advertise-tags=tag:macbook-pro
+      timeout 5 ${command}/bin/tailscale-set-after-login --ssh
 
     test "$(cat state)" = 2
-    grep -qFx 'set --ssh --advertise-tags=tag:macbook-pro' set.log
+    grep -qFx 'set --ssh' set.log
+
+    if ${tailscale}/bin/tailscale set \
+      --advertise-tags=tag:macbook-pro >unsupported.out 2>&1
+    then
+      printf '%s\n' 'tailscale set unexpectedly accepted --advertise-tags' >&2
+      exit 1
+    fi
+    grep -qF 'flag provided but not defined: -advertise-tags' unsupported.out
 
     touch $out
   ''
