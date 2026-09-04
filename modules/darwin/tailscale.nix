@@ -21,10 +21,7 @@ in
   config = {
     services.tailscale = {
       enable = true;
-      extraSetFlags = [
-        "--ssh"
-        "--advertise-tags=${config.host.tailnet.tag}"
-      ];
+      extraSetFlags = [ "--ssh" ];
     };
 
     launchd.daemons.tailscaled-set = lib.mkIf (cfg.extraSetFlags != [ ]) {
