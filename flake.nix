@@ -163,7 +163,24 @@
             llmAgents = inputs.llm-agents.packages.${system};
             openspec = llmAgents.openspec;
             configuredHost = hostConfiguration.config.host;
-            inherit (import ./modules/shared) binaryCaches;
+            inherit (import ./modules/shared) binaryCaches tailnetPeers;
+            managedHosts = {
+              macbook-pro = self.darwinConfigurations.macbook-pro.config.host;
+              korolev = self.nixosConfigurations.korolev.config.host;
+            };
+            tailnetPolicyRenderer = pkgs.callPackage ./packages/tailnet-policy.nix { };
+            tailnetPolicy = tailnetPolicyRenderer {
+              inherit managedHosts;
+              peers = tailnetPeers;
+            };
+            tailnetPolicyCheck = pkgs.callPackage ./packages/tailnet-policy-check.nix {
+              inherit managedHosts tailnetPolicy tailnetPolicyRenderer;
+              peers = tailnetPeers;
+            };
+            tailnetPolicyRejectsCheck = pkgs.callPackage ./packages/tailnet-policy-rejects.nix {
+              inherit managedHosts tailnetPolicyRenderer;
+              peers = tailnetPeers;
+            };
             personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
               inherit (configuredHost) ompRuntime;
               inherit (llmAgents) herdr;
@@ -213,6 +230,7 @@
             packages = {
               inherit openspec;
               personal-omp = personalOmp;
+              tailnet-policy = tailnetPolicy;
               windows-configuration = windowsConfiguration;
             }
             // onDarwinHost {
@@ -246,6 +264,9 @@
               # Force representative declarations so option errors cannot stay
               # hidden behind Nix laziness.
               hostDeclaration = hostDeclarationCheck;
+
+              tailnetPolicy = tailnetPolicyCheck;
+              tailnetPolicyRejects = tailnetPolicyRejectsCheck;
 
               hostNixSettings =
                 let

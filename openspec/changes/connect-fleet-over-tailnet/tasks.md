@@ -12,11 +12,11 @@
 
 ## 3. Policy Renderer
 
-- [ ] 3.1 Add `packages/tailnet-policy.nix` that renders `policy.hujson` from the host declarations and peer data per design decision 2, expose it as `packages.tailnet-policy` on every system, and confirm that `jq` parses the output and that `dst` lists contain no `tag:korolev`.
-- [ ] 3.2 Add the `tests` and `sshTests` blocks and confirm that the rendered file names every reachable tag as a source that must be denied `korolev:22` and `korolev:*`.
-- [ ] 3.3 Add the `tailnetPolicy` check and confirm that `nix build .#checks.x86_64-linux.tailnetPolicy` passes.
-- [ ] 3.4 Add `tailnetPolicyRejects` with fixtures that name `korolev` as a destination, contain an `@`, and omit a temporary peer's lifecycle or purpose. Confirm every rejection, then remove one renderer assertion temporarily and confirm the check fails before reverting the probe.
-- [ ] 3.5 Add a policy fixture without the temporary Air peer. Confirm that no tag owner, grant, SSH rule, or test names `tag:air` and that every durable topology invariant passes.
+- [x] 3.1 Add `packages/tailnet-policy.nix` that renders `policy.hujson` from the host declarations and peer data per design decision 2, expose it as `packages.tailnet-policy` on every system, and confirm that `jq` parses the output and that `dst` lists contain no `tag:korolev`.
+- [x] 3.2 Add the `tests` and `sshTests` blocks and confirm that the rendered file names every reachable tag as a source that must be denied TCP `tag:korolev:22`. The renderer assertion covers every port because no access or SSH rule may name `tag:korolev` as a destination; Tailscale policy tests require one numeric port per destination.
+- [x] 3.3 Add the `tailnetPolicy` check and confirm that `nix build .#checks.x86_64-linux.tailnetPolicy` passes.
+- [x] 3.4 Add `tailnetPolicyRejects` with fixtures that name `korolev` as a destination, contain an `@`, and omit a temporary peer's lifecycle or purpose. Confirm every rejection, then remove one renderer assertion temporarily and confirm the check fails before reverting the probe.
+- [x] 3.5 Add a policy fixture without the temporary Air peer. Confirm that no tag owner, grant, SSH rule, or test names `tag:air` and that every durable topology invariant passes.
 - [ ] 3.6 Add `.github/workflows/tailnet-policy.yml` with `test` on pull requests and `apply` on `main`, using the federated identity and `policy-file: result/policy.hujson`; open a pull request and confirm that the `test` job passes against the live tailnet.
 - [ ] 3.7 Merge and confirm in the admin console that the applied policy equals the rendered file and that the tests block passed.
 

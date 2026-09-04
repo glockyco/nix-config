@@ -53,12 +53,12 @@ tagOwners  every declared tag -> [ "autogroup:admin" ]
 grants     src ["*"]           dst [tag:macbook-pro tag:air tag:desktop] ip ["*"]
 ssh        src [tag:korolev]   dst [tag:macbook-pro] users [glockyco] action accept
            src [autogroup:member] dst [tag:macbook-pro] users [glockyco] action check
-tests      each non-korolev tag: deny korolev:22, korolev:*
+tests      each non-korolev tag: deny TCP tag:korolev:22
 sshTests   tag:korolev -> tag:macbook-pro accept as glockyco
            tag:macbook-pro -> tag:korolev deny
 ```
 
-The `dst` list is derived: every declared tag except the tag of any host whose declaration sets `host.tailnet.reachable = false`. `korolev` sets it. The renderer asserts that no `dst` in any grant or SSH rule names an unreachable tag, that the rendered text contains no `@`, and that every managed host has a tag. The `tests` and `sshTests` blocks make Tailscale assert the same at apply time, so a policy that the admin console edits by hand and a policy that the renderer produces are held to one contract.
+The `dst` list is derived: every declared tag except the tag of any host whose declaration sets `host.tailnet.reachable = false`. `korolev` sets it. The renderer asserts that no `dst` in any grant or SSH rule names an unreachable tag, that the rendered text contains no `@`, and that every managed host has a tag. This evaluation assertion covers every port. Tailscale network tests require one numeric port per destination, so the live network tests use TCP port 22 and the SSH tests deny remote login to `korolev`.
 
 `.github/workflows/tailnet-policy.yml` installs Nix with the same action as `check.yml`, runs `nix build .#tailnet-policy`, and calls `tailscale/gitops-acl-action` with `policy-file: result/policy.hujson`: `action: test` on pull requests, `action: apply` on pushes to `main`. Authentication uses a federated identity created in the Tailscale admin console for this repository, so GitHub stores `TS_OAUTH_ID`, `TS_AUDIENCE`, and `TS_TAILNET` as repository secrets and no long-lived token. The admin console setting "Prevent edits in the admin console" is enabled with this repository as the external reference.
 

@@ -36,7 +36,7 @@ Each durable fleet host and temporary peer SHALL join one tailnet as a node with
 
 ### Requirement: Declared access policy
 
-The tailnet access policy SHALL be declared as repository data and rendered by the repository. The rendered policy SHALL permit every node to reach the Darwin host, the desktop, and the Air while the Air is declared. It SHALL permit the Linux host to reach those declared destinations. No rule SHALL name the Linux host as a destination. The rendered policy SHALL contain no e-mail address. The rendered policy SHALL contain Tailscale tests that assert the Linux host is unreachable from every other node.
+The tailnet access policy SHALL be declared as repository data and rendered by the repository. The rendered policy SHALL permit every node to reach the Darwin host, the desktop, and the Air while the Air is declared. It SHALL permit the Linux host to reach those declared destinations. No rule SHALL name the Linux host as a destination. The rendered policy SHALL contain no e-mail address. The rendered policy SHALL contain Tailscale network tests that deny TCP port 22 to the Linux host from every other node and SSH tests that deny remote login to the Linux host. Renderer assertions SHALL prevent every access and SSH rule from naming the Linux host as a destination.
 
 #### Scenario: Render the policy
 
