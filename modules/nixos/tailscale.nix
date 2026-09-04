@@ -1,11 +1,8 @@
-{ config, ... }:
+{ ... }:
 {
   services.tailscale = {
     enable = true;
-    extraSetFlags = [
-      "--shields-up"
-      "--advertise-tags=${config.host.tailnet.tag}"
-    ];
+    extraSetFlags = [ "--shields-up" ];
     disableTaildrop = true;
     openFirewall = false;
   };
