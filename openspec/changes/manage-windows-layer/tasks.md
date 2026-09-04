@@ -35,6 +35,8 @@
 - [x] 4.8 Verify that the installed browser policy path is `C:\Program Files\Zen Browser\distribution\policies.json`, and record its required elevation.
 - [x] 4.9 Declare the built-in Windows dark appearance and Bloom wallpaper without owning custom accent data.
 - [x] 4.10 Pin AltSnap, configure 50/50 edge snapping, and remove the overlapping PowerToys window mover.
+- [x] 4.11 Declare English (United Kingdom) as the preferred interface language while preserving the German keyboard layouts.
+- [x] 4.12 Declare ISO 8601 as the Windows short-date format.
 
 ## 5. Declare Application Configuration Files
 
@@ -69,6 +71,8 @@
 - [x] 7.5 Reapply the document and policy script and confirm that the second run reports no change.
 - [x] 7.6 Apply and test the native Neo script from a 64-bit Administrator session, then restart Windows.
 - [x] 7.7 Apply the refined document and Zen policy script, then confirm that all three artifacts report desired state.
+- [x] 7.8 Apply the English language resource and confirm that its test reports desired state.
+- [x] 7.9 Apply the ISO short-date resources and confirm that their tests report desired state.
 
 ## 8. Verify Each Role by Use
 
@@ -82,6 +86,8 @@
 - [x] 8.8 Browse a repository in the Git client and record the observed responsiveness.
 - [x] 8.9 Open Zen and confirm that its profile renders the Catppuccin Mocha Mauve theme.
 - [x] 8.10 Confirm that one elevated ReNeo process supplies higher layers to both ordinary and elevated applications.
+- [ ] 8.11 Sign in again and confirm that Windows and PowerToys use English while native Neo remains the default input method.
+- [ ] 8.12 Confirm that the taskbar renders the short date as `yyyy-MM-dd`.
 
 ## 9. Record the Manual Surface
 

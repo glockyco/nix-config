@@ -100,6 +100,8 @@ Use `Microsoft.Windows/Registry` and name every key. This mirrors how `modules/d
 
 Select the built-in Windows dark appearance, the dark Bloom wallpaper, and transparency. Preserve the current standard blue accent by leaving the custom accent-palette binary data untouched. The appearance resource names and tests the exact per-user registry values, applies the wallpaper through `SystemParametersInfo`, and broadcasts the supported setting-change notification.
 
+Put `en-GB` first in the user's preferred language list and set it as the Windows UI override. This makes Windows and applications prefer English. Preserve the existing `de-DE` and `de-AT` entries and their input methods. Windows adds the standard UK input method to its preferred English entry; keep native Neo as the explicit default. This separates interface language from the Austrian region and German keyboard layouts. Set the short date to ISO 8601 `yyyy-MM-dd` instead of inheriting the British `dd/MM/yyyy` format.
+
 Declare the disabled state explicitly. `modules/darwin/defaults.nix` records the reason directly: *"Explicitly disable this key: omitting it leaves a previous `true` value."* The same hazard applies to a bundled utility, so the document enables only Command Palette and disables every other module. PowerToys still installs the other utilities because it is one monolithic package. Its settings parser rejects the entire root document when the enabled map contains an unknown module key, so validation requires the exact module-key set from pinned version 0.101.2362.0.
 
 ### 6. Separate enforced configuration files from converged ones

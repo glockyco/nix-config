@@ -76,6 +76,20 @@ in
     description = "Sort File Explorer folders by item name";
   })
   (registry {
+    name = "region-short-date";
+    keyPath = "HKCU\\Control Panel\\International";
+    valueName = "sShortDate";
+    valueData.String = "yyyy-MM-dd";
+    description = "Use an ISO 8601 short date";
+  })
+  (registry {
+    name = "region-date-separator";
+    keyPath = "HKCU\\Control Panel\\International";
+    valueName = "sDate";
+    valueData.String = "-";
+    description = "Use the ISO 8601 date separator";
+  })
+  (registry {
     name = "region-short-time";
     keyPath = "HKCU\\Control Panel\\International";
     valueName = "sShortTime";
@@ -138,6 +152,39 @@ in
     valueData.ExpandString = ''"%APPDATA%\AltSnap\AltSnap.exe"'';
     description = "Start AltSnap for the interactive user at logon";
   })
+  {
+    type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+    name = "windows-user-language";
+    properties = {
+      testScript = ''
+        $languages = Get-WinUserLanguageList
+        $override = Get-WinUILanguageOverride
+        return $languages.Count -eq 3 `
+          -and $languages[0].LanguageTag -eq 'en-GB' `
+          -and $languages[0].InputMethodTips.Count -eq 1 `
+          -and $languages[0].InputMethodTips[0] -eq '0809:00000809' `
+          -and $languages[1].LanguageTag -eq 'de-DE' `
+          -and $languages[2].LanguageTag -eq 'de-AT' `
+          -and $null -ne $override `
+          -and $override.Name -eq 'en-GB'
+      '';
+      setScript = ''
+        $existing = Get-WinUserLanguageList
+        $desired = New-WinUserLanguageList -Language 'en-GB'
+        foreach ($languageTag in @('de-DE', 'de-AT')) {
+          $matches = @($existing | Where-Object { $_.LanguageTag -eq $languageTag })
+          if ($matches.Count -ne 1) { throw "The user language list must contain exactly one $languageTag entry" }
+          $desired.Add($languageTag)
+          $target = @($desired | Where-Object { $_.LanguageTag -eq $languageTag })[0]
+          $target.InputMethodTips.Clear()
+          foreach ($inputTip in $matches[0].InputMethodTips) { $target.InputMethodTips.Add($inputTip) }
+        }
+        Set-WinUserLanguageList -LanguageList $desired -Force
+        Set-WinUILanguageOverride -Language 'en-GB'
+      '';
+    };
+    metadata.description = "Prefer English for Windows and applications without changing the German keyboard layouts";
+  }
   {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
     name = "native-neo-input-method";
