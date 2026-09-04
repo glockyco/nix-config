@@ -56,7 +56,7 @@
 - [ ] 7.3 Change `modules/home/darwin/network-shares.nix` to the tailnet name and the peer-state reachability probe, activate, and confirm that `~/Air` resolves while the Air is online and that the agent exits 0 without mounting while it is offline.
 - [ ] 7.4 Update `packages/air-batch-config-check.nix` and `packages/air-batch-check-tests.nix` to the new name, run `air-batch-check`, and confirm that all four probes pass over the tailnet.
 - [ ] 7.5 Confirm that no file under `modules/`, `packages/`, `hosts/`, or `docs/` contains `.local` as a host suffix or the string `MacBook-Air-von-ISYS`.
-- [ ] 7.6 Create a planning issue titled `Retire borrowed Air after research-result retrieval`. Require preserved thesis and TOSEM results, node revocation before return, removal of the tag and policy entries, removal of SSH and SMB configuration and credentials, and removal of the Air role and declaration. Confirm the issue has the `planning` label and links the temporary peer declaration.
+- [x] 7.6 Create a planning issue titled `Retire borrowed Air after research-result retrieval`. Require preserved thesis and TOSEM results, node revocation before return, removal of the tag and policy entries, removal of SSH and SMB configuration and credentials, and removal of the Air role and declaration. Confirm the issue has the `planning` label and links the temporary peer declaration.
 
 ## 8. Verify the Complete Change
 
