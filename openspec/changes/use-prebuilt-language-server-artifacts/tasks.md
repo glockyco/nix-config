@@ -1,7 +1,7 @@
 ## 1. Personal Plugin Cutover
 
-- [ ] 1.1 In `glockyco/omp-agent-setup`, create and apply a change that disables OMP's built-in `marksman` server and defines `markdown-oxide` for Markdown files, then verify the plugin package contains both declarations and no Marksman fallback.
-- [ ] 1.2 Run the plugin repository checks and exercise Markdown diagnostics, definition, references, and rename with Markdown Oxide against a fixed representative project, then publish the verified plugin revision.
+- [x] 1.1 In `glockyco/omp-agent-setup`, create and apply a change that disables OMP's built-in `marksman` server and defines `markdown-oxide` for Markdown files, then verify the plugin package contains both declarations and no Marksman fallback.
+- [x] 1.2 Run the plugin repository checks and exercise Markdown diagnostics, definition, references, and rename with Markdown Oxide against a fixed representative project, then publish the verified plugin revision.
 
 ## 2. Fixed-Output Language Servers
 

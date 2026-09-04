@@ -183,7 +183,13 @@
             };
             tailscaleSetAfterLoginTest = pkgs.callPackage ./packages/tailscale-set-after-login-tests.nix { };
             tailnetKnownHostsCommandTest = pkgs.callPackage ./packages/tailnet-known-hosts-tests.nix { };
+            markdownOxide = pkgs.callPackage ./packages/markdown-oxide.nix { };
+            roslynLanguageServer = pkgs.callPackage ./packages/roslyn-language-server.nix { };
             personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
+              inherit
+                markdownOxide
+                roslynLanguageServer
+                ;
               inherit (configuredHost) ompRuntime;
               inherit (llmAgents) herdr;
               plugin = inputs.personal-omp-plugin.packages.${system}.default;
@@ -237,7 +243,9 @@
 
             packages = {
               inherit openspec;
+              markdown-oxide = markdownOxide;
               personal-omp = personalOmp;
+              roslyn-language-server = roslynLanguageServer;
               tailnet-policy = tailnetPolicy;
               windows-configuration = windowsConfiguration;
             }
@@ -258,6 +266,41 @@
             };
 
             checks = {
+              markdownOxideVersion =
+                pkgs.runCommand "check-markdown-oxide-version" { nativeBuildInputs = [ markdownOxide ]; }
+                  ''
+                    test "$(markdown-oxide --version)" = "markdown-oxide 0.25.12"
+                    touch $out
+                  '';
+
+              roslynInitialization =
+                pkgs.runCommand "check-roslyn-language-server-initialization"
+                  {
+                    nativeBuildInputs = [
+                      pkgs.expect
+                      roslynLanguageServer
+                    ];
+                    meta.timeout = 60;
+                  }
+                  ''
+                    export HOME=$TMPDIR/home
+                    mkdir -p "$HOME" $TMPDIR/log
+                    expect <<'EOF'
+                      set timeout 45
+                      spawn Microsoft.CodeAnalysis.LanguageServer --stdio --logLevel Information --extensionLogDirectory $env(TMPDIR)/log
+                      expect_before timeout {
+                        send_error "Roslyn initialization timed out\n"
+                        exit 1
+                      }
+                      expect "Language server initialized"
+                      send \x04
+                      expect eof
+                      catch wait result
+                      exit [lindex $result 3]
+                    EOF
+                    touch $out
+                  '';
+
               # An unimported module is absent rather than an error.
               # Assert every module is reachable from its sibling `default.nix`.
               moduleImports = pkgs.runCommand "check-module-imports" { } ''
@@ -332,7 +375,8 @@
                     ! grep -qF /Users/ ${personalOmp}/bin/omp
 
                     test "$(jq -r '.omp.extensions | length' ${personalOmp.plugin}/package.json)" = 1
-                    test "$(jq -r '.servers | keys | sort | join(",")' ${personalOmp.plugin}/lsp/lsp.json)" = roslyn-language-server,svelte
+                    test "$(jq -r '.servers | keys | sort | join(",")' ${personalOmp.plugin}/lsp/lsp.json)" = markdown-oxide,marksman,roslyn-language-server,svelte
+                    test "$(jq -r '.servers.marksman.disabled' ${personalOmp.plugin}/lsp/lsp.json)" = true
 
                     # The workflow commands ship in the payload, and the LSP root
                     # must stay free of them so they register exactly once.
@@ -340,11 +384,12 @@
                     test ! -e ${personalOmp.plugin}/lsp/commands
 
                     command -v Microsoft.CodeAnalysis.LanguageServer
+                    command -v markdown-oxide
                     command -v pyright-langserver
                     command -v typescript-language-server
                     command -v svelteserver
                     command -v nixd
-                    command -v marksman
+                    ! command -v marksman
                     command -v texlab
                     test "$(${lib.getExe openspec} --version)" = "${openspec.version}"
                     touch $out
