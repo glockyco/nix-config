@@ -90,9 +90,9 @@
 - [x] 8.8 Browse a repository in the Git client and record the observed responsiveness.
 - [x] 8.9 Open Zen and confirm that its profile renders the Catppuccin Mocha Mauve theme.
 - [x] 8.10 Confirm that one elevated ReNeo process supplies higher layers to both ordinary and elevated applications.
-- [ ] 8.11 Sign in again and confirm that Windows and PowerToys use English while native Neo is selected.
+- [x] 8.11 Sign in again and confirm that Windows and PowerToys use English while native Neo is selected.
 - [x] 8.12 Confirm that the taskbar renders the short date as `yyyy-MM-dd`.
-- [ ] 8.13 Restart Windows and confirm that Firefox does not start automatically.
+- [x] 8.13 Restart Windows and confirm that Firefox does not start automatically.
 
 ## 9. Record the Manual Surface
 

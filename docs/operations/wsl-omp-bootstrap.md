@@ -321,6 +321,8 @@ Keep the LaTeX previewer decision in the future `evaluate-pdf-toolset` change. D
 
 Keep taskbar pins in user control. The supported taskbar-layout mechanism is a deployment policy, not a current-user convergence interface; using it here would replace or control the user's pin list. The document changes only taskbar visibility.
 
+Keep **Country or region** set to Austria. The installed Widgets build uses that region to select German Microsoft-hosted cards and taskbar-weather text, even though the Widgets interface follows the `en-GB` culture. It exposes no separate content-language control. Accept that content language instead of changing regional Microsoft services.
+
 Configure Night Light manually under **Settings > System > Display > Night light**. The accepted state is enabled from sunset to sunrise at 50% strength. Windows stores this state in an undocumented CloudStore binary payload, so the document does not write it.
 
 ### Verify the Windows roles
