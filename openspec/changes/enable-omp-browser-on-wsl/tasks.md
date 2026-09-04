@@ -1,15 +1,15 @@
 ## 1. NixOS Browser Runtime
 
-- [ ] 1.1 Add the tested Chromium shared-library providers to `programs.nix-ld.libraries` in `modules/nixos/programs.nix`. Confirm that `nix eval` reports every package in the `korolev` configuration and that the OMP wrapper closure still contains no Chromium package.
-- [ ] 1.2 Add an `ompBrowserRuntime` check that inspects the built WSL system path for each required shared-library name under `share/nix-ld/lib`. Confirm that `nix build .#checks.x86_64-linux.ompBrowserRuntime --print-build-logs` passes.
-- [ ] 1.3 Remove one library provider temporarily and confirm that `ompBrowserRuntime` fails for its missing shared-library name. Restore the declaration and confirm that the check passes again.
+- [x] 1.1 Add the tested Chromium shared-library providers to `programs.nix-ld.libraries` in `modules/nixos/programs.nix`. Confirm that `nix eval` reports every package in the `korolev` configuration and that the OMP wrapper closure still contains no Chromium package.
+- [x] 1.2 Add an `ompBrowserRuntime` check that inspects the built WSL system path for each required shared-library name under `share/nix-ld/lib`. Confirm that `nix build .#checks.x86_64-linux.ompBrowserRuntime --print-build-logs` passes.
+- [x] 1.3 Remove one library provider temporarily and confirm that `ompBrowserRuntime` fails for its missing shared-library name. Restore the declaration and confirm that the check passes again.
 
 ## 2. Windows Relay Browser
 
-- [ ] 2.1 Add `Brave.Brave` version `151.1.93.138` to the Windows application declaration with role `browser-relay` and user scope. Confirm that Zen remains the only application with role `browser` and that Brave is absent from the centrally managed application audit.
-- [ ] 2.2 Update the Windows configuration renderer and validator for exactly one pinned, user-scope `browser-relay` application. Reject a missing relay browser, `Brave.Brave` with another role or scope, an unpinned declaration, and any startup resource for Brave.
-- [ ] 2.3 Build `packages.windows-configuration` and `checks.x86_64-linux.windowsConfiguration`. Confirm that the rendered WinGet document contains the pinned Brave package without elevation and contains no Brave startup or default-browser resource.
-- [ ] 2.4 Remove the Brave declaration temporarily and confirm that the Windows validation gate fails. Restore the declaration and confirm that the gate passes again.
+- [x] 2.1 Add `Brave.Brave` version `151.1.93.138` to the Windows application declaration with role `browser-relay` and user scope. Confirm that Zen remains the only application with role `browser` and that Brave is absent from the centrally managed application audit.
+- [x] 2.2 Update the Windows configuration renderer and validator for exactly one pinned, user-scope `browser-relay` application. Reject a missing relay browser, `Brave.Brave` with another role or scope, an unpinned declaration, and any startup resource for Brave.
+- [x] 2.3 Build `packages.windows-configuration` and `checks.x86_64-linux.windowsConfiguration`. Confirm that the rendered WinGet document contains the pinned Brave package without elevation and contains no Brave startup or default-browser resource.
+- [x] 2.4 Remove the Brave declaration temporarily and confirm that the Windows validation gate fails. Restore the declaration and confirm that the gate passes again.
 
 ## 3. Operating Procedures
 

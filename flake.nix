@@ -217,6 +217,10 @@
             korolevUser = korolevConfig.wsl.defaultUser;
             korolevHome = korolevConfig.home-manager.users.${korolevUser};
             korolevShell = korolevConfig.users.users.${korolevUser}.shell;
+            ompBrowserRuntimeCheck = pkgs.callPackage ./packages/omp-browser-runtime-check.nix {
+              inherit personalOmp;
+              systemPath = korolevConfig.system.path;
+            };
           in
           {
             # `nix fmt` formats every language listed in ./treefmt.nix, tree-wide.
@@ -445,6 +449,10 @@
               # The host build is a check, so a host that stops building appears
               # in review rather than during activation.
               korolevSystem = korolevConfig.system.build.toplevel;
+
+              # Keep OMP's browser mutable while supplying its foreign-binary ABI
+              # from the rollback-safe NixOS generation.
+              ompBrowserRuntime = ompBrowserRuntimeCheck;
 
               # The portable user modules have to build for Linux, not only
               # evaluate. This is the complete set that the WSL host selects.

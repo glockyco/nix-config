@@ -16,8 +16,11 @@ FORBIDDEN_TYPES = {
     "PSDesiredStateConfiguration/WindowsFeature",
     "PSDesiredStateConfiguration/WindowsFeatureSet",
 }
+RELAY_BROWSER_ID = "Brave.Brave"
+RELAY_BROWSER_ROLE = "browser-relay"
 EXPECTED_ROLES = {
     "browser",
+    RELAY_BROWSER_ROLE,
     "editor",
     "git-client",
     "keyboard-layout",
@@ -196,6 +199,32 @@ def validate_policy(document: dict, managed_ids: set[str]) -> None:
     if roles != EXPECTED_ROLES:
         raise ValueError(f"application roles differ: {sorted(roles ^ EXPECTED_ROLES)}")
 
+    relay_browsers = [
+        resource
+        for resource in applications
+        if RELAY_BROWSER_ROLE
+        in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    ]
+    if len(relay_browsers) != 1:
+        raise ValueError("exactly one browser-relay package must be declared")
+    relay_browser = relay_browsers[0]
+    relay_application = relay_browser["metadata"]["application"]
+    relay_properties = relay_browser.get("properties", {})
+    if (
+        relay_browser.get("name") != "package browser relay"
+        or relay_application.get("id") != RELAY_BROWSER_ID
+        or relay_application.get("roles") != [RELAY_BROWSER_ROLE]
+        or relay_application.get("source") != "winget"
+        or relay_application.get("scope") != "user"
+        or relay_properties.get("id") != RELAY_BROWSER_ID
+    ):
+        raise ValueError("browser-relay must be the user-scope Brave package")
+    brave_resources = [
+        resource for resource in resources if "brave" in json.dumps(resource).lower()
+    ]
+    if brave_resources != [relay_browser]:
+        raise ValueError("Brave may appear only in its package resource")
+
     for resource in resources:
         properties = resource.get("properties", {})
         metadata = resource.get("metadata", {})
@@ -216,7 +245,11 @@ def validate_policy(document: dict, managed_ids: set[str]) -> None:
             raise ValueError(f"unapproved elevated resource: {resource.get('name')}")
 
 
-def package_resource(role: str, package_id: str = "Example.Package") -> dict:
+def package_resource(role: str, package_id: str | None = None) -> dict:
+    if package_id is None:
+        package_id = (
+            RELAY_BROWSER_ID if role == RELAY_BROWSER_ROLE else "Example.Package"
+        )
     return {
         "name": f"package {role.replace('-', ' ')}",
         "type": PACKAGE_TYPE,
@@ -252,6 +285,69 @@ def run_rejection_tests() -> None:
     validate_policy(allowed, {"Managed.Package"})
 
     cases = []
+
+    missing_relay = copy.deepcopy(allowed)
+    missing_relay["resources"] = [
+        resource
+        for resource in missing_relay["resources"]
+        if RELAY_BROWSER_ROLE
+        not in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    ]
+    cases.append(missing_relay)
+
+    wrong_relay_id = copy.deepcopy(allowed)
+    relay = next(
+        resource
+        for resource in wrong_relay_id["resources"]
+        if RELAY_BROWSER_ROLE
+        in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    )
+    relay["metadata"]["application"]["id"] = "Example.Relay"
+    relay["properties"]["id"] = "Example.Relay"
+    cases.append(wrong_relay_id)
+
+    wrong_relay_role = copy.deepcopy(allowed)
+    relay = next(
+        resource
+        for resource in wrong_relay_role["resources"]
+        if RELAY_BROWSER_ROLE
+        in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    )
+    relay["metadata"]["application"]["roles"] = ["browser"]
+    cases.append(wrong_relay_role)
+
+    wrong_relay_scope = copy.deepcopy(allowed)
+    relay = next(
+        resource
+        for resource in wrong_relay_scope["resources"]
+        if RELAY_BROWSER_ROLE
+        in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    )
+    relay["metadata"]["application"]["scope"] = "machine"
+    cases.append(wrong_relay_scope)
+
+    unpinned_relay = copy.deepcopy(allowed)
+    relay = next(
+        resource
+        for resource in unpinned_relay["resources"]
+        if RELAY_BROWSER_ROLE
+        in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    )
+    relay["metadata"]["application"]["version"] = ""
+    cases.append(unpinned_relay)
+
+    brave_startup = copy.deepcopy(allowed)
+    brave_startup["resources"].append(
+        {
+            "name": "browser relay startup",
+            "type": "Microsoft.Windows/Registry",
+            "properties": {
+                "keyPath": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+                "valueData": {"String": "Brave.exe"},
+            },
+        }
+    )
+    cases.append(brave_startup)
 
     unpinned = copy.deepcopy(allowed)
     unpinned["resources"][0]["metadata"]["application"]["version"] = ""

@@ -16,6 +16,14 @@
     scope = "machine";
   }
   {
+    name = "Brave";
+    role = "browser-relay";
+    id = "Brave.Brave";
+    version = "151.1.93.138";
+    source = "winget";
+    scope = "user";
+  }
+  {
     name = "Fork";
     role = "git-client";
     id = "Fork.Fork";

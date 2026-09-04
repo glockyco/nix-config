@@ -7,10 +7,33 @@
   environment.systemPackages = [ pkgs.nixd ];
 
   # Project work uses prebuilt executables that expect a conventional dynamic
-  # loader: .NET tooling, Unity, and game loader toolchains. `nix-ld` supplies
-  # that loader, which replaces the escape hatch a distribution package manager
-  # would otherwise provide.
-  programs.nix-ld.enable = true;
+  # loader: .NET tooling, Unity, game loader toolchains, and OMP's managed
+  # Chromium. `nix-ld` supplies the loader and the browser ABI without making
+  # Nix responsible for OMP's downloaded browser or writable runtime state.
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      alsa-lib
+      at-spi2-core
+      cairo
+      cups
+      dbus
+      expat
+      glib
+      libgbm
+      libX11
+      libXcomposite
+      libXdamage
+      libXext
+      libXfixes
+      libXrandr
+      libxcb
+      libxkbcommon
+      nspr
+      nss
+      pango
+    ];
+  };
 
   # `EDITOR` must name a program this host provides, and the portable user
   # modules carry no editor: the Darwin host uses Zed, and on this machine the
