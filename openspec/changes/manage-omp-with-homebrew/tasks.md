@@ -12,7 +12,7 @@
 - [x] 2.2 Expose the local verifier as an explicit command outside activation, make it exercise the platform executable with the immutable plugin, and verify its success and missing-binary cases.
 - [x] 2.3 Update package-shape checks to use an explicit stub executable instead of a Nix OMP package, and verify the checks still reject missing plugin flags, mutable paths, and duplicate command payloads.
 - [x] 2.4 Preserve Windows Zed's `wsl.exe` route to the wrapped `omp acp` command, and verify the rendered Windows settings contain no native Windows OMP command or fallback.
-- [ ] 2.5 Keep the Home Manager profile ahead of Homebrew in fresh Darwin shells, and verify bare `omp` resolves to the Nix-managed wrapper after activation.
+- [x] 2.5 Keep the Home Manager profile ahead of Homebrew in fresh Darwin shells, and verify bare `omp` resolves to the Nix-managed wrapper after activation.
 
 ## 3. Define Manual Install and Recovery Operations
 
@@ -42,7 +42,7 @@
 ## 6. Activate and Prove the Cutover
 
 - [x] 6.1 After review and merge, install the official Darwin OMP formula, run `darwin-switch`, and verify the wrapper reports the Homebrew OMP version, immutable plugin path, and current Herdr status.
-- [ ] 6.2 Start a fresh wrapped Darwin OMP session and verify the plugin source path, personal policy, and harmless `personal_commit` preview.
+- [x] 6.2 Start a fresh wrapped Darwin OMP session and verify the plugin source path, personal policy, and harmless `personal_commit` preview.
 - [ ] 6.3 On `korolev`, install the official prebuilt OMP binary, activate the reviewed NixOS generation, and verify the wrapper reports the user-local executable version, immutable plugin path, and current Herdr status.
 - [ ] 6.4 Start OMP from Windows Zed and a fresh WSL terminal, and verify both use the same wrapped oh-my-pi environment without a native Windows installation.
 - [ ] 6.5 Exercise the documented previous-release recovery on each host or a disposable equivalent, and verify Nix generation rollback is not required to change the OMP version.
