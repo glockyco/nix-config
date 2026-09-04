@@ -13,7 +13,7 @@ OMP releases frequently, while the current Nix input can lag behind a release or
 - Keep Herdr, OpenSpec, the personal plugin, and mutable OMP runtime state under their current owners.
 - Accept that Nix generation rollback does not change the platform-managed OMP version.
 - Keep the Windows workstation's oh-my-pi agent in NixOS/WSL because Windows development runs inside WSL.
-- Keep Zed's Windows agent-server command routed through `wsl.exe` to the wrapped WSL `omp acp` command.
+- Keep Zed's custom OMP agent on its native NixOS/WSL remote so that it starts the wrapped `omp acp` command with a Linux working directory.
 - Do not install a second native Windows OMP executable, Nix fallback, alias, or compatibility path.
 
 ## Capabilities

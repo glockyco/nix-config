@@ -63,17 +63,8 @@ let
 
   zedSettings =
     (shared.zedSettings {
-      ompCommand = "C:\\Windows\\System32\\wsl.exe";
+      ompCommand = "omp";
       fontFamily = "JetBrainsMonoNL NF";
-      ompArgs = [
-        "--distribution"
-        "NixOS"
-        "--cd"
-        "~"
-        "--"
-        "omp"
-        "acp"
-      ];
     })
     // {
       languages.Nix.language_servers = [

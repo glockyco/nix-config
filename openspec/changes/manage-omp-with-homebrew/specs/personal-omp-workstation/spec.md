@@ -24,9 +24,9 @@ The default `omp` command SHALL invoke the platform-owned OMP executable with th
 
 #### Scenario: Start OMP from Windows Zed
 
-- **WHEN** Windows Zed starts its configured OMP agent server
-- **THEN** `wsl.exe` invokes the wrapped `omp acp` command inside the NixOS distribution
-- **AND** no native Windows OMP executable or compatibility path is required
+- **WHEN** Windows Zed starts its configured OMP agent server for a NixOS/WSL workspace
+- **THEN** Zed's native WSL remote server invokes the wrapped `omp acp` command with an absolute Linux working directory
+- **AND** no explicit local `wsl.exe` bridge, native Windows OMP executable, or compatibility path is required
 
 ### Requirement: WSL host activation and rollback
 

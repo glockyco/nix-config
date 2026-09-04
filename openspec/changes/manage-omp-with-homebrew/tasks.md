@@ -11,7 +11,7 @@
 - [x] 2.1 Make the wrapper fail with an actionable error when its platform executable is absent, and verify deterministic tests cover the expected Darwin and WSL paths.
 - [x] 2.2 Expose the local verifier as an explicit command outside activation, make it exercise the platform executable with the immutable plugin, and verify its success and missing-binary cases.
 - [x] 2.3 Update package-shape checks to use an explicit stub executable instead of a Nix OMP package, and verify the checks still reject missing plugin flags, mutable paths, and duplicate command payloads.
-- [x] 2.4 Preserve Windows Zed's `wsl.exe` route to the wrapped `omp acp` command, and verify the rendered Windows settings contain no native Windows OMP command or fallback.
+- [x] 2.4 Move Windows Zed's custom agent to its native NixOS/WSL remote `omp acp` command, and verify the rendered settings contain no explicit local `wsl.exe` bridge, native Windows OMP command, or fallback.
 - [x] 2.5 Keep the Home Manager profile ahead of Homebrew in fresh Darwin shells, and verify bare `omp` resolves to the Nix-managed wrapper after activation.
 
 ## 3. Define Manual Install and Recovery Operations
@@ -37,12 +37,12 @@
 - [x] 5.3 Run `nix flake check --print-build-logs` and verify all Darwin, NixOS/WSL, Windows-document, wrapper, and OpenSpec checks pass.
 - [x] 5.4 Run `nix run .#check-darwin-build-plans` and verify the Darwin closure reaches no prohibited source-built dependency.
 - [x] 5.5 Build `.#darwinConfigurations.macbook-pro.system` and `.#nixosConfigurations.korolev.config.system.build.toplevel`, and verify both host closures complete.
-- [x] 5.6 Build `.#windows-configuration` and verify its Zed settings still invoke `omp acp` through the NixOS distribution.
+- [x] 5.6 Build `.#windows-configuration` and verify its Zed settings invoke `omp acp` through Zed's native NixOS/WSL remote server.
 
 ## 6. Activate and Prove the Cutover
 
 - [x] 6.1 After review and merge, install the official Darwin OMP formula, run `darwin-switch`, and verify the wrapper reports the Homebrew OMP version, immutable plugin path, and current Herdr status.
 - [x] 6.2 Start a fresh wrapped Darwin OMP session and verify the plugin source path, personal policy, and harmless `personal_commit` preview.
 - [x] 6.3 On `korolev`, install the official prebuilt OMP binary, activate the reviewed NixOS generation, and verify the wrapper reports the user-local executable version, immutable plugin path, and current Herdr status.
-- [ ] 6.4 Start OMP from Windows Zed and a fresh WSL terminal, and verify both use the same wrapped oh-my-pi environment without a native Windows installation.
+- [ ] 6.4 Start OMP from Windows Zed in a native WSL workspace and from a fresh WSL terminal, and verify both use the same wrapped oh-my-pi environment without a native Windows installation.
 - [ ] 6.5 Exercise the documented previous-release recovery on each host or a disposable equivalent, and verify Nix generation rollback is not required to change the OMP version.

@@ -732,7 +732,7 @@ The environment is complete when:
 
 - Transfer OMP executable ownership from Nix to the official platform distribution path. Homebrew owns Darwin; the official binary installer owns NixOS/WSL.
 - Keep one Nix-managed wrapper and independently pinned personal plugin on both hosts. The wrapper names one platform path and has no fallback or `PATH` lookup.
-- Keep Windows Zed on the wrapped NixOS/WSL `omp acp` command. Do not install a duplicate native Windows executable.
+- Keep Windows Zed on the wrapped NixOS/WSL `omp acp` command. Let Zed's native WSL remote start the agent with a Linux working directory. Do not configure an explicit local `wsl.exe` bridge or install a duplicate native Windows executable.
 - Reverse the 2026-08-14 activation-verifier decision. Expose `verify-personal-omp` as an explicit command so Nix activation does not depend on mutable executable state.
 - Recover OMP versions through the owning platform installer. Nix generation rollback restores the wrapper environment but does not change OMP.
 

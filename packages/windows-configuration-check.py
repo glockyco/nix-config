@@ -696,6 +696,13 @@ def main() -> None:
         zed.get("terminal", {}).get("font_family"),
     } != {"JetBrainsMonoNL NF"}:
         raise ValueError("Zed must use the font's embedded Windows family name")
+    if zed.get("agent_servers", {}).get("omp") != {
+        "type": "custom",
+        "command": "omp",
+        "args": ["acp"],
+        "env": {},
+    }:
+        raise ValueError("Zed must start wrapped OMP through its native WSL remote")
     if terminal.get("scheme") != CATPPUCCIN_MOCHA or (
         terminal.get("settings", {})
         .get("profiles", {})

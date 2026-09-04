@@ -2,7 +2,7 @@
 
 Darwin and NixOS/WSL currently receive OMP, Herdr, and OpenSpec from one locked `llm-agents` input. The Nix-managed wrapper embeds the OMP store path and personal plugin store path. Homebrew already owns mutable vendor applications on Darwin. The official oh-my-pi installer supports prebuilt Linux binaries at a caller-selected directory.
 
-The Windows layer runs development tools inside NixOS/WSL. Its Zed agent server invokes `wsl.exe --distribution NixOS --cd ~ -- omp acp`; it does not need a native Windows OMP installation.
+The Windows layer runs development tools inside NixOS/WSL. For a WSL workspace, Zed's remote server starts the custom `omp acp` agent inside NixOS; it does not need a native Windows OMP installation.
 
 See `proposal.md` for motivation and the delta specifications for observable behavior.
 
@@ -45,7 +45,7 @@ A separate wrapper per host was rejected because it would duplicate plugin flags
 
 Remove OMP package installation and references to `upstreamOmp` on both hosts. Keep `llm-agents` because it still provides Herdr and OpenSpec. Do not retain a fallback, alias, version shim, or native Windows installation.
 
-The Windows Zed configuration continues to invoke `omp acp` inside NixOS/WSL. This gives the Windows editor the same wrapper, plugin, policy, tools, and mutable OMP state as terminal sessions in WSL.
+For a WSL workspace, the Windows Zed configuration declares `omp` with the `acp` argument. Zed's native remote server starts the agent inside NixOS. An explicit local `wsl.exe` command is invalid. Zed sends the workspace's UNC path as the ACP working directory, which is not an absolute Linux path. Native remote execution supplies the `/home/user/...` working directory. It gives the editor the same wrapper, plugin, policy, tools, and mutable OMP state as terminal sessions in WSL.
 
 A fallback was rejected because it would hide an incomplete platform installation and make the active OMP version depend on path or failure conditions.
 
@@ -82,7 +82,7 @@ Nix rollback restores the wrapper, plugin, Herdr, OpenSpec, and language servers
 1. Make the shared wrapper and verifier accept an explicit runtime executable path.
 1. Pass the Homebrew path on Darwin and the dedicated user-local path on NixOS/WSL.
 1. Remove all OMP package installation, `upstreamOmp` passthrough values, and obsolete version assertions.
-1. Preserve the Windows Zed `wsl.exe` route to the wrapped WSL `omp acp` command.
+1. Configure Windows Zed to start the wrapped `omp acp` command through its native NixOS/WSL remote server.
 1. Update deterministic checks, accepted specifications, architecture, and operations documentation.
 1. Run formatting, strict OpenSpec validation, flake checks, Darwin build-plan checks, and both host builds.
 1. After review and merge, install the platform binary, activate each host, run deterministic verification, and run the real wrapped-session smoke.
