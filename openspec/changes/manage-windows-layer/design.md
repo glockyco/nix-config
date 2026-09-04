@@ -90,6 +90,8 @@ All other applications are registered to the interactive user and keep their mut
 
 Validation compares the declared application identifiers against the recorded centrally managed set. A collision fails the check.
 
+Firefox remains a centrally managed package. The document owns only the interactive user's `Run` value and requires that value to be absent. This prevents Firefox's optional launch-on-login feature without installing, updating, or removing the managed package.
+
 Keep the recorded set in the repository as reviewed data, because the Intune policy is readable only with elevation and can change.
 
 ### 5. Express Windows settings as named registry values

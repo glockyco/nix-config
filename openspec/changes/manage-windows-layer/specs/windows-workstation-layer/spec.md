@@ -65,13 +65,19 @@ The document SHALL declare an explicit version for every application it manages.
 
 ### Requirement: Declared Windows settings
 
-The document SHALL declare Windows settings by explicit named keys. It SHALL put `en-GB` first in the user's preferred language list and set `en-GB` as the Windows UI override while it preserves the existing German language entries and their input methods. For a bundled utility that provides several modules, the document SHALL declare the enabled modules and SHALL also declare every other module as disabled.
+The document SHALL declare Windows settings by explicit named keys. It SHALL keep the centrally managed Firefox package's interactive-user startup value absent. It SHALL put `en-GB` first in the user's preferred language list and set `en-GB` as the Windows UI override while it preserves the existing German language entries and their input methods. For a bundled utility that provides several modules, the document SHALL declare the enabled modules and SHALL also declare every other module as disabled.
 
 #### Scenario: Apply the declared settings
 
 - **WHEN** the operator applies the document
 - **THEN** the declared keyboard, file-manager, regional, window-snapping, screenshot-location, and dark-appearance settings match the declaration
 - **AND** the short date uses ISO 8601 `yyyy-MM-dd`
+
+#### Scenario: Prevent Firefox from starting at sign-in
+
+- **WHEN** the operator applies the document and signs in again
+- **THEN** Firefox does not start through its interactive-user launch-on-login entry
+- **AND** the centrally managed Firefox package remains installed
 
 #### Scenario: Separate interface and input languages
 

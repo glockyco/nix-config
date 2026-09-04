@@ -153,6 +153,16 @@ in
     description = "Start AltSnap for the interactive user at logon";
   })
   {
+    type = "Microsoft.Windows/Registry";
+    name = "firefox-startup";
+    properties = {
+      keyPath = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+      valueName = "Mozilla-Firefox-308046B0AF4A39CB";
+      _exist = false;
+    };
+    metadata.description = "Keep the centrally managed Firefox package out of interactive-user startup";
+  }
+  {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
     name = "windows-user-language";
     properties = {
