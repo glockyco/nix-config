@@ -68,6 +68,6 @@
 
 ## 9. Documentation
 
-- [ ] 9.1 Add a decision-log entry to `docs/architecture/personal-omp-environment.md` that records the reversed `korolev` isolation decision, the durable-host versus temporary-peer boundary, the Air offboarding issue, and the nix-darwin pull request. Update the `WSL work machine` ownership paragraph, and confirm that the entry names the date.
+- [x] 9.1 Add a decision-log entry to `docs/architecture/personal-omp-environment.md` that records the reversed `korolev` isolation decision, the durable-host versus temporary-peer boundary, the Air offboarding issue, and the nix-darwin pull request. Update the `WSL work machine` ownership paragraph, and confirm that the entry names the date.
 - [ ] 9.2 Add a "Join the tailnet" section to `docs/operations/wsl-omp-bootstrap.md` with the one-time `tailscale up` command, the resolver check from task 5.2, the `nix-daemon` path from task 5.7, and the `tailnet-builder-check` command; confirm that `nix fmt -- --fail-on-change` passes on the file.
 - [ ] 9.3 Update the README ownership table, layout table, and Develop section to name the tailnet, the policy workflow, and `nix flake check --all-systems` from `korolev`; confirm that `nix fmt -- --fail-on-change README.md` passes.
