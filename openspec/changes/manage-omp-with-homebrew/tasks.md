@@ -36,7 +36,7 @@
 - [x] 5.2 Run `nix fmt -- --fail-on-change` and verify no formatting change remains.
 - [x] 5.3 Run `nix flake check --print-build-logs` and verify all Darwin, NixOS/WSL, Windows-document, wrapper, and OpenSpec checks pass.
 - [x] 5.4 Run `nix run .#check-darwin-build-plans` and verify the Darwin closure reaches no prohibited source-built dependency.
-- [ ] 5.5 Build `.#darwinConfigurations.macbook-pro.system` and `.#nixosConfigurations.korolev.config.system.build.toplevel`, and verify both host closures complete.
+- [x] 5.5 Build `.#darwinConfigurations.macbook-pro.system` and `.#nixosConfigurations.korolev.config.system.build.toplevel`, and verify both host closures complete.
 - [x] 5.6 Build `.#windows-configuration` and verify its Zed settings still invoke `omp acp` through the NixOS distribution.
 
 ## 6. Activate and Prove the Cutover

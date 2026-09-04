@@ -34,6 +34,8 @@ let
 
   requireOmpExecutable = ''
     if [ ! -x "$omp_bin" ]; then
+      # Keep variables literal so the displayed install command remains reusable.
+      # shellcheck disable=SC2016
       printf 'oh-my-pi executable not found at %s.\nInstall it with:\n  %s\n' \
         "$omp_bin" ${lib.escapeShellArg ompInstallCommand} >&2
       exit 1
