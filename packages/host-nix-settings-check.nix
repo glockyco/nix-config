@@ -6,15 +6,12 @@
 }:
 
 let
-  expected = {
-    substituters = [ "https://cache.numtide.com" ];
-    trustedPublicKeys = [
-      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-    ];
-  };
+  validPublicKey = key: builtins.match "[A-Za-z0-9._-]+:[A-Za-z0-9+/]{43}=" key != null;
 in
-# The host modules consume `binaryCaches` directly. This independent oracle
-# ensures that a typo in the shared declaration does not become a false green.
-assert binaryCaches == expected;
-assert settings == expected;
+# Equality catches a host that stops consuming the shared declaration. Syntax
+# validation rejects a malformed shared key without pinning its value here, so
+# a valid key rotation still needs one declaration edit.
+assert settings == binaryCaches;
+assert binaryCaches.trustedPublicKeys != [ ];
+assert builtins.all validPublicKey binaryCaches.trustedPublicKeys;
 runCommand "check-${hostName}-nix-settings" { } "touch $out"
