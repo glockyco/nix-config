@@ -183,6 +183,7 @@
             moduleImportsCommandTest = pkgs.callPackage ./packages/module-imports-check-tests.nix {
               inherit moduleImportsCheck;
             };
+            hostDeclarationCheck = pkgs.callPackage ./packages/host-declaration-check.nix { };
             airBatchCheck = pkgs.callPackage ./packages/air-batch-check.nix { };
             airBatchCommandTest = pkgs.callPackage ./packages/air-batch-check-tests.nix {
               inherit airBatchCheck;
@@ -251,6 +252,10 @@
               # Prove that the check above can reject, so an empty result means
               # something.
               moduleImportsCommand = moduleImportsCommandTest;
+
+              # Force representative declarations so option errors cannot stay
+              # hidden behind Nix laziness.
+              hostDeclaration = hostDeclarationCheck;
 
               # Structure already prevents an asymmetric surface: the shell and
               # the repository checks carry no platform condition, and `systems`

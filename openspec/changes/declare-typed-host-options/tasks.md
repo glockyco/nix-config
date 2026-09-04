@@ -5,9 +5,9 @@
 
 ## 2. Host Declaration
 
-- [ ] 2.1 Add `modules/fleet/host.nix` with the options from design decision 1 and `modules/fleet/default.nix` that imports it, and confirm that `nix eval` of a fixture through `lib.evalModules` returns a complete declaration for each executable tag.
-- [ ] 2.2 Add `packages/host-declaration-check.nix` with the fixtures from design decision 7 and wire it as `checks.hostDeclaration` on every system, and confirm that `nix build .#checks.<system>.hostDeclaration` passes on `x86_64-linux`.
-- [ ] 2.3 Confirm that the check rejects, with a temporary probe that removes the `deepSeq` from the relative-`absolute` fixture and observes the check fail, then revert the probe.
+- [x] 2.1 Add `modules/fleet/host.nix` with the options from design decision 1 and `modules/fleet/default.nix` that imports it, and confirm that `nix eval` of a fixture through `lib.evalModules` returns a complete declaration for each executable tag.
+- [x] 2.2 Add `packages/host-declaration-check.nix` with the fixtures from design decision 7 and wire it as `checks.hostDeclaration` on every system, and confirm that `nix build .#checks.<system>.hostDeclaration` passes on `x86_64-linux`.
+- [x] 2.3 Confirm that the check rejects, with a temporary probe that removes the `deepSeq` from the relative-`absolute` fixture and observes the check fail, then revert the probe.
 
 ## 3. Hosts Declare Themselves
 
