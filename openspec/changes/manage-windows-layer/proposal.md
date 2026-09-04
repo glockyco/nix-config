@@ -10,7 +10,7 @@ Microsoft DSC v3 reached general availability in April 2026, and WinGet Configur
 
 - Add `modules/windows/` that renders one WinGet Configuration document and two narrow Administrator scripts from one Nix declaration. The scripts own only Zen's Program Files policy file and the native Neo keyboard driver.
 - Add `modules/shared/` for settings that more than one host renderer consumes.
-- Declare a pinned application set: user-scope Zed, Fork, PowerToys with Command Palette, portable AltSnap, ReNeo for the higher Neo layers, Windows Terminal, and JetBrainsMono Nerd Font, plus machine-scope Zen and `kbdneo`.
+- Declare a pinned application set: user-scope Zed, Fork, PowerToys with Command Palette, portable AltSnap, ReNeo for the higher Neo layers, Windows Terminal, and JetBrainsMono Nerd Font, plus machine-scope Zen and `kbdneo`. Start ReNeo through a reviewed `RunAs` launcher so that one instance covers ordinary and elevated applications.
 - Declare Windows settings with registry resources and narrow scripts that name every key, including the built-in dark appearance and Bloom wallpaper.
 - Record the manual Night Light state because Windows exposes it only through unsupported CloudStore binary payloads.
 - Declare the Windows Terminal, Zed, ReNeo, PowerToys, AltSnap, and Zen configuration files, including pinned Catppuccin Mocha themes for Terminal, Zed, and Zen.

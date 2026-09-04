@@ -141,6 +141,14 @@ let
     standaloneLayout = "Neo";
     standaloneMode = false;
   };
+  reneoPackagePath = "Microsoft\\WinGet\\Packages\\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\\ReNeo\\reneo.exe";
+  reneoElevationLauncher = ''
+    $ErrorActionPreference = 'Stop'
+    $path = Join-Path $env:LOCALAPPDATA '${reneoPackagePath}'
+    if (-not (Test-Path -LiteralPath $path)) { throw "ReNeo is not installed at $path" }
+    if (@(Get-Process -Name reneo -ErrorAction SilentlyContinue).Count -gt 0) { exit 0 }
+    Start-Process -FilePath $path -Verb RunAs
+  '';
 
   catppuccinMocha = {
     name = "Catppuccin Mocha";
@@ -192,6 +200,7 @@ let
     "zed-catppuccin-theme.json" = builtins.readFile zedThemeSource;
     "power-toys-settings.json" = builtins.toJSON powerToysSettings;
     "reneo-settings.json" = builtins.toJSON reneoSettings;
+    "start-reneo-elevated.ps1" = reneoElevationLauncher;
     "terminal-settings.json" = builtins.toJSON terminalSettings;
     "zed-settings.json" = builtins.toJSON zedSettings;
     "zen-catppuccin.json" = zenThemeJson;
@@ -529,6 +538,30 @@ let
     metadata.description = "Install the pinned Catppuccin Mocha Mauve theme in every Zen profile";
   };
 
+  reneoElevationResource = {
+    type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+    name = "reneo-elevation-launcher";
+    dependsOn = [ "package-keyboard-layout" ];
+    properties = {
+      testScript = ''
+        $path = Join-Path $env:LOCALAPPDATA 'WindowsConfiguration\start-reneo-elevated.ps1'
+        $desired = @'
+        ${reneoElevationLauncher}
+        '@
+        return (Test-Path -LiteralPath $path) -and [IO.File]::ReadAllText($path) -eq $desired
+      '';
+      setScript = ''
+        $path = Join-Path $env:LOCALAPPDATA 'WindowsConfiguration\start-reneo-elevated.ps1'
+        $desired = @'
+        ${reneoElevationLauncher}
+        '@
+        New-Item -ItemType Directory -Path (Split-Path -Parent $path) -Force | Out-Null
+        [IO.File]::WriteAllText($path, $desired, [Text.UTF8Encoding]::new($false))
+      '';
+    };
+    metadata.description = "Install the ReNeo launcher that requests Administrator credentials at logon";
+  };
+
   terminalResource = {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
     name = "windows-terminal-settings";
@@ -602,6 +635,7 @@ in
     forkWslGitResource
     zedThemeResource
     zenThemeResource
+    reneoElevationResource
     terminalResource
     (mergeJsonScript {
       name = "zed-settings";
@@ -623,13 +657,6 @@ in
         "package-keyboard-layout"
         "native-neo-input-method"
       ];
-      beforeSet = ''
-        $packagePath = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\ReNeo\*'
-        Get-Process -Name reneo -ErrorAction SilentlyContinue | Where-Object { $_.Path -like $packagePath } | Stop-Process
-      '';
-      afterSet = ''
-        Start-Process (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\ReNeo\reneo.exe')
-      '';
     })
     (mergeJsonScript {
       name = "power-toys-settings";

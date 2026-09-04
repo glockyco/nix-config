@@ -101,6 +101,7 @@ EXPECTED_FILES = {
     "kbdneo.json",
     "power-toys-settings.json",
     "reneo-settings.json",
+    "start-reneo-elevated.ps1",
     "terminal-settings.json",
     "zed-catppuccin-theme.json",
     "zed-settings.json",
@@ -373,14 +374,32 @@ def main() -> None:
         if resource.get("name") == "keyboard layout startup"
     )
     expected_startup = (
-        '"%LOCALAPPDATA%\\Microsoft\\WinGet\\Packages\\'
-        'Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\\ReNeo\\reneo.exe"'
+        "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass "
+        '-File "%LOCALAPPDATA%\\WindowsConfiguration\\start-reneo-elevated.ps1"'
     )
     if (
         reneo_startup.get("properties", {}).get("valueData", {}).get("ExpandString")
         != expected_startup
     ):
-        raise ValueError("ReNeo startup must use the exact user-scope package path")
+        raise ValueError("ReNeo startup must invoke the reviewed elevation launcher")
+    reneo_launcher = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "reneo elevation launcher"
+    )
+    reneo_launcher_scripts = "\n".join(
+        reneo_launcher.get("properties", {}).get(name, "")
+        for name in ("testScript", "setScript")
+    )
+    if any(
+        value not in reneo_launcher_scripts
+        for value in (
+            "start-reneo-elevated.ps1",
+            "Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe",
+            "-Verb RunAs",
+        )
+    ):
+        raise ValueError("ReNeo elevation launcher is missing a required boundary")
     native_neo = next(
         resource
         for resource in document.get("resources", [])
@@ -443,6 +462,20 @@ def main() -> None:
     )
     if missing:
         raise ValueError(f"rendered Windows files are missing: {', '.join(missing)}")
+
+    reneo_launcher_file = (package_root / "start-reneo-elevated.ps1").read_text(
+        encoding="utf-8"
+    )
+    if any(
+        value not in reneo_launcher_file
+        for value in (
+            "$env:LOCALAPPDATA",
+            "Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe",
+            "Get-Process -Name reneo",
+            "-Verb RunAs",
+        )
+    ):
+        raise ValueError("rendered ReNeo elevation launcher is incomplete")
 
     zen_theme = json.loads(
         (package_root / "zen-catppuccin.json").read_text(encoding="utf-8")

@@ -79,7 +79,7 @@ The document SHALL declare Windows settings by explicit named keys. For a bundle
 
 ### Requirement: Application configuration files
 
-The document and companion scripts SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the owning artifact SHALL enforce the complete file content. For an application that rewrites its own configuration, the owning artifact SHALL converge only the declared values and SHALL preserve the application's own writes. Zed, Windows Terminal, and Zen SHALL select Catppuccin Mocha from pinned upstream theme data. Zed SHALL select `nixd` from the WSL environment for Nix files and SHALL disable its `nil` fallback. Fork SHALL execute Git inside the NixOS distribution through a checksum-pinned `wslgit` bridge. AltSnap SHALL own modifier-drag movement and 50/50 edge or corner snapping; overlapping PowerToys window-movement modules SHALL remain disabled. The native Neo driver SHALL provide the base layout in elevated surfaces, and ReNeo SHALL run in extension mode for higher Neo layers.
+The document and companion scripts SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the owning artifact SHALL enforce the complete file content. For an application that rewrites its own configuration, the owning artifact SHALL converge only the declared values and SHALL preserve the application's own writes. Zed, Windows Terminal, and Zen SHALL select Catppuccin Mocha from pinned upstream theme data. Zed SHALL select `nixd` from the WSL environment for Nix files and SHALL disable its `nil` fallback. Fork SHALL execute Git inside the NixOS distribution through a checksum-pinned `wslgit` bridge. AltSnap SHALL own modifier-drag movement and 50/50 edge or corner snapping; overlapping PowerToys window-movement modules SHALL remain disabled. The native Neo driver SHALL provide the base layout in elevated surfaces. ReNeo SHALL run in extension mode through a reviewed `RunAs` launcher so that its higher Neo layers work in ordinary and elevated applications.
 
 #### Scenario: Enforce a stable configuration file
 
@@ -113,9 +113,10 @@ The document and companion scripts SHALL declare application configuration in tw
 
 #### Scenario: Use Neo in ordinary and elevated surfaces
 
-- **WHEN** Windows restarts after the native driver apply and the interactive-user document selects the Neo input method
-- **THEN** the native Neo base layout works in ordinary and elevated surfaces
-- **AND** ReNeo supplies higher Neo layers in ordinary windows without replacing the native layout
+- **WHEN** Windows restarts after the native driver apply, the document selects the Neo input method, and the operator accepts the ReNeo `RunAs` prompt
+- **THEN** the native Neo base layout works in ordinary applications, elevated applications, and UAC
+- **AND** ReNeo supplies higher Neo layers in ordinary and elevated applications without replacing the native layout
+- **AND** UAC remains limited to the native base layout because its secure desktop rejects process injection
 
 #### Scenario: Preserve application-owned state
 

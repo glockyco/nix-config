@@ -44,20 +44,21 @@
 - [x] 5.4 Resolve the Zed agent-server command for `omp acp` so that it reaches `omp` inside WSL, and record the value.
 - [x] 5.5 Keep mouse window control in checksum-pinned AltSnap and its exact INI settings instead of PowerToys.
 - [x] 5.6 Declare the PowerToys settings as a converged file and restart PowerToys around a locked-file update.
-- [ ] 5.7 Install the pinned native Neo2 driver, select its input method, run ReNeo in extension mode, and start ReNeo at user logon.
-- [ ] 5.8 Install the pinned Catppuccin Mocha themes for Zed and Zen, and merge the Catppuccin Mocha scheme into Windows Terminal.
+- [x] 5.7 Install the pinned native Neo2 driver, select its input method, run ReNeo in extension mode, and start ReNeo at user logon.
+- [x] 5.8 Install the pinned Catppuccin Mocha themes for Zed and Zen, and merge the Catppuccin Mocha scheme into Windows Terminal.
 - [x] 5.9 Support Zed's WSL extension propagation, select `nixd` from the Linux environment, and disable the `nil` fallback.
 - [x] 5.10 Pin `wslgit` and configure Fork to run repository commands inside the NixOS distribution.
+- [x] 5.11 Launch ReNeo with `RunAs` at logon so that its higher layers cover ordinary and elevated applications.
 
 ## 6. Add Repository Validation
 
-- [ ] 6.1 Add a pure flake check that validates the rendered document against the WinGet Configuration schema and verifies both narrow Administrator-script boundaries.
+- [x] 6.1 Add a pure flake check that validates the rendered document against the WinGet Configuration schema and verifies both narrow Administrator-script boundaries.
 - [x] 6.2 Extend the check to fail when any declared application has no explicit version.
 - [x] 6.3 Extend the check to fail when a declared application appears in the recorded centrally managed set.
 - [x] 6.4 Extend the check to fail when the document declares machine scope.
 - [x] 6.5 Add rejected fixtures for the unpinned, managed-collision, and machine-scope cases.
 - [x] 6.6 Add an allowed fixture that proves a correct document passes.
-- [ ] 6.7 Validate the pinned Zed and Zen themes and exact Windows Terminal Catppuccin palette.
+- [x] 6.7 Validate the pinned Zed and Zen themes and exact Windows Terminal Catppuccin palette.
 
 ## 7. Apply and Prove on the Machine
 
@@ -66,20 +67,21 @@
 - [x] 7.3 Confirm with each test operation that the applied state matches both artifacts.
 - [x] 7.4 Confirm the package scopes and record the WindowsApps payload and PowerToys installer-registration exceptions to the user-scope rule.
 - [x] 7.5 Reapply the document and policy script and confirm that the second run reports no change.
-- [ ] 7.6 Apply and test the native Neo script from a 64-bit Administrator session, then restart Windows.
-- [ ] 7.7 Apply the refined document and Zen policy script, then confirm that all three artifacts report desired state.
+- [x] 7.6 Apply and test the native Neo script from a 64-bit Administrator session, then restart Windows.
+- [x] 7.7 Apply the refined document and Zen policy script, then confirm that all three artifacts report desired state.
 
 ## 8. Verify Each Role by Use
 
 - [x] 8.1 Open a WSL project in the editor and confirm that language servers run on the Linux side.
 - [x] 8.2 Confirm that the editor needs no SSH server on the WSL host.
 - [x] 8.3 Launch an application from the launcher, then switch to an already-open window with it.
-- [ ] 8.4 Move and resize a window with the modifier and the mouse.
-- [ ] 8.5 Type Neo2 layers in an ordinary window, then in an elevated window, and record whether the elevated case works.
-- [ ] 8.6 Open the terminal host and confirm that the NixOS profile is the default and starts in the Linux home directory.
-- [ ] 8.7 Confirm that the declared terminal font renders powerline and device glyphs.
+- [x] 8.4 Move and resize a window with the modifier and the mouse.
+- [x] 8.5 Type Neo2 layers in an ordinary window, then in an elevated window, and record whether the elevated case works.
+- [x] 8.6 Open the terminal host and confirm that the NixOS profile is the default and starts in the Linux home directory.
+- [x] 8.7 Confirm that the declared terminal font renders powerline and device glyphs.
 - [x] 8.8 Browse a repository in the Git client and record the observed responsiveness.
-- [ ] 8.9 Open Zen and confirm that its profile renders the Catppuccin Mocha Mauve theme.
+- [x] 8.9 Open Zen and confirm that its profile renders the Catppuccin Mocha Mauve theme.
+- [x] 8.10 Confirm that one elevated ReNeo process supplies higher layers to both ordinary and elevated applications.
 
 ## 9. Record the Manual Surface
 
