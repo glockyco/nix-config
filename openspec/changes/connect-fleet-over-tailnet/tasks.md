@@ -28,6 +28,7 @@
 - [x] 4.4 Open the nix-darwin pull request that adds `services.tailscale.extraSetFlags` with the NixOS semantics, and record its URL in the decision log entry.
 - [ ] 4.5 Activate the Mac, run `tailscale up --advertise-tags=tag:macbook-pro` once, and confirm that `tailscale status --json` reports the tag, `"SSH"` in the node's capabilities, and that `systemsetup -getremotelogin` reports `Off`.
 - [ ] 4.6 From the Air, run `ssh glockyco@macbook-pro` and confirm that the tailnet requires re-authentication and then opens the session; from the Mac, run `tailscale ping korolev` after task 5.6 and confirm that it is refused.
+- [ ] 4.7 Make `tailscaled-set` wait for `BackendState` to become `Running`, add a state-transition regression check, merge the fix, and confirm on the Mac that `RunSSH` becomes true after activation without an imperative `tailscale set` command.
 
 ## 5. Linux Host
 
