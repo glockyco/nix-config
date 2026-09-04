@@ -1,13 +1,15 @@
 {
-  hostname,
+  config,
   inputs,
   pkgs,
-  username,
   ...
 }:
 
+let
+  inherit (config.host) name username;
+in
 {
-  networking.hostName = hostname;
+  networking.hostName = name;
 
   # Matches the pinned nixpkgs release; changing it changes option defaults.
   system.stateVersion = "26.05";

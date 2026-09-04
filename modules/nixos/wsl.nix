@@ -1,10 +1,13 @@
 {
+  config,
   inputs,
   pkgs,
-  username,
   ...
 }:
 
+let
+  inherit (config.host) username;
+in
 {
   imports = [ inputs.nixos-wsl.nixosModules.default ];
 

@@ -1,26 +1,15 @@
 {
-  host,
   inputs,
+  name,
   pkgs,
 }:
 # `nixos-rebuild switch --flake .#korolev` selects this configuration by name,
 # because WSL reports no stable hostname before activation.
 let
-  hostname = host.name;
-  inherit (host) username;
-  ompExecutable = host.ompRuntime.executable;
-  ompInstallCommand = host.ompRuntime.installCommand;
+  username = "user";
 in
 inputs.nixpkgs.lib.nixosSystem {
-  specialArgs = {
-    inherit
-      inputs
-      hostname
-      ompExecutable
-      ompInstallCommand
-      username
-      ;
-  };
+  specialArgs = { inherit inputs; };
   modules = [
     # The flake instantiates one package set per system and hands it to the
     # host, so this host resolves a package exactly as the flake outputs do.
@@ -28,11 +17,20 @@ inputs.nixpkgs.lib.nixosSystem {
     # argument and no `nixpkgs.hostPlatform` declaration appears here.
     { nixpkgs.pkgs = pkgs; }
 
+    ../../modules/fleet
     ../../modules/nixos
 
     # Values that differ per machine. `modules/home/` declares no identity, so
     # this host supplies its own here.
     {
+      host = {
+        inherit name username;
+        ompRuntime = {
+          executable.homeRelative = ".local/lib/oh-my-pi/omp";
+          installCommand = ''curl -fsSL https://omp.sh/install | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary'';
+        };
+      };
+
       home-manager.users.${username} = {
         # This host holds no GitHub key, because it declares no secret and
         # copies no key. `gh` therefore drives Git over HTTPS here, and its

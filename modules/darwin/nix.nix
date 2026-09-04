@@ -1,9 +1,12 @@
 {
+  config,
   inputs,
-  username,
   ...
 }:
 
+let
+  inherit (config.host) username;
+in
 {
   imports = [ inputs.determinate.darwinModules.default ];
 

@@ -14,6 +14,12 @@ let
     }).config.host;
 
   force = host: builtins.tryEval (builtins.deepSeq (evaluate host) true);
+  render =
+    executable:
+    if executable ? absolute then
+      ''"${toString executable.absolute}"''
+    else
+      ''"$HOME/${executable.homeRelative}"'';
 
   absolute = evaluate {
     name = "absolute-host";
@@ -77,6 +83,8 @@ assert
       installCommand = "install relative omp";
     };
   };
+assert render absolute.ompRuntime.executable == ''"/opt/homebrew/bin/omp"'';
+assert render homeRelative.ompRuntime.executable == ''"$HOME/.local/lib/oh-my-pi/omp"'';
 assert !missingUsername.success;
 assert !bareExecutable.success;
 assert !relativeAbsolute.success;

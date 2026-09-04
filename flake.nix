@@ -93,20 +93,10 @@
         aarch64-darwin = {
           kind = "darwin";
           name = "macbook-pro";
-          username = "glockyco";
-          ompRuntime = {
-            executable = "/opt/homebrew/bin/omp";
-            installCommand = "brew install can1357/tap/omp";
-          };
         };
         x86_64-linux = {
           kind = "nixos";
           name = "korolev";
-          username = "user";
-          ompRuntime = {
-            executable = "$HOME/.local/lib/oh-my-pi/omp";
-            installCommand = ''curl -fsSL https://omp.sh/install | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary'';
-          };
         };
       };
     in
@@ -127,7 +117,7 @@
             { pkgs, ... }:
             import ./hosts/macbook-pro {
               inherit inputs pkgs;
-              host = hosts.aarch64-darwin;
+              inherit (hosts.aarch64-darwin) name;
             }
           );
 
@@ -137,7 +127,7 @@
             { pkgs, ... }:
             import ./hosts/korolev {
               inherit inputs pkgs;
-              host = hosts.x86_64-linux;
+              inherit (hosts.x86_64-linux) name;
             }
           );
 
@@ -172,10 +162,9 @@
 
             llmAgents = inputs.llm-agents.packages.${system};
             openspec = llmAgents.openspec;
-            ompExecutable = host.ompRuntime.executable;
-            ompInstallCommand = host.ompRuntime.installCommand;
+            configuredHost = hostConfiguration.config.host;
             personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
-              inherit ompExecutable ompInstallCommand;
+              inherit (configuredHost) ompRuntime;
               inherit (llmAgents) herdr;
               plugin = inputs.personal-omp-plugin.packages.${system}.default;
             };
@@ -277,9 +266,10 @@
 
               personalOmpShape =
                 let
-                  zshInit = hostConfiguration.config.home-manager.users.${host.username}.programs.zsh.initContent;
+                  zshInit =
+                    hostConfiguration.config.home-manager.users.${configuredHost.username}.programs.zsh.initContent;
                 in
-                assert lib.hasInfix "path=(\"/etc/profiles/per-user/${host.username}/bin\"" zshInit;
+                assert lib.hasInfix "path=(\"/etc/profiles/per-user/${configuredHost.username}/bin\"" zshInit;
                 pkgs.runCommand "check-personal-omp-shape"
                   {
                     nativeBuildInputs = [ pkgs.jq ] ++ personalOmp.languageServers;

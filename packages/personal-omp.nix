@@ -1,13 +1,20 @@
 {
   herdr,
   lib,
-  ompExecutable,
-  ompInstallCommand,
+  ompRuntime,
   pkgs,
   plugin,
 }:
 
 let
+  ompExecutableValue =
+    if ompRuntime.executable ? absolute then
+      toString ompRuntime.executable.absolute
+    else
+      "$HOME/${ompRuntime.executable.homeRelative}";
+  ompExecutable = ''"${ompExecutableValue}"'';
+  inherit (ompRuntime) installCommand;
+
   binaryDotnetCorePackages = pkgs.dotnetCorePackages.overrideScope (
     _final: previous: {
       runtime_9_0 = previous."runtime_9_0-bin";
@@ -37,7 +44,7 @@ let
       # Keep variables literal so the displayed install command remains reusable.
       # shellcheck disable=SC2016
       printf 'oh-my-pi executable not found at %s.\nInstall it with:\n  %s\n' \
-        "$omp_bin" ${lib.escapeShellArg ompInstallCommand} >&2
+        "$omp_bin" ${lib.escapeShellArg installCommand} >&2
       exit 1
     fi
   '';
@@ -72,7 +79,7 @@ let
     name = "verify-personal-omp";
     runtimeInputs = [ pkgs.gnugrep ];
     text = ''
-      omp_bin="''${OMP_BIN:-${ompExecutable}}"
+      omp_bin="''${OMP_BIN:-${ompExecutableValue}}"
       herdr_bin="''${HERDR_BIN:-${lib.getExe herdr}}"
       plugin_dir="''${PERSONAL_OMP_PLUGIN_DIR:-${plugin}}"
 
@@ -108,7 +115,7 @@ let
       # the scoped lsp/ root: aiming it at the package root would rescan
       # commands/ and register every workflow command a second time under a
       # store-derived name.
-      omp_bin="${ompExecutable}"
+      omp_bin=${ompExecutable}
       ${requireOmpExecutable}
       exec "$omp_bin" --extension ${plugin} --plugin-dir ${plugin}/lsp "$@"
     '';
@@ -122,6 +129,7 @@ wrapper.overrideAttrs (old: {
       reconcileHerdrOmp
       verifyPersonalOmp
       ;
-    inherit ompExecutable ompInstallCommand;
+    inherit ompExecutable ompRuntime;
+    ompInstallCommand = installCommand;
   };
 })

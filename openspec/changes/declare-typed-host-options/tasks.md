@@ -11,22 +11,22 @@
 
 ## 3. Hosts Declare Themselves
 
-- [ ] 3.1 Move `username` and `ompRuntime` from the flake table into `hosts/macbook-pro/default.nix` and `hosts/korolev/default.nix` as `host.*` definitions, set `host.name` from the table's `name`, import `../../modules/fleet`, and reduce `specialArgs` to `{ inherit inputs; }`; confirm that both hosts evaluate `config.host` to the values the table held.
-- [ ] 3.2 Replace every `hostname` and `username` function argument in `modules/darwin/` and `modules/nixos/` with `config.host.name` and `config.host.username`, and confirm that no file under `modules/darwin/` or `modules/nixos/` declares one of the four retired arguments.
-- [ ] 3.3 Confirm that a host which omits `host.username` fails evaluation with a message that names `host.username`, with a temporary probe that the task reverts.
+- [x] 3.1 Move `username` and `ompRuntime` from the flake table into `hosts/macbook-pro/default.nix` and `hosts/korolev/default.nix` as `host.*` definitions, set `host.name` from the table's `name`, import `../../modules/fleet`, and reduce `specialArgs` to `{ inherit inputs; }`; confirm that both hosts evaluate `config.host` to the values the table held.
+- [x] 3.2 Replace every `hostname` and `username` function argument in `modules/darwin/` and `modules/nixos/` with `config.host.name` and `config.host.username`, and confirm that no file under `modules/darwin/` or `modules/nixos/` declares one of the four retired arguments.
+- [x] 3.3 Confirm that a host which omits `host.username` fails evaluation with a message that names `host.username`, with a temporary probe that the task reverts.
 
 ## 4. Structured Executable
 
-- [ ] 4.1 Change `packages/personal-omp.nix` to receive `ompRuntime`, render the shell word in one place as design decision 3 states, keep `passthru.ompExecutable` as the rendered word, and add `passthru.ompRuntime`; confirm that the wrapper text for both systems is byte-identical to the text recorded in `baseline.md`.
-- [ ] 4.2 Make `perSystem` in `flake.nix` read `hostConfiguration.config.host.ompRuntime` for `packages.personal-omp` and `hostConfiguration.config.host.username` where a check locates the user's Home Manager configuration, and confirm that `packages.<system>.personal-omp.drvPath` is unchanged for both systems.
-- [ ] 4.3 Confirm that a host whose executable is a bare string fails evaluation with a type error that names `host.ompRuntime.executable`, with a temporary probe that the task reverts.
+- [x] 4.1 Change `packages/personal-omp.nix` to receive `ompRuntime`, render the shell word in one place as design decision 3 states, keep `passthru.ompExecutable` as the rendered word, and add `passthru.ompRuntime`; confirm that the wrapper text for both systems is byte-identical to the text recorded in `baseline.md`.
+- [x] 4.2 Make `perSystem` in `flake.nix` read `hostConfiguration.config.host.ompRuntime` for `packages.personal-omp` and `hostConfiguration.config.host.username` where a check locates the user's Home Manager configuration, and confirm that `packages.<system>.personal-omp.drvPath` is unchanged for both systems.
+- [x] 4.3 Confirm that a host whose executable is a bare string fails evaluation with a type error that names `host.ompRuntime.executable`, with a temporary probe that the task reverts.
 
 ## 5. User Scope Reads the Host
 
-- [ ] 5.1 Make `modules/home/omp.nix` read `osConfig.host.ompRuntime` and drop its `ompExecutable` and `ompInstallCommand` arguments, and confirm that the user's `home.packages` still carries `personal-omp` with an unchanged derivation path on both hosts.
-- [ ] 5.2 Replace the hardcoded profile path in `modules/home/darwin/zed.nix` with `config.home.profileDirectory` and drop its `username` argument, and confirm that the rendered Zed settings file is unchanged.
-- [ ] 5.3 Add `modules/fleet/home-manager.nix` with the shared settings from design decision 5 and `extraSpecialArgs = { inherit inputs; }`, reduce each platform `home-manager.nix` to its Home Manager module import and its complete `users.<name>.imports` list, and confirm that both hosts evaluate the same `home-manager.useGlobalPkgs`, `useUserPackages`, and `backupFileExtension` values as before.
-- [ ] 5.4 Confirm that `home.packages` of each host has the same names in the same order as at the parent commit, by comparing `map (p: p.name)` across `git+file://$PWD?rev=<parent>` and the working tree.
+- [x] 5.1 Make `modules/home/omp.nix` read `osConfig.host.ompRuntime` and drop its `ompExecutable` and `ompInstallCommand` arguments, and confirm that the user's `home.packages` still carries `personal-omp` with an unchanged derivation path on both hosts.
+- [x] 5.2 Replace the hardcoded profile path in `modules/home/darwin/zed.nix` with `config.home.profileDirectory` and drop its `username` argument, and confirm that the rendered Zed settings file is unchanged.
+- [x] 5.3 Add `modules/fleet/home-manager.nix` with the shared settings from design decision 5 and `extraSpecialArgs = { inherit inputs; }`, reduce each platform `home-manager.nix` to its Home Manager module import and its complete `users.<name>.imports` list, and confirm that both hosts evaluate the same `home-manager.useGlobalPkgs`, `useUserPackages`, and `backupFileExtension` values as before.
+- [x] 5.4 Confirm that `home.packages` of each host has the same names in the same order as at the parent commit, by comparing `map (p: p.name)` across `git+file://$PWD?rev=<parent>` and the working tree.
 
 ## 6. Shared Binary Cache Declaration
 

@@ -1,11 +1,13 @@
 {
+  config,
   inputs,
-  hostname,
   pkgs,
-  username,
   ...
 }:
 
+let
+  inherit (config.host) name username;
+in
 {
   # `nixpkgs.hostPlatform` and `nixpkgs.overlays` are absent on purpose. The
   # flake supplies a complete package set through `nixpkgs.pkgs`, which fixes
@@ -23,8 +25,8 @@
   # `darwin-rebuild --flake .`.
   networking = {
     computerName = "MacBook Pro";
-    hostName = hostname;
-    localHostName = hostname;
+    hostName = name;
+    localHostName = name;
 
     # Stealth mode blocks ICMP pings and probes to closed ports.
     applicationFirewall = {
