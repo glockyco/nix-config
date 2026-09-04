@@ -23,7 +23,7 @@
 ## 4. Darwin Host
 
 - [x] 4.1 Add `modules/darwin/tailscale.nix` with `services.tailscale.enable`, the `extraSetFlags` option, and the `tailscaled-set` launchd daemon per design decision 3, import it from `modules/darwin/default.nix`, and confirm that the Darwin system evaluates and that `services.openssh.enable` is `null`.
-- [ ] 4.2 Correct the `trusted-users` rationale in `modules/darwin/nix.nix` to name the remote builder's unsigned imports, and confirm that the rendered `nix.conf` value is unchanged.
+- [x] 4.2 Correct the `trusted-users` rationale in `modules/darwin/nix.nix` to name the remote builder's unsigned imports, and confirm that the rendered `nix.conf` value is unchanged.
 - [ ] 4.3 Add the `macbookProTailnet` check per design decision 8 and confirm that it passes on `aarch64-darwin`.
 - [ ] 4.4 Open the nix-darwin pull request that adds `services.tailscale.extraSetFlags` with the NixOS semantics, and record its URL in the decision log entry.
 - [ ] 4.5 Activate the Mac, run `tailscale up --advertise-tags=tag:macbook-pro` once, and confirm that `tailscale status --json` reports the tag, `"SSH"` in the node's capabilities, and that `systemsetup -getremotelogin` reports `Off`.

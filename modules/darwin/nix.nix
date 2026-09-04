@@ -33,7 +33,8 @@ in
       extra-substituters = binaryCaches.substituters;
       extra-trusted-public-keys = binaryCaches.trustedPublicKeys;
 
-      # Allow non-root builds to use the Numtide substituter.
+      # Trust the SSH login user so this remote builder can import unsigned
+      # store paths that korolev sends for a build.
       trusted-users = [
         "root"
         username
