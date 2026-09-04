@@ -4,7 +4,7 @@
 
 Status: stable workstation base implemented; project migrations and controlled experiments remain planned.
 
-Last reviewed: 2026-09-01.
+Last reviewed: 2026-09-04.
 
 This document is the canonical cross-repository record for the personal OMP environment. It owns the target architecture, ownership boundaries, accepted decisions, experiment protocols, migration order, and cross-session recovery procedure.
 
@@ -39,6 +39,7 @@ Session transcripts, OMP memory, chat summaries, and issue comments are supporti
 | Package the personal OMP plugin      | complete | archived `omp-agent-setup` OpenSpec change `package-personal-omp-plugin`                                                | none                                    |
 | Consume the plugin from `nix-darwin` | complete | archived `nix-darwin` OpenSpec change `consume-personal-omp-plugin`                                                     | verified plugin output contract         |
 | Adopt the NixOS WSL host             | complete | `nix-darwin` OpenSpec change `adopt-nixos-wsl-host` and `docs/operations/wsl-omp-bootstrap.md`                          | accepted WSL release evidence           |
+| Manage the Windows layer             | active   | `nix-darwin` OpenSpec change `manage-windows-layer` and `docs/operations/wsl-omp-bootstrap.md`                          | adopted NixOS WSL host                  |
 | Migrate HotRepl                      | ready    | future HotRepl OpenSpec change `nix-development-environment`                                                            | workstation base                        |
 | Migrate Ardenfall                    | blocked  | future Ardenfall OpenSpec change `nix-development-environment`                                                          | HotRepl and workstation base            |
 | Migrate Ancient Kingdoms             | blocked  | future Ancient Kingdoms OpenSpec change `nix-development-environment`                                                   | HotRepl and workstation base            |
@@ -166,7 +167,7 @@ It does not copy personal-plugin source. It consumes the plugin's flake output. 
 
 ### WSL work machine
 
-Windows owns Windows Terminal, WSL enablement, employer policy, native applications, and the editor. The NixOS host `korolev` owns the Linux system scope, the user scope, and every executable path. OMP owns its mutable state. Repositories stay under the Linux home directory, not `/mnt/c`.
+Windows owns Windows Terminal, WSL enablement, employer policy, native application state, and the editor runtime. This repository owns the reviewed Windows declaration and uses Nix to render it; the operator applies that artifact with WinGet and DSC. The NixOS host `korolev` owns the Linux system scope, the user scope, and every Linux executable path. OMP owns its mutable state. Repositories stay under the Linux home directory, not `/mnt/c`.
 
 The root flake exposes `nixosConfigurations.korolev` for `x86_64-linux`. `nixos-rebuild switch --flake .#korolev` provides ordered activation, generation replacement, failure rollback, and a retained rollback target. The host declares no SSH server, no other inbound service, and no secret.
 
@@ -401,7 +402,13 @@ Repository: `nix-darwin`.
 
 Delivered: the NixOS host `korolev`, its WSL system scope, the portable user scope under Home Manager, host checks for the closure and the portable module set, and the deletion of the imperative bootstrap implementation. The [korolev provisioning runbook](../operations/wsl-omp-bootstrap.md) owns the Windows prerequisites, the image build, the import, the side-by-side cutover, both rollback paths, and the real-session proof.
 
-Both supported hosts now share one model: a system configuration that imports Home Manager as a module. WSL support does not imply native Windows application management.
+Both supported Nix hosts now share one model: a system configuration that imports Home Manager as a module.
+
+### `manage-windows-layer`
+
+Repository: `nix-darwin`.
+
+The repository renders a reviewable WinGet Configuration document and narrow Administrator scripts for the native Windows applications, settings, and application files used with `korolev`. Nix does not execute Windows resources. The operator applies the document as the interactive user; every resource uses that scope except the official Zen installer. The document prefers English (United Kingdom) for interfaces and ISO 8601 for short dates while it preserves the Austrian region, German input methods, and native Neo default. Windows Terminal still stores its immutable per-user AppX payload in the protected `WindowsApps` store, and the user-installed PowerToys bundle creates a hidden machine-wide MSI registration while keeping its payload and mutable files under `%LOCALAPPDATA%`. Neither packaging detail widens the DSC privilege boundary. The Administrator scripts own only Zen's Program Files policy path and the checksum-pinned native Neo keyboard driver under Windows machine paths. DSC convergence has no generation or transactional rollback.
 
 ### Project migrations
 
@@ -706,8 +713,15 @@ The environment is complete when:
 - Reverse the 2026-09-01 decision to publish the signed Numtide cache from the root flake. Each host declares that substituter and key in system scope, because Nix discards a flake-provided key for a user who is not in `trusted-users` and warns on every command. A machine with neither host configuration passes both values as command-line flags.
 - Keep `trusted-users` at `root` alone on the WSL host. Adding the interactive user would let any flake it evaluates add a substituter and a signing key.
 - Run one WSL distribution at a time during the cutover. WSL shares one cgroup tree, so a second distribution with the same user ID cannot start its user manager, and an activation fails at its user unit reload.
-- Record that the operator holds durable credentials for the local `Administrator` account, and that the declarative layer deliberately does not use them. Import, activation, and both rollback paths run as the standard user.
+- Record that the operator holds durable credentials for the local `Administrator` account. Import, NixOS activation, and both NixOS rollback paths run as the standard user.
+- Add a separately applied Windows declaration. Nix renders one WinGet Configuration document and narrow Zen-policy and native-Neo scripts, but activation never executes them. The interactive user applies the document; only the official Zen installer can elevate inside it. A 64-bit PowerShell session authenticated with the local `Administrator` credential applies the scripts, which own only Zen's Program Files policy path and the checksum-pinned keyboard DLLs and registration.
+- Accept DSC's weaker convergence boundary for native Windows state. Preview every apply, run a post-apply test, and prove re-entry, but do not claim generation or transactional rollback.
 - Install the editor on Windows and keep it out of the Linux closure. Zed for Windows runs its remote server under `wsl.exe`, so every language server stays in the Nix closure without an SSH server or a display path.
+- Keep Fork against the WSL worktree through checksum-pinned `wslgit`. This removes Windows Git's filesystem traversal but retains a measured per-command WSL process cost.
+- Give portable AltSnap sole ownership of modifier dragging and edge or corner snapping. PowerToys owns only Command Palette; Grab And Move and FancyZones stay disabled.
+- Install native `kbdneo` for the base Neo layout in ordinary, elevated, and UAC surfaces. At each logon, use the separate Administrator credential to start the per-user ReNeo executable with `RunAs`; one elevated instance supplies higher layers to ordinary and elevated applications. UAC's secure desktop remains native-driver-only.
+- Apply Catppuccin Mocha with Mauve accents to Windows Terminal, Zed, and Zen from pinned upstream theme data.
+- Prefer English (United Kingdom) for the Windows interface while retaining the Austrian region, German input methods, and native Neo default. Use ISO 8601 for short dates instead of the British slash-separated format.
 - Declare a rootless container runtime with Docker command compatibility inside the NixOS host. WSL 2 already provides the Linux virtual machine that Colima provides on macOS.
 - Instantiate one package set per system in the flake and hand it to that system's host. The dependency runs outward, so a host and an output cannot resolve a package differently.
 - Provide the development shell on every supported system, because that shell installs the commit hook. A host without it has no local formatting gate and reports nothing.

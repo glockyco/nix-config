@@ -12,9 +12,9 @@ This procedure makes an `x86_64` Windows work machine run the NixOS host `korole
 
 Repositories stay under the Linux home directory, not under `/mnt/c`.
 
-This procedure does not install Windows applications, approve external providers, copy credentials from another host, or manage project toolchains.
+This procedure does not approve external providers, copy credentials from another host, or manage project toolchains. The Windows section installs the declared native applications after the NixOS host is active.
 
-Standard Windows user rights are sufficient. The operator holds durable credentials for the local `Administrator` account. The declarative layer deliberately does not use them: distribution import, activation, generation rollback, and distribution rollback all run as the standard user.
+Distribution import, NixOS activation, generation rollback, and distribution rollback run as the standard Windows user. The Windows configuration also uses that account except for three marked operations: the official Zen installer, its policy file, and the native Neo keyboard driver require the separate local `Administrator` credential.
 
 ## 1. Confirm the prerequisites
 
@@ -224,13 +224,119 @@ OMP documents these Windows Terminal fallback chords. Use them only when the ter
 
 Do not force terminal image, keyboard, width, or redraw environment variables for the smoke.
 
-## 11. Set the Windows Terminal profile
+## 11. Prepare the Windows Terminal profile
 
-Windows Terminal enumerates WSL distributions when its process starts, so a distribution imported later is absent from a running window. Close every Windows Terminal window and start Terminal again. The `Microsoft.WSL` generator then adds a `NixOS` profile with its own GUID.
+Windows Terminal enumerates WSL distributions when its process starts, so a distribution imported later is absent from a running window. Close every Windows Terminal window and start Terminal again. The `Microsoft.WSL` generator then adds a `NixOS` profile with its own GUID. The Windows configuration discovers that GUID, makes the profile the default, and preserves the generated profile list.
 
-Set that GUID as `defaultProfile`, and set the profile's starting directory to the Linux home directory. Keep the default terminal keybindings.
+## 12. Apply the Windows layer
 
-## 12. Update the locked environment
+Build the reviewed artifact in NixOS, then copy its files into a writable Windows directory:
+
+```sh
+nix build .#windows-configuration
+chmod -R u+w /mnt/c/Temp/windows-configuration 2>/dev/null || true
+rm -rf /mnt/c/Temp/windows-configuration
+cp -rL result /mnt/c/Temp/windows-configuration
+```
+
+Enable WinGet Configuration once. The artifact has one document and two narrow Administrator scripts. WinGet 1.29.290 displays the declared elevation shield but does not change a DSC script resource's token on this machine. The separate Administrator account also cannot use the interactive user's per-user DSC package. The official Zen installer can elevate itself, so the document owns the package. The generated scripts own only `C:\Program Files\Zen Browser\distribution\policies.json` and the native Neo DLLs and keyboard-layout registration.
+
+Set the artifact paths in a standard PowerShell session:
+
+```powershell
+winget configure --enable
+$configuration = 'C:\Temp\windows-configuration\configuration.winget'
+$kbdNeo = 'C:\Temp\windows-configuration\apply-kbdneo.ps1'
+$zenPolicies = 'C:\Temp\windows-configuration\apply-zen-policies.ps1'
+```
+
+Test all three artifacts before the first apply. Exit status 1 means that the test found drift; resource errors are not expected. The WinGet output must show a shield on exactly `package browser`.
+
+```powershell
+winget configure test `
+  --file $configuration `
+  --accept-configuration-agreements `
+  --disable-interactivity `
+  --suppress-initial-details
+powershell -NoProfile -ExecutionPolicy Bypass -File $kbdNeo -Test
+powershell -NoProfile -ExecutionPolicy Bypass -File $zenPolicies -Test
+```
+
+Open 64-bit Windows PowerShell with **Run as administrator**. Authenticate with the separate local `Administrator` credential, set `$kbdNeo` again, and install the native keyboard driver:
+
+```powershell
+$kbdNeo = 'C:\Temp\windows-configuration\apply-kbdneo.ps1'
+powershell -NoProfile -ExecutionPolicy Bypass -File $kbdNeo
+powershell -NoProfile -ExecutionPolicy Bypass -File $kbdNeo -Test
+```
+
+The first command must report `kbdneo: changed; restart Windows before selecting the layout`; the test must then report `kbdneo: desired`. Restart Windows before you apply the document.
+
+After the restart, set the three paths again in a standard PowerShell session. Apply the document from that session. Enter the separate local `Administrator` credential only if the Zen installer requests it.
+
+```powershell
+winget configure `
+  --file $configuration `
+  --accept-configuration-agreements `
+  --disable-interactivity `
+  --suppress-initial-details
+```
+
+The document puts English (United Kingdom) first in the preferred language list and sets it as the Windows UI override. It preserves the `de-DE` and `de-AT` entries, adds `Deutsch (Neo)` to the German input methods, and makes Neo the default. Windows also keeps the standard UK input method for the English entry. The document sets the short date to ISO 8601 `yyyy-MM-dd`, installs the elevated ReNeo logon launcher, installs portable AltSnap, and applies the user-profile application settings.
+
+Sign out and sign in again after the first apply. The new sign-in applies the UI language and starts the ReNeo launcher. Enter the separate local `Administrator` credential at its prompt. If the current session must continue before that sign-out, select `Deutsch (Neo)` with `Win+Space` and start elevated ReNeo from standard PowerShell:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File "$env:LOCALAPPDATA\WindowsConfiguration\start-reneo-elevated.ps1"
+```
+
+Enter the separate local `Administrator` credential. The same prompt appears at each later sign-in. One elevated ReNeo process supplies the missing higher layers to ordinary and elevated applications. The native driver supplies only the base layout on UAC's secure desktop.
+
+Open 64-bit Windows PowerShell with **Run as administrator** again. Set `$zenPolicies` and apply only the Zen policy file:
+
+```powershell
+$zenPolicies = 'C:\Temp\windows-configuration\apply-zen-policies.ps1'
+powershell -NoProfile -ExecutionPolicy Bypass -File $zenPolicies
+```
+
+Run all three tests again from the standard session, then reapply each artifact in the same context as before. The WinGet test must report that the system is in the described state. The keyboard and policy tests must report `kbdneo: desired` and `Zen policies: desired`. The second apply of every artifact must report no change.
+
+DSC has no generation or transactional rollback. To change the declared state, review a repository revision and reapply its document and scripts. An interrupted apply can leave earlier resources changed, and reverting the artifacts does not uninstall an application unless the declaration explicitly requests its absence.
+
+PowerToys is one monolithic package. Its other utilities remain installed, but the declaration enables only Command Palette. Portable AltSnap owns modifier dragging and 50/50 edge or corner snapping. The PowerToys parent is the only Command Palette startup owner; leave the separate startup task disabled.
+
+The installation-scope audit has three Windows packaging exceptions. Windows Terminal has a per-user AppX registration, but Windows keeps its immutable package payload under `C:\Program Files\WindowsApps`. PowerToys keeps its payload and mutable files under `%LOCALAPPDATA%`, but its bundle also creates a hidden machine-wide MSI registration. Neither resource needs an elevated DSC token. Zen has a machine-wide application payload and policy file. The native Neo driver has checksum-pinned DLLs under `System32` and `SysWOW64` and one keyboard-layout registration under `HKLM`.
+
+### Keep the unsupported surface manual
+
+Use **Settings > Apps > Default apps** for file associations. Windows protects each current-user choice with a generated `UserChoice` hash. The document does not synthesize that unsupported value. The accepted manual bindings are:
+
+| Application   | Extensions                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Zed           | `.nix`, `.md`, `.json`, `.yaml`, `.yml`, `.toml`, `.sh`, `.ps1`, `.py`, `.js`, `.ts`, `.tsx`, `.rs`, `.go`, `.diff`, `.patch`, `.txt` |
+| Adobe Acrobat | `.pdf`                                                                                                                                |
+
+Keep the LaTeX previewer decision in the future `evaluate-pdf-toolset` change. Do not bind it in this workstation change.
+
+Keep taskbar pins in user control. The supported taskbar-layout mechanism is a deployment policy, not a current-user convergence interface; using it here would replace or control the user's pin list. The document changes only taskbar visibility.
+
+Configure Night Light manually under **Settings > System > Display > Night light**. The accepted state is enabled from sunset to sunrise at 50% strength. Windows stores this state in an undocumented CloudStore binary payload, so the document does not write it.
+
+### Verify the Windows roles
+
+After the new sign-in, confirm these behaviors:
+
+- Windows, PowerToys, and weather text use English; the taskbar date uses `yyyy-MM-dd`.
+- `Deutsch (Neo)` remains the default input method. Its base layer works in ordinary applications, elevated applications, and UAC. The elevated ReNeo process supplies higher layers in ordinary and elevated applications. UAC remains base-layer-only.
+- PowerToys Command Palette launches an application and switches to an existing window. No other PowerToys module is enabled.
+- AltSnap modifier-drag moves a window and snaps it to a 50/50 edge or corner region.
+- Zed opens the NixOS worktree through its WSL transport and starts `nixd` inside NixOS without SSH.
+- Fork opens the same worktree through the pinned `wslgit` bridge. The accepted median `git status` time is 409 ms, compared with 723 ms for Windows Git over the UNC path and 4.3 ms inside NixOS.
+- Zen renders the pinned Catppuccin Mocha theme with Mauve accents.
+- Windows Terminal starts the NixOS default profile in the Linux home directory. JetBrainsMonoNL NF renders Powerline and device glyphs without a font warning.
+
+## 13. Update the locked environment
 
 Review and fast-forward the clone, then activate again:
 
@@ -243,6 +349,10 @@ sudo nixos-rebuild switch --flake .#korolev
 The command does not update `flake.lock`.
 
 ## Rollback
+
+### Windows layer
+
+WinGet Configuration and DSC have no generation or transactional rollback. Stop after a failed resource, inspect its reported error and the state already applied, then revise and reapply the reviewed artifact. A repository revert changes the next desired state; it does not automatically uninstall applications or restore previous files. Use the NixOS rollback procedures below only for Linux state.
 
 ### Generation rollback
 

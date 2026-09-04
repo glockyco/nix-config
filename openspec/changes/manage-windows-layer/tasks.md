@@ -93,17 +93,17 @@
 
 - [x] 9.1 Perform the one-time file-association pass and record exactly which extensions were bound.
 - [x] 9.2 Record that the PDF handler stays with the centrally managed reader.
-- [ ] 9.3 Record that the LaTeX previewer decision belongs to `evaluate-pdf-toolset`.
-- [ ] 9.4 Record the taskbar pinned-list exclusion and its reason.
+- [x] 9.3 Record that the LaTeX previewer decision belongs to `evaluate-pdf-toolset`.
+- [x] 9.4 Record the taskbar pinned-list exclusion and its reason.
 - [x] 9.5 Record Night Light as enabled from sunset to sunrise at 50% strength and explain the CloudStore exclusion.
 
 ## 10. Verify the Complete Change
 
-- [ ] 10.1 Run `nix fmt -- --fail-on-change`.
-- [ ] 10.2 Run `nix flake check --print-build-logs` and inspect the new Windows document checks.
+- [x] 10.1 Run `nix fmt -- --fail-on-change`.
+- [x] 10.2 Run `nix flake check --print-build-logs` and inspect the new Windows document checks.
 - [ ] 10.3 Run `nix build .#darwinConfigurations.macbook-pro.system` and confirm that the Darwin host still builds.
 - [ ] 10.4 Run `nix run .#check-darwin-build-plans`.
-- [ ] 10.5 Run `openspec validate manage-windows-layer --strict`.
-- [ ] 10.6 Extend the operator runbook with the render, preview, apply, and confirm procedure, and state that DSC provides no rollback.
-- [ ] 10.7 Update `README.md` for the third layer and its different guarantee set.
+- [x] 10.5 Run `openspec validate manage-windows-layer --strict`.
+- [x] 10.6 Extend the operator runbook with the render, preview, apply, and confirm procedure, and state that DSC provides no rollback.
+- [x] 10.7 Update `README.md` for the third layer and its different guarantee set.
 - [ ] 10.8 Review the final diff by shared settings, document, validation, and documentation.

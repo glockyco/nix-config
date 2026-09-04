@@ -1,9 +1,6 @@
 # nix-config
 
-Declarative configuration for two machines. `macbook-pro` is an Apple Silicon Mac
-that runs Determinate Nix and nix-darwin. `korolev` is an `x86_64` WSL machine,
-and this repository defines its NixOS host. Both hosts import the same Home
-Manager user scope.
+Declarative configuration for two machines and three operating-system layers. `macbook-pro` is an Apple Silicon Mac that runs Determinate Nix and nix-darwin. `korolev` is an `x86_64` WSL machine, and this repository defines both its NixOS host and a rendered WinGet Configuration document. Both Nix hosts import the same Home Manager user scope.
 
 `hosts/` is one directory per machine, owning that machine's name, user, and the
 values that differ per machine, such as the commit identity and `EDITOR`. Each
@@ -12,9 +9,7 @@ host directory produces one entry point: `hosts/macbook-pro/` a
 `hosts/korolev/` a `nixosConfigurations` attribute that `nixos-rebuild`
 activates.
 
-`modules/darwin/` and `modules/nixos/` are system scope for their own platform,
-`modules/home/` is the user scope both hosts share, and `packages/` holds local
-derivations.
+`modules/darwin/` and `modules/nixos/` are system scope for their own platform. `modules/home/` is the user scope both Nix hosts share. `modules/windows/` renders one WinGet Configuration document, narrow Zen-policy and native-Neo Administrator scripts, and their review files; Nix builds that artifact but never applies it. `modules/shared/` holds platform-free settings used by more than one renderer. `packages/` holds local derivations.
 
 `modules/home/` holds the user-scope modules any host can import. `modules/home/darwin/`
 holds those that need a macOS interface, and only the Darwin host imports them. A module
@@ -34,8 +29,7 @@ nix flake update                        # bump inputs
 nix fmt                                 # format the tree; see ./treefmt.nix
 ```
 
-The WSL machine has its own installation and update procedure. Use the
-[WSL runbook](docs/operations/wsl-omp-bootstrap.md) for that host.
+The WSL machine and its Windows layer have their own installation and update procedure. Build the Windows artifact with `nix build .#windows-configuration`, then follow the [WSL runbook](docs/operations/wsl-omp-bootstrap.md) to preview and apply it from Windows. DSC converges resources in place; unlike nix-darwin and NixOS, it has no generation or transactional rollback. Every document resource uses user scope except the official Zen package, whose installer requests elevation. Two Administrator scripts own only Zen's Program Files policy file and the checksum-pinned native Neo keyboard driver. No user setting resolves into the Administrator profile.
 
 `omp` is a Nix wrapper around the `llm-agents` package and the independently pinned
 `personal-omp-plugin` flake. Do not run `omp update` or install the personal plugin
