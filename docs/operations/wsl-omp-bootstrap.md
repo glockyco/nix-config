@@ -350,13 +350,15 @@ Configure Night Light manually under **Settings > System > Display > Night light
 
 ### Verify the Windows roles
 
+In Zed, run `projects: open wsl` from the command palette. Select `NixOS`, then open `/home/user/src/github.com/glockyco/nix-config`. Do not open the `\\wsl.localhost\NixOS\...` path as a local Windows folder. A local folder gives Linux ACP agents a Windows UNC working directory.
+
 After the new sign-in, confirm these behaviors:
 
 - Windows and PowerToys use English, and the taskbar date uses `yyyy-MM-dd`. Weather text remains German because the Austrian region controls Microsoft-hosted widget content.
 - `Deutsch (Neo)` remains the default input method. Its base layer works in ordinary applications, elevated applications, and UAC. The elevated ReNeo process supplies higher layers in ordinary and elevated applications. UAC remains base-layer-only.
 - PowerToys Command Palette launches an application and switches to an existing window. No other PowerToys module is enabled.
 - AltSnap modifier-drag moves a window and snaps it to a 50/50 edge or corner region.
-- Zed opens the NixOS worktree through its WSL transport and starts `nixd` inside NixOS without SSH.
+- Zed opens the NixOS worktree through its WSL transport and starts `nixd` and the wrapped `omp acp` command inside NixOS without SSH.
 - Fork opens the same worktree through the pinned `wslgit` bridge. The accepted median `git status` time is 409 ms, compared with 723 ms for Windows Git over the UNC path and 4.3 ms inside NixOS.
 - Zen renders the pinned Catppuccin Mocha theme with Mauve accents.
 - Windows Terminal starts the NixOS default profile in the Linux home directory. JetBrainsMonoNL NF renders Powerline and device glyphs without a font warning.
