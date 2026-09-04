@@ -255,7 +255,7 @@ in
         $wallpaper = Join-Path $env:WINDIR 'Web\Wallpaper\Windows\img19.jpg'
         return $personalize.AppsUseLightTheme -eq 0 `
           -and $personalize.SystemUsesLightTheme -eq 0 `
-          -and $personalize.EnableTransparency -eq 1 `
+          -and $personalize.EnableTransparency -eq 0 `
           -and $themes.CurrentTheme -ieq $theme `
           -and $desktop.WallPaper -ieq $wallpaper
       '';
@@ -268,7 +268,7 @@ in
         New-Item -Path $themesPath -Force | Out-Null
         New-ItemProperty -Path $personalizePath -Name AppsUseLightTheme -Value 0 -PropertyType DWord -Force | Out-Null
         New-ItemProperty -Path $personalizePath -Name SystemUsesLightTheme -Value 0 -PropertyType DWord -Force | Out-Null
-        New-ItemProperty -Path $personalizePath -Name EnableTransparency -Value 1 -PropertyType DWord -Force | Out-Null
+        New-ItemProperty -Path $personalizePath -Name EnableTransparency -Value 0 -PropertyType DWord -Force | Out-Null
         New-ItemProperty -Path $themesPath -Name CurrentTheme -Value $theme -PropertyType String -Force | Out-Null
         $native = Add-Type -Namespace WindowsConfiguration -Name AppearanceApi -MemberDefinition @'
           [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
@@ -282,6 +282,36 @@ in
       '';
     };
     metadata.description = "Apply the built-in Windows dark theme and Bloom wallpaper";
+  }
+  {
+    type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+    name = "windows-animation-effects";
+    properties = {
+      testScript = ''
+        $native = Add-Type -Namespace WindowsConfiguration -Name AnimationReadApi -MemberDefinition @'
+          [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+          [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+          public static extern bool GetClientAreaAnimation(uint action, uint parameter, ref bool value, uint flags);
+        '@ -PassThru
+        $enabled = $true
+        if (-not $native::GetClientAreaAnimation(0x1042, 0, [ref]$enabled, 0)) {
+          throw 'Could not read the Windows animation-effects setting'
+        }
+        return -not $enabled
+      '';
+      setScript = ''
+        $native = Add-Type -Namespace WindowsConfiguration -Name AnimationWriteApi -MemberDefinition @'
+          [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+          [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+          public static extern bool SetClientAreaAnimation(uint action, uint parameter, ref bool value, uint flags);
+        '@ -PassThru
+        $enabled = $false
+        if (-not $native::SetClientAreaAnimation(0x1043, 0, [ref]$enabled, 3)) {
+          throw 'Could not disable Windows animation effects'
+        }
+      '';
+    };
+    metadata.description = "Disable Windows animation effects through the supported accessibility API";
   }
   {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";

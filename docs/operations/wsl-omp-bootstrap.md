@@ -282,7 +282,7 @@ winget configure `
   --suppress-initial-details
 ```
 
-The document puts English (United Kingdom) first in the preferred language list and sets it as the Windows UI override, but leaves that entry without an input method. It preserves the `de-DE` and `de-AT` entries, adds `Deutsch (Neo)` to the German input methods, and makes Neo the default. The document sets the short date to ISO 8601 `yyyy-MM-dd`, installs the elevated ReNeo logon launcher, installs portable AltSnap, and applies the user-profile application settings.
+The document puts English (United Kingdom) first in the preferred language list and sets it as the Windows UI override, but leaves that entry without an input method. It preserves the `de-DE` and `de-AT` entries, adds `Deutsch (Neo)` to the German input methods, and makes Neo the default. The document sets the short date to ISO 8601 `yyyy-MM-dd`, disables transparency and animation effects, installs the elevated ReNeo logon launcher, installs portable AltSnap, and applies the user-profile application settings.
 
 Sign out and sign in again after the first apply. The new sign-in applies the UI language and starts the ReNeo launcher. Enter the separate local `Administrator` credential at its prompt. If the current session must continue before that sign-out, select `Deutsch (Neo)` with `Win+Space` and start elevated ReNeo from standard PowerShell:
 

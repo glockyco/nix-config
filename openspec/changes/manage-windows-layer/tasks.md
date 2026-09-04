@@ -39,6 +39,8 @@
 - [x] 4.12 Declare ISO 8601 as the Windows short-date format.
 - [x] 4.13 Keep the centrally managed Firefox package out of interactive-user startup.
 - [x] 4.14 Keep English as a UI override without adding its input method.
+- [x] 4.15 Disable Windows transparency effects by named registry value.
+- [x] 4.16 Disable Windows animation effects through the supported accessibility API.
 
 ## 5. Declare Application Configuration Files
 
@@ -63,6 +65,7 @@
 - [x] 6.5 Add rejected fixtures for the unpinned, managed-collision, and machine-scope cases.
 - [x] 6.6 Add an allowed fixture that proves a correct document passes.
 - [x] 6.7 Validate the pinned Zed and Zen themes and exact Windows Terminal Catppuccin palette.
+- [x] 6.8 Validate the rendered disabled transparency and animation settings.
 
 ## 7. Apply and Prove on the Machine
 
@@ -77,6 +80,7 @@
 - [x] 7.9 Apply the ISO short-date resources and confirm that their tests report desired state.
 - [x] 7.10 Apply the Firefox startup exclusion and confirm that its test reports desired state.
 - [x] 7.11 Apply the corrected input-language list and confirm that its test reports desired state.
+- [x] 7.12 Apply the disabled visual effects and confirm that their tests report desired state.
 
 ## 8. Verify Each Role by Use
 

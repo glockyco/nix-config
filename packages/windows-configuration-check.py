@@ -363,6 +363,28 @@ def main() -> None:
     }
     if any(value not in dark_scripts for value in required_appearance_values):
         raise ValueError("dark appearance resource is missing a declared setting")
+    dark_properties = dark_appearance.get("properties", {})
+    if "EnableTransparency -eq 0" not in dark_properties.get(
+        "testScript", ""
+    ) or "EnableTransparency -Value 0" not in dark_properties.get("setScript", ""):
+        raise ValueError("Windows transparency effects must be disabled")
+
+    animation_effects = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "windows animation effects"
+    )
+    animation_properties = animation_effects.get("properties", {})
+    if (
+        "GetClientAreaAnimation(0x1042, 0, [ref]$enabled, 0)"
+        not in animation_properties.get("testScript", "")
+        or "return -not $enabled" not in animation_properties.get("testScript", "")
+        or "SetClientAreaAnimation(0x1043, 0, [ref]$enabled, 3)"
+        not in animation_properties.get("setScript", "")
+        or "$enabled = $false" not in animation_properties.get("setScript", "")
+    ):
+        raise ValueError("Windows animation effects must be disabled")
+
     if "CloudStore" in document_path.read_text(encoding="utf-8"):
         raise ValueError(
             "the document must not rewrite Night Light CloudStore payloads"
