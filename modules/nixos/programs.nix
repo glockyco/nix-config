@@ -1,5 +1,8 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
+let
+  tailnetKnownHosts = pkgs.callPackage ../../packages/tailnet-known-hosts.nix { };
+in
 {
   # Zed's Windows UI starts language servers in its WSL remote process. Keep
   # nixd in the system closure so that process can resolve it without entering
@@ -40,6 +43,17 @@
   # Windows layer owns that. `nano` is not in the NixOS default package set, so
   # it is declared here rather than assumed.
   programs.nano.enable = true;
+
+  # The Nix daemon runs this client as root. Resolve the peer's rotating
+  # Tailscale SSH host keys from the authenticated control-plane state.
+  programs.ssh.extraConfig = ''
+    Host macbook-pro
+      KnownHostsCommand ${lib.getExe tailnetKnownHosts} %H
+      BatchMode yes
+      ConnectTimeout 8
+      ControlMaster no
+      ControlPath none
+  '';
 
   # `modules/home/shell.nix` configures zsh for the user. Enabling it here
   # registers zsh as a login shell, which `users.users.<name>.shell` needs.
