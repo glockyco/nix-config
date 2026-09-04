@@ -495,6 +495,17 @@
               airBatchConfiguration = airBatchConfigCheck;
               containerRuntimeCommand = containerRuntimeCommandTest;
               containerRuntimeConfiguration = containerRuntimeConfigCheck;
+
+              macbookProTailnet =
+                let
+                  darwinConfig = self.darwinConfigurations.macbook-pro.config;
+                in
+                assert darwinConfig.services.tailscale.enable;
+                assert lib.elem "--ssh" darwinConfig.services.tailscale.extraSetFlags;
+                assert darwinConfig.services.openssh.enable == null;
+                assert lib.elem "glockyco" darwinConfig.determinateNix.customSettings.trusted-users;
+                pkgs.runCommand "check-macbook-pro-tailnet" { } "touch $out";
+
               darwinSystem = self.darwinConfigurations.macbook-pro.system;
             };
 
