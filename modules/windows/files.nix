@@ -30,6 +30,10 @@ let
     commit = "c855685442c6040c4dda9c8d3ddc7b708de1cbaa";
     flavor = "Mocha";
     accent = "Mauve";
+    preference = {
+      name = "toolkit.legacyUserProfileCustomizations.stylesheets";
+      value = true;
+    };
     files = {
       "userChrome.css" = {
         url = "https://raw.githubusercontent.com/catppuccin/zen-browser/c855685442c6040c4dda9c8d3ddc7b708de1cbaa/themes/Mocha/Mauve/userChrome.css";
@@ -176,12 +180,7 @@ let
   };
 
   zenPolicies = {
-    policies = (builtins.removeAttrs shared.zenPolicies [ "EnterprisePoliciesEnabled" ]) // {
-      Preferences."toolkit.legacyUserProfileCustomizations.stylesheets" = {
-        Value = true;
-        Status = "locked";
-      };
-    };
+    policies = builtins.removeAttrs shared.zenPolicies [ "EnterprisePoliciesEnabled" ];
   };
 
   terminalSpecificationJson = builtins.toJSON terminalSettings;
@@ -477,8 +476,12 @@ let
         if (-not (Test-Path -LiteralPath $profilesIni)) { return $false }
         $profilePaths = @(Select-String -LiteralPath $profilesIni -Pattern '^Path=(.+)$' | ForEach-Object { $_.Matches[0].Groups[1].Value })
         if ($profilePaths.Count -eq 0) { return $false }
+        $preferenceLine = "user_pref(`"$($specification.preference.name)`", $($specification.preference.value | ConvertTo-Json -Compress));"
         foreach ($profilePath in $profilePaths) {
-          $chrome = Join-Path (Join-Path (Split-Path -Parent $profilesIni) $profilePath.Replace('/', '\')) 'chrome'
+          $profile = Join-Path (Split-Path -Parent $profilesIni) $profilePath.Replace('/', '\')
+          $chrome = Join-Path $profile 'chrome'
+          $userJs = Join-Path $profile 'user.js'
+          if (-not (Test-Path -LiteralPath $userJs) -or (Get-Content -LiteralPath $userJs) -notcontains $preferenceLine) { return $false }
           foreach ($file in $specification.files.PSObject.Properties) {
             $path = Join-Path $chrome $file.Name
             if (-not (Test-Path -LiteralPath $path)) { return $false }
@@ -503,12 +506,19 @@ let
             Invoke-WebRequest -Uri $file.Value.url -OutFile $download -UseBasicParsing
             if ((Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant() -ne $file.Value.sha256) { throw "Zen Catppuccin checksum mismatch for $($file.Name)" }
           }
+          $preferenceLine = "user_pref(`"$($specification.preference.name)`", $($specification.preference.value | ConvertTo-Json -Compress));"
+          $preferencePattern = '^\s*user_pref\("' + [regex]::Escape($specification.preference.name) + '"\s*,'
           foreach ($profilePath in $profilePaths) {
-            $chrome = Join-Path (Join-Path (Split-Path -Parent $profilesIni) $profilePath.Replace('/', '\')) 'chrome'
+            $profile = Join-Path (Split-Path -Parent $profilesIni) $profilePath.Replace('/', '\')
+            $chrome = Join-Path $profile 'chrome'
+            $userJs = Join-Path $profile 'user.js'
             New-Item -ItemType Directory -Path $chrome -Force | Out-Null
             foreach ($file in $specification.files.PSObject.Properties) {
               Copy-Item -LiteralPath (Join-Path $temporary $file.Name) -Destination (Join-Path $chrome $file.Name) -Force
             }
+            $userPreferences = if (Test-Path -LiteralPath $userJs) { @(Get-Content -LiteralPath $userJs | Where-Object { $_ -notmatch $preferencePattern }) } else { @() }
+            $userPreferences += $preferenceLine
+            [IO.File]::WriteAllLines($userJs, [string[]]$userPreferences, [Text.UTF8Encoding]::new($false))
           }
         } finally {
           Remove-Item -LiteralPath $temporary -Recurse -Force -ErrorAction SilentlyContinue

@@ -143,14 +143,27 @@ in
     name = "native-neo-input-method";
     properties = {
       testScript = ''
+        $inputTip = '0407:b0000407'
         $override = Get-WinDefaultInputMethodOverride
-        return $null -ne $override -and $override.InputMethodTip -eq '0407:b0000407'
+        $registered = $false
+        foreach ($language in Get-WinUserLanguageList) {
+          if ($language.InputMethodTips -contains $inputTip) { $registered = $true }
+        }
+        return $registered -and $null -ne $override -and $override.InputMethodTip -eq $inputTip
       '';
       setScript = ''
+        $inputTip = '0407:b0000407'
         if (-not (Test-Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layouts\b0000407')) {
           throw 'Run apply-kbdneo.ps1 as Administrator and restart Windows before applying the WinGet document'
         }
-        Set-WinDefaultInputMethodOverride -InputTip '0407:b0000407'
+        $languages = Get-WinUserLanguageList
+        $german = @($languages | Where-Object LanguageTag -eq 'de-DE')
+        if ($german.Count -ne 1) { throw 'The user language list must contain exactly one de-DE entry' }
+        if ($german[0].InputMethodTips -notcontains $inputTip) {
+          $german[0].InputMethodTips.Add($inputTip)
+          Set-WinUserLanguageList -LanguageList $languages -Force
+        }
+        Set-WinDefaultInputMethodOverride -InputTip $inputTip
       '';
     };
     metadata.description = "Select the native Neo2 layout for the interactive user";

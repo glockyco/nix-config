@@ -395,6 +395,8 @@ def main() -> None:
         for value in (
             "0407:b0000407",
             "Keyboard Layouts\\b0000407",
+            "Get-WinUserLanguageList",
+            "Set-WinUserLanguageList",
             "Set-WinDefaultInputMethodOverride",
         )
     ):
@@ -449,6 +451,7 @@ def main() -> None:
         "commit": zen_theme.get("commit"),
         "flavor": zen_theme.get("flavor"),
         "accent": zen_theme.get("accent"),
+        "preference": zen_theme.get("preference"),
         "files": {
             name: specification.get("sha256")
             for name, specification in zen_theme.get("files", {}).items()
@@ -457,6 +460,10 @@ def main() -> None:
         "commit": "c855685442c6040c4dda9c8d3ddc7b708de1cbaa",
         "flavor": "Mocha",
         "accent": "Mauve",
+        "preference": {
+            "name": "toolkit.legacyUserProfileCustomizations.stylesheets",
+            "value": True,
+        },
         "files": {
             "userChrome.css": "98ba97510bf2ecd8636686238242cb0f2e43552e2bb93c520818ed89da92189b",
             "userContent.css": "297a3c45e624792892482ab45552625b2765e6d44947e878fe5c5731eb7cd44a",
@@ -466,16 +473,6 @@ def main() -> None:
         raise ValueError(
             "Zen Catppuccin theme must match the pinned Mocha Mauve sources"
         )
-    zen_policies = json.loads(
-        (package_root / "zen-policies.json").read_text(encoding="utf-8")
-    )
-    user_styles = (
-        zen_policies.get("policies", {})
-        .get("Preferences", {})
-        .get("toolkit.legacyUserProfileCustomizations.stylesheets", {})
-    )
-    if user_styles != {"Value": True, "Status": "locked"}:
-        raise ValueError("Zen policy must enable profile user styles")
     zen_theme_resource = next(
         resource
         for resource in document.get("resources", [])
@@ -487,7 +484,14 @@ def main() -> None:
     )
     if any(
         value not in zen_theme_scripts
-        for value in ("profiles.ini", "Get-FileHash", "sha256", "Zen Browser\\zen.exe")
+        for value in (
+            "profiles.ini",
+            "user.js",
+            "toolkit.legacyUserProfileCustomizations.stylesheets",
+            "Get-FileHash",
+            "sha256",
+            "Zen Browser\\zen.exe",
+        )
     ):
         raise ValueError("Zen Catppuccin resource is missing a required profile guard")
 

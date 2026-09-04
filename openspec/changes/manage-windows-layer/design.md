@@ -113,7 +113,7 @@ This distinction already exists on Darwin. `modules/home/darwin/karabiner.nix` c
 | Enforced content   | Zen policies and the pinned Zed and Zen themes       |
 | Converged by merge | Windows Terminal, Zed, ReNeo, and PowerToys settings |
 
-Use Catppuccin Mocha with Mauve accents for Zed, Windows Terminal, and Zen. The Zed resource verifies and installs the official theme file from pinned commit `b54cb81708d06912d50e6bb9fd2fd2103b9dda25`. The Terminal resource merges the official Catppuccin Mocha scheme by name and preserves every unrelated built-in or user scheme. The Zen resource installs the three official profile assets from pinned commit `c855685442c6040c4dda9c8d3ddc7b708de1cbaa` and the policy enables profile user styles.
+Use Catppuccin Mocha with Mauve accents for Zed, Windows Terminal, and Zen. The Zed resource verifies and installs the official theme file from pinned commit `b54cb81708d06912d50e6bb9fd2fd2103b9dda25`. The Terminal resource merges the official Catppuccin Mocha scheme by name and preserves every unrelated built-in or user scheme. The Zen resource installs the three official profile assets from pinned commit `c855685442c6040c4dda9c8d3ddc7b708de1cbaa` and converges the required userstyle preference in each profile's `user.js`. This keeps the profile setting in user scope and preserves unrelated preferences.
 
 **Alternative:** Use the adapted `PSDesiredStateConfiguration/File` and `/Script` resources. Rejected after the live dry run failed because the adapter tried to connect through unavailable WS-Management. Enabling that machine service would need administration and violate the user-scope boundary.
 
