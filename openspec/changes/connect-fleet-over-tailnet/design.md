@@ -8,6 +8,7 @@ Measured on 2026-09-04 from `korolev`:
 - `flake.nix:429-434` (`korolevIsolation`) asserts no `sshd`, no open TCP port, and no `sops` for `korolev`, and its comment records the reason: the machine runs endpoint data-loss prevention.
 - `modules/darwin/nix.nix:35-38` lists `glockyco` in `trusted-users` "to use the Numtide substituter". That rationale is wrong: daemon-declared substituters serve every client. A remote builder needs it for a different reason, because the build client imports unsigned store paths as that user.
 - `modules/home/darwin/ssh.nix:11-14` and `modules/home/darwin/network-shares.nix:9-11` spell `MacBook-Air-von-ISYS.local`; `network-shares.nix:18` probes port 445 on that name before mounting; `packages/air-batch-config-check.nix:21` and `packages/air-batch-check-tests.nix:26` assert the same literal.
+- The Air is borrowed for a few more months. Its only purpose is access to PhD thesis and TOSEM paper results. It must leave the topology without changing any durable fleet capability.
 
 Verified in the pinned inputs:
 
@@ -20,7 +21,7 @@ Verified in the pinned inputs:
 
 **Goals:**
 
-- Every fleet machine has a stable name and a private path to every machine the policy permits, independent of physical network.
+- Every durable host and declared temporary peer has a stable name and a private path to each policy-permitted destination.
 - `korolev` is reachable by no other node, holds no SSH private key, and can build `aarch64-darwin` derivations on the Mac.
 - The access policy is repository data with evaluated invariants, tested by Tailscale at every apply, and applied only from `main`.
 - No `.local` name and no LAN address remains in configuration or checks.
@@ -28,7 +29,7 @@ Verified in the pinned inputs:
 **Non-Goals:**
 
 - Tailscale on the Windows work host. Only the `korolev` distribution joins. Intune owns the Windows host.
-- Management of the Air or the desktop. Their owners install the Tailscale application by hand. The policy names their tags.
+- Management of the Air or the desktop. Their owners install the Tailscale application by hand. Policy data marks the desktop durable and the borrowed Air temporary.
 - Tailscale SSH on the Air. The graphical application cannot serve SSH. The Air keeps Apple's `sshd`, and the Mac keeps its Secure Enclave key for it.
 - Subnet routers, exit nodes, Taildrop, session recording, Funnel, and Serve.
 - Inbound access to `korolev` of any kind, including from the owner's own devices.
@@ -37,9 +38,9 @@ Verified in the pinned inputs:
 
 ### 1. One tailnet, tagged nodes, MagicDNS names
 
-Each managed host declares `host.tailnet.tag` (`types.strMatching "^tag:[a-z0-9-]+$"`, no default) in `modules/fleet/host.nix`. Unmanaged peers are data in `modules/shared/tailnet-peers.nix`: `{ air = { tag = "tag:air"; }; desktop = { tag = "tag:desktop"; }; }`. Node names equal host names, so MagicDNS yields `macbook-pro`, `korolev`, `air`, and `desktop`.
+Each managed host declares `host.tailnet.tag` (`types.strMatching "^tag:[a-z0-9-]+$"`, no default) in `modules/fleet/host.nix`. Unmanaged peers are data in `modules/shared/tailnet-peers.nix`. Each peer declares `tag`, `lifecycle = "durable" | "temporary"`, and a non-empty `purpose`. The desktop is durable. The Air is temporary and states that it exposes research results until the borrowed machine is returned. Node names equal host names, so MagicDNS yields `macbook-pro`, `korolev`, `air`, and `desktop` while all four are declared.
 
-Tags rather than user-owned nodes: a tagged node has no key expiry, which an unattended builder needs, and tags are the only stable subject for policy rules that contain no e-mail address. `tagOwners` maps every tag to `autogroup:admin`.
+Tags rather than user-owned nodes: tags are the stable policy subjects that keep e-mail addresses out of the public repository. Tagged nodes do not expire automatically. That property is required for the unattended builder and accepted temporarily for the Air. The Air's explicit offboarding revokes the node before the machine is returned. `tagOwners` maps every declared tag to `autogroup:admin`.
 
 Alternative rejected: user-owned nodes with expiry disabled per device in the admin console. That state lives outside the repository and is invisible to review.
 
@@ -89,9 +90,15 @@ WSL regenerates `/etc/resolv.conf` at every start, which overwrites what `tailsc
 
 Alternative rejected: a `100.x` address literal for the Mac. It is stable per node, but it is another literal for a fact the control plane owns, and it leaves the resolver under WSL's imperative control.
 
-### 7. The Air over the tailnet
+### 7. The Air is one removable temporary integration
 
-`modules/home/darwin/ssh.nix` sets `HostName = "air"`. `network-shares.nix` mounts `smb://joaichberger@air/Macintosh%20HD` and replaces the mDNS reachability probe with `tailscale status --json` peer state for `air`. The `air-batch` transport rules do not change. `air-batch-config-check.nix` and `air-batch-check-tests.nix` assert the new name. The `Host air` block and the Secure Enclave key remain, because the Air serves Apple `sshd`.
+`modules/home/darwin/ssh.nix` sets `HostName = "air"`. `network-shares.nix` mounts `smb://joaichberger@air/Macintosh%20HD` and replaces the mDNS reachability probe with `tailscale status --json` peer state for `air`. The `air-batch` transport rules do not change. `air-batch-config-check.nix` and `air-batch-check-tests.nix` assert the new name. The `Host air` block and the Secure Enclave key remain while the Air serves Apple `sshd`.
+
+No durable build, storage, authentication, activation, or release gate references the Air. The policy renderer has a fixture without the Air and proves that no `tag:air` owner, grant, SSH rule, or test remains. The durable Mac, `korolev`, and desktop topology remains valid.
+
+The offboarding issue records the removal order. First preserve the required research results. Revoke the Tailscale node before returning the machine. Remove the peer declaration and apply policy. Remove the Mac's SSH, batch, SMB, and credential state. Finally remove the `air-client` role introduced by `separate-platform-baseline-from-roles`.
+
+Implementation creates one planning issue titled `Retire borrowed Air after research-result retrieval` with that done-when boundary. The future physical return does not keep this active change open.
 
 ### 8. Checks
 
@@ -110,6 +117,7 @@ Alternative rejected: a `100.x` address literal for the Mac. It is stable per no
 - \[Inbound UDP to the unsigned macOS `tailscaled` is dropped by the application firewall\] → Connections initiated by `korolev` still negotiate a direct path. If measurement shows a relay, the design accepts the relay for build traffic and records the measured throughput.
 - \[`10.255.255.254` changes\] → The address is WSL's documented DNS-tunneling endpoint and stable across restarts. The runbook states how to confirm it, and the `korolev` check asserts the declaration matches the running `resolved` upstream.
 - [A policy edit in the admin console diverges from the repository] → "Prevent edits" is enabled, and the next `apply` overwrites console edits.
+- [The temporary Air tag disables automatic key expiry] → Its declaration is isolated, its purpose is narrow, and offboarding revokes the node before the borrowed machine is returned.
 - [Employer endpoint monitoring observes the tailnet client] → Accepted by the owner and recorded in the decision log.
 
 ## Migration Plan
@@ -118,5 +126,6 @@ Alternative rejected: a `100.x` address literal for the Mac. It is stable per no
 1. Land the policy renderer and the workflow first. Merge applies the policy before any node joins, so no node ever runs under the default allow-all policy.
 1. Activate the Mac. Run `tailscale up --advertise-tags=tag:macbook-pro` once with the owner's login, confirm `tailscale status` shows the tag and SSH advertised, and confirm Remote Login is still off.
 1. Activate `korolev`. Run `tailscale up --advertise-tags=tag:korolev` once, confirm shields-up and MagicDNS resolution, then run `tailnet-builder-check`.
-1. Install the Tailscale application on the Air and the desktop, authenticate each with its tag, and confirm `ssh air` and the SMB mount from the Mac.
+1. Install the Tailscale application on the temporary Air and durable desktop. Authenticate each with its tag, then confirm `ssh air` and the SMB mount from the Mac.
+1. Create the Air-retirement planning issue with the tested offboarding procedure. Confirm that removing the Air from a policy fixture leaves no tag or policy reference.
 1. Rollback: `tailscale logout` on a node removes it from the tailnet. A Nix generation rollback removes the client from either host. The policy is reverted by reverting the merge, which the workflow applies.

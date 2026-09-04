@@ -8,16 +8,17 @@
 
 - [ ] 2.1 Add `host.tailnet.tag` and `host.tailnet.reachable` to `modules/fleet/host.nix`, declare `tag:macbook-pro` and `tag:korolev` with `reachable = false` for `korolev` in `hosts/*/default.nix`, and confirm both hosts evaluate the new values.
 - [ ] 2.2 Extend `packages/host-declaration-check.nix` with a fixture that omits the tag and one with a malformed tag, and confirm that both are rejected under `deepSeq`.
-- [ ] 2.3 Add `modules/shared/tailnet-peers.nix` with the Air and desktop tags and export it from `modules/shared/default.nix`; confirm that `moduleImports` still passes.
+- [ ] 2.3 Add `modules/shared/tailnet-peers.nix` with each peer's tag, lifecycle, and purpose. Mark the desktop durable and the Air temporary for research-result access. Export the data from `modules/shared/default.nix`, and confirm that `moduleImports` still passes.
 
 ## 3. Policy Renderer
 
 - [ ] 3.1 Add `packages/tailnet-policy.nix` that renders `policy.hujson` from the host declarations and peer data per design decision 2, expose it as `packages.tailnet-policy` on every system, and confirm that `jq` parses the output and that `dst` lists contain no `tag:korolev`.
 - [ ] 3.2 Add the `tests` and `sshTests` blocks and confirm that the rendered file names every reachable tag as a source that must be denied `korolev:22` and `korolev:*`.
 - [ ] 3.3 Add the `tailnetPolicy` check and confirm that `nix build .#checks.x86_64-linux.tailnetPolicy` passes.
-- [ ] 3.4 Add `tailnetPolicyRejects` with fixtures that name `korolev` as a destination and that contain an `@`, and confirm that both rejections are observed; then confirm with a temporary probe that removing one assertion from the renderer makes this check fail, and revert the probe.
-- [ ] 3.5 Add `.github/workflows/tailnet-policy.yml` with `test` on pull requests and `apply` on `main`, using the federated identity and `policy-file: result/policy.hujson`; open a pull request and confirm that the `test` job passes against the live tailnet.
-- [ ] 3.6 Merge and confirm in the admin console that the applied policy equals the rendered file and that the tests block passed.
+- [ ] 3.4 Add `tailnetPolicyRejects` with fixtures that name `korolev` as a destination, contain an `@`, and omit a temporary peer's lifecycle or purpose. Confirm every rejection, then remove one renderer assertion temporarily and confirm the check fails before reverting the probe.
+- [ ] 3.5 Add a policy fixture without the temporary Air peer. Confirm that no tag owner, grant, SSH rule, or test names `tag:air` and that every durable topology invariant passes.
+- [ ] 3.6 Add `.github/workflows/tailnet-policy.yml` with `test` on pull requests and `apply` on `main`, using the federated identity and `policy-file: result/policy.hujson`; open a pull request and confirm that the `test` job passes against the live tailnet.
+- [ ] 3.7 Merge and confirm in the admin console that the applied policy equals the rendered file and that the tests block passed.
 
 ## 4. Darwin Host
 
@@ -49,11 +50,12 @@
 
 ## 7. Retire `.local`
 
-- [ ] 7.1 Install and authenticate the Tailscale application on the Air with `tag:air` and on the desktop with `tag:desktop`; confirm that both appear in `tailscale status` on the Mac.
+- [ ] 7.1 Install and authenticate the Tailscale application on the temporary Air with `tag:air` and on the durable desktop with `tag:desktop`. Confirm that both appear in `tailscale status` on the Mac.
 - [ ] 7.2 Change `modules/home/darwin/ssh.nix` to `HostName = "air"`, and confirm with `ssh -G air` and `ssh -G air-batch` that both resolve `hostname air` and keep their existing transport policy.
 - [ ] 7.3 Change `modules/home/darwin/network-shares.nix` to the tailnet name and the peer-state reachability probe, activate, and confirm that `~/Air` resolves while the Air is online and that the agent exits 0 without mounting while it is offline.
 - [ ] 7.4 Update `packages/air-batch-config-check.nix` and `packages/air-batch-check-tests.nix` to the new name, run `air-batch-check`, and confirm that all four probes pass over the tailnet.
 - [ ] 7.5 Confirm that no file under `modules/`, `packages/`, `hosts/`, or `docs/` contains `.local` as a host suffix or the string `MacBook-Air-von-ISYS`.
+- [ ] 7.6 Create a planning issue titled `Retire borrowed Air after research-result retrieval`. Require preserved thesis and TOSEM results, node revocation before return, removal of the tag and policy entries, removal of SSH and SMB configuration and credentials, and removal of the Air role and declaration. Confirm the issue has the `planning` label and links the temporary peer declaration.
 
 ## 8. Verify the Complete Change
 
@@ -65,6 +67,6 @@
 
 ## 9. Documentation
 
-- [ ] 9.1 Add a decision-log entry to `docs/architecture/personal-omp-environment.md` that records the reversal of the 2026-09-03 isolation decision, the tailnet ownership boundary, and the nix-darwin pull request; update the "WSL work machine" ownership paragraph; confirm that the entry names the date.
+- [ ] 9.1 Add a decision-log entry to `docs/architecture/personal-omp-environment.md` that records the reversed `korolev` isolation decision, the durable-host versus temporary-peer boundary, the Air offboarding issue, and the nix-darwin pull request. Update the `WSL work machine` ownership paragraph, and confirm that the entry names the date.
 - [ ] 9.2 Add a "Join the tailnet" section to `docs/operations/wsl-omp-bootstrap.md` with the one-time `tailscale up` command, the resolver check from task 5.2, the `nix-daemon` path from task 5.7, and the `tailnet-builder-check` command; confirm that `nix fmt -- --fail-on-change` passes on the file.
 - [ ] 9.3 Update the README ownership table, layout table, and Develop section to name the tailnet, the policy workflow, and `nix flake check --all-systems` from `korolev`; confirm that `nix fmt -- --fail-on-change README.md` passes.

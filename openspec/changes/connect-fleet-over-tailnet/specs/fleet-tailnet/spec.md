@@ -1,12 +1,12 @@
 ## Purpose
 
-Connects the fleet machines over one private tailnet with stable names, governs which machine may reach which through a declared and tested access policy, and gives the Linux host a build path to the Darwin host.
+Connects durable fleet hosts and declared temporary peers over one private tailnet, governs their reachability through tested policy, and gives the Linux host a build path to the Darwin host.
 
 ## ADDED Requirements
 
-### Requirement: Every fleet machine is a tagged tailnet node
+### Requirement: Every declared tailnet member has one identity
 
-Each fleet machine SHALL join one tailnet as a node with exactly one declared tag. The MagicDNS name of a node SHALL be its host name. Repository configuration SHALL address a fleet machine by its tailnet name and SHALL NOT address it by an mDNS `.local` name or by a LAN address.
+Each durable fleet host and temporary peer SHALL join one tailnet as a node with exactly one declared tag. A peer declaration SHALL state whether the peer is durable or temporary. The MagicDNS name of a node SHALL be its host name. Repository configuration SHALL address a tailnet member by its tailnet name and SHALL NOT address it by an mDNS `.local` name or by a LAN address.
 
 #### Scenario: Reach a machine from another network
 
@@ -18,14 +18,25 @@ Each fleet machine SHALL join one tailnet as a node with exactly one declared ta
 - **WHEN** a managed host configuration omits its tailnet tag
 - **THEN** evaluation fails with an error that names the option
 
-#### Scenario: A node key does not expire
+#### Scenario: A durable tagged node remains connected
 
-- **WHEN** a fleet machine has been connected to the tailnet for longer than the default key expiry
-- **THEN** it remains connected without re-authentication
+- **WHEN** a durable fleet host has been connected for longer than the default key expiry
+- **THEN** its tagged node remains connected without re-authentication
+
+#### Scenario: Inspect a temporary peer declaration
+
+- **WHEN** a maintainer inspects the Air peer
+- **THEN** its declaration identifies it as temporary and states its research-results purpose
+- **AND** no durable builder, storage, authentication, or release gate depends on it
+
+#### Scenario: Temporary peer metadata is incomplete
+
+- **WHEN** a temporary peer omits its lifecycle or purpose
+- **THEN** policy rendering fails and names that peer
 
 ### Requirement: Declared access policy
 
-The tailnet access policy SHALL be declared as repository data and rendered by the repository. The rendered policy SHALL permit every node to reach the Darwin host, the Air, and the desktop, and SHALL permit the Linux host to reach those three. No rule SHALL name the Linux host as a destination. The rendered policy SHALL contain no e-mail address. The rendered policy SHALL contain Tailscale tests that assert the Linux host is unreachable from every other node.
+The tailnet access policy SHALL be declared as repository data and rendered by the repository. The rendered policy SHALL permit every node to reach the Darwin host, the desktop, and the Air while the Air is declared. It SHALL permit the Linux host to reach those declared destinations. No rule SHALL name the Linux host as a destination. The rendered policy SHALL contain no e-mail address. The rendered policy SHALL contain Tailscale tests that assert the Linux host is unreachable from every other node.
 
 #### Scenario: Render the policy
 
@@ -53,6 +64,23 @@ The tailnet access policy SHALL be declared as repository data and rendered by t
 - **WHEN** any other node attempts a connection to the Linux host's tailnet address
 - **THEN** the connection is refused by policy
 
+### Requirement: Temporary peers leave no durable dependency
+
+A temporary peer SHALL serve only its declared short-term purpose. Durable builders, storage, authentication, activation, and release gates SHALL operate without that peer. The owning repository SHALL track one clean removal procedure in an offboarding issue outside the active change.
+
+#### Scenario: Remove the Air declaration
+
+- **WHEN** a policy fixture removes the temporary Air peer
+- **THEN** the rendered tag owners, grants, and tests contain no Air tag
+- **AND** the durable three-machine topology still satisfies every policy invariant
+
+#### Scenario: Return the borrowed Air
+
+- **WHEN** the owner no longer needs the Air's research results
+- **THEN** the required results are preserved before the machine leaves
+- **AND** the node is revoked before the machine is returned
+- **AND** its tag, policy entries, SSH and SMB endpoints, local credentials, role, and declaration are removed
+
 ### Requirement: Tailnet SSH access to the Darwin host
 
 The Darwin host SHALL accept SSH connections from the tailnet through the tailnet's SSH server and SHALL NOT run the platform SSH server. The Linux host SHALL connect as the Darwin host's interactive user without a prompt and without a client private key. The owner's other devices SHALL connect as that user only after re-authentication in check mode.
@@ -62,9 +90,9 @@ The Darwin host SHALL accept SSH connections from the tailnet through the tailne
 - **WHEN** the Linux host's Nix daemon opens an SSH connection to the Darwin host
 - **THEN** the session is authenticated by tailnet identity, runs as the Darwin host's interactive user, and requires no key file on the Linux host
 
-#### Scenario: Owner connects from another device
+#### Scenario: Owner connects from another declared device
 
-- **WHEN** the owner connects from the Air or the desktop
+- **WHEN** the owner connects from the desktop or another declared owner device
 - **THEN** the tailnet requires re-authentication within its check period before the session opens
 
 #### Scenario: Host key verification
