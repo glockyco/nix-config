@@ -7,12 +7,13 @@
 }:
 
 # Fails when an output this repository asks Nix to build on Darwin reaches a
-# source-built .NET package or a Swift compiler.
+# source-built .NET package, Swift compiler, Markdown Oxide application, or
+# Roslyn language server.
 #
-# Nixpkgs publishes no `aarch64-darwin` binary for either, so a build plan that
-# reaches one compiles both toolchains. That is not a slow build, it is hours: a
-# test-only dependency of one formatter tool once cost this repository five of
-# them.
+# Nixpkgs publishes no `aarch64-darwin` binary for these builds, so a plan that
+# reaches one compiles an application or its toolchain. That is not a slow build;
+# it takes hours. A test-only dependency of one formatter tool once cost this
+# repository five of them.
 #
 # This is an app rather than a `nix flake check` derivation because a check runs
 # in a sandbox with no store access, and walking a derivation closure needs the
@@ -46,9 +47,9 @@ writeShellApplication {
         ;;
     esac
 
-    # Matches the source-built .NET packages and the Swift compiler by
-    # derivation name. Task 4.4's controls below prove the pattern still bites.
-    pattern='-(dotnet-vmr|dotnet-stage0-vmr|swift)-[0-9]'
+    # Matches the source-built toolchains and language-server applications by
+    # derivation name. The controls below prove that every branch still bites.
+    pattern='-(dotnet-vmr|dotnet-stage0-vmr|swift|markdown-oxide|roslyn-ls)-[0-9]'
 
     # The controls need the Nixpkgs this repository pins. Read it from the lock
     # rather than evaluating the flake from inside itself: `builtins.getFlake`
@@ -75,10 +76,10 @@ writeShellApplication {
     }
 
     # A detector that silently stops matching is worse than no detector, because
-    # it reports success forever. Prove it still recognises the two toolchains
+    # it reports success forever. Prove it still recognises each forbidden build
     # before trusting anything it says about this repository.
     controls_failed=0
-    for control in dotnetCorePackages.sdk_8_0 swift; do
+    for control in dotnetCorePackages.sdk_8_0 swift markdown-oxide roslyn-ls; do
       control_drv="$(nix eval --raw "$nixpkgs#legacyPackages.$system.$control.drvPath")"
 
       if [ -z "$(hits "$control_drv")" ]; then
@@ -120,8 +121,8 @@ writeShellApplication {
 
     if [ "$violations" -ne 0 ]; then
       echo "" >&2
-      echo "These outputs compile a .NET SDK or a Swift toolchain from source on Darwin." >&2
-      echo "Point the dependency at a fixed-output binary, as packages/personal-omp.nix does." >&2
+      echo "These outputs compile a forbidden toolchain or language server from source on Darwin." >&2
+      echo "Point the dependency at an official fixed-output binary package." >&2
       exit 1
     fi
 
@@ -130,6 +131,6 @@ writeShellApplication {
       exit 1
     fi
 
-    echo "check-darwin-build-plans: $checked outputs, none reaching a source-built .NET package or Swift compiler."
+    echo "check-darwin-build-plans: $checked outputs, none reaching a forbidden source build."
   '';
 }

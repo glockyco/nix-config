@@ -142,6 +142,23 @@ nix flake metadata --json | jq -r '.locks.nodes["personal-omp-plugin"].locked.re
 
 Do not install the personal plugin through OMP's mutable plugin manager.
 
+## Manual language-server artifact update
+
+`packages/markdown-oxide.nix` downloads the official [Markdown Oxide releases](https://github.com/Feel-ix-343/markdown-oxide/releases). `packages/roslyn-language-server.nix` downloads Microsoft's official platform tool packages from [NuGet](https://www.nuget.org/profiles/roslyn-language-server). Both package files contain explicit asset selections for `aarch64-darwin` and `x86_64-linux`.
+
+Change a package's version, platform asset name or runtime identifier, and fixed hash together. Never update only a URL or accept a changed artifact under an existing hash. Verify `markdown-oxide --version` and Roslyn initialization on both supported systems.
+
+A Markdown server update also crosses the personal-plugin release boundary:
+
+1. Change the Markdown server definition in `omp-agent-setup`.
+1. Run the plugin checks and the representative Markdown smoke with the candidate workstation package.
+1. Publish the verified plugin revision.
+1. Pin that revision in `nix-config` in the same commit that changes the wrapper package selection.
+
+Do not publish a plugin revision that selects a server the wrapper does not provide. Do not retain the previous server as an alias or fallback.
+
+After a Markdown Oxide or Roslyn update, use fresh wrapped OMP sessions on both `aarch64-darwin` and `x86_64-linux`. In a fixed Markdown project, require an unresolved-link diagnostic, follow a resolved link to its definition, find its references, and rename its target. In a fixed C# project, require a compiler diagnostic, go to a symbol definition, find its references, and rename it. A missing server or unsupported operation fails the smoke.
+
 ## Manual OMP update
 
 OMP updates do not change the repository or require Nix activation. The existing Nix wrapper immediately uses the updated platform executable with the same immutable personal plugin.
