@@ -142,7 +142,7 @@ Both derivations match the parent baseline exactly. No closure diff was required
 
 ## Darwin host gates
 
-On 2026-09-04, `macbook-pro` ran these commands at revision `2fed548`:
+On 2026-09-04, `macbook-pro` ran these commands at final revision `092ca4a`:
 
 ```sh
 nix flake check --print-build-logs
@@ -150,4 +150,4 @@ nix build .#darwinConfigurations.macbook-pro.system
 nix run .#check-darwin-build-plans
 ```
 
-All three commands passed. The flake check reported both `checks.aarch64-darwin.hostDeclaration` and `checks.aarch64-darwin.hostNixSettings` as successful. The build-plan check inspected 25 outputs and found no path to a source-built .NET package or Swift compiler.
+All three commands passed. The flake check reported both `checks.aarch64-darwin.hostDeclaration` and `checks.aarch64-darwin.hostNixSettings` as successful. The build-plan check found no path to a source-built .NET package or Swift compiler.
