@@ -41,7 +41,7 @@
 - [x] 7.2 Run `nix flake check --print-build-logs` on `x86_64-linux` with the Nix the host declares, and confirm that `moduleImports`, `hostDeclaration`, and `hostNixSettings` are among the passing checks.
 - [x] 7.3 Evaluate both pinned-revision `toplevel.drvPath` values as in task 1.2 against the working tree, confirm that both equal the values in `baseline.md`, and record the result in `baseline.md`; if either differs, trace the difference to an evaluated cause and record the `nvd` closure diff for that host before continuing.
 - [x] 7.4 Confirm that `flake.lock` is unchanged from the parent commit.
-- [ ] 7.5 Run `nix flake check --print-build-logs`, `nix build .#darwinConfigurations.macbook-pro.system`, and `nix run .#check-darwin-build-plans` on the Darwin host, and record in `baseline.md` that `hostDeclaration` and `hostNixSettings` passed there.
+- [x] 7.5 Run `nix flake check --print-build-logs`, `nix build .#darwinConfigurations.macbook-pro.system`, and `nix run .#check-darwin-build-plans` on the Darwin host, and record in `baseline.md` that `hostDeclaration` and `hostNixSettings` passed there.
 - [x] 7.6 Run `openspec validate declare-typed-host-options --strict`.
 - [x] 7.7 Review the final diff and confirm that `specialArgs` and `extraSpecialArgs` name `inputs` alone in every file, that no module declares `hostname`, `username`, `ompExecutable`, or `ompInstallCommand` as an argument, and that the flake table rows hold `kind` and `name` alone.
 
