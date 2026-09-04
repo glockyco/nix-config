@@ -474,8 +474,7 @@
                 assert korolevConfig.services.tailscale.enable;
                 assert !korolevConfig.services.tailscale.openFirewall;
                 assert korolevConfig.services.tailscale.disableTaildrop;
-                assert builtins.elem "--shields-up" korolevConfig.services.tailscale.extraSetFlags;
-                assert !(builtins.elem "--ssh" korolevConfig.services.tailscale.extraSetFlags);
+                assert korolevConfig.services.tailscale.extraSetFlags == [ "--shields-up" ];
                 assert korolevConfig.nix.distributedBuilds;
                 assert builtins.length korolevBuildMachines == 1;
                 assert korolevBuildMachine.hostName == "macbook-pro";
