@@ -42,6 +42,7 @@ The builder writes `nixos.wsl` into the working directory. The image carries the
 This flake declares no `nixConfig`, so a machine that has neither host configuration reaches the Numtide cache only through its own Nix settings. Pass both values as a trusted user, or state them in `/etc/nix/nix.conf`:
 
 ```sh
+# Keep these values aligned with modules/shared/binary-caches.nix.
 nix build \
   --extra-substituters https://cache.numtide.com \
   --extra-trusted-public-keys niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g= \

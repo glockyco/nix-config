@@ -1,3 +1,6 @@
+let
+  inherit (import ../shared) binaryCaches;
+in
 {
   # A daemon setting is the only source of this cache on this host. The root
   # flake declares no `nixConfig`, because Nix ignores a flake-provided key for
@@ -5,10 +8,8 @@
   #
   # These supplement the default NixOS substituter rather than replacing it.
   nix.settings = {
-    extra-substituters = [ "https://cache.numtide.com" ];
-    extra-trusted-public-keys = [
-      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-    ];
+    extra-substituters = binaryCaches.substituters;
+    extra-trusted-public-keys = binaryCaches.trustedPublicKeys;
 
     # `nix build`, `nix flake check`, and `nixos-rebuild --flake` all require
     # both features.

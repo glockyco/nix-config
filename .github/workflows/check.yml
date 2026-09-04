@@ -26,7 +26,7 @@ jobs:
       # No FlakeHub Cache: it needs a registered FlakeHub account and fails the
       # login otherwise. The Numtide cache is what actually matters here, since
       # it serves the llm-agents packages that would otherwise build from
-      # source. It mirrors `determinateNix.customSettings` in modules/darwin/nix.nix.
+      # source. `modules/shared/binary-caches.nix` is the source for these values.
       - uses: DeterminateSystems/determinate-nix-action@668647a33843b1f280cb2ef4c41736f86b29f826 # v3
         with:
           extra-conf: |

@@ -30,10 +30,10 @@
 
 ## 6. Shared Binary Cache Declaration
 
-- [ ] 6.1 Add `modules/shared/binary-caches.nix` and export it from `modules/shared/default.nix`, make `modules/darwin/nix.nix` and `modules/nixos/nix.nix` read it, and confirm that `nix.settings.extra-substituters` and `extra-trusted-public-keys` on `korolev` and `determinateNix.customSettings` on `macbook-pro` evaluate to the values they held before.
-- [ ] 6.2 Replace `korolevNixSettings` with a per-system `hostNixSettings` check that reads the data file and asserts against the host of that system, and confirm that `nix flake check` passes on `x86_64-linux` and lists `hostNixSettings`.
-- [ ] 6.3 Confirm that the check rejects, with a temporary probe that changes one character of the declared key in the data file alone and observes `hostNixSettings` fail, then revert the probe.
-- [ ] 6.4 Add a comment beside the literal in `.github/workflows/check.yml` and beside the literal command in `docs/operations/wsl-omp-bootstrap.md` that names `modules/shared/binary-caches.nix` as the source, and confirm that no other file under `modules/` or `flake.nix` carries the URL or key as a literal.
+- [x] 6.1 Add `modules/shared/binary-caches.nix` and export it from `modules/shared/default.nix`, make `modules/darwin/nix.nix` and `modules/nixos/nix.nix` read it, and confirm that `nix.settings.extra-substituters` and `extra-trusted-public-keys` on `korolev` and `determinateNix.customSettings` on `macbook-pro` evaluate to the values they held before.
+- [x] 6.2 Replace `korolevNixSettings` with a per-system `hostNixSettings` check that reads the data file and asserts against the host of that system, and confirm that `nix flake check` passes on `x86_64-linux` and lists `hostNixSettings`.
+- [x] 6.3 Confirm that the check rejects, with a temporary probe that changes one character of the declared key in the data file alone and observes `hostNixSettings` fail, then revert the probe.
+- [x] 6.4 Add a comment beside the literal in `.github/workflows/check.yml` and beside the literal command in `docs/operations/wsl-omp-bootstrap.md` that names `modules/shared/binary-caches.nix` as the source, and confirm that no other file under `modules/` or `flake.nix` carries the URL or key as a literal.
 
 ## 7. Verify the Complete Change
 

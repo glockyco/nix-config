@@ -163,6 +163,7 @@
             llmAgents = inputs.llm-agents.packages.${system};
             openspec = llmAgents.openspec;
             configuredHost = hostConfiguration.config.host;
+            inherit (import ./modules/shared) binaryCaches;
             personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
               inherit (configuredHost) ompRuntime;
               inherit (llmAgents) herdr;
@@ -245,6 +246,23 @@
               # Force representative declarations so option errors cannot stay
               # hidden behind Nix laziness.
               hostDeclaration = hostDeclarationCheck;
+
+              hostNixSettings =
+                let
+                  settings =
+                    if host.kind == "darwin" then
+                      hostConfiguration.config.determinateNix.customSettings
+                    else
+                      hostConfiguration.config.nix.settings;
+                in
+                pkgs.callPackage ./packages/host-nix-settings-check.nix {
+                  inherit binaryCaches;
+                  hostName = host.name;
+                  settings = {
+                    substituters = settings.extra-substituters;
+                    trustedPublicKeys = settings.extra-trusted-public-keys;
+                  };
+                };
 
               # Structure already prevents an asymmetric surface: the shell and
               # the repository checks carry no platform condition, and `systems`
@@ -410,15 +428,6 @@
               # The portable user modules have to build for Linux, not only
               # evaluate. This is the complete set that the WSL host selects.
               korolevHomeGeneration = korolevHome.home.activationPackage;
-
-              # The accepted evidence for the retired implementation recorded a
-              # repeated warning that Nix ignores a client-specified key. A system
-              # setting removes that cause, so it has to stay declared.
-              korolevNixSettings =
-                assert builtins.elem "https://cache.numtide.com" korolevConfig.nix.settings.extra-substituters;
-                assert builtins.elem "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-                  korolevConfig.nix.settings.extra-trusted-public-keys;
-                pkgs.runCommand "check-wsl-host-nix-settings" { } "touch $out";
 
               # No other machine drives this host. It also runs endpoint data loss
               # prevention, so it holds no decryption material.
