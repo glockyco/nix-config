@@ -5,9 +5,9 @@
 
 ## 2. Fixed-Output Language Servers
 
-- [ ] 2.1 Add a Markdown Oxide package that selects the official `aarch64-apple-darwin` or `x86_64-unknown-linux-gnu` release artifact by system, installs it as `markdown-oxide`, and verify its version command on both supported systems.
-- [ ] 2.2 Add a Roslyn package that selects the official `roslyn-language-server.osx-arm64` or `roslyn-language-server.linux-x64` NuGet tool package by system, launches its DLL with the binary .NET 10 runtime as `Microsoft.CodeAnalysis.LanguageServer`, and verify initialization on both supported systems.
-- [ ] 2.3 Advance the personal-plugin pin and replace the Nixpkgs source-built Marksman and Roslyn selections in `packages/personal-omp.nix` with the fixed-output packages, then build the wrapper shape checks for both systems and confirm that Markdown Oxide and Roslyn resolve while Marksman does not.
+- [x] 2.1 Add a Markdown Oxide package that selects the official `aarch64-apple-darwin` or `x86_64-unknown-linux-gnu` release artifact by system, installs it as `markdown-oxide`, and verify its version command on both supported systems.
+- [x] 2.2 Add a Roslyn package that selects the official `roslyn-language-server.osx-arm64` or `roslyn-language-server.linux-x64` NuGet tool package by system, launches its DLL with the binary .NET 10 runtime as `Microsoft.CodeAnalysis.LanguageServer`, and verify initialization on both supported systems.
+- [x] 2.3 Advance the personal-plugin pin and replace the Nixpkgs source-built Marksman and Roslyn selections in `packages/personal-omp.nix` with the fixed-output packages, then build the wrapper shape checks for both systems and confirm that Markdown Oxide and Roslyn resolve while Marksman does not.
 
 ## 3. Build-Plan and Operations Integration
 

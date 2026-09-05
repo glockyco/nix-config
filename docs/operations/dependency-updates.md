@@ -230,7 +230,11 @@ A Markdown server update also crosses the personal-plugin release boundary:
 
 Do not publish a plugin revision that selects a server the wrapper does not provide. Do not retain the previous server as an alias or fallback.
 
-After a Markdown Oxide or Roslyn update, use fresh wrapped OMP sessions on both `aarch64-darwin` and `x86_64-linux`. In a fixed Markdown project, require an unresolved-link diagnostic, follow a resolved link to its definition, find its references, and rename its target. In a fixed C# project, require a compiler diagnostic, go to a symbol definition, find its references, and rename it. A missing server or unsupported operation fails the smoke.
+After a Markdown Oxide or Roslyn update, use fresh wrapped OMP sessions on both `aarch64-darwin` and `x86_64-linux`. Start each session at the project root. OMP matches root markers only in its working directory, not in child directories. Supply the C# project's SDK through its development environment; the language-server package provides only the runtime.
+
+In a fixed Markdown project, require an unresolved-link diagnostic, follow a resolved link to its definition, and find its references. Rename the target note from its body, then verify the new filename and all referring links. Do not request a note rename from a link or heading: Markdown Oxide selects the current note or heading at those positions.
+
+In a fixed C# project, require a compiler diagnostic, go to a symbol definition, find its references, and rename it. Verify both the declaration and its usage after the rename. A missing server or unsupported operation fails the smoke. Record initialization failures and post-rename diagnostic failures separately; successful retries do not erase them.
 
 ## Manual OMP update
 
