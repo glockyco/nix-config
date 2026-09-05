@@ -1,5 +1,6 @@
 {
   coreutils,
+  flakeSource ? ../.,
   gnugrep,
   jq,
   writeShellApplication,
@@ -27,10 +28,7 @@ writeShellApplication {
   ];
 
   text = ''
-    if [ ! -f flake.nix ]; then
-      echo "check-darwin-build-plans: run this from the repository root." >&2
-      exit 64
-    fi
+    flake_ref=${flakeSource}
 
     if ! command -v nix >/dev/null 2>&1; then
       echo "check-darwin-build-plans: nix is required and is not on PATH." >&2
@@ -57,11 +55,11 @@ writeShellApplication {
     # on a Git reference wants `revCount`, and a CI checkout is shallow.
     # Interpolating the derivations at build time is worse still, because the
     # store then has to hold their input closures, which is gigabytes.
-    nixpkgs_type="$(jq -r '.nodes.nixpkgs.locked.type' flake.lock)"
+    nixpkgs_type="$(jq -r '.nodes.nixpkgs.locked.type' "$flake_ref/flake.lock")"
 
     case "$nixpkgs_type" in
       tarball)
-        nixpkgs="tarball+$(jq -r '.nodes.nixpkgs.locked.url' flake.lock)"
+        nixpkgs="tarball+$(jq -r '.nodes.nixpkgs.locked.url' "$flake_ref/flake.lock")"
         ;;
       *)
         echo "check-darwin-build-plans: the nixpkgs lock entry is of type '$nixpkgs_type'." >&2
@@ -101,11 +99,11 @@ writeShellApplication {
     violations=0
     checked=0
     for group in checks packages devShells; do
-      attrs="$(nix eval --json ".#$group.$system" --apply builtins.attrNames)"
+      attrs="$(nix eval --json "$flake_ref#$group.$system" --apply builtins.attrNames)"
 
       for attr in $(printf '%s' "$attrs" | jq -r '.[]'); do
         checked=$((checked + 1))
-        drv="$(nix eval --raw ".#$group.$system.$attr.drvPath")"
+        drv="$(nix eval --raw "$flake_ref#$group.$system.$attr.drvPath")"
         offenders="$(hits "$drv")"
 
         if [ -n "$offenders" ]; then
@@ -114,7 +112,7 @@ writeShellApplication {
 
           echo "" >&2
           echo "$group.$system.$attr reaches $(basename "$offender")" >&2
-          nix why-depends --derivation ".#$group.$system.$attr" "$offender" 2>/dev/null \
+          nix why-depends --derivation "$flake_ref#$group.$system.$attr" "$offender" 2>/dev/null \
             | grep -v '^warning' >&2 || true
         fi
       done
