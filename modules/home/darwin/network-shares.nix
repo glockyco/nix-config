@@ -6,7 +6,7 @@
 }:
 
 let
-  airHost = "MacBook-Air-von-ISYS.local";
+  airHost = "macbook-air";
   airShare = "Macintosh%20HD";
   airHome = "/Volumes/Macintosh HD-1/Users/joaichberger";
 
@@ -15,8 +15,12 @@ let
       exit 0
     fi
 
-    # Avoid asking Finder to connect while the Air is asleep or off the LAN.
-    if ! /usr/bin/nc -G 2 -z ${lib.escapeShellArg airHost} 445; then
+    # Avoid asking Finder to connect while the temporary peer is offline.
+    if ! ${lib.getExe pkgs.tailscale} status --json 2>/dev/null \
+      | ${lib.getExe pkgs.jq} --exit-status --arg host ${lib.escapeShellArg airHost} '
+          any(.Peer[]; .HostName == $host and .Online == true)
+        ' >/dev/null
+    then
       exit 0
     fi
 
