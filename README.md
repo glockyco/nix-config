@@ -9,6 +9,8 @@ Personal workstation configuration for an Apple Silicon MacBook Pro and NixOS un
 
 Nix owns the host configuration and OMP wrapper, plugin, and language tools. Homebrew on macOS and the official installer on WSL own the OMP executable. OMP owns its writable authentication, configuration, sessions, and databases; activation and Nix rollback do not replace them. Project repositories own their development environments.
 
+[![System overview: pinned inputs and shared and platform-specific modules compose the macOS and NixOS/WSL environments. Windows configuration is applied separately. The OMP detail shows the Nix-managed wrapper, plugin, and language servers interacting with the externally managed executable and writable state.](docs/images/system-overview.webp)](docs/images/system-overview.webp)
+
 ## Develop
 
 With Nix and flakes installed, enter the pinned environment. It installs the commit hook; `direnv allow` uses the same shell.
