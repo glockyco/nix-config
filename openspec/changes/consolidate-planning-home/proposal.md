@@ -1,6 +1,6 @@
 ## Superseded — 2026-09-05
 
-[simplify-repository-documentation](../simplify-repository-documentation/proposal.md) replaces this cleanup approach. This change is not completed or authorized for execution. Its unchecked tasks and specification delta remain unimplemented. Do not archive this change or merge its delta into accepted specs.
+[simplify-repository-documentation](../archive/2026-09-05-simplify-repository-documentation/proposal.md) replaces this cleanup approach. This change is not completed or authorized for execution. Its unchecked tasks and specification delta remain unimplemented. Do not archive this change or merge its delta into accepted specs.
 
 ## Why
 

@@ -1,6 +1,6 @@
 ## Superseded — 2026-09-05
 
-[simplify-repository-documentation](../simplify-repository-documentation/proposal.md) replaces this cleanup approach. Do not execute this change, absorb `consolidate-planning-home`, or merge these unimplemented specification deltas.
+[simplify-repository-documentation](../archive/2026-09-05-simplify-repository-documentation/proposal.md) replaces this cleanup approach. Do not execute this change, absorb `consolidate-planning-home`, or merge these unimplemented specification deltas.
 
 The replacement does not create planning-policy checks, external issues, evidence files, or a replacement architecture manual. Historical unchecked tasks remain unimplemented in `tasks.md`. Their former deletion, renaming, and gate-ownership instructions are not current guidance.
 
