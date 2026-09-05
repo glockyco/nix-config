@@ -22,9 +22,9 @@ Marksman's current official Linux executable is unusable, and pinning the last w
 
 ## Current acceptance scope: 2026-09-05
 
-The migration below is deployed, not a new execution queue. Retain the current package selection and installed configuration while completing tasks 4.3 and 4.4. Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities).
+The migration below is deployed and accepted, not a new execution queue. Tasks 4.3 and 4.4 are complete under the owner-approved nonblocking startup contract. Retain the current package selection and installed configuration. Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities).
 
-Ordinary wrapped OMP file editing and project-command execution have their own recorded result. They do not depend on remote building or on every LSP integration passing. Linux C# remains failed until its actual editing workflow passes; package initialization and direct-server diagnostic controls cannot close that gate.
+Ordinary wrapped OMP file editing and project-command execution have their own recorded result. They do not depend on remote building or on every LSP integration passing. The recorded wrapped HotRepl workflow satisfies C# acceptance on both hosts. Initial semantic results may be incomplete while projects load; require correct diagnostics, navigation, references, cross-file edits, and repeated post-edit diagnostics after loading. Crashes, lost edits, and persistent failures remain unacceptable. Package initialization and direct-server controls alone cannot close this gate.
 
 Use the actual C# repository's existing project structure and development environment. A real project-owned solution is a supported entry point, not a generated workstation artifact. Do not introduce one solely to make a fixture pass. No upstream patches, forks, new protocol adapters, or package replacements are scheduled. If the supported path fails, record the failure and select a bounded correction from evidence rather than expanding this change automatically.
 
@@ -59,7 +59,7 @@ Pin Roslyn `5.12.0-1.26426.8` for both supported runtime identifiers. Both offic
 
 The initial candidate was chosen for proximity to the source-built version. Wrapped acceptance exposed a crash when OMP sent a whole-document update after rename. Roslyn already fixed that case in [PR #84714](https://github.com/dotnet/roslyn/pull/84714), and the selected package source contains that fix. Select for verified client compatibility rather than version proximity. Do not modify OMP, insert a protocol adapter, or add retries.
 
-Accept the version only after fresh wrapped sessions exercise initialization, diagnostics, definition, references, rename, and repeated diagnostics after edits on both hosts. Record cold-start cancellation separately; the post-edit fix does not establish that startup behavior is correct.
+Accept the version only after fresh wrapped sessions exercise initialization, diagnostics, definition, references, rename, and repeated diagnostics after edits on both hosts. Record cold-start cancellation and incomplete semantic results separately; these are not successful requests, but incomplete results during loading do not fail the nonblocking startup contract. Do not require immediate project readiness or change timeouts to force it.
 
 ### Detect application source builds explicitly
 
