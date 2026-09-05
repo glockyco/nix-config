@@ -260,7 +260,9 @@
 
               # Walks build plans, so it needs the store and cannot be a check.
               #   nix run .#check-darwin-build-plans
-              check-darwin-build-plans = pkgs.callPackage ./packages/check-darwin-build-plans.nix { };
+              check-darwin-build-plans = pkgs.callPackage ./packages/check-darwin-build-plans.nix {
+                flakeSource = self.outPath;
+              };
               air-batch-check = airBatchCheck;
               container-runtime-check = containerRuntimeCheck;
             };
