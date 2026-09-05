@@ -60,11 +60,11 @@
 
 ## 8. Verify the Complete Change
 
-- [ ] 8.1 Run `nix fmt -- --fail-on-change`.
-- [ ] 8.2 Run `nix flake check --all-systems --print-build-logs` on `korolev` with the host's Nix and confirm exit 0.
-- [ ] 8.3 Run `nix flake check --print-build-logs`, `nix build .#darwinConfigurations.macbook-pro.system`, and `nix run .#check-darwin-build-plans` on the Mac and confirm exit 0.
-- [ ] 8.4 Run `openspec validate connect-fleet-over-tailnet --strict`.
-- [ ] 8.5 Review the final diff and confirm that no SSH private key path, no `.local` name, no LAN address, and no e-mail address entered the repository.
+- [x] 8.1 Run `nix fmt -- --fail-on-change`.
+- [x] 8.2 Run `nix flake check --all-systems --print-build-logs` on `korolev` with the host's Nix and confirm exit 0.
+- [x] 8.3 Run `nix flake check --print-build-logs`, `nix build .#darwinConfigurations.macbook-pro.system`, and `nix run .#check-darwin-build-plans` on the Mac and confirm exit 0.
+- [x] 8.4 Run `openspec validate connect-fleet-over-tailnet --strict`.
+- [x] 8.5 Review the final diff and confirm that no SSH private key path, no `.local` name, no LAN address, and no e-mail address entered the repository.
 
 ## 9. Documentation
 
