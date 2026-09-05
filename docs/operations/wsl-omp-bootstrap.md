@@ -615,6 +615,28 @@ printf 'openspec=%s\n' "$(openspec --version)"
 printf 'configuration-revision=%s\n' "$(nixos-version --configuration-revision)"
 ```
 
+### OpenSSH and builder acceptance: 2026-09-05
+
+Korolev activated reviewed revision `dd445b76ad2444dbea81b00af696554ecf136ce1` as generation 17. Generation 16 remained selectable. System status was `running`, with no failed units. The Mac owner confirmed activation of the corrected regular authorized-key file, disabled Tailscale SSH, disabled Remote Login, and a tailnet-only native listener.
+
+The installed root client passed without temporary SSH configuration:
+
+| Command or boundary                            | Exit status | Observed result                                                                 |
+| ---------------------------------------------- | ----------- | ------------------------------------------------------------------------------- |
+| `sudo ssh macbook-pro 'command -v nix-daemon'` | 0           | `/nix/var/nix/profiles/default/bin/nix-daemon`                                  |
+| `sudo ssh macbook-pro 'exit 23'`               | 23          | No stdout or stderr                                                             |
+| Unapproved key only                            | 255         | `Permission denied (publickey)`                                                 |
+| Forced PTY                                     | 255         | PTY allocation rejected                                                         |
+| Remote forwarding                              | 255         | Forwarding rejected                                                             |
+| Direct TCP forwarding                          | 255         | Administratively prohibited                                                     |
+| `tailnet-builder-check`                        | 0           | Fresh remote build reported `arm64`, `macbook-pro`, and a direct Tailscale path |
+
+Both hosts passed `verify-personal-omp` with OMP `18.1.10`, immutable plugin paths, and `omp: current (v8)`.
+
+At the same revision, Korolev built the Darwin system check through the installed `ssh-ng` builder and received its output into the local store. All-system checks passed. All 22 Darwin check derivations matched native Mac evaluation. Native Darwin flake checks, the complete system build, and the build-plan guard passed through the installed SSH endpoint. The guard inspected 34 outputs with no forbidden source build.
+
+WSL restart persistence, disconnected-builder recovery, LAN rejection, and activated Air/desktop acceptance remain open. This run did not restart WSL or disconnect either host.
+
 ### Accepted evidence: 2026-09-03
 
 | Item                    | Accepted value                      |
