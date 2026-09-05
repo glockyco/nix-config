@@ -9,7 +9,7 @@ Nixpkgs publishes no `aarch64-darwin` binary for these builds, so any build plan
 #### Scenario: A repository output gains a source-built toolchain
 
 - **WHEN** a change adds a dependency whose Darwin build plan reaches a source-built .NET package, Swift compiler, Markdown Oxide application, or Roslyn language server
-- **THEN** the repository checks fail
+- **THEN** the Darwin CI build-plan guard fails before CI builds the repository checks
 - **AND** the failure names the output and the dependency path that reaches the source build
 
 #### Scenario: Every output is covered

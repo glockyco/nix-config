@@ -33,6 +33,11 @@ jobs:
             extra-substituters = https://cache.numtide.com
             extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
 
+      # Reject uncached source toolchains and language servers before building
+      # repository checks. This app needs store access outside a check sandbox.
+      - if: runner.os == 'macOS'
+        run: nix run .#check-darwin-build-plans
+
       # On macOS this builds `darwinSystem`; on Linux it is the host closure,
       # the module-import and the formatting checks. Evaluation errors, build
       # failures, an unimported module and unformatted files all fail here.
@@ -52,11 +57,3 @@ jobs:
           "$RUNNER_TEMP/host-nix/bin/nix" \
             --extra-experimental-features 'nix-command flakes' \
             flake check --print-build-logs
-
-      # Nixpkgs publishes no aarch64-darwin binary for the source-built .NET SDK
-      # or for Swift, so an output that reaches either compiles both toolchains
-      # and this job runs for hours. `nix flake check` cannot catch that: a
-      # check runs in a sandbox with no store access, and reading a build plan
-      # needs the store. The app skips itself on Linux, where both are cached.
-      - if: runner.os == 'macOS'
-        run: nix run .#check-darwin-build-plans

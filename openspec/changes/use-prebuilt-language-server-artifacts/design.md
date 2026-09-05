@@ -57,6 +57,8 @@ Use direct source-derivation controls for .NET VMR, its stage0 VMR, unwrapped Sw
 
 The app receives `self.outPath` and inspects that immutable snapshot regardless of its working directory. Resolve the selected Nixpkgs input through the lock graph's root input, not a fixed node name. Evaluate control derivations at runtime so the app does not retain their compiler closures. Continue enumerating all Darwin checks, packages, and development shells from that snapshot. Propagate store-query and inspection errors; only a successful inspection with no match is a clean result.
 
+Run this guard immediately after Nix setup in Darwin CI, before `nix flake check` builds the repository outputs. A guard that runs after compilation cannot prevent the expensive build it detects.
+
 ### Preserve one language-server selection point
 
 `packages/personal-omp.nix` remains the only list that selects the wrapper's language-server packages. It receives the two binary packages through normal package arguments or `callPackage`; no overlay or second package scope is needed. The independently pinned plugin remains the only source of personal LSP overrides.
