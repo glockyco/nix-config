@@ -1,3 +1,9 @@
+## Scheduling — 2026-09-05
+
+This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern the schedule.
+
+The technical proposal, design, specifications, and unchecked tasks remain requirements for future implementation. CLI artifact and task counts describe artifact and task state, not authorization to start work. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules the change after another plan review.
+
 ## Why
 
 The flake keys its host table by system. `flake.nix:92-113` holds one row for `aarch64-darwin` and one for `x86_64-linux`, `flake.nix:116` derives `systems` from those keys, and `flake.nix:159` selects `host = hosts.${system}`. A second host on either system has no place in that table. The assumption then leaks into every output: `darwinConfigurations.macbook-pro` and `nixosConfigurations.korolev` are written by hand (`flake.nix:126-142`), two checks name `self.darwinConfigurations.macbook-pro.config.home-manager.users.glockyco` (`flake.nix:191`, `flake.nix:199`), six checks bind `korolev` through `let` (`flake.nix:208-211`, `flake.nix:410-459`), and the Darwin system check reads `self.darwinConfigurations.macbook-pro.system` while the NixOS one reads `korolevConfig.system.build.toplevel` (`flake.nix:465`, `flake.nix:413`). `fleetSurface` (`flake.nix:261-271`) compares name lists only, so it cannot report a host directory that the table omits.
@@ -6,7 +12,7 @@ Three repository packages are built twice. `packages/personal-omp.nix`, `package
 
 The checks for the wrapper assert source text rather than behavior. `personalOmpShape` (`flake.nix:273-308`) runs `grep` over the wrapper script for store paths and for the absence of `/Users/`. `personalOmpVerification` and `herdrOmpReconciliation` (`flake.nix:310-398`) drive the real scripts through stubs, which is the correct form, but their 90 lines of shell live inline in `flake.nix` while every other program test lives in `packages/<x>-check-tests.nix`. `flake.nix` is 512 lines and holds the host table, the package set, twenty checks, the packages, the shell, and the formatter in one `perSystem` function.
 
-This change follows `declare-typed-host-options`, which moved identity into `hosts/<name>/` and gave the flake `hostConfiguration.config.host` to read, and `connect-fleet-over-tailnet`, which put every machine on the tailnet. Both are archived when this change starts. The next change, `separate-platform-baseline-from-roles`, adds roles to hosts, so the host table has to be host-shaped before then.
+The deferred implementation plan assumes that `declare-typed-host-options` and `connect-fleet-over-tailnet` are archived before work starts. Its baseline includes typed host identity, `hostConfiguration.config.host`, and the completed tailnet contract. The deferred `separate-platform-baseline-from-roles` plan depends on this host-keyed table. This dependency does not schedule either refactor or make either a prerequisite for the near-term OMP and Tailscale work.
 
 ## What Changes
 

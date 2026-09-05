@@ -1,3 +1,13 @@
+## Current scope: 2026-09-05
+
+Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities). Preserve the deployed Korolev–Mac configuration and its verified SSH/build path. OMP usability and C# acceptance are separate; neither blocks network verification.
+
+Schedule task 5.2 next: coordinate one WSL restart with a recovery terminal, then verify employer/public DNS, MagicDNS, intended tailnet connectivity, and normal SSH access. Activation already occurred. Keep task 4.6's live LAN/inbound rejection checks open as a separate isolation gate; do not weaken the existing no-inbound or tailnet-only boundaries.
+
+Tasks 6.5, 7.1, 7.3, and 7.4 are deferred optional work: disconnected-builder recovery and Air/desktop enrollment and access. Preserve their unchecked status and technical acceptance contracts. They do not block basic OMP use or the already verified Korolev–Mac connection. Schedule them only when needed and with the owner's coordination. Air offboarding before return remains required, regardless of this scheduling decision.
+
+This change is incomplete and must not be archived as accepted while its gates remain open. CLI task counts do not authorize deferred work. Do not redesign working networking, SSH, policy deployment, or remote building to close the near-term checks.
+
 ## 1. Tailnet Account and Trust
 
 - [x] 1.1 Create the tailnet, enable MagicDNS, and record the tailnet ID in the runbook. Initial enrollment prerequisites were completed before the 2026-09-05 review.
@@ -35,7 +45,7 @@
 ## 5. Linux Host
 
 - [x] 5.1 Enable Tailscale with shields-up, Taildrop disabled, and no open firewall port.
-- [ ] 5.2 Activate resolved with WSL resolver generation disabled and upstream `10.255.255.254`; restart the distribution and confirm employer, public, and MagicDNS resolution persist.
+- [ ] 5.2 Coordinate one WSL distribution restart with the owner and an available recovery terminal. The resolved configuration is already activated with WSL resolver generation disabled and upstream `10.255.255.254`. After restart, verify employer/public DNS, MagicDNS, the intended Korolev–Mac tailnet connection, and normal SSH access through the installed alias. Record exact commands, results, and host revision. Do not terminate the current session without coordination or substitute evaluation for restart evidence.
 - [x] 5.3 Remove the Tailscale known-hosts helper and its fixtures/callers. Declare the measured OpenSSH host public key and verify changed host keys fail closed.
 - [x] 5.4 Configure the root SSH alias with the builder's identity file, identities-only, strict host checking, batch mode, eight-second connection timeout, and no multiplexing. Inspect the actual generated client configuration.
 - [x] 5.5 Provision the root-owned client key outside the store and declare its path in the one `ssh-ng` builder. Verify root-only permissions, public-key agreement, and the generated machines file.

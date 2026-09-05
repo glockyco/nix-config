@@ -1,6 +1,6 @@
 ## Context
 
-This change starts after `declare-typed-host-options`, `connect-fleet-over-tailnet`, and `key-fleet-by-host` are archived. The flake then has a host-keyed table, typed `host` options, generated host outputs, one package set per system, and `flake-modules/` ownership.
+The deferred implementation plan assumes that `declare-typed-host-options`, `connect-fleet-over-tailnet`, and `key-fleet-by-host` are archived before work starts. This assumed baseline does not authorize implementation or make this change a prerequisite for the near-term OMP and Tailscale work. The flake then has a host-keyed table, typed `host` options, generated host outputs, one package set per system, and `flake-modules/` ownership.
 
 The current platform lists import machine roles directly. `modules/darwin/default.nix` imports the desktop, Homebrew, Rosetta, power, and PostgreSQL modules. `modules/nixos/default.nix` imports WSL and container modules. Host identity and user values are split between those modules and both host files.
 

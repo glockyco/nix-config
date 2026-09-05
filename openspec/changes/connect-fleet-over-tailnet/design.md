@@ -82,6 +82,14 @@ The SSH aliases and SMB endpoint use `macbook-air`. Preserve the existing Secure
 
 No durable builder, storage, authentication, activation, or release gate depends on the Air. The offboarding issue requires preservation of research results, node revocation before return, then removal of the declaration, policy, SSH/SMB endpoints, credentials, and Air role. The future physical return does not keep this change open.
 
+## Current verification scope: 2026-09-05
+
+The managed-host deployment and normal remote-build proof have passed; see `tasks.md` for recorded evidence and exact remaining gates. Preserve the installed configuration. Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities), not the historical deployment sequence below.
+
+The next operation is a coordinated WSL restart and post-restart DNS, MagicDNS, tailnet connectivity, and installed SSH check (task 5.2). Live LAN/inbound rejection remains an independent isolation gate (4.6). Keep all security invariants unchanged.
+
+Disconnected-builder recovery and Air/desktop enrollment/access (6.5, 7.1, 7.3, 7.4) are deferred optional operations, not prerequisites for basic OMP or verified Korolev–Mac connectivity. Their requirements remain unchanged and unaccepted. Air revocation before return is still mandatory. No optional operation starts automatically after the restart check. This change remains open until all its retained acceptance gates pass.
+
 ## Verification and Migration
 
 1. Verify provider claims and separate validation/deployment identities. Verify branch protection and the workflow on actual PR and main events. Keep external acceptance tasks open until those events occur.

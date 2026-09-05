@@ -1,3 +1,11 @@
+## Scheduling — 2026-09-05
+
+This change is deferred, not canceled or completed. It is not a prerequisite for working OMP or Tailscale. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern scheduling.
+
+Small acceptance-record corrections support the current OMP and Tailscale checks. They do not authorize these tasks, broad documentation or planning-store migration, issue creation, or deletion of `consolidate-planning-home`.
+
+OpenSpec CLI counts describe artifact and task state, not scheduling authorization. All unchecked tasks remain preserved. Execution resumes only when a concrete maintenance or use requirement warrants it and the owner schedules and reviews the plan again. That review must reconcile the two planning-home plans before either proceeds.
+
 ## 1. Absorb `consolidate-planning-home`
 
 - [ ] 1.1 Confirm that the six earlier programme changes are archived and that `consolidate-planning-home` is the only other active change, with `openspec list` printing `align-documentation-with-fleet` and `consolidate-planning-home` alone.

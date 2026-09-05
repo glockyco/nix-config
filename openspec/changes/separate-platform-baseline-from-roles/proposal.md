@@ -1,3 +1,9 @@
+## Scheduling — 2026-09-05
+
+This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern the schedule.
+
+The technical proposal, design, specifications, and unchecked tasks remain requirements for future implementation. CLI artifact and task counts describe artifact and task state, not authorization to start work. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules the change after another plan review.
+
 ## Why
 
 The platform module lists mix operating-system baseline with one machine's roles and identity. That structure makes a second Darwin or NixOS host inherit services, applications, paths, and names that belong only to `macbook-pro` or `korolev`.
