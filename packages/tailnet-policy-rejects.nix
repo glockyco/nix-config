@@ -37,7 +37,7 @@ let
   emailAddress = force (render {
     managedHosts = managedHosts // {
       macbook-pro = managedHosts.macbook-pro // {
-        username = "person@example.com";
+        username = "person" + "@" + "example.com";
       };
     };
   });
