@@ -174,13 +174,14 @@ Restart the distribution after the first activation so WSL stops generating `/et
 wsl --terminate NixOS
 ```
 
-Open the NixOS profile again. Confirm that Windows DNS tunneling remains the upstream resolver and that an employer name and a public name still resolve:
+Open the NixOS profile again. Confirm that Windows DNS tunneling remains the upstream resolver and that a public name resolves:
 
 ```sh
 resolvectl status
-getent ahosts <employer-hostname>
 getent ahosts github.com
 ```
+
+If you use employer-internal services from WSL, also run `getent ahosts <employer-hostname>` with a known internal hostname. Otherwise, that check is not applicable.
 
 The global DNS server must be `10.255.255.254`. Join this distribution once with its declared tag:
 
@@ -655,7 +656,7 @@ The owner confirmed termination and reopening of the `NixOS` distribution from a
 
 Before the restart, resolved reported `resolv.conf mode: foreign`. After the restart, its stub file owns resolver access and Windows DNS tunneling remains the upstream. No activation, DNS edit, or Tailscale re-enrollment was needed.
 
-Task 5.2 remains open only for the employer-hostname resolution check. No known employer hostname was available for this run; public DNS does not establish employer-specific resolution. The other deferred fleet and isolation gates remain unchanged.
+Task 5.2 is complete. The owner clarified that employer-internal DNS is not used from WSL; the employer-hostname check is not applicable. This is not a claim that internal employer resolution was tested. The other deferred fleet and isolation gates remain unchanged.
 
 ### Accepted evidence: 2026-09-03
 
