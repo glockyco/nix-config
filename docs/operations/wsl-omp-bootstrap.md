@@ -635,7 +635,27 @@ Both hosts passed `verify-personal-omp` with OMP `18.1.10`, immutable plugin pat
 
 At the same revision, Korolev built the Darwin system check through the installed `ssh-ng` builder and received its output into the local store. All-system checks passed. All 22 Darwin check derivations matched native Mac evaluation. Native Darwin flake checks, the complete system build, and the build-plan guard passed through the installed SSH endpoint. The guard inspected 34 outputs with no forbidden source build.
 
-WSL restart persistence, disconnected-builder recovery, LAN rejection, and activated Air/desktop acceptance remain open. This run did not restart WSL or disconnect either host.
+This initial acceptance run did not restart WSL or disconnect either host. Disconnected-builder recovery, LAN rejection, and activated Air/desktop acceptance remain open. The subsequent restart results follow.
+
+### WSL restart evidence: 2026-09-05
+
+The owner confirmed termination and reopening of the `NixOS` distribution from a separate Windows PowerShell terminal. The resumed session verified the unchanged configuration revision `dd445b76ad2444dbea81b00af696554ecf136ce1`.
+
+| Command                                              | Observed result                                                                         |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `systemctl is-system-running`                        | `running`, exit 0                                                                       |
+| `systemctl --failed --no-legend --plain`             | No failed units                                                                         |
+| `resolvectl status`                                  | `resolv.conf mode: stub`; global upstream `10.255.255.254`; Tailscale split DNS present |
+| `readlink -f /etc/resolv.conf`                       | `/run/systemd/resolve/stub-resolv.conf`                                                 |
+| `getent ahosts github.com`                           | Public address returned, exit 0                                                         |
+| `getent ahosts macbook-pro.tail8768af.ts.net`        | `100.88.17.38`, exit 0                                                                  |
+| `tailscale ping --c 1 macbook-pro`                   | Direct pong, exit 0                                                                     |
+| `sudo -n ssh -n macbook-pro 'command -v nix-daemon'` | `/nix/var/nix/profiles/default/bin/nix-daemon`, exit 0                                  |
+| `sudo -n ssh -n macbook-pro 'exit 23'`               | Exit 23, correctly propagated                                                           |
+
+Before the restart, resolved reported `resolv.conf mode: foreign`. After the restart, its stub file owns resolver access and Windows DNS tunneling remains the upstream. No activation, DNS edit, or Tailscale re-enrollment was needed.
+
+Task 5.2 remains open only for the employer-hostname resolution check. No known employer hostname was available for this run; public DNS does not establish employer-specific resolution. The other deferred fleet and isolation gates remain unchanged.
 
 ### Accepted evidence: 2026-09-03
 
