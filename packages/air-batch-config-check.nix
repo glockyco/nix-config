@@ -18,7 +18,7 @@ assert air.HostName == airBatch.HostName;
 assert air.User == airBatch.User;
 assert
   builtins.removeAttrs air [ "header" ] == {
-    HostName = "MacBook-Air-von-ISYS.local";
+    HostName = "macbook-air";
     User = "joaichberger";
   };
 assert airBatch.BatchMode == "yes";
@@ -43,7 +43,7 @@ runCommand "check-air-batch-configuration"
     ssh -G -F ${sshConfig} air-batch > $TMPDIR/air-batch
 
     grep -qFx 'user joaichberger' $TMPDIR/air
-    grep -qFx 'hostname macbook-air-von-isys.local' $TMPDIR/air
+    grep -qFx 'hostname macbook-air' $TMPDIR/air
     grep -qFx 'batchmode no' $TMPDIR/air
     grep -qFx 'controlmaster auto' $TMPDIR/air
     grep -qFx 'requesttty auto' $TMPDIR/air
@@ -52,7 +52,7 @@ runCommand "check-air-batch-configuration"
     grep -qFx 'controlpersist 3600' $TMPDIR/air
 
     grep -qFx 'user joaichberger' $TMPDIR/air-batch
-    grep -qFx 'hostname macbook-air-von-isys.local' $TMPDIR/air-batch
+    grep -qFx 'hostname macbook-air' $TMPDIR/air-batch
     grep -qFx 'batchmode yes' $TMPDIR/air-batch
     grep -qFx 'controlmaster false' $TMPDIR/air-batch
     grep -qFx 'requesttty false' $TMPDIR/air-batch

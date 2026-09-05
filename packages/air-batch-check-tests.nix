@@ -23,7 +23,7 @@ runCommand "check-air-batch-command"
       "-G test-air-batch")
         cat <<'POLICY'
     user joaichberger
-    hostname macbook-air-von-isys.local
+    hostname macbook-air
     batchmode yes
     controlmaster false
     requesttty false

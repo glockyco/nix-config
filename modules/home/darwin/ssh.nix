@@ -9,7 +9,7 @@ let
   secretiveAgent = "~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh";
   airBatchCheck = pkgs.callPackage ../../../packages/air-batch-check.nix { };
   airHost = {
-    HostName = "MacBook-Air-von-ISYS.local";
+    HostName = "macbook-air";
     User = "joaichberger";
   };
 in
@@ -52,11 +52,10 @@ in
         ServerAliveCountMax = 3;
       };
 
-      # The old MacBook Air, reachable over the LAN by mDNS (its DHCP lease
-      # moves, the .local name does not). Its account name differs from this
-      # machine's, so without this block ssh defaults to `glockyco` and the
-      # Secure Enclave key -- which is in the Air's authorized_keys -- is
-      # rejected as an unknown user.
+      # The old MacBook Air is a temporary tailnet peer. Its account name
+      # differs from this machine's, so without this block ssh defaults to
+      # `glockyco` and the Secure Enclave key -- which is in the Air's
+      # authorized_keys -- is rejected as an unknown user.
       "air" = airHost;
 
       # Unattended commands must exit with their remote process instead of
