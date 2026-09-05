@@ -2,7 +2,7 @@
 
 Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities). Preserve the deployed Korolev–Mac configuration and its verified SSH/build path. OMP usability and C# acceptance are separate; neither blocks network verification.
 
-Schedule task 5.2 next: coordinate one WSL restart with a recovery terminal, then verify employer/public DNS, MagicDNS, intended tailnet connectivity, and normal SSH access. Activation already occurred. Keep task 4.6's live LAN/inbound rejection checks open as a separate isolation gate; do not weaken the existing no-inbound or tailnet-only boundaries.
+Task 5.2 is complete: the coordinated WSL restart preserved resolver ownership, public DNS, MagicDNS, tailnet connectivity, and installed SSH access. The owner does not use employer-internal DNS from WSL, so that check is not applicable. Do not schedule another restart. Keep task 4.6's live LAN/inbound rejection checks open as a separate isolation gate; do not weaken the existing no-inbound or tailnet-only boundaries.
 
 Tasks 6.5, 7.1, 7.3, and 7.4 are deferred optional work: disconnected-builder recovery and Air/desktop enrollment and access. Preserve their unchecked status and technical acceptance contracts. They do not block basic OMP use or the already verified Korolev–Mac connection. Schedule them only when needed and with the owner's coordination. Air offboarding before return remains required, regardless of this scheduling decision.
 
@@ -45,7 +45,7 @@ This change is incomplete and must not be archived as accepted while its gates r
 ## 5. Linux Host
 
 - [x] 5.1 Enable Tailscale with shields-up, Taildrop disabled, and no open firewall port.
-- [ ] 5.2 Coordinate one WSL distribution restart with the owner and an available recovery terminal. The resolved configuration is already activated with WSL resolver generation disabled and upstream `10.255.255.254`. After restart, verify employer/public DNS, MagicDNS, the intended Korolev–Mac tailnet connection, and normal SSH access through the installed alias. Record exact commands, results, and host revision. Do not terminate the current session without coordination or substitute evaluation for restart evidence.
+- [x] 5.2 Coordinate one WSL distribution restart with the owner and an available recovery terminal. The resolved configuration is already activated with WSL resolver generation disabled and upstream `10.255.255.254`. After restart, verify employer/public DNS, MagicDNS, the intended Korolev–Mac tailnet connection, and normal SSH access through the installed alias. Record exact commands, results, and host revision. Do not terminate the current session without coordination or substitute evaluation for restart evidence.
 - [x] 5.3 Remove the Tailscale known-hosts helper and its fixtures/callers. Declare the measured OpenSSH host public key and verify changed host keys fail closed.
 - [x] 5.4 Configure the root SSH alias with the builder's identity file, identities-only, strict host checking, batch mode, eight-second connection timeout, and no multiplexing. Inspect the actual generated client configuration.
 - [x] 5.5 Provision the root-owned client key outside the store and declare its path in the one `ssh-ng` builder. Verify root-only permissions, public-key agreement, and the generated machines file.
@@ -102,4 +102,4 @@ Tasks 4.6, 5.2, 6.5, 7.1, 7.3, and 7.4 remained open after this initial acceptan
 
 The owner subsequently restarted `NixOS` from Windows PowerShell and resumed OMP. The [WSL restart evidence](../../../docs/operations/wsl-omp-bootstrap.md#wsl-restart-evidence-2026-09-05) records the post-restart commands at unchanged revision `dd445b76ad2444dbea81b00af696554ecf136ce1`. The system reported `running` with no failed units. Resolved owns `/etc/resolv.conf` through its stub, retains Windows DNS upstream `10.255.255.254`, and supplies MagicDNS. Public resolution, Mac tailnet resolution, direct Tailscale ping, installed SSH access, the `nix-daemon` path, and remote exit status 23 passed without configuration changes.
 
-Task 5.2 remains unchecked only because an employer-specific hostname has not yet been supplied and tested. Do not repeat the restart or the passed checks merely to fill this remaining evidence gap. Tasks 4.6, 6.5, 7.1, 7.3, and 7.4 are unchanged.
+Task 5.2 is complete. The owner clarified that employer-internal DNS is not used from WSL, so that conditional check is not applicable. Public DNS, resolver ownership, MagicDNS, connectivity, and SSH passed after the actual restart. Do not repeat the restart. Tasks 4.6, 6.5, 7.1, 7.3, and 7.4 are unchanged.
