@@ -26,6 +26,6 @@ None.
 
 - Affects the personal plugin's LSP overrides in `glockyco/omp-agent-setup`, the `personal-omp-plugin` lock in this repository, the Nix packages selected by `packages/personal-omp.nix`, the Darwin build-plan guard, and their focused checks.
 - Adds repository-owned fixed-output package definitions for Markdown Oxide and Roslyn.
-- Updates Roslyn to the nearest published platform-package version because the exact current source-built revision has no official NuGet tool package.
+- Updates Roslyn to an official platform-package version that includes whole-document synchronization support required by the wrapped editing workflow.
 - Reconciles the overlapping `align-documentation-with-fleet` delta so its later archive cannot restore the weaker source-build contract.
 - Changes the primary Markdown server command from `marksman` to `markdown-oxide`; the OMP executable, wrapper interface, and mutable runtime state remain unchanged.

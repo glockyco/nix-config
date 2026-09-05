@@ -18,7 +18,7 @@
 ## 4. Verification
 
 - [ ] 4.1 Run the focused package, wrapper-shape, Markdown smoke, C# smoke, and Darwin build-plan checks on their native systems and confirm no build plan reaches a source-built Markdown Oxide or Roslyn derivation.
-- [x] 4.2 Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the applicable native hosts.
+- [ ] 4.2 Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the applicable native hosts.
 - [ ] 4.3 After review and merge, activate the Darwin generation and run the documented C# and Markdown language smoke through the wrapped OMP environment; keep the previous generation until both pass.
 
 ## Acceptance evidence: 2026-09-05
@@ -31,4 +31,4 @@ A sequential Linux reproduction used a transparent protocol relay around the unc
 
 The trace also captured an initial diagnostic cancellation before project loading completed. OMP cancelled the pull after approximately 3.6 seconds; project loading took approximately 20.9 seconds.
 
-Keep tasks 4.1 and 4.3 open. Correct incremental synchronization in the OMP client before accepting the wrapped C# smoke. Do not add a Nix retry wrapper, suppress the error, or patch the platform-owned executable. No host activation or merge has occurred for this change.
+The initial conclusion that a new OMP client change was required was too narrow. Roslyn already fixed whole-document updates in PR #84714. The user approved selecting official package `5.12.0-1.26426.8`, whose source contains that fix, without changing OMP. Repeat gates 4.1 and 4.2 for the new pin, including post-edit diagnostics and cold-start behavior. Keep 4.3 open until review, merge, and activation acceptance. Do not add a retry wrapper, suppress errors, or patch the platform-owned executable. No host activation or merge has occurred for this change.
