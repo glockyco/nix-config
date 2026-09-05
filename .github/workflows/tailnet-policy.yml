@@ -32,6 +32,67 @@ jobs:
           tailnet: ${{ secrets.TS_TAILNET }}
           policy-file: result/policy.hujson
           action: test
+      - name: Verify PR authorization boundaries
+        env:
+          TS_TEST_OAUTH_ID: ${{ secrets.TS_TEST_OAUTH_ID }}
+          TS_TEST_AUDIENCE: ${{ secrets.TS_TEST_AUDIENCE }}
+          TS_OAUTH_ID: ${{ secrets.TS_OAUTH_ID }}
+          TS_AUDIENCE: ${{ secrets.TS_AUDIENCE }}
+          TS_TAILNET: ${{ secrets.TS_TAILNET }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          def request(url, headers, data=None):
+              try:
+                  response = urllib.request.urlopen(
+                      urllib.request.Request(url, headers=headers, data=data), timeout=30
+                  )
+              except urllib.error.HTTPError as error:
+                  response = error
+              with response:
+                  return response.status, response.read()
+
+          def exchange(client, audience):
+              status, body = request(
+                  os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"] + "&audience="
+                  + urllib.parse.quote(audience, safe=""),
+                  {"Authorization": "bearer " + os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"]},
+              )
+              if status != 200:
+                  raise SystemExit(f"GitHub OIDC request failed: HTTP {status}")
+              payload = urllib.parse.urlencode({
+                  "client_id": client, "jwt": json.loads(body)["value"]
+              }).encode()
+              return request(
+                  "https://api.tailscale.com/api/v2/oauth/token-exchange",
+                  {"Content-Type": "application/x-www-form-urlencoded"}, payload,
+              )
+
+          status, body = exchange(os.environ["TS_TEST_OAUTH_ID"], os.environ["TS_TEST_AUDIENCE"])
+          if status != 200:
+              raise SystemExit(f"Validation identity exchange failed: HTTP {status}")
+          token = json.loads(body)["access_token"]
+          status, _ = request(
+              "https://api.tailscale.com/api/v2/tailnet/"
+              + urllib.parse.quote(os.environ["TS_TAILNET"], safe="") + "/acl",
+              {"Authorization": "Bearer " + token, "Content-Type": "application/hujson"},
+              b"{",
+          )
+          # Invalid syntax cannot replace policy even if authorization regresses.
+          if status != 403:
+              raise SystemExit(f"Expected policy-write authorization denial, got HTTP {status}")
+          print("Validation token cannot write policy (HTTP 403).")
+
+          status, _ = exchange(os.environ["TS_OAUTH_ID"], os.environ["TS_AUDIENCE"])
+          if status not in (401, 403):
+              raise SystemExit(f"Expected deployment identity rejection, got HTTP {status}")
+          print(f"Deployment identity rejects the PR token (HTTP {status}).")
+          PY
 
   apply:
     if: >-
