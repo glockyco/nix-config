@@ -9,8 +9,9 @@
 
 let
   probe = writeText "tailnet-builder-probe.nix" ''
+    { nonce }:
     builtins.derivation {
-      name = "tailnet-builder-probe";
+      name = "tailnet-builder-probe-''${nonce}";
       system = "aarch64-darwin";
       builder = "/bin/sh";
       args = [
@@ -37,11 +38,16 @@ writeShellApplication {
   text = ''
     expected_host=${lib.escapeShellArg hostName}
 
+    # A unique derivation prevents a cached output from satisfying this live
+    # proof. --rebuild cannot check a Darwin derivation on the Linux client.
+    export TAILNET_BUILDER_PROBE_NONCE="''${EPOCHREALTIME//./-}-$$-$RANDOM"
     result=$(nix build \
+      --impure \
       --no-link \
       --print-out-paths \
-      --rebuild \
-      --expr 'import ${probe}')
+      --expr 'import ${probe} {
+        nonce = builtins.getEnv "TAILNET_BUILDER_PROBE_NONCE";
+      }')
 
     mapfile -t probe_lines < "$result"
     if [ "''${#probe_lines[@]}" -ne 2 ]; then
