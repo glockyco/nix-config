@@ -72,7 +72,7 @@ nix build .#darwinConfigurations.macbook-pro.system
 nix flake check --all-systems --print-build-logs
 ```
 
-The [tailnet policy workflow](.github/workflows/tailnet-policy.yml) tests the rendered access policy on pull requests and applies it after changes reach `main`. `check-darwin-build-plans` reads build plans, which a check derivation cannot do. It fails when a Darwin output reaches a source-built .NET package or a Swift compiler.
+The [tailnet policy workflow](.github/workflows/tailnet-policy.yml) validates pull requests with read-only authorization. It applies the exact successful main-check revision through a separate deployment identity, serializes writes, and skips obsolete revisions. `check-darwin-build-plans` reads build plans, which a check derivation cannot do. It rejects source-built .NET, Swift, Markdown Oxide, and Roslyn derivations in every Darwin check, package, and development shell.
 
 Permanent behavior changes use OpenSpec. Read the artifacts of the active change before you edit implementation files.
 
