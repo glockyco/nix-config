@@ -38,7 +38,7 @@
 - [x] 5.4 Add the `Host macbook-pro` block to `programs.ssh.extraConfig` with `KnownHostsCommand`, `BatchMode yes`, `ConnectTimeout 8`, `ControlMaster no`, and `ControlPath none`; confirm with `ssh -G macbook-pro` as root that every value is present.
 - [x] 5.5 Add `nix.distributedBuilds`, `builders-use-substitutes`, and the `nix.buildMachines` entry derived from the Mac's host declaration; confirm that `/etc/nix/machines` names `glockyco@macbook-pro aarch64-darwin` with no key path and `ssh-ng`.
 - [x] 5.6 Activate `korolev`, run `tailscale up --advertise-tags=tag:korolev` once, and confirm that `tailscale status` reports the tag, that `getent ahosts macbook-pro` returns a `100.64.0.0/10` address, and that `korolevIsolation` still passes.
-- [ ] 5.7 As root, run `ssh macbook-pro 'command -v nix-daemon'` and confirm that it prints a path under `/nix` without a prompt; record the measured path in the runbook.
+- [x] 5.7 As root, run `ssh macbook-pro 'command -v nix-daemon'` and confirm that it prints a path under `/nix` without a prompt; record the measured path in the runbook.
 - [x] 5.8 Extend `korolevIsolation` per design decision 8 and confirm that it passes; then confirm with a temporary probe that adding `--ssh` to the set flags makes it fail, and revert the probe.
 
 ## 6. Remote Builder Proof
@@ -69,5 +69,5 @@
 ## 9. Documentation
 
 - [x] 9.1 Add a decision-log entry to `docs/architecture/personal-omp-environment.md` that records the reversed `korolev` isolation decision, the durable-host versus temporary-peer boundary, the Air offboarding issue, and the nix-darwin pull request. Update the `WSL work machine` ownership paragraph, and confirm that the entry names the date.
-- [ ] 9.2 Add a "Join the tailnet" section to `docs/operations/wsl-omp-bootstrap.md` with the one-time `tailscale up` command, the resolver check from task 5.2, the `nix-daemon` path from task 5.7, and the `tailnet-builder-check` command; confirm that `nix fmt -- --fail-on-change` passes on the file.
+- [x] 9.2 Add a "Join the tailnet" section to `docs/operations/wsl-omp-bootstrap.md` with the one-time `tailscale up` command, the resolver check from task 5.2, the `nix-daemon` path from task 5.7, and the `tailnet-builder-check` command; confirm that `nix fmt -- --fail-on-change` passes on the file.
 - [x] 9.3 Update the README ownership table, layout table, and Develop section to name the tailnet, the policy workflow, and `nix flake check --all-systems` from `korolev`; confirm that `nix fmt -- --fail-on-change README.md` passes.
