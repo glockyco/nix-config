@@ -240,7 +240,7 @@ After a Markdown Oxide or Roslyn update, use fresh wrapped OMP sessions on both 
 
 In a fixed Markdown project, require an unresolved-link diagnostic, follow a resolved link to its definition, and find its references. Rename the target note from its body, then verify the new filename and all referring links. Do not request a note rename from a link or heading: Markdown Oxide selects the current note or heading at those positions.
 
-In a fixed C# project, require a compiler diagnostic, go to a symbol definition, find its references, and rename it. Verify both the declaration and its usage after the rename. A missing server or unsupported operation fails the smoke. Record initialization failures and post-rename diagnostic failures separately; successful retries do not erase them.
+In a fixed C# project, keep OMP responsive while the language server loads. Initial diagnostic and navigation results may be incomplete; record them without treating them as authoritative post-load results. After project loading, require a compiler diagnostic, go to a symbol definition, find its references, and rename it. Verify both the declaration and its usage after the rename. A missing server, unsupported operation, crash, lost edit, or persistent semantic failure fails the smoke. Record initialization failures and post-rename diagnostic failures separately; successful retries do not erase them. Do not require immediate project readiness or add sleeps, hidden retries, or timeout overrides to manufacture acceptance.
 
 ## Manual OMP update
 
