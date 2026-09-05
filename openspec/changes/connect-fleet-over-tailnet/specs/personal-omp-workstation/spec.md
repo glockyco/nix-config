@@ -2,7 +2,7 @@
 
 ### Requirement: WSL host network isolation
 
-The WSL host SHALL expose no listening network service and SHALL be unreachable from every other tailnet node by policy and by its own shields-up setting. It SHALL hold its tailnet device identity and no other key or shared secret. It MAY act as a client of the Darwin host for remote builds and SSH. No other host SHALL drive it.
+The WSL host SHALL expose no listening network service and SHALL be unreachable from every other tailnet node by policy and by its own shields-up setting. It SHALL hold its tailnet device identity and one root-owned SSH client key dedicated to the Darwin builder. The private key SHALL remain outside the repository and Nix store. It MAY act as a client of the Darwin host for remote builds and SSH. No other host SHALL drive it.
 
 #### Scenario: Inspect the running host
 
@@ -20,4 +20,5 @@ The WSL host SHALL expose no listening network service and SHALL be unreachable 
 #### Scenario: The WSL host reaches the Darwin host
 
 - **WHEN** the WSL host opens a remote build session to the Darwin host
-- **THEN** the session is authenticated by tailnet identity and no private key file exists on the WSL host
+- **THEN** tailnet policy permits the network connection and OpenSSH authenticates the dedicated builder key
+- **AND** the client key is readable only by root, and only its public key and private-key path enter the configuration
