@@ -2,7 +2,7 @@ ______________________________________________________________________
 
 ## title: OMP Setup Nix Consolidation type: spec status: draft created: 2026-08-07 parent: superseded_by: archived:
 
-**Superseded:** The accepted [Personal OMP Environment Architecture](../architecture/personal-omp-environment.md) replaces this design. Keep this file as historical evidence; do not implement it.
+**Superseded:** The accepted [workstation contract](../../openspec/specs/personal-omp-workstation/spec.md) replaces this design. Keep this file as historical evidence; do not implement it.
 
 ## Problem
 

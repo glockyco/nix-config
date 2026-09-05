@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-05
 
-This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern the schedule.
+This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. The scheduling notice below remains authoritative.
 
 The technical proposal, design, specifications, and unchecked tasks remain requirements for future implementation. CLI artifact and task counts describe artifact and task state, not authorization to start work. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules the change after another plan review.
 
@@ -46,4 +46,4 @@ The change affects `modules/darwin/`, `modules/nixos/`, `modules/roles/`, `modul
 
 Most moves preserve behavior. The pinned-revision system derivation gate proves each structural step. The intentional behavior changes are separate: NixOS gains the shared registry, channel, garbage-collection, and optimisation policy; the Air mount gets a stable path; the batch checker receives the actual Docker path; and SOPS encrypts every scalar for both the host and an offline recovery key. Each change has a direct evaluation, fixture, or live-host proof.
 
-This change assumes that `declare-typed-host-options`, `connect-fleet-over-tailnet`, and `key-fleet-by-host` are archived. `package-user-programs` owns activation idempotence and PostgreSQL data ownership. `derive-windows-check-from-declaration` owns the Windows renderer and check. `align-documentation-with-fleet` owns the final documentation consolidation.
+This change assumes that `declare-typed-host-options`, `connect-fleet-over-tailnet`, and `key-fleet-by-host` are archived. `package-user-programs` owns activation idempotence and PostgreSQL data ownership. `derive-windows-check-from-declaration` owns the Windows renderer and check. `simplify-repository-documentation` owns the final documentation consolidation.

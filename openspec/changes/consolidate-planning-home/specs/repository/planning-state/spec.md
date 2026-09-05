@@ -1,3 +1,7 @@
+## Superseded proposal
+
+This delta remains unimplemented. [simplify-repository-documentation](../../../../simplify-repository-documentation/proposal.md) replaces the cleanup approach. The focused-owner migration and policy enforcement below are historical proposals, not current requirements. Do not merge or archive this delta as accepted.
+
 ## Purpose
 
 Defines one planning authority for the workstation repository while preserving intended work, delivered behavior, and architecture in separate owners.

@@ -2,15 +2,15 @@
 
 These files are tracked records, not an implementation queue. A permanent change starts only after it has an active OpenSpec change in the owning repository. Preserve a plan until a later review accepts, supersedes, or deletes it explicitly.
 
-## Canonical architecture
+## Planning boundaries
 
-- [Personal OMP Environment](../architecture/personal-omp-environment.md#near-term-priorities): keep the installed architecture. Prioritize real-repository OMP usability and coordinated WSL restart/network verification. Linux C# remains a failed integration. Broader refactors, project migrations, and experiments are deferred, not complete.
+These plans remain distinct records while a separate planning migration awaits review. Do not replace them with summaries or delete an original before its complete replacement is reviewed.
 
-The canonical priority section names the six deferred OpenSpec proposals. Their retained unchecked tasks are not an implementation queue, even when the CLI lists them as `in-progress`. Optional builder recovery and peer enrollment remain separate from basic OMP and Korolev–Mac connectivity. Do not start deferred work automatically after the immediate checks pass.
+[Existing OpenSpec changes](../../openspec/changes/) own their scheduling and acceptance records. Their unchecked tasks do not authorize execution, even when the CLI reports `in-progress`. Read the owning change before scheduling work; this index is not a live workstation status report.
 
 ## Completed record
 
-- [DMARC Enforcement Rollout](2026-08-09-dmarc-enforcement-plan.md): complete; `p=quarantine` is the accepted end state.
+- [DMARC Enforcement Rollout](2026-08-09-dmarc-enforcement-plan.md): rollout complete; `p=quarantine` is the accepted end state. Explicit `dmarc@glockyco.com` alias verification remains unresolved.
 
 ## Deferred evaluations
 

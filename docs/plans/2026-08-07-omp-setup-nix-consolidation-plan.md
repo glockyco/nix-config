@@ -2,7 +2,7 @@ ______________________________________________________________________
 
 ## title: OMP Setup Nix Consolidation Tasks type: plan status: draft created: 2026-08-07 parent: 2026-08-07-omp-setup-nix-consolidation-spec superseded_by: archived:
 
-**Superseded:** The accepted [Personal OMP Environment Architecture](../architecture/personal-omp-environment.md) replaces this task list. Keep this file as historical evidence; do not execute it.
+**Superseded:** The accepted [workstation contract](../../openspec/specs/personal-omp-workstation/spec.md) replaces this task list. Keep this file as historical evidence; do not execute it.
 
 ## File map
 

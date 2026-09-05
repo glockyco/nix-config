@@ -1,6 +1,6 @@
 ## Current scope: 2026-09-05
 
-Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities). Preserve the deployed Korolev–Mac configuration and its verified SSH/build path. OMP usability and C# acceptance are separate; neither blocks network verification.
+Preserve the deployed Korolev–Mac configuration and its verified SSH/build path. OMP usability and C# acceptance are separate; neither blocks network verification.
 
 Task 5.2 is complete: the coordinated WSL restart preserved resolver ownership, public DNS, MagicDNS, tailnet connectivity, and installed SSH access. The owner does not use employer-internal DNS from WSL, so that check is not applicable. Do not schedule another restart. Task 4.6 also passed: the live LAN and Korolev inbound SSH probes timed out, while the Mac tailnet SSH control succeeded. Preserve the existing no-inbound and tailnet-only boundaries. Only deferred optional tasks remain.
 
@@ -100,7 +100,7 @@ Tasks 4.6, 5.2, 6.5, 7.1, 7.3, and 7.4 remained open after this initial acceptan
 
 ### Subsequent WSL restart
 
-The owner subsequently restarted `NixOS` from Windows PowerShell and resumed OMP. The [WSL restart evidence](../../../docs/operations/wsl-omp-bootstrap.md#wsl-restart-evidence-2026-09-05) records the post-restart commands at unchanged revision `dd445b76ad2444dbea81b00af696554ecf136ce1`. The system reported `running` with no failed units. Resolved owns `/etc/resolv.conf` through its stub, retains Windows DNS upstream `10.255.255.254`, and supplies MagicDNS. Public resolution, Mac tailnet resolution, direct Tailscale ping, installed SSH access, the `nix-daemon` path, and remote exit status 23 passed without configuration changes.
+The owner subsequently restarted `NixOS` from Windows PowerShell and resumed OMP. The [WSL restart evidence](https://github.com/glockyco/nix-config/blob/fc936bdd7e83930f1069dd58d5cc59be320129d7/docs/operations/wsl-omp-bootstrap.md#wsl-restart-evidence-2026-09-05) records the post-restart commands at unchanged revision `dd445b76ad2444dbea81b00af696554ecf136ce1`. The system reported `running` with no failed units. Resolved owns `/etc/resolv.conf` through its stub, retains Windows DNS upstream `10.255.255.254`, and supplies MagicDNS. Public resolution, Mac tailnet resolution, direct Tailscale ping, installed SSH access, the `nix-daemon` path, and remote exit status 23 passed without configuration changes.
 
 Task 5.2 is complete. The owner clarified that employer-internal DNS is not used from WSL, so that conditional check is not applicable. Public DNS, resolver ownership, MagicDNS, connectivity, and SSH passed after the actual restart. Do not repeat the restart. Task 4.6 subsequently passed as recorded below. Tasks 6.5, 7.1, 7.3, and 7.4 remain deferred and incomplete.
 

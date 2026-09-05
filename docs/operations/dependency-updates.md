@@ -1,261 +1,67 @@
 # Dependency Updates
 
-## Ownership
+Use this runbook for release acceptance, OMP version recovery, or external authorization repair.
+Routine [updates](../../README.md#update), [release gates](../../README.md#develop), [activation](../../README.md#activate), and [Nix rollback](../../README.md#recover) have one README owner.
+Keep the previous Nix generation until activation verification and every required smoke pass.
 
-| Repository             | Dependency class                               | Owner                   | Schedule                  |
-| ---------------------- | ---------------------------------------------- | ----------------------- | ------------------------- |
-| `omp-agent-setup`      | `package.json`, `bun.lock`, and GitHub Actions | Renovate                | Saturday, `Europe/Vienna` |
-| `omp-agent-setup`      | Nix inputs in `flake.lock`                     | `dependency-automation` | Saturday, 04:00 UTC       |
-| `nix-config`           | GitHub Actions                                 | Renovate                | Saturday, `Europe/Vienna` |
-| `nix-config`           | Nix inputs in `flake.lock`                     | `dependency-automation` | Saturday, 04:00 UTC       |
-| `erenshor-data-mining` | Nix inputs and the matching pnpm assertion     | `dependency-automation` | Saturday, 04:00 UTC       |
+## Ownership and release order
 
-Renovate's Nix manager stays disabled in all three repositories. The protected `glockyco/dependency-automation` control plane is the only automated writer for each `flake.lock`. Neither system merges pull requests.
+The README identifies automated owners and schedules. Neither updater merges pull requests.
+The [central controller](https://github.com/glockyco/dependency-automation#operations) owns manual dispatch, run inspection, and [App key rotation](https://github.com/glockyco/dependency-automation#key-rotation).
+Target repositories hold no App credential. Do not enable a second Nix updater or Renovate's Nix manager.
 
-## Automation identity
+Use the existing [plugin release procedure](https://github.com/glockyco/omp-agent-setup#release-flow) and [Erenshor dependency procedure](https://github.com/glockyco/erenshor-data-mining#dependency-maintenance).
+Publish a verified plugin revision before advancing `personal-omp-plugin` here. Do not install it through OMP's mutable plugin manager.
+After an OpenSpec update, regenerate adapters in the plugin repository with `nix run .#sync-openspec-adapters` before advancing its pin here.
 
-The private `glockyco-dependency-updater` GitHub App is installed only on `omp-agent-setup`, `nix-config`, and `erenshor-data-mining`. Its repository permissions are:
+For an artifact update, change the version, platform asset selection, and fixed hash together.
+Use the [Markdown Oxide](../../packages/markdown-oxide.nix) or [Roslyn](../../packages/roslyn-language-server.nix) declaration.
+Never accept changed bytes under an existing hash.
+If the plugin selects a different server, publish its verified revision and change the wrapper package selection together.
+Do not publish a plugin that selects an unavailable server or retain the previous server as a fallback.
 
-- Metadata: read
-- Contents: read and write
-- Pull requests: read and write
+## Release smoke
 
-Only `glockyco/dependency-automation` stores:
+After activation or an OMP executable change, run `verify-personal-omp`.
+It must report the observed OMP version, a plugin path under `/nix/store`, and `omp: current`.
+For an `llm-agents`, plugin, wrapper, extension, or OMP executable change, start a fresh wrapped `omp` session in a disposable repository.
+Ask it to report the loaded `@glockyco/personal-omp-plugin` source path and quote the personal commit policy.
+Then request a `personal_commit` preview with these fields:
 
-- Actions variable `DEPENDENCY_UPDATER_CLIENT_ID`
-- Actions secret `DEPENDENCY_UPDATER_PRIVATE_KEY`
-
-Each matrix job uses these values to create a token scoped to one target repository. The token expires after one hour and is revoked when the job ends. Target repositories store no App credential and run no local Nix scheduler. Do not put the private key in Git, Nix, SOPS, a password manager, shell history, or a local environment file.
-
-To rotate the key:
-
-1. Generate a new private key in the GitHub App settings.
-1. Replace `DEPENDENCY_UPDATER_PRIVATE_KEY` in `dependency-automation`.
-1. Run one update for each managed repository and confirm token creation.
-1. Delete the old key in the GitHub App settings.
-
-## Automatic pull requests
-
-The control plane uses `automation/update-nix-dependencies` in every target repository. `repositories.json` declares each command as an argument array and allowlists every path it may change. A run with no change exits without a pull request. A changed lock must create or refresh one App-authored pull request and start normal target CI.
-
-Trigger every managed update:
-
-```sh
-gh workflow run update-nix-dependencies.yml --repo glockyco/dependency-automation
+```text
+action=preview
+subject="chore: verify release smoke"
+body="The release must prove that the immutable personal commit extension loads without changing repository state."
+repo="."
 ```
 
-Trigger one repository:
-
-```sh
-gh workflow run update-nix-dependencies.yml \
-  --repo glockyco/dependency-automation \
-  -f repository=erenshor-data-mining
-```
-
-Inspect the latest runs and open pull requests:
-
-```sh
-gh run list --workflow update-nix-dependencies.yml \
-  --repo glockyco/dependency-automation --limit 5
-
-gh pr list --repo glockyco/omp-agent-setup --head automation/update-nix-dependencies
-gh pr list --repo glockyco/nix-config --head automation/update-nix-dependencies
-gh pr list --repo glockyco/erenshor-data-mining --head automation/update-nix-dependencies
-```
-
-Before merge, inspect `flake.lock`, the updater log, and the dependency release notes. Also inspect the matching `package.json` change in Erenshor when the Nix-provided pnpm version changes.
-
-| Repository             | Required checks                                     |
-| ---------------------- | --------------------------------------------------- |
-| `omp-agent-setup`      | `check (macos-15)`, `check (ubuntu-latest)`         |
-| `nix-config`           | `check (macos-15)`, `check (ubuntu-latest)`, `test` |
-| `erenshor-data-mining` | `CI Success`                                        |
-
-Main also requires a current pull-request branch and linear history. The policy applies to administrators. Force-push and branch deletion are disabled.
-
-GitHub accepted the `nix-config` main protection settings on 2026-09-05. All three required checks are bound to the GitHub Actions app, ID `15368`. The `test` check is the PR policy validation job, not the deployment job. Strict status checks require an up-to-date PR branch. Main also requires a pull request and resolved review conversations.
-
-The repository has one owner, so the required approval count is zero. Owner review remains procedural, not an independently enforced approval. Before merge, the owner must inspect the complete diff, workflow changes, and check results. Administrator enforcement blocks normal bypass, but an administrator can still change protection settings.
-
-## Tailnet policy release
-
-### Source behavior
-
-`.github/workflows/tailnet-policy.yml` validates every PR to main without path filters. The `test` job uses `TS_TEST_OAUTH_ID` and `TS_TEST_AUDIENCE`, with no fallback to deployment credentials. Missing credentials fail the required check. Each PR has its own cancellable concurrency group.
-
-The `apply` job follows a successful `check` workflow completed from a push to main in this repository. PR checks, failed checks, and checks from another repository cannot authorize apply. Checkout uses that run's exact `head_sha`, with credential persistence disabled. The job renders the policy from that checked revision rather than downloading an upstream workflow artifact.
-
-Apply jobs share one concurrency group with `cancel-in-progress: false` and `queue: max`. Immediately before the provider write, the job queries current main under `set -euo pipefail`. It applies only when main equals the checked SHA. An obsolete revision is skipped; an API error fails the job.
-
-Serialization prevents overlapping writes and automatic cancellation of an active apply. It does not guarantee deployment of every intermediate revision. GitHub queues up to 100 pending jobs; overflow and manual cancellation remain possible. Main can advance after the freshness query because GitHub and Tailscale do not share a transaction. The active checked apply can finish before a newer checked apply.
-
-### Provider authorization
-
-Both identities use issuer `https://token.actions.githubusercontent.com`, separate generated audiences, and the shared `TS_TAILNET` value. GitHub grants `contents: read` by default and `id-token: write` separately to each job. OIDC issuance does not grant Tailscale API permissions. Provider scopes and claim restrictions enforce the read/write boundary, not the action's `test` input.
-
-| Purpose       | Repository inputs                      | Exact Tailscale scopes                                                     |
-| ------------- | -------------------------------------- | -------------------------------------------------------------------------- |
-| PR validation | `TS_TEST_OAUTH_ID`, `TS_TEST_AUDIENCE` | `policy_file:read`, `devices:posture_attributes:read`, `devices:core:read` |
-| Deployment    | `TS_OAUTH_ID`, `TS_AUDIENCE`           | `policy_file`, `devices:posture_attributes`, `devices:core:read`           |
-
-`policy_file:read` permits policy reads, previews, and validation, but not a live policy write. `policy_file` adds the live write operation. Read-only validation still exposes policy and device information. Provider errors in public workflow logs can expose account details.
-
-Configure each identity with its exact actual subject and all corresponding claim restrictions:
-
-| Claim          | PR validation                        | Deployment                                                                 |
-| -------------- | ------------------------------------ | -------------------------------------------------------------------------- |
-| `sub`          | Actual pull-request subject          | Actual main-branch subject                                                 |
-| `repository`   | `glockyco/nix-config`                | `glockyco/nix-config`                                                      |
-| `event_name`   | `pull_request`                       | `workflow_run`                                                             |
-| `base_ref`     | `main`                               | Not applicable                                                             |
-| `ref`          | Not constrained to main              | `refs/heads/main`                                                          |
-| `workflow_ref` | Not constrained to the main revision | `glockyco/nix-config/.github/workflows/tailnet-policy.yml@refs/heads/main` |
-
-Add `repository_id` and `repository_owner_id` restrictions from repository metadata where supported. Use `workflow_ref`, not `job_workflow_ref`, because these jobs do not use a reusable workflow. Do not permit a repository-wide wildcard subject on the deployment identity.
-
-Inspect the subject configuration and immutable repository metadata before configuring provider trust:
-
-```sh
-gh api repos/glockyco/nix-config/actions/oidc/customization/sub
-gh api repos/glockyco/nix-config --jq '{id, created_at, owner_id: .owner.id}'
-```
-
-Legacy default subjects are `repo:glockyco/nix-config:pull_request` and `repo:glockyco/nix-config:ref:refs/heads/main`. They are examples, not verified subjects for this repository. GitHub can use immutable-ID subject formats or custom subject templates. Inspect the existing Tailscale trust configuration and compare each live job's actual `sub` and restricted claims before accepting federation. Record only the selected claims, scope names, issuer, and audience association; never log or persist a bearer token or secret value. Adding a GitHub environment changes the subject and requires a coordinated trust update.
-
-Fork PRs normally cannot access these repository secrets. Import reviewed fork changes onto a repository branch for authenticated validation. Do not skip the required check or use `pull_request_target` to run PR-controlled code with deployment authorization.
-
-### External acceptance
-
-On 2026-09-05, the authenticated Tailscale console saved both separate identities with the scopes above. The deployment subject is `repo:glockyco@11704293/nix-config@1327005249:ref:refs/heads/main`; the PR subject is `repo:glockyco@11704293/nix-config@1327005249:pull_request`. Both restrict `repository_id` to `1327005249` and `repository_owner_id` to `11704293`, in addition to the claim table. Their persisted settings were reopened and inspected. All four identity/audience references were set in GitHub secrets; `TS_TAILNET` was retained.
-
-Live acceptance also passed on 2026-09-05:
-
-- [PR validation run 33960437444](https://github.com/glockyco/nix-config/actions/runs/33960437444) passed with the read-only identity. Policy writes received HTTP 403, and the deployment identity rejected the PR-issued token with HTTP 403. The PR apply job was skipped.
-- [Native main checks 33963089974](https://github.com/glockyco/nix-config/actions/runs/33963089974) passed for `dd445b76ad2444dbea81b00af696554ecf136ce1`. [Deployment run 33963623549](https://github.com/glockyco/nix-config/actions/runs/33963623549) followed those checks and selected that exact revision.
-- The deployment log reported the same live-control and rendered-policy digest: `9632358398c5eec87919d3b1d8d1e1a96654bbe9aa95ba0ad04c7530ec6ff71f`.
-
-The apply condition requires a successful main push check. No deliberately failed main workflow or deployment-queue saturation experiment was run.
-
-The pinned `actionlint` rejects `concurrency.queue`. GitHub's [current concurrency documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency) supports `queue: max` with active cancellation disabled. Keep the supported setting and require actual GitHub acceptance; do not filter validator errors or weaken the queue to manufacture a clean lint result.
-
-Before accepting the release path:
-
-1. Provision the read-only identity and its `TS_TEST_*` inputs with the exact scopes and claims above.
-1. Restrict the existing deployment identity to its separate scopes, audience, subject, and claims.
-1. Confirm that PR-issued credentials cannot authorize policy writes or authenticate as the deployment identity.
-1. Run a real PR validation and record the successful GitHub Actions `test` check alongside both native matrix checks.
-1. After review and merge, record successful native main checks followed by apply of their exact checked SHA.
-1. Confirm that the live policy equals that SHA's rendered policy.
-1. Confirm that failed checks and PR check completions cannot deploy, and that obsolete revisions cannot replace current policy.
-
-The Tailscale console's prevent-edits setting points to this repository, but an authorized administrator can override it. Treat such edits as break-glass actions and reconcile them through a reviewed PR. A later GitOps apply replaces console changes.
-
-Provider details: [Tailscale scopes](https://tailscale.com/docs/reference/trust-credentials#scopes), [federation](https://tailscale.com/docs/features/workload-identity-federation), and [GitOps](https://tailscale.com/docs/integrations/github/gitops). GitHub details: [OIDC claims](https://docs.github.com/en/actions/reference/security/oidc), [workflow_run security](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run), and [concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
-
-## Manual Erenshor update
-
-From `erenshor-data-mining`:
-
-```sh
-nix flake update
-nix run .#sync-pnpm-version
-nix develop --command uv run erenshor test dependency-state
-nix develop --command uv run erenshor test ci
-```
-
-Use this path to repair an updater branch or diagnose one input locally. Commit `flake.lock` and `package.json` together when the Nix-provided pnpm version changes.
-
-## Manual plugin update
-
-From `omp-agent-setup`:
-
-```sh
-nix flake update
-nix develop --command bun install --frozen-lockfile
-nix develop --command bun run ci
-nix flake check --print-build-logs
-```
-
-Use this path when diagnosis needs one local update or when the scheduled workflow is unavailable. Commit `flake.lock` in the same pull request. Do not publish an untested plugin revision.
-
-## Manual workstation update
-
-From `nix-config`, update all inputs:
-
-```sh
-nix flake update
-git diff -- flake.lock
-nix fmt -- --fail-on-change
-nix flake check --print-build-logs
-nix build .#darwinConfigurations.macbook-pro.system
-```
-
-For a plugin-only release after `omp-agent-setup` is published:
-
-```sh
-nix flake update personal-omp-plugin
-git diff -- flake.lock
-nix flake check --print-build-logs
-nix build .#darwinConfigurations.macbook-pro.system
-```
-
-For a Herdr or OpenSpec update, update the shared package source:
-
-```sh
-nix flake update llm-agents
-git diff -- flake.lock
-nix flake check --print-build-logs
-nix build .#darwinConfigurations.macbook-pro.system
-```
-
-An OpenSpec update can change the generated workflow adapters. They live in the personal plugin, so regenerate them in `glockyco/omp-agent-setup` with `nix run .#sync-openspec-adapters`, then advance `personal-omp-plugin` here.
-
-OpenSpec 1.9 adds strict task-numbering and scenario checks plus `validate --archived`. The flake gate runs both active-contract and archived-task validation.
-
-Inspect selected versions and revisions:
-
-```sh
-nix eval --raw .#packages.aarch64-darwin.openspec.version
-nix flake metadata --json | jq -r '.locks.nodes["personal-omp-plugin"].locked.rev'
-```
-
-Do not install the personal plugin through OMP's mutable plugin manager.
-
-## Manual language-server artifact update
-
-`packages/markdown-oxide.nix` downloads the official [Markdown Oxide releases](https://github.com/Feel-ix-343/markdown-oxide/releases). `packages/roslyn-language-server.nix` downloads Microsoft's official platform tool packages from [NuGet](https://www.nuget.org/profiles/roslyn-language-server). Both package files contain explicit asset selections for `aarch64-darwin` and `x86_64-linux`.
-
-Change a package's version, platform asset name or runtime identifier, and fixed hash together. Never update only a URL or accept a changed artifact under an existing hash. Verify `markdown-oxide --version` and Roslyn initialization on both supported systems.
-
-A Markdown server update also crosses the personal-plugin release boundary:
-
-1. Change the Markdown server definition in `omp-agent-setup`.
-1. Run the plugin checks and the representative Markdown smoke with the candidate workstation package.
-1. Publish the verified plugin revision.
-1. Pin that revision in `nix-config` in the same commit that changes the wrapper package selection.
-
-Do not publish a plugin revision that selects a server the wrapper does not provide. Do not retain the previous server as an alias or fallback.
-
-After a Markdown Oxide or Roslyn update, use fresh wrapped OMP sessions on both `aarch64-darwin` and `x86_64-linux`. Start each session at the project root. OMP matches root markers only in its working directory, not in child directories. Supply the C# project's SDK through its development environment; the language-server package provides only the runtime.
-
-In a fixed Markdown project, require an unresolved-link diagnostic, follow a resolved link to its definition, and find its references. Rename the target note from its body, then verify the new filename and all referring links. Do not request a note rename from a link or heading: Markdown Oxide selects the current note or heading at those positions.
-
-In a fixed C# project, keep OMP responsive while the language server loads. Initial diagnostic and navigation results may be incomplete; record them without treating them as authoritative post-load results. After project loading, require a compiler diagnostic, go to a symbol definition, find its references, and rename it. Verify both the declaration and its usage after the rename. A missing server, unsupported operation, crash, lost edit, or persistent semantic failure fails the smoke. Record initialization failures and post-rename diagnostic failures separately; successful retries do not erase them. Do not require immediate project readiness or add sleeps, hidden retries, or timeout overrides to manufacture acceptance.
-
-## Manual OMP update
-
-OMP updates do not change the repository or require Nix activation. The existing Nix wrapper immediately uses the updated platform executable with the same immutable personal plugin.
-
-On Darwin, install or update the official formula:
-
-```sh
-brew install can1357/tap/omp
-brew update
-brew upgrade can1357/tap/omp
-verify-personal-omp
-```
-
-Homebrew can recover an earlier release from the official tap history. Replace `<version>` with the release number without a leading `v`:
+The plugin path must be under `/nix/store`, the policy must apply, and preview must leave the repository unchanged.
+A workflow-only or documentation-only change needs no model-backed smoke. It still needs every [release gate](../../README.md#develop).
+On WSL, repeat the [managed-browser smoke](wsl-omp-bootstrap.md#managed-browser-smoke) after OMP updates, recovery, or browser ABI changes.
+
+For language-server changes, use fresh wrapped sessions at fixed representative project roots on both supported systems.
+OMP discovers root markers in its working directory, not child directories.
+Supply project SDKs through each project's development environment. A server runtime does not supply the C# SDK.
+Require diagnostics for every supported language, plus definition, references, and rename where supported.
+
+For Markdown Oxide, require an unresolved-link diagnostic, a resolved link's definition, and its references.
+Rename a note from its body, then verify the filename and referring links.
+A rename at a link or heading selects a different target.
+
+For Roslyn, keep OMP responsive during project loading. Record early results separately from authoritative post-load results.
+After loading, require a compiler diagnostic, definition, references, and a rename that changes the declaration and its usage.
+A missing server, unsupported operation, crash, lost edit, or persistent semantic failure fails acceptance.
+Record initialization and post-rename diagnostic failures separately. Successful retries do not erase them.
+Do not add sleeps, hidden retries, or timeout overrides to manufacture acceptance.
+
+## OMP version recovery
+
+Nix rollback preserves the platform-owned OMP executable and writable OMP state.
+Use the platform installer to recover an earlier release, then repeat [Release smoke](#release-smoke).
+Do not delete `~/.omp` or copy credentials, databases, or browser profiles from another host.
+
+On Darwin, Homebrew's [`version-install`](https://docs.brew.sh/Manpage) extracts a release from the [official tap](https://github.com/can1357/homebrew-tap).
+Replace `<version>` with the release number without a leading `v`:
 
 ```sh
 brew unlink can1357/tap/omp
@@ -264,15 +70,7 @@ brew link --overwrite --force "omp@<version>"
 verify-personal-omp
 ```
 
-On NixOS/WSL, install or update the official prebuilt binary at the wrapper's fixed target:
-
-```sh
-curl -fsSL https://omp.sh/install \
-  | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary
-verify-personal-omp
-```
-
-To recover an earlier WSL release, include its tag. This command writes the same target and does not build from source:
+On WSL, use the explicit release tag at the wrapper's fixed target:
 
 ```sh
 curl -fsSL https://omp.sh/install \
@@ -280,62 +78,62 @@ curl -fsSL https://omp.sh/install \
 verify-personal-omp
 ```
 
-After each OMP update or recovery, run the real wrapped-session smoke below. Nix generation rollback does not change the platform-owned OMP executable.
+## Tailnet authorization recovery
 
-## Activation and smoke
+Use this procedure when policy federation fails or its trust configuration changes.
+Access to both GitHub repository settings and the Tailscale administration console is required.
+The [workflow declaration](../../.github/workflows/tailnet-policy.yml) owns job inputs and deployment conditions, not provider authorization.
 
-Merging changes does not update the workstation. Activate deliberately:
+Configure separate validation and deployment identities with issuer `https://token.actions.githubusercontent.com`, separate generated audiences, and the shared `TS_TAILNET` value:
 
-```sh
-darwin-switch
-```
+| Identity      | GitHub secrets                         | Exact Tailscale scopes                                                     |
+| ------------- | -------------------------------------- | -------------------------------------------------------------------------- |
+| PR validation | `TS_TEST_OAUTH_ID`, `TS_TEST_AUDIENCE` | `policy_file:read`, `devices:posture_attributes:read`, `devices:core:read` |
+| Deployment    | `TS_OAUTH_ID`, `TS_AUDIENCE`           | `policy_file`, `devices:posture_attributes`, `devices:core:read`           |
 
-Read the activation output, then run the explicit verifier:
+Read-only validation exposes policy and device information. Public error logs can expose account details.
+OIDC issuance alone grants no Tailscale API permission. The provider must enforce this scope separation.
 
-```sh
-verify-personal-omp
-```
-
-It must report:
-
-- the observed platform-owned OMP version;
-- a personal plugin path under `/nix/store`;
-- `omp: current` from Herdr.
-
-For an `llm-agents`, personal plugin, wrapper, or extension behavior change, start a fresh wrapped OMP session. Ask it to report the loaded `@glockyco/personal-omp-plugin` source path, quote the personal policy, and call `personal_commit` with `action=preview`. The path must be under `/nix/store`, the policy must be available, and preview must not change the repository.
-
-A workflow-only or documentation-only change does not need a model-backed smoke. It still needs both native matrix checks and the policy `test` check.
-
-## Rollback
-
-Keep the previous Nix generation until activation and every required smoke pass. List generations without a pager:
+Inspect the repository's subject configuration and immutable identifiers:
 
 ```sh
-sudo darwin-rebuild --list-generations | cat
+gh api repos/glockyco/nix-config/actions/oidc/customization/sub
+gh api repos/glockyco/nix-config --jq '{id, created_at, owner_id: .owner.id}'
 ```
 
-Restore the immediately previous generation:
+Compare each live job's actual subject and claims with the saved provider trust.
+Do not assume legacy subject strings: GitHub supports immutable-ID subjects and custom templates.
+Apply these restrictions with each identity's exact actual `sub`:
 
-```sh
-sudo darwin-rebuild --rollback
-```
+| Claim          | PR validation           | Deployment                                                                 |
+| -------------- | ----------------------- | -------------------------------------------------------------------------- |
+| `repository`   | `glockyco/nix-config`   | `glockyco/nix-config`                                                      |
+| `event_name`   | `pull_request`          | `workflow_run`                                                             |
+| `base_ref`     | `main`                  | Not applicable                                                             |
+| `ref`          | Not constrained to main | `refs/heads/main`                                                          |
+| `workflow_ref` | Not constrained to main | `glockyco/nix-config/.github/workflows/tailnet-policy.yml@refs/heads/main` |
 
-Or select a retained generation:
+Add `repository_id` and `repository_owner_id` from repository metadata where supported.
+Use `workflow_ref`, not `job_workflow_ref`: these jobs do not use a reusable workflow.
+Never permit a repository-wide wildcard deployment subject. A new GitHub environment requires a coordinated subject update.
+Record only selected claims, scopes, issuer, and audience associations. Never log or persist bearer tokens or secret values.
+Reopen the saved provider settings and compare them before acceptance.
 
-```sh
-sudo darwin-rebuild --switch-generation <number>
-```
+For a fork PR without secrets, import reviewed changes onto a repository branch for authenticated validation.
+Do not skip the required check or use `pull_request_target` to give PR-controlled code deployment authorization.
 
-Then run `verify-personal-omp` and any required real-session smoke again. Rollback changes the immutable wrapper, plugin, Herdr, OpenSpec, and language-server paths. It does not change the platform-owned OMP executable or copy, restore, or delete OMP-owned runtime state. Use the platform recovery command above to change the OMP version.
+Before accepting repaired authorization:
 
-## Policy inspection
+1. Run real PR validation with the read-only identity and both native matrix checks.
+1. Confirm that the validation token cannot write policy and that deployment rejects the PR token.
+1. After review and merge, confirm successful native main checks followed by apply of their exact checked SHA.
+1. Confirm that the live policy equals that SHA's rendered policy.
+1. Confirm that failed checks and PR completions cannot deploy, and obsolete revisions cannot replace current policy.
 
-Inspect remote protection:
+Keep GitHub's supported queued concurrency setting even if a pinned local validator does not recognize it.
+Require actual GitHub acceptance rather than filtering errors or weakening serialization.
+GitHub and Tailscale share no transaction: main can advance after the freshness check, before the provider write.
+An active checked apply can finish before a newer checked apply. Queue overflow and manual cancellation can omit intermediate revisions.
 
-```sh
-gh api repos/glockyco/omp-agent-setup/branches/main/protection
-gh api repos/glockyco/nix-config/branches/main/protection
-gh api repos/glockyco/erenshor-data-mining/branches/main/protection
-```
-
-Inspect Renovate detection through each repository's Dependency Dashboard. If a flake input appears there, first confirm that `nix.enabled` is still `false`; do not accept overlapping updater ownership.
+Treat console policy edits as emergency actions. Reconcile them through a reviewed PR, because the next GitOps apply replaces them.
+See the provider's [scopes](https://tailscale.com/docs/reference/trust-credentials#scopes), [federation](https://tailscale.com/docs/features/workload-identity-federation), and [GitOps](https://tailscale.com/docs/integrations/github/gitops) documentation.

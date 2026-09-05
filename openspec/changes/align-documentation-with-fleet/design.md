@@ -1,148 +1,124 @@
-## Context
+## Superseded — 2026-09-05
 
-See `proposal.md` for the motivation and the 2026-09-05 scheduling notice. This design preserves the deferred scope, not authorization to execute it. Small acceptance-record corrections do not start this rewrite or planning-store migration. The owner must reconcile this plan with `consolidate-planning-home` before scheduling either. Neither change is canceled or completed now.
+[simplify-repository-documentation](../simplify-repository-documentation/proposal.md) replaces this cleanup approach. Do not execute this change, absorb `consolidate-planning-home`, or merge these unimplemented specification deltas.
 
-The original plan places this change seventh in the structural programme. Its retained sequence assumes that `declare-typed-host-options`, `connect-fleet-over-tailnet`, `key-fleet-by-host`, `separate-platform-baseline-from-roles`, `package-user-programs`, and `derive-windows-check-from-declaration` are archived when it starts. `consolidate-planning-home` is still active when it starts. The facts that shape the approach:
+The replacement does not create planning-policy checks, external issues, evidence files, or a replacement architecture manual. Historical unchecked tasks remain unimplemented in `tasks.md`. Their former deletion, renaming, and gate-ownership instructions are not current guidance.
 
-- `docs/plans/` holds eight records and `INDEX.md`. The index classifies one record as complete, two as deferred, three as draft, and two as superseded (`docs/plans/INDEX.md:5-27`). `README.md:42,161` links the index. The architecture document calls the two superseded records historical evidence (`personal-omp-environment.md:13`).
-- `consolidate-planning-home` was created on 2026-08-20 and has 0 of 41 tasks complete. Its design creates five active OpenSpec changes as owners for unscheduled work (`consolidate-planning-home/design.md:38-50`), blocks one record on a live Fastmail alias verification (`design.md:52-58`), adds the capability `repository/planning-state` under a new domain level while every accepted capability is flat, and names this repository `nix-darwin` (`design.md:95`). Its multi-host fleet owner is now the structural programme itself.
-- The DMARC record states one outstanding action: make the `dmarc@glockyco.com` alias explicit in Fastmail (`2026-08-09-dmarc-enforcement-plan.md:48-70,134-135`). Its DNS rationale already lives in `dns/dnsconfig.js:21-49`. The multi-host fleet record excludes the Air from the durable fleet and schedules removal of its SSH surface (`2026-08-09-multi-host-fleet-plan.md:44-68`). `connect-fleet-over-tailnet` now classifies the borrowed Air as a temporary research-results peer and creates its offboarding issue. Temporary access and later complete removal preserve that intent.
-- The lifecycle table assigns "Planned but blocked experiment" to the owning repository's GitHub issue and "Historical rationale" to archived OpenSpec changes and superseded plan files (`personal-omp-environment.md:309-317`). The 2026-08-08 decision keeps active OpenSpec changes actionable and uses issues for planned work (`personal-omp-environment.md:670`).
-- The original programme plan reversed "OpenSpec active changes are not a parking lot" (`personal-omp-environment.md:52`) for seven sequential changes. The 2026-09-05 scheduling notice now defers the broad structural work without canceling its plans. An active change directory does not authorize execution.
-- `connect-fleet-over-tailnet` reverses the 2026-09-03 decision that `korolev` holds no shared secret and drives no other host. Its proposal records the reversal, the tailnet ownership boundary, and the node-join procedure in the architecture document and the `korolev` runbook (`connect-fleet-over-tailnet/proposal.md:20`), and its delta rewrites the isolation requirement (`connect-fleet-over-tailnet/specs/personal-omp-workstation/spec.md`). Its `repository-quality-gates` delta lets the Linux host build every Darwin check through the remote builder and runs the build-plan inspection on the Darwin host over the tailnet.
-- The flake check `openspecContracts` runs `openspec validate --all --strict --no-interactive` and `openspec validate --archived --strict --no-interactive` through the plugin's `lib.openspecCheck` (pinned plugin source `flake.nix:158-159`). OpenSpec resolves the `spec-driven` schema without `openspec/config.yaml`: a copy of the tree without that file reports `schemaName: spec-driven` and validates a change.
-- The archived change `2026-09-03-split-home-modules-by-platform` keeps its acceptance record in `baseline.md` beside `tasks.md`. Archived task 5.6 of `provide-colima-container-runtime` and task 8.3 of `adopt-nixos-wsl-host` point at the evidence sections that now sit in the runbooks.
-- `docs/` contains no `.local` name and no LAN address. `connect-fleet-over-tailnet` owns every runbook sentence about the tailnet, the remote builder, and which machine builds the first image.
-- The structural checks `moduleImports` and `fleetSurface` are the accepted pattern for a check on the repository tree: a program in `packages/<x>-check.nix`, fixture tests in `packages/<x>-check-tests.nix`, and one flake check that runs the program on `./.`.
+Legacy plans remain distinct files in [their existing index](../../../docs/plans/INDEX.md). Existing fleet changes retain their own scheduling and acceptance contracts.
 
-## Goals / Non-Goals
+## Retained intent
 
-**Goals:**
+These unscheduled experiments and external project migrations came from the removed architecture document. This finite record does not authorize work or create a backlog. Each owner must review current conditions before scheduling a separate change. Historical audit measurements are not current evidence.
 
-- One planning home, one release-gate statement, one repository name, and one OpenSpec command form, each with a command that proves it.
-- Every record under `docs/plans/` has one stated fate, and `consolidate-planning-home` has one stated fate.
-- The architecture document owns boundaries, decisions, dependency order, and protocols, and nothing that a change or an issue owns.
-- Runbooks hold procedures. Evidence of one release lives in the archived change that accepted it.
-- Every specification scenario is either backed by a check or labelled as a live procedure with a documented home.
+### Frontend experiment
 
-**Non-Goals:**
+Owner: `omp-agent-setup`. Compare native OMP designer with Anthropic `frontend-design`, Impeccable, and StyleSeed, with persistent memory disabled.
 
-- Any change to a host closure, a module, an installed package, or `flake.lock`.
-- The `darwin-switch` checkout path in `modules/home/darwin/darwin-switch.nix:9`. The README states what the module declares.
-- The `flake.nix` description string and the check names in the workflow comments, which `key-fleet-by-host` owns.
-- The reversed `korolev` isolation decision, the durable-host versus temporary-peer classification, the Air offboarding procedure, the `WSL work machine` ownership section, and every runbook sentence about the tailnet or remote builder. `connect-fleet-over-tailnet` owns them. This change verifies and links them.
-- Implementing any workstream that moves to an issue.
+Evaluate skills only: no candidate agents, hooks, services, private learning, live loops, or generated scaffolding. Use one new visual surface and one refinement in an existing Svelte application. Isolate each candidate in a branch or copy. Hold repository revision, OMP, model, provider, prompt, assets, and viewports constant.
 
-## Decisions
+Measure tool calls, changed files, checks, interaction defects, latency, and context cost. Score brief fidelity, hierarchy, distinctiveness, accessibility, responsive behavior, repository fit, maintainability, and real browser defects. Blind screenshot review is preferred where practical.
 
-### 1. Absorb `consolidate-planning-home` and delete its directory
+Adoption requires a clear improvement over the combined control score, with no unmanaged scaffolding, failed checks, inaccessible interaction, or framework rewrite. Remove losing candidates and artifacts. If none wins clearly, install none. Adoption requires a separate reviewed change.
 
-This change carries the intent of `consolidate-planning-home`: one planning home, verified disposition of every record, an architecture document that owns no tasks, and a check that guards the boundary. The directory `openspec/changes/consolidate-planning-home/` is deleted in this change, not archived, because none of its tasks ran and an archive would record work that did not happen.
+### Persistent-memory experiment
 
-Executing it first was rejected for four reasons. Its plan creates five active changes for unscheduled work, which the 2026-08-08 decision forbids and which the owner's reversal of the parking-lot rule does not cover. Its multi-host fleet owner is superseded by the six programme changes that precede this one. It blocks the DMARC record on a live Fastmail verification that no repository check can observe. Its delta adds a domain level to the flat specification layout and names this repository `nix-darwin`, so every artifact would need a rewrite before its first task.
+Owner: `omp-agent-setup` for protocol and harness. If adopted, `nix-config` owns the host service and the plugin owns OMP integration.
 
-Its planning-home contract moves into `repository-quality-gates`, where the structural fleet requirements live, without the requirement that repository validation detects "guidance that declares another task owner". That rule has no mechanical form.
+Compare memory disabled, a fresh disposable Mnemopi bank, and a pinned OpenViking release with a disposable store. Do not use an optional frontend skill. The old Air memory data lacks reliable provenance and correction history and is not a valid input. Its database and SQLite-sidecar removal remains unscheduled, not completed here.
 
-### 2. One fate per record under `docs/plans/`
+Use committed synthetic fixtures for preferences, project facts, similar facts across projects, corrections, supersession, forbidden recall, unknown answers, and deletion. Exclude real history, private documents, repositories, secrets, and old databases.
 
-| Record                                            | Fate                                                                                                                                                                                                              |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `INDEX.md`                                        | Delete. OpenSpec and issues replace the index.                                                                                                                                                                    |
-| `2026-08-07-omp-setup-nix-consolidation-plan.md`  | Delete. Superseded by the accepted `personal-omp-workstation` capability. Git history keeps it.                                                                                                                   |
-| `2026-08-07-omp-setup-nix-consolidation-spec.md`  | Delete. Same reason.                                                                                                                                                                                              |
-| `2026-08-09-dmarc-enforcement-plan.md`            | Delete after one issue in `glockyco/nix-config` holds the outstanding alias action with the procedure from lines 48-70. The DNS rationale already lives in `dns/dnsconfig.js`.                                    |
-| `2026-08-08-email-migration-plan.md`              | Move to one issue in `glockyco/nix-config` that carries the goal, ordering, external-service boundary, and done-when boundary. Delete the record.                                                                 |
-| `2026-08-08-family-backup-storage-plan.md`        | Move to one issue in `glockyco/nix-config` that carries the goal, principles, open decisions, and done-when boundary. Delete the record.                                                                          |
-| `2026-08-09-knowledge-management-plan.md`         | Move to one issue in `glockyco/nix-config` that carries the decision, the zero-maintenance constraint, the open export and location questions, and the done-when boundary. Delete it.                             |
-| `2026-08-09-multi-host-fleet-plan.md`             | Superseded by the six programme changes and `connect-fleet-over-tailnet`. The Air-removal intent continues through the temporary peer's offboarding issue. One separate issue keeps the scoped WSL worker intent. |
-| `2026-08-13-pdf-reader-editor-evaluation-plan.md` | Move to one issue in `glockyco/nix-config` that carries the goal, the gates, the corpus rule, and the done-when boundary. Delete the record.                                                                      |
+Measure correct recall, abstention, cross-project isolation, correction precedence, provenance, complete deletion, stale/irrelevant recall, injected tokens, latency, and observability. Define measurable improvement and maximum false recall before execution.
 
-The owning repository for the five issues is `glockyco/nix-config`. Each record concerns the operator's personal infrastructure that this repository configures: DNS and mail live in `dns/`, applications live in the Darwin modules, and the fleet lives in `hosts/`. Each issue receives the label `planning` so `gh issue list --label planning` enumerates unscheduled work. An issue carries current intent and the acceptance boundary. It does not carry the record's historical status or the steps that current evidence contradicts.
+Hard gates remain:
 
-The lifecycle table row "Planned but blocked experiment" becomes "Confirmed work without a scheduled change", so the rule covers these issues and the existing experiment issues alike.
+- zero cross-project leaks and zero recall after verified deletion;
+- provenance for every injected fact and correction precedence over stale facts;
+- no state outside the experiment directory and no process after teardown;
+- improvement over memory disabled and compliance with the predefined false-recall ceiling.
 
-**Alternative rejected:** keep the drafts in the repository under another path. Any tracked path becomes a second planning home and an attractive destination for new plans.
+Use a temporary `HOME`, explicit OMP configuration, dedicated ports, disposable stores, and Nix-pinned sources. Exclude Docker `latest`, mutable `pip install`, interactive installers, and optional local-model installation. Use the configured cloud provider and review OpenViking's AGPLv3 boundary before adoption.
 
-### 3. Delete `openspec/config.yaml`
+The outcome is adopt Mnemopi, adopt OpenViking, retain memory disabled, or invalidate and rerun. Adoption requires a separate reviewed change.
 
-The file holds `schema: spec-driven` and thirty lines of template comments. OpenSpec applies `spec-driven` by default, and every change records its schema in its own `.openspec.yaml`. A populated `context` would repeat `AGENTS.md`, which the audit identified as the pattern that causes drift. The file is deleted.
+### External project migrations
 
-### 4. The architecture document keeps boundaries and drops execution state
+Owners: the HotRepl, Ardenfall, Ancient Kingdoms, and Erenshor repositories. Each migration requires a separate reviewed OpenSpec change and repository-local commits. No project changes or issues were created here.
 
-The document keeps: status and authority, goals, non-goals, decisions, ownership, personal policy, STE, research, commit workflow, language intelligence, lifecycle, the two experiment protocols, the cross-repository dependency order, the common project migration contract, the completion rule, activation and rollback, acceptance gates, the decision log, and the primary references.
+Dependency order remains: workstation base first, then HotRepl and Erenshor independently, then Ardenfall and Ancient Kingdoms independently after HotRepl. Erenshor does not depend on HotRepl consumers. Previously delivered work counts only after the owner verifies it against the migration contract.
 
-The document drops:
+#### Common migration boundaries
 
-- the Resume procedure. `AGENTS.md` is the entry point, and `openspec list` names the active changes;
-- the current-state table. `openspec list` and `openspec/changes/archive/` are the record of this repository's work, and per-repository state for other repositories lives in their issues;
-- the per-change subsections `package-personal-omp-plugin`, `consume-personal-omp-plugin`, `adopt-nixos-wsl-host`, and `manage-windows-layer`. The archived changes and the ownership section hold that content;
-- the audit snapshots, `must` lists, acceptance lists, and non-gating follow-ups for HotRepl, Ardenfall, Ancient Kingdoms, and Erenshor. Each moves to one issue titled `nix-development-environment` in its owning repository, and the document links the four issues from the dependency order;
-- the `Legacy cleanup` section. Its one durable sentence, that each project migration owns that repository's host paths and retired-tool calls, moves into the completion rule;
-- the sentence that calls the `docs/plans/` records historical evidence.
+- The repository, not the CrossOver bottle, is the migration unit. Its flake pins host tools for Apple Silicon macOS and Linux CI, plus Intel macOS where supported.
+- Ecosystem lockfiles own library resolution. Shell entry must not restore dependencies or mutate Bun, pnpm, uv, NuGet locks, or tool manifests.
+- Public immutable inputs outside ecosystem locks, including loader and manually restored NuGet archives, require hash-pinned Nix derivations. Runtime commands consume store artifacts rather than download them.
+- Frozen checkout restoration remains cold-reachable through `nix run .#bootstrap` before dependencies exist, without global installs.
+- A canonical CLI is `apps.default`. Build, deploy, launch, status, and other verbs remain subcommands, not duplicate Nix wrappers. Dedicated apps serve only necessary cold-start operations.
+- Read-only `nix run . -- doctor` must report exact selected tool store paths, game discovery, Steam application/build IDs, assembly paths, loader state/version, and running-game state.
+- A fast environment wrapper must verify an identity derived from the evaluated shell or current `flake.nix` and `flake.lock`. A boolean sentinel or one executable on `PATH` is insufficient.
+- Loader installation is explicit, cold-reachable, and idempotent. It verifies an ownership manifest before adoption or replacement, preserves configuration/logs/saves/unowned files, and refuses unknown proxies, layouts, and partial installs.
+- Deployment copies atomically, refuses replacement of an open game DLL, and records game build, loader, source revision, artifact hashes, and deployed paths in ignored repository-local state.
+- Bottle names, game paths, credentials, outputs, and ports remain ignored machine-local state. Default discovery can use `CROSSOVER_BOTTLE=Steam` and the Steam manifest but must reject ambiguity.
+- Proprietary game assemblies remain verified external inputs, never committed, copied into the Nix store, or described as reproducible packages.
+- CrossOver, Steam authentication, game installation/updates, loader installation, mod deployment, launch, and bottle deletion remain mutable runtime operations. Workstation activation cannot perform them. It can install CrossOver and create an empty bottle.
+- CI proves game-independent behavior in the flake environment. Local acceptance proves discovery, loader compatibility, deployment, launch, and one real runtime operation from a clean checkout.
 
-Every backticked `nix-darwin` in `AGENTS.md`, `README.md`, `docs/`, and `openspec/specs/` names this repository and becomes `nix-config`. An unbackticked `nix-darwin` names the product and stays. The gate is `grep -rn '`nix-darwin`' AGENTS.md README.md docs openspec/specs`, which must print nothing.
+After acceptance, each project owns its commands and invariants in its specs, README, and agent guidance. Remove replaced host paths, ambient-tool fallbacks, retired-tool calls, and sibling-checkout defaults. Preserve ignored local state and durable ownership of non-gating findings. Archive only the verified project change, never this unimplemented cleanup delta.
 
-The primary references become unversioned links to the OpenSpec and OMP documentation. The pinned versions are in `flake.lock`, and the dependency-update runbook already shows the commands that print them.
+#### HotRepl
 
-**Alternative rejected:** derive the current-state table from `openspec list` on each review. A table that a human must refresh drifts, as the audit found, and a generated table duplicates the command output.
+Pin Bun 1.3.14, .NET SDK 10, and the tools used by hooks and CI. Keep CSharpier 1.3.0 in the tool manifest and commitlint in the frozen Bun workspace unless a command requires otherwise.
 
-### 5. Decision-log ownership for the two session decisions
+Export a shell, formatter, game-independent checks, and packages for the protocol, SDK, CLI, MCP server, and test helpers. Replace ambient Homebrew, `~/.bun`, and `/usr/local` tool discovery with the common environment wrapper, including GUI hooks. Keep `bun install --frozen-lockfile` and `dotnet tool restore` as checkout bootstrap operations.
 
-`connect-fleet-over-tailnet` owns the entry that reverses the 2026-09-03 isolation decision and the rewrite of the `WSL work machine` ownership section. It changes that behavior, and the brief requires every change to record its own invariants at archive time. This change verifies both at its start and reconciles any gap, because it is the last change and the final arbiter of the document.
+Publish a downstream loader-host build contract from a pinned HotRepl flake revision. Consumers supply verified game/Unity references at invocation time and write outputs to a writable project cache. MelonLoader consumers also supply its path and generated IL2CPP references. No sibling checkout or `bin`/`obj` write under immutable sources is permitted.
 
-This change owns the entry that records the parking-lot reversal for the structural programme, and the entry for its own invariants: one planning home, one release-gate statement, and evidence in archived changes.
+Acceptance requires exact runtimes, frozen restoration, format/TypeScript/site/C#/package/hook-parity checks on Linux and Apple Silicon macOS, and packages without proprietary DLLs. One loader host must build, deploy through its game repository, and answer a real HotRepl command.
 
-### 6. `AGENTS.md` is the one statement of the release gates
+#### Ardenfall
 
-`AGENTS.md` lists every gate with the system that runs it:
+Pin Bun compatible with `>=1.3.13`, .NET SDK 10, dotnet tools, lefthook, and current workflow tools. Route GUI hooks through the common wrapper. Remove retired `omp-plans` coupling after replacement OpenSpec checks work.
 
-- on either host: `nix fmt -- --fail-on-change`;
-- on `korolev`: `nix flake check --all-systems --print-build-logs`, which builds the Darwin checks on the Mac through the remote builder;
-- on `macbook-pro`: `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system`;
-- the sentence that CI runs each leg with the Nix that its host runs.
+Pin HotRepl and replace `HOTREPL_REPO`, `HOTREPL_CORE_OUT`, and `HOTREPL_BEPINEX_OUT` with the downstream build contract and writable local artifacts. Preserve the existing controller's safe deployment rather than add a parallel Nix deployment script.
 
-`README.md`, `container-runtime.md`, and `dependency-updates.md` link to `AGENTS.md#release-gates` at the point where the gates run and repeat no gate command. The gate is `grep -rn 'check-darwin-build-plans' README.md docs`, which must print nothing.
+Discover Steam application 1837770 and verify `Ardenfall_Data/Managed`. Keep only genuine local overrides in `.env`. Provide canonical doctor, build, deploy, launch, and export operations plus a reviewed hash-pinned BepInEx 5 installer. Do not infer the loader release from another game. Pin the decompiler through a tool manifest or Nix.
 
-### 7. One OpenSpec command form per purpose
+HotRepl remains on `127.0.0.1` by default. Remote access requires explicit opt-in and the remote-code-execution warning.
 
-`AGENTS.md` states two forms and nothing else states a form: `openspec validate <name> --strict` while a change is open, and `openspec validate --all --strict` plus `openspec validate --archived --strict` as the repository gate, which `nix flake check` runs. `openspec list` names the active changes. Change task lists use the first form.
+Acceptance requires frozen restoration and the existing lint/type/controller/pipeline/site/fixture/mod checks. Doctor reports the actual installed build. Installer re-entry changes no owned files. The pinned host and mod build without a sibling checkout, deploy the expected plugins/configuration, launch through CrossOver, and produce a validated export snapshot and pipeline artifact.
 
-### 8. Runbooks hold procedures, archived changes hold evidence
+#### Ancient Kingdoms
 
-`docs/operations/wsl-omp-bootstrap.md` becomes `docs/operations/korolev-provisioning.md`. The name follows the title "Provision the korolev NixOS WSL host" and the README wording "korolev provisioning". Section 5 keeps the gate `systemctl is-active user@1000.service` and drops the `Ubuntu-26.04` termination steps. The `Distribution rollback` subsection is deleted. The accepted-evidence table and its paragraph move to `openspec/changes/archive/2026-09-03-adopt-nixos-wsl-host/evidence.md`. The `Release evidence` procedure stays.
+Keep the existing flake authoritative. Pin pnpm 10.34.5 exactly, Python 3.14, .NET SDK 10, and `ilspycmd` 10.1.1.8388. Decompiler and game-version updates remain separate reviewed changes. Add workflow tools, including SteamCMD where licensing/platform support permit it, and the common GUI-hook/bootstrap wrapper.
 
-`container-runtime.md` loses its `Evidence` section to `openspec/changes/archive/2026-08-21-provide-colima-container-runtime/evidence.md`.
+Export real packages/apps/checks for the Python pipeline, build tool, game-independent mod compilation, and website. Pin HotRepl and use its MelonLoader contract. `HOTREPL_REPO_PATH` can remain an explicit development override, never the clean-checkout default.
 
-`evidence.md` beside `tasks.md` follows the `baseline.md` precedent. `openspec validate --archived` parses `tasks.md` for checkboxes, and a prose table does not belong in that file.
+Keep game/export paths in `Local.props`. Doctor and noninteractive setup derive and verify normal CrossOver values. A hash-pinned MelonLoader installer can adopt the historical 0.7.3 Open-Beta layout only after manifest verification. Preserve `UserData`, `Mods`, generated IL2CPP assemblies, configuration, and logs.
 
-The dependency-update runbook loses the sentence "OpenSpec 1.9 adds strict task-numbering and scenario checks plus `validate --archived`" and keeps the sentence that the flake gate runs active and archived validation.
+Server-reference updates use pinned tools while retaining `SNAPSHOT.toml`, assembly hashes, versioned backups, and citation-drift checks.
 
-### 9. Prose-only scenarios become checked plus live pairs
+Acceptance requires frozen pnpm/uv/dotnet restoration and build-tool/pipeline/mod/website checks. Doctor verifies application 2241380, current build, Unity version, loader layout, and generated references. Installer re-entry is a no-op and deployment preserves unowned state. The pinned HotRepl host and mods must build/deploy, launch must reach loader/HotRepl readiness, and a compendium export must produce verified artifacts.
 
-`batch-ssh/spec.md:66-77` is the accepted form. The language-server matrix splits into "Resolve every server", which the package-shape check proves with `command -v`, and "Exercise the matrix", a live procedure. The container runtime splits into "Declare the runtime", which the `korolevContainerRuntime` assertions prove, and "Run a container", a live procedure. Neither live procedure can run in a sandbox: one needs a model-backed session, the other a running WSL distribution.
+#### Erenshor
 
-Each live scenario names a documented home. The language smoke lives in `dependency-updates.md` under `Activation and smoke`, beside the wrapped-session smoke. The container smoke becomes a step in `korolev-provisioning.md` after the real-session smoke, as archived task 6.8 of `adopt-nixos-wsl-host` ran it.
+Keep the existing four-system flake, uv2nix, cold bootstrap, lockfile-safe shell entry, and Nix-based CI. Preserve Python 3.14, .NET SDKs 9/10, Node 22, pnpm 10, AssetRipper, SQLite, and gitleaks where current workflow contracts require them.
 
-The adapter-freshness requirement is removed. This repository tracks no adapter, and the one assertion behind it stays in the package-shape check under the pinned-inputs requirement.
+Split the packaged runtime from development/test dependencies. Export the real CLI as `packages.default` and `apps.default`. Use one canonical package version and decide explicitly whether Python 3.13 is a separately tested minimum. The wrapper uses a verified environment identity with direnv first and `nix develop` fallback, including bare GUI hooks.
 
-The `darwin-dependency-builds` scenario says "the repository checks fail" while the mechanism is `nix run .#check-darwin-build-plans`, outside `nix flake check`. The requirement now states that the inspection is a release gate on the Darwin host, and the scenario names that gate.
+Pure flake checks cover the CLI, `--help`, Python unit tests, and Python-only contract tests. Maps and native .NET leaves remain CI commands in `nix develop`, not sandboxed-derivation requirements. Offline `node_modules` or NuGet vendoring is not required.
 
-### 10. The planning-home check is a program with fixture tests
+Add read-only doctor and hash-pinned BepInEx/Lunaris installers through the CLI. Adoption of historical BepInEx 5.4.23.5 requires a matching owned-file manifest. Preserve loader status, activation, deployment, CrossOver launch, `mod setup` compile references, and `mod dev-setup` optional plugins. Keep Unity Hub/licensing, Steam authentication, and game payloads external. Materialize Unity Editor NuGet payloads with hash-pinned derivations, not `extract packages` downloads.
 
-`packages/planning-home-check.nix` is a `writeShellApplication` that takes one tree path. It fails when a file exists under `<tree>/docs/plans/` or when a Markdown file outside `<tree>/openspec/changes/` contains `docs/plans/`. It prints each offending path and exits 1. `packages/planning-home-check-tests.nix` runs the program against three fixture trees: one with a record under `docs/plans/`, one with a README that links the retired path, and one whose only reference sits under `openspec/changes/`. The first two must fail, the third must pass. The flake check runs the program on `./.`, wired like `moduleImports` in the layout that `key-fleet-by-host` established.
+NuGet restoration must preserve both loader graphs:
 
-The check scans Markdown only. The program and its tests are Nix files that contain the pattern, so a scan of every file would need a self-exclusion list.
+- Replace floating references with exact versions in root `Directory.Packages.props` using Central Package Management. BepInEx.Core must match the intended runtime surface, and Fleck affects published ILRepack bytes.
+- Commit ordinary `packages.lock.json` files. For the five loader-conditional production mods, set `NuGetLockFilePath` once in `src/mods/Directory.Build.props` to `packages.$(ModLoader).lock.json`.
+- Commit both BepInEx and Lunaris locks before strict restoration. A framework-only lock cannot represent property-selected loader graphs.
+- Add explicit `--locked-mode` project restoration for every native project and both variants, separately from manifest-pinned `dotnet tool restore`.
+- Enable local lock generation, condition `RestoreLockedMode` on `ContinuousIntegrationBuild`, and set that property explicitly in CI. Tests consume the completed restore.
+- Document intentional lock refresh. Renovate must refresh every affected ordinary/per-loader lock in the same update. Stale locks or only one updated loader graph must fail.
+- CI maps/native leaves require frozen pnpm installation and the explicit locked project restore first.
 
-### 11. Workflow comments are swept, not rewritten
+Acceptance requires the runtime-only packaged CLI with canonical version and measured closure split, scoped pure checks, and the complete existing local/CI matrix. A representative dependency update must refresh all affected locks, while stale and single-variant updates fail. Bare GUI hooks must select the pinned environment. Doctor reports application 2382520, current build, available/active loaders, and launch plan. Both installers are idempotent and refuse unknown proxy DLLs. A maintained mod must build/deploy/activate/launch under BepInEx, and a dual-loader mod must also build/deploy under Lunaris. One complete CLI data operation must succeed.
 
-The comments in `.github/workflows/check.yml` name files and check names. This change confirms that each named path exists and each named check is a flake check output, and corrects any that the earlier changes moved. It does not rewrite the comments otherwise.
-
-## Risks / Trade-offs
-
-- [An issue loses a binding constraint from its record] → The task that creates each issue reads the complete record and carries the constraints, rejected alternatives, and done-when boundary. The record is deleted in the same commit that links the issue.
-- [A project repository does not exist under the expected name] → `gh repo list glockyco` resolves the name before the issue is created. A repository that does not exist gets no issue, and the architecture document says so at the dependency order.
-- [The DMARC alias is still implicit] → The issue keeps the action open. The record is not proof either way, and the DNS record is unaffected.
-- \[`connect-fleet-over-tailnet` did not record its decision\] → Task 4.1 checks for the entry and the rewritten ownership section and adds them from the archived proposal if absent.
-- \[`evidence.md` in an archived change fails `openspec validate --archived`\] → `baseline.md` already exists in an archived change and the gate passes. Task 6.6 runs the archived validation.
-- [A gate command in a runbook is useful in place] → A link is one click away, and the four copies drifted. The runbooks keep their non-gate commands.
-- [The planning-home check rejects this change's own artifacts] → The check excludes `openspec/changes/`, and the third fixture proves that exclusion.
+Non-gating intent remains unscheduled: make MapTileCapture loopback-only by default with explicit remote configuration and a security warning, audit duplicate/stale repository skills, and remove retired `omp-plans` hook/agent guidance first in the migration. Historical project plan files can remain after the owner converts or archives active plans. These findings do not block acceptance of the scoped environment migration.

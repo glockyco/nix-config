@@ -30,9 +30,9 @@ The original plan uses these assumptions:
 
 - Any change to what the document declares: no new resource, setting, application, or pin. The two listed differences change script text and review data without a change in behavior.
 - Fetching the AltSnap, wslgit, kbdneo, or font archives with Nix. Those archives do not ship in the output, and their pins are data that the scripts verify on Windows.
-- Proving on Linux that a script behaves as intended on Windows. The check proves syntax and boundary. The live test in runbook section 12 proves behavior.
+- Proving on Linux that a script behaves as intended on Windows. The check proves syntax and boundary. The live test in the Windows apply section of the provisioning runbook proves behavior.
 - A check that proves the PowerToys module list complete against the installed version. That list has no offline source. The check no longer carries a copy, and the runbook records the review at each PowerToys pin change.
-- Documentation outside runbook section 12, the README layout row, and the decision-log entry. `align-documentation-with-fleet` owns the rest.
+- Documentation outside the Windows apply section of the provisioning runbook, relevant README links, and implementation rationale. `simplify-repository-documentation` owns the rest.
 
 ## Decisions
 
@@ -111,7 +111,7 @@ Alternative rejected: patch the pinned `document.resource.json` in the check. A 
 
 The check fails when any script reports a parse error, and names the script and the message. The Administrator-script boundary reads the parsed data: `apply-kbdneo.ps1` and `apply-zen-policies.ps1` reference no variable in `env:APPDATA`, `env:LOCALAPPDATA`, `env:USERPROFILE`, and no string value that starts with `HKCU:`. The excluded-surface rule reads the same data: no registry `keyPath` and no script string contains `CloudStore`. Every substring assertion on script source leaves, including the dark-appearance, animation, font, JSON-writer, Fork, and AltSnap checks.
 
-`pwsh` parses with the PowerShell 7 grammar, and the scripts run under Windows PowerShell 5.1. The 7 grammar is a superset, so a 7-only construct passes the check and fails on Windows. The live test in runbook section 12 runs every test script under 5.1 and is the proof for that gap.
+`pwsh` parses with the PowerShell 7 grammar, and the scripts run under Windows PowerShell 5.1. The 7 grammar is a superset, so a 7-only construct passes the check and fails on Windows. The live test in the Windows apply section of the provisioning runbook runs every test script under 5.1 and is the proof for that gap.
 
 The check depends on `powershell` on both systems. The package is a prebuilt release archive on each, so it is cached and `check-darwin-build-plans` reaches no source-built .NET package.
 
@@ -196,7 +196,7 @@ The gate at the final revision:
    Merge-Object $settings ([PSCustomObject]@{ GitInstancePath = (Join-Path $root 'bin\git.exe') })
    ```
 
-1. On the work machine, `winget configure test` per runbook section 12 reports the same state as before the change, and the two Administrator scripts report `kbdneo: desired` and `Zen policies: desired` with `-Test`.
+1. On the work machine, `winget configure test` per the Windows apply section of the provisioning runbook reports the same state as before the change, and the two Administrator scripts report `kbdneo: desired` and `Zen policies: desired` with `-Test`.
 
 1. For listed difference 1: the operator removes `GitInstancePath` from `%LOCALAPPDATA%\Fork\settings.json`, runs `winget configure` with the new document, and confirms that the `fork wslgit` test then reports the desired state and that Fork still opens the WSL worktree.
 
@@ -207,7 +207,7 @@ Steps 1 to 5 run on `korolev` with a short Python script that the change keeps u
 ## Risks / Trade-offs
 
 - [The 7 grammar accepts a construct that 5.1 rejects] → The live test runs every test script under 5.1. Decision 6 records the gap.
-- [The check no longer proves the PowerToys module list complete] → The literal list was a copy tied to one version. Runbook section 12 records the review at each PowerToys pin change, and the declaration is the single source.
+- [The check no longer proves the PowerToys module list complete] → The literal list was a copy tied to one version. The Windows apply section of the provisioning runbook records the review at each PowerToys pin change, and the declaration is the single source.
 - [The check no longer asserts the dark-appearance and animation values] → Those were substring matches on source. The declared settings are data in `settings.nix`, and the live test and the post-apply confirmation in the runbook prove them.
 - [A fragment renders at a different nesting than its call site] → The gate compares every script byte for byte. A whitespace difference fails step 1 or step 3.
 - \[`pwsh` cannot start in the build sandbox\] → The probe ran with an unwritable `HOME` and `-NoProfile`, and the program sets `-NonInteractive`. The check phase of the package proves it on each system.

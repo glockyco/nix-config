@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-05
 
-This change is deferred, not canceled or completed. It is not a prerequisite for working OMP or Tailscale. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern scheduling.
+This change is deferred, not canceled or completed. It is not a prerequisite for working OMP or Tailscale. The scheduling notice below remains authoritative.
 
 Small acceptance-record corrections support the current OMP and Tailscale checks. They do not start this Windows renderer and check refactor or the separate broad documentation and planning-store migration.
 
@@ -27,7 +27,7 @@ The renderer itself repeats data and code. AltSnap and the terminal font are dec
 - Keep the fetched theme files as store paths and copy them in the build. Evaluation reads no derivation output. Keep one hash form per fetched file and derive the other with `builtins.convertHash`.
 - Delete dead data: `managed-applications.nix` `auditDate`, `font.nix` `files = { }`, the unused `provides` role list, and the re-literalized ReNeo package path.
 - Record the acceptance gate: every rendered file is byte-identical to the baseline except two listed differences, and `winget configure test` on the work machine reports the same state as before.
-- Update runbook section 12 so it names what the repository check proves and what only the live test proves.
+- Update the Windows apply section of the provisioning runbook so it names what the repository check proves and what only the live test proves.
 
 ## Capabilities
 
@@ -41,10 +41,10 @@ None.
 
 ## Impact
 
-The change affects `modules/windows/` (moved to `packages/windows-configuration/`), `packages/windows-configuration-check.nix`, `packages/windows-configuration-check.py` (replaced by `packages/windows-configuration-check/`), `flake-modules/packages.nix`, `flake-modules/checks.nix`, `docs/operations/wsl-omp-bootstrap.md` section 12, `README.md`, and the architecture decision log.
+The change affects `modules/windows/` (moved to `packages/windows-configuration/`), `packages/windows-configuration-check.nix`, `packages/windows-configuration-check.py` (replaced by `packages/windows-configuration-check/`), `flake-modules/packages.nix`, `flake-modules/checks.nix`, `docs/operations/wsl-omp-bootstrap.md` (Windows apply), `README.md`, and the rationale in this change and nearby implementation comments.
 
 It adds `powershell` from Nixpkgs as a check dependency on both systems. The package is a prebuilt release archive for `x86_64-linux` and `aarch64-darwin`, so `check-darwin-build-plans` reaches no source-built .NET package.
 
 It changes the rendered artifact in two listed places and nowhere else. The Fork resource uses the shared merge function in its set script, and the duplicate SRI hash leaves the Zen theme data. Every other rendered file is byte-identical, and the acceptance gate in `design.md` measures that.
 
-This change assumes that `declare-typed-host-options`, `connect-fleet-over-tailnet`, `key-fleet-by-host`, `separate-platform-baseline-from-roles`, and `package-user-programs` are archived. It follows the flake-parts layout, the overlay, and the Python packaging convention that those changes established. `align-documentation-with-fleet` owns every documentation edit outside runbook section 12, the README layout row, and the decision-log entry.
+This change assumes that `declare-typed-host-options`, `connect-fleet-over-tailnet`, `key-fleet-by-host`, `separate-platform-baseline-from-roles`, and `package-user-programs` are archived. It follows the flake-parts layout, the overlay, and the Python packaging convention that those changes established. `simplify-repository-documentation` owns every documentation edit outside the Windows apply section of the provisioning runbook, relevant README links, and implementation rationale.

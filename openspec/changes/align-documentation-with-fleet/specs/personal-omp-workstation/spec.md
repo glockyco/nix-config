@@ -1,3 +1,7 @@
+## Superseded proposal
+
+This delta remains unimplemented. [simplify-repository-documentation](../../../simplify-repository-documentation/proposal.md) replaces the cleanup approach, not the accepted behavioral contract. Do not merge or archive this delta as accepted. References below describe the historical proposal.
+
 ## MODIFIED Requirements
 
 ### Requirement: Pinned executable and plugin inputs

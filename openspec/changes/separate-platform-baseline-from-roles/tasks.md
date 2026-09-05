@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-05
 
-This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern the schedule.
+This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. The scheduling notice below remains authoritative.
 
 The technical proposal, design, specifications, and unchecked tasks remain requirements for future implementation. CLI artifact and task counts describe artifact and task state, not authorization to start work. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules the change after another plan review.
 
@@ -73,5 +73,5 @@ The technical proposal, design, specifications, and unchecked tasks remain requi
 
 ## 9. Documentation
 
-- [ ] 9.1 Add a dated architecture decision for platform baselines, explicit host roles, declaration-owned machine facts, complete secret encryption, and the temporary Air role's clean-removal boundary.
-- [ ] 9.2 Update the README module and host layout rows. Name the role directories and the typed host declaration, and confirm `nix fmt -- --fail-on-change README.md` passes.
+- [ ] 9.1 Record platform baselines, explicit roles, declaration-owned facts, full secret encryption, and the temporary Air removal boundary in this change and nearby rationale comments.
+- [ ] 9.2 Update relevant README links to the role directories and typed host declaration without adding a layout inventory; confirm `nix fmt -- --fail-on-change README.md` passes.

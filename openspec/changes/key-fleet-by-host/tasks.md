@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-05
 
-This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern the schedule.
+This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. The scheduling notice below remains authoritative.
 
 The technical proposal, design, specifications, and unchecked tasks remain requirements for future implementation. CLI artifact and task counts describe artifact and task state, not authorization to start work. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules the change after another plan review.
 
@@ -50,8 +50,8 @@ The technical proposal, design, specifications, and unchecked tasks remain requi
 ## 7. Update Gate Names and Documentation
 
 - [ ] 7.1 Update workflow comments and the flake description for the generated host-prefixed check names. Confirm every named check appears in `nix flake show --json`.
-- [ ] 7.2 Keep `lefthook.yml` limited to the formatting gate. Record in the architecture decision why the full Nix gate remains a release and CI gate instead of a pre-push hook.
-- [ ] 7.3 Update the README layout and output examples for `flake-modules/`, generated host outputs, and host-prefixed checks.
+- [ ] 7.2 Keep `lefthook.yml` limited to the formatting gate. Keep the no-pre-push rationale in this design and the hook configuration comment.
+- [ ] 7.3 Update relevant README links and check invocations for the generated host outputs; do not add an output inventory.
 
 ## 8. Verify the Complete Change
 
@@ -65,5 +65,5 @@ The technical proposal, design, specifications, and unchecked tasks remain requi
 
 ## 9. Record the Architecture Decision
 
-- [ ] 9.1 Add a dated decision-log entry for the host-keyed fleet, generated host outputs, one overlay-owned package inventory, and behavior-driven program checks.
-- [ ] 9.2 Record the no-pre-push decision and the gated `flake-parts` follows outcome in the same entry. Confirm that the entry names the measured derivation gate.
+- [ ] 9.1 Record the host-keyed fleet, generated outputs, overlay ownership, and behavior-driven checks in this change and nearby rationale comments.
+- [ ] 9.2 Record the no-pre-push decision and the gated `flake-parts` follows outcome in this change. Confirm that the entry names the measured derivation gate.

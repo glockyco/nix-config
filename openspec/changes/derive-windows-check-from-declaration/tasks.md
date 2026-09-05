@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-05
 
-This change is deferred, not canceled or completed. It is not a prerequisite for working OMP or Tailscale. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern scheduling.
+This change is deferred, not canceled or completed. It is not a prerequisite for working OMP or Tailscale. The scheduling notice below remains authoritative.
 
 Small acceptance-record corrections support the current OMP and Tailscale checks. They do not authorize these refactor tasks or the separate broad documentation and planning-store migration.
 
@@ -67,6 +67,6 @@ OpenSpec CLI counts describe artifact and task state, not scheduling authorizati
 
 ## 9. Documentation
 
-- [ ] 9.1 Update runbook section 12 to distinguish repository validation from the Windows live test. Include the PowerToys review that must run when its version changes.
-- [ ] 9.2 Add a dated architecture decision for declaration-derived checks, check-owned policy, parser-based PowerShell validation, and network-free evaluation.
-- [ ] 9.3 Update the README layout row for `packages/windows-configuration/` and the packaged check. Confirm `nix fmt -- --fail-on-change README.md` passes.
+- [ ] 9.1 Update the Windows apply section of the provisioning runbook to distinguish repository validation from the Windows live test. Include the PowerToys review that must run when its version changes.
+- [ ] 9.2 Record declaration-derived checks, check-owned policy, parser-based PowerShell validation, and network-free evaluation in this change and nearby rationale comments.
+- [ ] 9.3 Update relevant README links for `packages/windows-configuration/` and the packaged check without adding a layout inventory. Confirm `nix fmt -- --fail-on-change README.md` passes.
