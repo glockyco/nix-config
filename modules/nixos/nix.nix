@@ -36,6 +36,7 @@ assert lib.assertMsg (
     {
       hostName = macHost.name;
       sshUser = macHost.username;
+      sshKey = "/root/.ssh/macbook-pro-builder";
       system = "aarch64-darwin";
       protocol = "ssh-ng";
       maxJobs = macLogicalCores;

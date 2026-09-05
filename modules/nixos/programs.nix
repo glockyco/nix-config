@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   lib,
   pkgs,
@@ -6,11 +7,15 @@
 }:
 
 let
+  inherit (import ../shared) tailnetDnsDomain;
   macHost = inputs.self.darwinConfigurations.macbook-pro.config.host;
+  macTailnetName = "${macHost.name}.${tailnetDnsDomain}";
   tailnetBuilderCheck = pkgs.callPackage ../../packages/tailnet-builder-check.nix {
     hostName = macHost.name;
   };
-  tailnetKnownHosts = pkgs.callPackage ../../packages/tailnet-known-hosts.nix { };
+  macBuilder = lib.findFirst (
+    machine: machine.hostName == macHost.name
+  ) (throw "the Mac SSH client requires its declared remote builder") config.nix.buildMachines;
 in
 {
   # Zed's Windows UI starts language servers in its WSL remote process. Keep
@@ -56,12 +61,22 @@ in
   # it is declared here rather than assumed.
   programs.nano.enable = true;
 
-  # The Nix daemon runs this client as root. Resolve the peer's rotating
-  # Tailscale SSH host keys from the authenticated control-plane state.
+  # The Nix daemon and release commands use the same root-only credential.
+  programs.ssh.knownHosts.${macHost.name} = {
+    hostNames = [
+      macHost.name
+      macTailnetName
+    ];
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKVMJe00KQ0ozyXyJ+PB5BllhI5tckDKKCVpJnM2Kw+3";
+  };
   programs.ssh.extraConfig = ''
-    Host macbook-pro
-      User ${macHost.username}
-      KnownHostsCommand ${lib.getExe tailnetKnownHosts} %H
+    Host ${macBuilder.hostName}
+      HostName ${macTailnetName}
+      User ${macBuilder.sshUser}
+      IdentityFile ${macBuilder.sshKey}
+      IdentitiesOnly yes
+      StrictHostKeyChecking yes
+      UserKnownHostsFile /dev/null
       BatchMode yes
       ConnectTimeout 8
       ControlMaster no

@@ -23,21 +23,10 @@ let
     ];
   });
 
-  unreachableSsh = force (render {
-    sshRules = [
-      {
-        action = "accept";
-        src = [ "tag:macbook-pro" ];
-        dst = [ "tag:korolev" ];
-        users = [ "glockyco" ];
-      }
-    ];
-  });
-
   emailAddress = force (render {
     managedHosts = managedHosts // {
       macbook-pro = managedHosts.macbook-pro // {
-        username = "person" + "@" + "example.com";
+        username = "person@example.com";
       };
     };
   });
@@ -55,7 +44,6 @@ let
   });
 in
 assert !unreachableGrant.success;
-assert !unreachableSsh.success;
 assert !emailAddress.success;
 assert !missingLifecycle.success;
 assert !missingPurpose.success;

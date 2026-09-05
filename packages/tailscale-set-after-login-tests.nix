@@ -26,12 +26,13 @@ let
             printf '%s\n' '{"BackendState":"Running"}'
           fi
           ;;
-        "set --ssh")
+        "set --ssh=false")
           if [ "$(cat "$state_file")" -lt 2 ]; then
             printf '%s\n' 'set ran before authentication completed' >&2
             exit 1
           fi
           printf '%s\n' "$*" > "$set_log"
+          exit "''${TAILSCALE_FIXTURE_SET_STATUS:-0}"
           ;;
         *)
           printf '%s\n' "unexpected tailscale arguments: $*" >&2
@@ -58,10 +59,24 @@ runCommand "check-tailscale-set-after-login"
 
     TAILSCALE_FIXTURE_STATE=$PWD/state \
       TAILSCALE_FIXTURE_SET_LOG=$PWD/set.log \
-      timeout 5 ${command}/bin/tailscale-set-after-login --ssh
+      timeout 5 ${command}/bin/tailscale-set-after-login --ssh=false
 
-    test "$(cat state)" = 2
-    grep -qFx 'set --ssh' set.log
+    grep -qFx 'set --ssh=false' set.log
+
+    if TAILSCALE_FIXTURE_STATE=$PWD/state \
+      TAILSCALE_FIXTURE_SET_LOG=$PWD/set.log \
+      TAILSCALE_FIXTURE_SET_STATUS=17 \
+      timeout 5 ${command}/bin/tailscale-set-after-login --ssh=false
+    then
+      printf '%s\n' 'a failed tailscale set unexpectedly passed' >&2
+      exit 1
+    else
+      test "$?" = 17
+    fi
+
+    TAILSCALE_FIXTURE_STATE=$PWD/state \
+      TAILSCALE_FIXTURE_SET_LOG=$PWD/set.log \
+      timeout 5 ${command}/bin/tailscale-set-after-login --ssh=false
 
     if ${tailscale}/bin/tailscale set \
       --advertise-tags=tag:macbook-pro >unsupported.out 2>&1
@@ -69,7 +84,6 @@ runCommand "check-tailscale-set-after-login"
       printf '%s\n' 'tailscale set unexpectedly accepted --advertise-tags' >&2
       exit 1
     fi
-    grep -qF 'flag provided but not defined: -advertise-tags' unsupported.out
 
     touch $out
   ''

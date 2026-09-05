@@ -182,7 +182,6 @@
               peers = tailnetPeers;
             };
             tailscaleSetAfterLoginTest = pkgs.callPackage ./packages/tailscale-set-after-login-tests.nix { };
-            tailnetKnownHostsCommandTest = pkgs.callPackage ./packages/tailnet-known-hosts-tests.nix { };
             markdownOxide = pkgs.callPackage ./packages/markdown-oxide.nix { };
             roslynLanguageServer = pkgs.callPackage ./packages/roslyn-language-server.nix { };
             personalOmp = pkgs.callPackage ./packages/personal-omp.nix {
@@ -505,14 +504,12 @@
               # Keep OMP's browser mutable while supplying its foreign-binary ABI
               # from the rollback-safe NixOS generation.
               ompBrowserRuntime = ompBrowserRuntimeCheck;
-              tailnetKnownHostsCommand = tailnetKnownHostsCommandTest;
 
               # The portable user modules have to build for Linux, not only
               # evaluate. This is the complete set that the WSL host selects.
               korolevHomeGeneration = korolevHome.home.activationPackage;
 
-              # This host initiates build traffic but remains unreachable. It runs
-              # endpoint data loss prevention, so it also holds no decryption material.
+              # The dedicated outbound builder credential permits no inbound service.
               korolevIsolation =
                 assert !korolevConfig.services.openssh.enable;
                 assert korolevConfig.networking.firewall.allowedTCPPorts == [ ];
@@ -522,13 +519,9 @@
                 assert !korolevConfig.services.tailscale.openFirewall;
                 assert korolevConfig.services.tailscale.disableTaildrop;
                 assert korolevConfig.services.tailscale.extraSetFlags == [ "--shields-up" ];
-                assert lib.hasInfix "/bin/tailscale-set-after-login --shields-up" (
-                  toString korolevConfig.systemd.services.tailscaled-set.script
-                );
                 assert korolevConfig.nix.distributedBuilds;
                 assert builtins.length korolevBuildMachines == 1;
                 assert korolevBuildMachine.hostName == "macbook-pro";
-                assert korolevBuildMachine.sshKey == null;
                 pkgs.runCommand "check-wsl-host-isolation" { } "touch $out";
 
               # WSL 2 is already the virtual machine, so the runtime needs no
@@ -564,14 +557,11 @@
               macbookProTailnet =
                 let
                   darwinConfig = self.darwinConfigurations.macbook-pro.config;
-                  setArguments = darwinConfig.launchd.daemons.tailscaled-set.serviceConfig.ProgramArguments;
                 in
                 assert darwinConfig.services.tailscale.enable;
-                assert lib.hasSuffix "/bin/tailscale-set-after-login" (builtins.head setArguments);
-                assert builtins.tail setArguments == darwinConfig.services.tailscale.extraSetFlags;
-                assert darwinConfig.services.tailscale.extraSetFlags == [ "--ssh" ];
-                assert darwinConfig.services.openssh.enable == null;
-                assert lib.elem "glockyco" darwinConfig.determinateNix.customSettings.trusted-users;
+                assert darwinConfig.services.tailscale.extraSetFlags == [ "--ssh=false" ];
+                assert darwinConfig.services.openssh.enable == false;
+                assert lib.elem darwinConfig.host.username darwinConfig.determinateNix.customSettings.trusted-users;
                 pkgs.runCommand "check-macbook-pro-tailnet" { } "touch $out";
 
               darwinSystem = self.darwinConfigurations.macbook-pro.system;

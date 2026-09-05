@@ -198,14 +198,52 @@ getent ahosts macbook-pro
 
 The status must name `tag:korolev`. The preferences must report `ShieldsUp: true`. The Mac must resolve to a `100.64.0.0/10` address.
 
-The root SSH client uses the control plane's rotating host keys and the Mac's declared user. It needs no private key. Confirm the measured daemon path and run the live builder proof:
+### Provision the builder credential
+
+Root's SSH client uses a dedicated Ed25519 key at `/root/.ssh/macbook-pro-builder`. The Nix daemon needs this key; the interactive user does not. Keep the private file outside the repository and Nix store. Activation must not generate, replace, or restore it.
+
+For a new client, first confirm that the path does not exist. Create it only if absent:
 
 ```sh
+sudo install -d -m 700 /root/.ssh
+sudo test ! -e /root/.ssh/macbook-pro-builder &&
+  sudo ssh-keygen -t ed25519 -N '' -C korolev-builder -f /root/.ssh/macbook-pro-builder
+sudo stat -c '%U %a %n' /root/.ssh /root/.ssh/macbook-pro-builder
+sudo ssh-keygen -y -f /root/.ssh/macbook-pro-builder
+```
+
+The directory must be root-owned with mode `700`, and the private file must be root-owned with mode `600`. The last command prints only the public key. Its value must match the Mac's declarative `restrict` authorization before activation. Review a replacement public key as a configuration change; never overwrite an existing private key to make bootstrap pass.
+
+The client pins the Mac's actual OpenSSH host key through `programs.ssh.knownHosts`. It does not use Tailscale's SSH host keys. If the host key changes, stop and verify the replacement from a local Mac terminal before changing the declaration. Do not use `StrictHostKeyChecking=no` or accept an unverified key.
+
+### Activate and verify the SSH cutover
+
+Build both systems, review, and merge before Mac activation. Keep a local administrator terminal on the Mac and the previous Nix generation. Run `darwin-switch` there, then inspect the native service:
+
+```sh
+tailscale debug prefs
+sudo systemsetup -getremotelogin
+sudo launchctl print system/org.nixos.tailnet-sshd
+sudo lsof -nP -a -c sshd -iTCP:22 -sTCP:LISTEN
+```
+
+`RunSSH` must be false and Remote Login must be off. The dedicated `org.nixos.tailnet-sshd` service runs native OpenSSH; every listening address must belong to the Mac's tailnet interface. Apple's Remote Login listener is not a substitute: its launchd socket ignores `ListenAddress`. Confirm public-key/PAM login on this root service; an unprivileged smoke server does not prove this boundary.
+
+Activate the WSL client with its existing credential. Inspect root's effective configuration and test native status propagation:
+
+```sh
+sudo ssh -G macbook-pro
 sudo ssh macbook-pro 'command -v nix-daemon'
+sudo ssh macbook-pro 'exit 23'
+printf 'SSH status: %s\n' "$?"
 tailnet-builder-check
 ```
 
-The daemon command must be `/nix/var/nix/profiles/default/bin/nix-daemon`. The builder check must report `arm64`, `macbook-pro`, the measured Tailscale path, and `passed`.
+The client must select the dedicated identity, strict host checking, identities-only, batch mode, an eight-second connection timeout, and no multiplexing. The daemon command must be `/nix/var/nix/profiles/default/bin/nix-daemon`, and the status probe must print `SSH status: 23`. The builder check must report `arm64`, `macbook-pro`, the measured Tailscale path, and `passed` from a fresh remote build.
+
+The restricted key cannot allocate a PTY or forward ports. It can run arbitrary commands as the Mac's declared user, who is trusted by Nix to import unsigned paths. Treat a compromised key accordingly: remove its public authorization, replace the private key locally, and review the new public key. `restrict` is not a command sandbox.
+
+Exercise a disconnected-builder failure only while the local Mac recovery terminal remains available. Confirm failure within the connection timeout, restore the tailnet, and run a fresh builder check. If the cutover fails, roll back the host generation locally; do not rely on the SSH path being repaired. Nix rollback does not erase or restore SSH private keys or Tailscale enrollment.
 
 To update OMP later, rerun the binary installer command, run `verify-personal-omp`, and repeat the managed-browser smoke in step 10. No Nix activation is required. Repeat that browser smoke after any NixOS activation that changes the browser ABI. To recover release `v<version>`, use the same target with an explicit tag:
 
