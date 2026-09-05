@@ -1,42 +1,42 @@
 ## Why
 
-Cross-platform verification runs by hand today. A Darwin gate runs on the Mac, a Linux gate runs on `korolev`, and a change that touches both systems waits for the operator to move between machines. The measured network state on 2026-09-04 explains why nothing else was possible: `korolev` is a WSL 2 distribution in NAT mode behind the Windows resolver at `10.255.255.254`, Windows resolves `macbook-pro.local` by mDNS, `korolev` does not, and the Mac has Remote Login off. The two hosts have no addressable path to each other, and the Air is reachable only while the Mac is on the same LAN, through the `.local` literal in `modules/home/darwin/ssh.nix:12` and `modules/home/darwin/network-shares.nix:9`.
+Cross-platform verification needs a private, addressable path from the WSL host `korolev` to the Mac's native Nix daemon. WSL's NAT resolver did not resolve the Mac's mDNS name, and the Mac had Remote Login disabled. A tailnet and Nix's native `ssh-ng` builder remove the need to move manually between machines.
 
-Nix has a native answer to cross-system verification: a remote builder. With the Mac declared as an `aarch64-darwin` builder, `nix build .#checks.aarch64-darwin.darwinSystem` and `nix flake check --all-systems` from `korolev` evaluate locally and build on the Mac. What is missing is a network on which the machines can name and reach each other regardless of location, an SSH path to the Mac that does not put a private key on the work machine, and an access policy that keeps `korolev` unreachable from every other machine.
+The owner accepted a tailnet device identity and outbound remote builds on `korolev`, reversing the earlier no-other-host-control decision while retaining its no-inbound boundary. The employer endpoint-monitoring concern is recorded and accepted.
 
-The owner has decided that `korolev` may hold a device identity for this network and may act as a client of the Mac. This reverses the 2026-09-03 decision that `korolev` holds no shared secret and drives no other host. The employer endpoint-monitoring concern that motivated that decision is recorded and accepted.
+The initial Tailscale SSH implementation loses nonzero remote exit status on this Mac. Native SSH returned success for `exit 23`. On 2026-09-05, the owner approved standard OpenSSH over Tailscale with a dedicated root-owned client credential instead of an exit-status workaround. This also reverses the original no-private-key constraint. A failed remote gate must remain a failed gate.
 
-The Air is a borrowed research machine. It remains available for a few months so the owner can retrieve and inspect PhD thesis and TOSEM paper results. It is a temporary peer, not a durable fleet host, builder, storage authority, or authentication dependency.
+The Air is borrowed temporarily for PhD thesis and TOSEM research-result retrieval. It is not a durable builder, storage authority, authentication dependency, or release dependency.
 
 ## What Changes
 
-- Join the three durable machines and the temporary Air peer to one Tailscale tailnet as tagged nodes: `tag:macbook-pro`, `tag:korolev`, `tag:desktop`, and `tag:macbook-air`. MagicDNS names replace every `.local` name. The Air peer declaration records its temporary lifecycle and research-results purpose.
-- Declare the tailnet policy as Nix data and render it as a package. Grants allow every node to reach the Mac, the Air, and the desktop, and allow `korolev` to reach all three. No grant names `korolev` as a destination. Evaluation asserts that invariant, and the policy carries Tailscale `tests` and `sshTests` that assert it again at apply time.
-- Apply the rendered policy through Tailscale's GitOps action: `test` on pull requests, `apply` on `main`, authenticated with a federated identity so the repository stores no long-lived credential. The policy contains no e-mail address, because this repository is public.
-- Run Tailscale SSH on the Mac through the open-source `tailscaled` that nix-darwin installs. Apple's `sshd` stays off. Access rules permit `tag:korolev` to connect as `glockyco` without a prompt and permit the owner's other devices to connect as `glockyco` in check mode.
-- Make `korolev` a Nix remote-build client of the Mac with `nix.buildMachines` over the `ssh-ng` protocol, with no SSH private key. Host keys come from the control plane through a packaged `KnownHostsCommand` program. `korolev` enables `systemd-resolved` and stops WSL from regenerating `resolv.conf`, so MagicDNS can be installed declaratively.
-- Keep `korolev` unreachable: no inbound service, `--shields-up`, Taildrop disabled, firewall closed. The `korolevIsolation` check asserts the new declarations.
-- Keep `glockyco` in the Mac's `trusted-users` with the correct rationale: a remote builder imports unsigned store paths.
-- Point the Air's interactive and batch SSH endpoints and its SMB mount at the tailnet name `macbook-air`. Remove every `.local` literal and the mDNS reachability probe. Keep all Air-specific access behind one removable peer declaration.
-- Document and track Air offboarding: preserve the required research results, revoke the node before returning the machine, delete its tag and policy entries, remove its SSH and SMB configuration, and remove its local credentials. No durable gate or workflow may depend on the Air.
-- Add a packaged live check that builds a trivial `aarch64-darwin` derivation from `korolev` and proves that the Mac built it.
-- Record the reversed isolation decision, the tailnet ownership boundary, and the node-join procedure in the architecture document and the `korolev` runbook.
+- Join the durable managed hosts, durable desktop peer, and temporary Air peer to one tagged tailnet. MagicDNS names replace mDNS and LAN addressing. Peer data records lifecycle and purpose.
+- Render policy from Nix data. Grants permit access to reachable destinations and never to `korolev`. Renderer assertions and provider network tests defend that boundary. Remove Tailscale SSH authorization when OpenSSH owns authentication.
+- Validate PR policy with a read-only federated identity. Deploy only after successful native checks for a main revision, from that exact revision, through a separate main/workflow-constrained write identity. Serialize writes and reject obsolete deployment revisions.
+- Require PRs and the native Linux, Darwin, and policy checks on main; enforce linear history and protect against force-push and deletion. The single owner still performs the human review.
+- Run native OpenSSH as a nix-darwin launchd daemon bound to the Mac's full MagicDNS name. Disable Tailscale SSH and Apple's wildcard socket-activated Remote Login service. Do not add a network proxy, LAN listener, or exit-status parser.
+- Keep one root-owned builder private key on `korolev`, outside the repository and Nix store. Declare its restricted public authorization on the Mac and pin the Mac's actual OpenSSH public host key. Remove the obsolete Tailscale `KnownHostsCommand` implementation and callers.
+- Declare one `ssh-ng` Darwin builder from the Mac's host declaration. Keep its user in `trusted-users` because remote builds import unsigned paths. The credential permits remote build and verification commands; it is not a command sandbox.
+- Preserve `korolev` isolation: no inbound service, shields-up, no Taildrop, and no open firewall port. Manage WSL DNS through resolved, with the Windows DNS-tunneling upstream preserved across a real restart.
+- Point the Air's SSH and SMB clients at `macbook-air`. Keep the existing Secure Enclave authentication and batch transport. Prove activated online/offline behavior after enrollment.
+- Track Air offboarding outside this active change: preserve results, revoke the node before return, and remove its declaration, policy, endpoints, credentials, and role.
+- Prove live remote builds, native command failure propagation, key rejection, tailnet-only listening, disconnected-builder failure/recovery, and native release gates. Keep deployment gates open until exercised after review and merge.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `fleet-tailnet`: the tailnet that connects durable fleet hosts and declared temporary peers, the access policy that governs them, the tailnet-based SSH access to the Darwin host, and the Darwin remote builder that the Linux host uses.
+- `fleet-tailnet`: durable and temporary member identity, declared reachability policy, OpenSSH authentication over the tailnet, and the Darwin remote builder.
 
 ### Modified Capabilities
 
-- `personal-omp-workstation`: the WSL host network isolation requirement changes from "no shared secret, drives no other host" to "no inbound path, never a tailnet destination, holds only its tailnet device identity, drives the Darwin host as a build client".
-- `repository-quality-gates`: adds the requirement that the Darwin gates can be built from the Linux host through the remote builder.
+- `personal-omp-workstation`: permit a tailnet identity and dedicated root-owned builder key on WSL while retaining the no-inbound boundary.
+- `repository-quality-gates`: build Darwin checks from Linux and preserve native exit status for remote Darwin inspection commands.
 
 ## Impact
 
-The change affects `flake.nix` or its flake-parts modules, `modules/fleet/host.nix`, `modules/darwin/nix.nix`, a new `modules/darwin/tailscale.nix`, `modules/nixos/nix.nix`, a new `modules/nixos/tailscale.nix`, `modules/nixos/wsl.nix`, `modules/home/darwin/ssh.nix`, `modules/home/darwin/network-shares.nix`, `packages/air-batch-config-check.nix`, `packages/air-batch-check-tests.nix`, new packages for the policy renderer, the known-hosts program, and the builder check, a new `.github/workflows/tailnet-policy.yml`, `docs/architecture/personal-omp-environment.md`, and `docs/operations/wsl-omp-bootstrap.md`.
+The change affects host declarations, the policy renderer and workflow, Darwin Tailscale/OpenSSH configuration, Linux resolver/SSH/builder configuration, the Air clients, their behavioral checks, and operating procedures. Both managed system derivations change. Private keys and enrollment state remain mutable local state, not Nix inputs.
 
-It adds `tailscale` to both host closures and changes both system derivations. Each host activates once. The temporary Air and the Windows desktop join the tailnet through Tailscale applications installed by their owners. This repository does not manage either machine. It names the desktop as a durable peer and the Air as a temporary research-results peer in policy data. Returning the Air removes its declaration and every dependent policy and client entry without changing the durable three-machine topology.
+Mac activation occurs only after review and merge, from a local administrator session with the previous generation retained. WSL restart, peer enrollment, provider trust verification, actual GitHub events, and root-daemon acceptance are distinct gates; configuration evaluation cannot substitute for them.
 
-The change depends on `declare-typed-host-options`, because each host's tailnet tag is a `host.*` declaration. It has no other dependency. Later changes may use the remote builder to run Darwin gates from `korolev`.
+The change follows the archived `declare-typed-host-options` change. It adds no general fleet framework and does not manage the Air's or desktop's operating system.

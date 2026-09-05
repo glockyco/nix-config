@@ -18,3 +18,9 @@ The Linux host SHALL be able to build every `aarch64-darwin` check of the reposi
 
 - **WHEN** the operator runs the documented build-plan inspection command from the Linux host
 - **THEN** the inspection executes on the Darwin host over the tailnet SSH endpoint and reports its result to the Linux host
+- **AND** the SSH client's exit status equals the remote command's exit status
+
+#### Scenario: A remote gate fails
+
+- **WHEN** a gate on the Darwin host exits nonzero
+- **THEN** the Linux caller receives that nonzero status without a parsing wrapper or success fallback

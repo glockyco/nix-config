@@ -36,16 +36,17 @@ Each durable fleet host and temporary peer SHALL join one tailnet as a node with
 
 ### Requirement: Declared access policy
 
-The tailnet access policy SHALL be declared as repository data and rendered by the repository. The rendered policy SHALL permit every node to reach the Darwin host, the desktop, and the Air while the Air is declared. It SHALL permit the Linux host to reach those declared destinations. No rule SHALL name the Linux host as a destination. The rendered policy SHALL contain no e-mail address. The rendered policy SHALL contain Tailscale network tests that deny TCP port 22 to the Linux host from every other node and SSH tests that deny remote login to the Linux host. Renderer assertions SHALL prevent every access and SSH rule from naming the Linux host as a destination.
+The tailnet access policy SHALL be declared as repository data and rendered by the repository. The rendered policy SHALL permit every node to reach the Darwin host, the desktop, and the Air while the Air is declared. It SHALL permit the Linux host to reach those declared destinations. No rule SHALL name the Linux host as a destination. The rendered policy SHALL contain no e-mail address. The rendered policy SHALL contain Tailscale network tests that deny TCP port 22 to the Linux host from every other node. Renderer assertions SHALL prevent access rules from naming the Linux host as a destination. The policy SHALL contain no Tailscale SSH authorization; OpenSSH SHALL own SSH authentication.
 
 #### Scenario: Render the policy
 
 - **WHEN** the repository renders the policy
-- **THEN** the output is a valid policy document with one grant set, one SSH rule set, tag owners for every declared tag, and network and SSH tests
+- **THEN** the output is a valid policy document with one grant set, tag owners for every declared tag, and network tests
+- **AND** it contains no Tailscale SSH rules or SSH tests
 
 #### Scenario: A rule names the Linux host as a destination
 
-- **WHEN** the declared policy data lists the Linux host's tag as a destination in any grant or SSH rule
+- **WHEN** the declared policy data lists the Linux host's tag as a destination in any grant
 - **THEN** evaluation fails
 
 #### Scenario: A rule carries an e-mail address
@@ -56,8 +57,27 @@ The tailnet access policy SHALL be declared as repository data and rendered by t
 #### Scenario: Apply a reviewed policy
 
 - **WHEN** a pull request changes the policy data
-- **THEN** continuous integration renders the policy and runs the tailnet's policy tests without applying it
-- **AND** the merge to the main branch renders the policy again and applies it
+- **THEN** continuous integration renders the policy and runs the tailnet's policy tests with read-only provider authorization
+- **AND** a successful main push check permits deployment of that exact checked revision through a separate write identity
+- **AND** the write identity rejects PR-issued tokens and constrains the repository, main ref, and deployment workflow
+
+#### Scenario: Main protection
+
+- **WHEN** a change is proposed for main
+- **THEN** GitHub requires a pull request, current Linux and Darwin checks, and the live policy test from GitHub Actions
+- **AND** administrators cannot bypass those protections, create nonlinear history, force-push, or delete main under the configured protection
+
+#### Scenario: Overlapping policy deployments
+
+- **WHEN** multiple successful main checks request policy deployment
+- **THEN** apply jobs do not overlap or automatically cancel an in-progress apply
+- **AND** a checked revision that is no longer current main is not applied
+- **AND** failure to query current main fails the job rather than allowing the write
+
+#### Scenario: Failed native checks
+
+- **WHEN** the main check workflow fails, or the completed workflow was a PR check
+- **THEN** no policy apply is authorized by that completion event
 
 #### Scenario: Connect to the Linux host
 
@@ -83,28 +103,35 @@ A temporary peer SHALL serve only its declared short-term purpose. Durable build
 
 ### Requirement: Tailnet SSH access to the Darwin host
 
-The Darwin host SHALL accept SSH connections from the tailnet through the tailnet's SSH server and SHALL NOT run the platform SSH server. The Linux host SHALL connect as the Darwin host's interactive user without a prompt and without a client private key. The owner's other devices SHALL connect as that user only after re-authentication in check mode.
+The Darwin host SHALL accept SSH through a standard OpenSSH daemon bound only to its tailnet address. It SHALL disable Tailscale SSH and Apple's wildcard Remote Login listener. The Linux Nix daemon SHALL authenticate with a dedicated root-owned client key and verify the server against its declared OpenSSH public host key. SSH SHALL propagate the remote command's exit status without a wrapper.
 
 #### Scenario: Build client connects
 
 - **WHEN** the Linux host's Nix daemon opens an SSH connection to the Darwin host
-- **THEN** the session is authenticated by tailnet identity, runs as the Darwin host's interactive user, and requires no key file on the Linux host
+- **THEN** the dedicated key authenticates as the Darwin host's declared user without a prompt
+- **AND** the key permits command execution but not forwarding or PTY allocation
 
-#### Scenario: Owner connects from another declared device
+#### Scenario: An unapproved key connects
 
-- **WHEN** the owner connects from the desktop or another declared owner device
-- **THEN** the tailnet requires re-authentication within its check period before the session opens
+- **WHEN** a tailnet device attempts SSH without a declared authorized key
+- **THEN** authentication fails, even if tailnet policy permits its network connection
 
 #### Scenario: Host key verification
 
-- **WHEN** an SSH client on the Linux host connects to the Darwin host
-- **THEN** it verifies the host key against the key that the tailnet control plane distributes for that node
-- **AND** no host key literal exists in the repository
+- **WHEN** the server presents a key different from the declared OpenSSH host key
+- **THEN** the client refuses the connection without prompting or accepting the replacement
 
-#### Scenario: Remote Login stays off
+#### Scenario: Tailnet-only listening
 
-- **WHEN** the Darwin host configuration is inspected
-- **THEN** Apple's SSH server is not enabled
+- **WHEN** the configured SSH daemon runs
+- **THEN** it listens only on addresses resolved from the Mac's full MagicDNS name
+- **AND** neither Tailscale SSH nor Apple's wildcard Remote Login listener is enabled
+- **AND** failure to resolve or bind the tailnet address does not create a wildcard or LAN listener
+
+#### Scenario: Remote command fails
+
+- **WHEN** a remote command exits with status 23
+- **THEN** the native SSH client returns status 23
 
 ### Requirement: Darwin remote builder for the Linux host
 
