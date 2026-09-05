@@ -24,6 +24,7 @@ let
   absolute = evaluate {
     name = "absolute-host";
     username = "absolute-user";
+    build.logicalCores = 12;
     tailnet.tag = "tag:absolute-host";
     ompRuntime = {
       executable.absolute = "/opt/homebrew/bin/omp";
@@ -93,6 +94,7 @@ assert
   absolute == {
     name = "absolute-host";
     username = "absolute-user";
+    build.logicalCores = 12;
     tailnet = {
       tag = "tag:absolute-host";
       reachable = true;
@@ -106,6 +108,7 @@ assert
   homeRelative == {
     name = "relative-host";
     username = "relative-user";
+    build.logicalCores = null;
     tailnet = {
       tag = "tag:relative-host";
       reachable = true;
