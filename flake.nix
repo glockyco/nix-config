@@ -631,11 +631,22 @@
               macbookProTailnet =
                 let
                   darwinConfig = self.darwinConfigurations.macbook-pro.config;
+                  username = darwinConfig.host.username;
+                  authorizedKeysFile = "/var/lib/tailnet-sshd/authorized_keys/${username}";
+                  sshdConfig = darwinConfig.environment.etc."ssh/sshd_config_tailnet".text;
+                  sshdArguments = darwinConfig.launchd.daemons.tailnet-sshd.serviceConfig.ProgramArguments;
+                  activation = darwinConfig.system.activationScripts.extraActivation.text;
                 in
                 assert darwinConfig.services.tailscale.enable;
                 assert darwinConfig.services.tailscale.extraSetFlags == [ "--ssh=false" ];
                 assert darwinConfig.services.openssh.enable == false;
-                assert lib.elem darwinConfig.host.username darwinConfig.determinateNix.customSettings.trusted-users;
+                assert lib.elem username darwinConfig.determinateNix.customSettings.trusted-users;
+                assert !(builtins.hasAttr "ssh/authorized_keys.d/${username}" darwinConfig.environment.etc);
+                assert lib.hasInfix "AuthorizedKeysFile ${authorizedKeysFile}" sshdConfig;
+                assert lib.hasInfix "StrictModes yes" sshdConfig;
+                assert lib.hasInfix "/usr/bin/install -o root -g wheel -m 0444" activation;
+                assert lib.hasInfix authorizedKeysFile activation;
+                assert !(lib.elem "-e" sshdArguments);
                 pkgs.runCommand "check-macbook-pro-tailnet" { } "touch $out";
 
               darwinSystem = self.darwinConfigurations.macbook-pro.system;
