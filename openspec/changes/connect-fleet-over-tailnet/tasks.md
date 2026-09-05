@@ -96,4 +96,10 @@ PR #20 was rebase-merged as `75b2c7a568ea1e3d727774b76aef113c7712f78c`. PR #21 c
 - `nix build .#checks.aarch64-darwin.darwinSystem --no-link --json --print-build-logs` built through `ssh-ng://glockyco@macbook-pro`. The returned output was `/nix/store/mnmkzgl5kmhgbiya6dlnkwy8vy3l6wqi-darwin-system-26.05.c3e90c8`.
 - All-system checks passed on Korolev at `dd445b7`. All 22 Darwin check derivations matched native evaluation of that same revision. Native Darwin flake checks and the complete system build passed through the installed root SSH endpoint. The local Darwin commands and the SSH client returned status 0. The packaged build-plan guard reported 34 outputs with no forbidden source build.
 
-Tasks 4.6, 5.2, 6.5, 7.1, 7.3, and 7.4 remain open. No WSL restart, tailnet disconnection, LAN connection probe, or unmanaged-peer enrollment occurred during this acceptance run.
+Tasks 4.6, 5.2, 6.5, 7.1, 7.3, and 7.4 remained open after this initial acceptance run. No WSL restart, tailnet disconnection, LAN connection probe, or unmanaged-peer enrollment occurred during that run.
+
+### Subsequent WSL restart
+
+The owner subsequently restarted `NixOS` from Windows PowerShell and resumed OMP. The [WSL restart evidence](../../../docs/operations/wsl-omp-bootstrap.md#wsl-restart-evidence-2026-09-05) records the post-restart commands at unchanged revision `dd445b76ad2444dbea81b00af696554ecf136ce1`. The system reported `running` with no failed units. Resolved owns `/etc/resolv.conf` through its stub, retains Windows DNS upstream `10.255.255.254`, and supplies MagicDNS. Public resolution, Mac tailnet resolution, direct Tailscale ping, installed SSH access, the `nix-daemon` path, and remote exit status 23 passed without configuration changes.
+
+Task 5.2 remains unchecked only because an employer-specific hostname has not yet been supplied and tested. Do not repeat the restart or the passed checks merely to fill this remaining evidence gap. Tasks 4.6, 6.5, 7.1, 7.3, and 7.4 are unchanged.
