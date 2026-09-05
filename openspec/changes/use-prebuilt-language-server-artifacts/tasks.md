@@ -67,3 +67,27 @@ Each session read `README.md` and `lefthook.yml`, used OMP's edit tool to change
 The first launch attempts waited for EOF at `readPipedInput` because the supervisor held their input pipes open. They were stopped before acceptance operations. The corrected Linux launch used a terminal; the corrected remote launch used `ssh -n`. These were launcher corrections, not retries of failed editing or formatting checks. The Linux session also found that `OMP_PERSONAL_PLUGIN_PATH` was unset and used active process arguments to identify the loaded plugin instead.
 
 No implementation, dependency, configuration, activation, or network change occurred. This result does not complete task 4.3 or establish post-restart network behavior.
+
+### Existing HotRepl solution: 2026-09-05
+
+Fresh installed-wrapper sessions ran through each clone's existing `nix develop` environment and unmodified `HotRepl.slnx`. Linux used an isolated clone of HotRepl revision `7d9c49ed57f5436bf7b258207ea14236333b4ac6`; Darwin used an isolated clone of the existing Mac checkout at `85e1c456e56f9a413e168d691ee4ec3defd81298`. These are real-repository acceptance checks at different revisions, not a controlled same-revision platform comparison. Both used SDK `10.0.302` and OMP `18.1.10`. Before launch, `dotnet restore src/HotRepl.Core/HotRepl.Core.csproj --locked-mode` passed through each repository's development shell.
+
+The installed wrapper selected the Linux and Darwin plugin paths recorded under ordinary OMP use. The Mac session's summary incorrectly attributed another plugin path by tracing an existing shared worker broker's ancestry. The outer operator checked the explicitly launched installed wrapper, which still selects `95s3d51p2gzpslj2bgp7bn620lmszg1l-personal-omp-plugin-0.1.0`; the unrelated broker path is not evidence of this session's selected plugin.
+
+Each session changed only the `HostInfo.Name` initializer from `string.Empty` to `123` before its first language request. Both then used the actual OMP LSP tool for these seven sequential requests, without retrying failed requests:
+
+| Request                                     | Darwin                                   | Linux                                        |
+| ------------------------------------------- | ---------------------------------------- | -------------------------------------------- |
+| Initial diagnostics on `HostInfo.cs`        | CS0029 returned                          | Failed: only IDE0005 returned; CS0029 absent |
+| Definition from an existing Core type usage | Declaration found                        | Failed: no definition found                  |
+| References on `HostInfo`                    | 24 entries with cross-file uses          | 24 entries with cross-file uses              |
+| Rename `HostInfo` to `AcceptanceHostInfo`   | Declaration and cross-file edits applied | Declaration and cross-file edits applied     |
+| First post-rename diagnostics               | Original CS0029 retained                 | Original CS0029 retained                     |
+| Second scheduled post-rename diagnostics    | Original CS0029 retained                 | Original CS0029 retained                     |
+| Definition from the renamed usage           | Renamed declaration found                | Renamed declaration found                    |
+
+The Mac usage was `IReplHost.cs:20`; Linux used `Server/RuntimeHandshakeFactory.cs:14`. Both post-rename diagnostic requests also reported MA0048 because the type rename leaves the original filename. That observable analyzer error was preserved, not suppressed. No request cancellation or server restart was reported. The Linux session reported an `LSP mux describe failed` log entry; the experiment did not establish whether it caused either failed request.
+
+The outer operator inspected both final Git diffs. Each changed 13 files, retained the intentional invalid initializer, and contained the renamed declaration and cross-file type usages. The original working checkouts were not edited. Request outputs, final reports, exact revisions, diffs, and restored Core/Protocol asset records were preserved outside the clones before the outer operator removed both disposable checkouts. No full solution or game build was run, so this does not establish proprietary Unity/loader build readiness. It exercises the game-independent Core editing workflow through the real solution.
+
+Darwin passed 7/7 requests; Linux passed 5/7 and remains a failed acceptance result. The later Linux semantic results show that this solution loaded. They do not repair its initial failed requests or prove that the loose-project discovery defect caused this run. The pattern is consistent with startup readiness, but a complete causal explanation remains unverified. No package, server, protocol, project-structure, or workstation correction was selected. Task 4.3 stays open, and this change is not ready to archive.
