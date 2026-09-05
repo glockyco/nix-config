@@ -128,7 +128,13 @@ Fork PRs normally cannot access these repository secrets. Import reviewed fork c
 
 On 2026-09-05, the authenticated Tailscale console saved both separate identities with the scopes above. The deployment subject is `repo:glockyco@11704293/nix-config@1327005249:ref:refs/heads/main`; the PR subject is `repo:glockyco@11704293/nix-config@1327005249:pull_request`. Both restrict `repository_id` to `1327005249` and `repository_owner_id` to `11704293`, in addition to the claim table. Their persisted settings were reopened and inspected. All four identity/audience references were set in GitHub secrets; `TS_TAILNET` was retained.
 
-This proves configured provider restrictions, not live token exchange or deployment. PR write-denial, successful validation with the read-only identity, and actual checked-main deployment remain acceptance gates. Secret names alone do not establish those results.
+Live acceptance also passed on 2026-09-05:
+
+- [PR validation run 33960437444](https://github.com/glockyco/nix-config/actions/runs/33960437444) passed with the read-only identity. Policy writes received HTTP 403, and the deployment identity rejected the PR-issued token with HTTP 403. The PR apply job was skipped.
+- [Native main checks 33963089974](https://github.com/glockyco/nix-config/actions/runs/33963089974) passed for `dd445b76ad2444dbea81b00af696554ecf136ce1`. [Deployment run 33963623549](https://github.com/glockyco/nix-config/actions/runs/33963623549) followed those checks and selected that exact revision.
+- The deployment log reported the same live-control and rendered-policy digest: `9632358398c5eec87919d3b1d8d1e1a96654bbe9aa95ba0ad04c7530ec6ff71f`.
+
+The apply condition requires a successful main push check. No deliberately failed main workflow or deployment-queue saturation experiment was run.
 
 The pinned `actionlint` rejects `concurrency.queue`. GitHub's [current concurrency documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency) supports `queue: max` with active cancellation disabled. Keep the supported setting and require actual GitHub acceptance; do not filter validator errors or weaken the queue to manufacture a clean lint result.
 

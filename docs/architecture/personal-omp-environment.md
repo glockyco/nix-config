@@ -4,7 +4,7 @@
 
 Status: stable workstation base implemented; project migrations and controlled experiments remain planned.
 
-Last reviewed: 2026-09-04.
+Last reviewed: 2026-09-05.
 
 This document is the canonical cross-repository record for the personal OMP environment. It owns the target architecture, ownership boundaries, accepted decisions, experiment protocols, migration order, and cross-session recovery procedure.
 
@@ -48,6 +48,8 @@ Session transcripts, OMP memory, chat summaries, and issue comments are supporti
 | Evaluate frontend skills             | planned  | `omp-agent-setup` issue, then OpenSpec change when scheduled                                                            | stable base; memory disabled            |
 | Evaluate persistent memory           | planned  | `omp-agent-setup` issue, then OpenSpec change when scheduled                                                            | stable base; no optional frontend skill |
 | Remove the legacy OMP deployment     | complete | immutable plugin repository, removed global shims and managed payloads, and archived mutable-deployment planning record | verified workstation cutover            |
+
+The managed hosts now use the reviewed native OpenSSH builder path at `dd445b76ad2444dbea81b00af696554ecf136ce1`. Installed authentication, command status, key restrictions, live remote building, and matching cross-host Darwin derivations passed. Checked-main policy deployment and live-policy equality also passed. The [WSL runbook](../operations/wsl-omp-bootstrap.md#openssh-and-builder-acceptance-2026-09-05) records the evidence. `connect-fleet-over-tailnet` remains active for restart persistence, disconnected-builder recovery, LAN rejection, and unmanaged-peer acceptance.
 
 HotRepl is the next migration. Erenshor may proceed independently on the stable workstation base. Planned experiments remain issues until their dependencies are complete. OpenSpec active changes are not a parking lot.
 
