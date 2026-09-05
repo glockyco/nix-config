@@ -17,8 +17,8 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run the focused package, wrapper-shape, Markdown smoke, C# smoke, and Darwin build-plan checks on their native systems and confirm no build plan reaches a source-built Markdown Oxide or Roslyn derivation.
-- [ ] 4.2 Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the applicable native hosts.
+- [x] 4.1 Run the focused package, wrapper-shape, Markdown smoke, C# smoke, and Darwin build-plan checks on their native systems and confirm no build plan reaches a source-built Markdown Oxide or Roslyn derivation.
+- [x] 4.2 Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the applicable native hosts.
 - [ ] 4.3 After review and merge, activate the Darwin generation and run the documented C# and Markdown language smoke through the wrapped OMP environment; keep the previous generation until both pass.
 
 ## Acceptance evidence: 2026-09-05
@@ -31,4 +31,12 @@ A sequential Linux reproduction used a transparent protocol relay around the unc
 
 The trace also captured an initial diagnostic cancellation before project loading completed. OMP cancelled the pull after approximately 3.6 seconds; project loading took approximately 20.9 seconds.
 
-The initial conclusion that a new OMP client change was required was too narrow. Roslyn already fixed whole-document updates in PR #84714. The user approved selecting official package `5.12.0-1.26426.8`, whose source contains that fix, without changing OMP. Repeat gates 4.1 and 4.2 for the new pin, including post-edit diagnostics and cold-start behavior. Keep 4.3 open until review, merge, and activation acceptance. Do not add a retry wrapper, suppress errors, or patch the platform-owned executable. No host activation or merge has occurred for this change.
+The initial conclusion that a new OMP client change was required was too narrow. Roslyn already fixed whole-document updates in PR #84714. The user approved selecting official package `5.12.0-1.26426.8`, whose source contains that fix, without changing OMP. The new pin passed the acceptance below, including post-edit diagnostics and cold-start behavior. Keep 4.3 open until review, merge, and activation acceptance. Do not add a retry wrapper, suppress errors, or patch the platform-owned executable. No host activation or merge has occurred for this change.
+
+### Compatible artifact acceptance
+
+Revision `e7a7b310e26f3e7b9e3d3261f1d76c5d68d5effa` selects Roslyn `5.12.0-1.26426.8` without changing OMP, the .NET 10 runtime, or the package layout. The existing native check now initializes Roslyn, opens a C# document, sends a whole-document replacement, and requires the updated symbol from the same process. The old payload fails after the replacement. The selected payload passes on both supported systems. This check needs no SDK.
+
+Fresh wrapped sessions passed Markdown and C# diagnostics, definition, references, and rename on both Linux and Darwin. Each session also returned the original C# compiler error on two sequential post-rename diagnostic requests, then resolved the renamed symbol. No request failed or required a retry, and no restart was reported. No startup or cache warning appeared in the tool output. Direct file checks confirmed the expected LSP edits and preserved both intentional errors. The disposable fixtures were removed.
+
+The all-system flake check passed on Linux. All four release commands passed natively on Darwin at that revision. The build-plan guard inspected 34 outputs without a forbidden source build, and the full Darwin system built successfully. Gate 4.3 remains open: review, merge, activation, and the activated wrapped-session smoke have not occurred.
