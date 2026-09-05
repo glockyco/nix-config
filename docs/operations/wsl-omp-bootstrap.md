@@ -656,7 +656,7 @@ The owner confirmed termination and reopening of the `NixOS` distribution from a
 
 Before the restart, resolved reported `resolv.conf mode: foreign`. After the restart, its stub file owns resolver access and Windows DNS tunneling remains the upstream. No activation, DNS edit, or Tailscale re-enrollment was needed.
 
-Task 5.2 is complete. The owner clarified that employer-internal DNS is not used from WSL; the employer-hostname check is not applicable. This is not a claim that internal employer resolution was tested. The other deferred fleet and isolation gates remain unchanged.
+Task 5.2 is complete. The owner clarified that employer-internal DNS is not used from WSL; the employer-hostname check is not applicable. This is not a claim that internal employer resolution was tested. The optional fleet gates remain deferred. The subsequent live SSH isolation check passed: Korolev's TCP 22 connection to the Mac LAN address timed out, while the Mac tailnet address returned an OpenSSH banner. The Mac's TCP 22 connection to Korolev's tailnet address also timed out. Each negative probe used a five-second timeout. These checks caused no network interruption or configuration change and establish only the tested SSH reachability boundaries. Task 4.6 is complete.
 
 ### Accepted evidence: 2026-09-03
 
