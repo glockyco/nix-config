@@ -6,7 +6,6 @@
   managedHosts,
   peers,
   grantDestinations ? null,
-  sshRules ? null,
 }:
 
 let
@@ -18,12 +17,9 @@ let
       throw "managed host `${name}` omits host.tailnet.tag"
     else if !validTag host.tailnet.tag then
       throw "managed host `${name}` has an invalid tailnet tag"
-    else if !(host ? username) then
-      throw "managed host `${name}` omits its username"
     else
       {
         inherit name;
-        inherit (host) username;
         inherit (host.tailnet) tag;
         reachable = host.tailnet.reachable or true;
       };
@@ -67,30 +63,11 @@ let
     else
       throw "tailnet policy requires managed host `${name}`";
 
-  macbookPro = findHost "macbook-pro";
   korolev = findHost "korolev";
   unreachableTags = map (entry: entry.tag) (builtins.filter (entry: !entry.reachable) hostEntries);
   reachableTags = map (entry: entry.tag) (builtins.filter (entry: entry.reachable) entries);
 
   selectedGrantDestinations = if grantDestinations == null then reachableTags else grantDestinations;
-  selectedSshRules =
-    if sshRules == null then
-      [
-        {
-          action = "accept";
-          src = [ korolev.tag ];
-          dst = [ macbookPro.tag ];
-          users = [ macbookPro.username ];
-        }
-        {
-          action = "check";
-          src = [ "autogroup:member" ];
-          dst = [ macbookPro.tag ];
-          users = [ macbookPro.username ];
-        }
-      ]
-    else
-      sshRules;
 
   policy = {
     tagOwners = builtins.listToAttrs (
@@ -108,29 +85,14 @@ let
       }
     ];
 
-    ssh = selectedSshRules;
-
     tests = map (tag: {
       src = tag;
       proto = "tcp";
       deny = [ "${korolev.tag}:22" ];
     }) reachableTags;
-
-    sshTests = [
-      {
-        src = korolev.tag;
-        dst = [ macbookPro.tag ];
-        accept = [ macbookPro.username ];
-      }
-      {
-        src = macbookPro.tag;
-        dst = [ korolev.tag ];
-        deny = [ macbookPro.username ];
-      }
-    ];
   };
 
-  ruleDestinations = lib.concatMap (rule: rule.dst or [ ]) (policy.grants ++ policy.ssh);
+  ruleDestinations = lib.concatMap (rule: rule.dst or [ ]) policy.grants;
   unreachableDestinations = builtins.filter (tag: builtins.elem tag unreachableTags) ruleDestinations;
   unknownDestinations = builtins.filter (tag: !(builtins.elem tag tags)) ruleDestinations;
   rendered = builtins.toJSON policy;
@@ -142,6 +104,7 @@ assert tags != [ ];
 assert builtins.length tags == builtins.length (lib.unique tags);
 assert unreachableDestinations == [ ];
 assert unknownDestinations == [ ];
+assert !(lib.hasInfix "@" (builtins.toJSON { inherit managedHosts peers; }));
 assert !(lib.hasInfix "@" rendered);
 runCommand "tailnet-policy"
   {

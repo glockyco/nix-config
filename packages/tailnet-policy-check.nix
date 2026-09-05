@@ -9,38 +9,50 @@
 }:
 
 let
-  expectedSources = lib.naturalSort tailnetPolicy.reachableTags;
-  testSources = lib.naturalSort (map (test: test.src) tailnetPolicy.policy.tests);
+  airlessPeers = removeAttrs peers [ "macbook-air" ];
   airlessPolicy = tailnetPolicyRenderer {
     inherit managedHosts;
-    peers = removeAttrs peers [ "macbook-air" ];
+    peers = airlessPeers;
   };
-  expectedSourcesJson = builtins.toJSON expectedSources;
+  hostTags = map (host: host.tailnet.tag) (builtins.attrValues managedHosts);
+  reachableHostTags = map (host: host.tailnet.tag) (
+    builtins.filter (host: host.tailnet.reachable) (builtins.attrValues managedHosts)
+  );
+  peerTags = declaredPeers: map (peer: peer.tag) (builtins.attrValues declaredPeers);
+  expectedTags = declaredPeers: builtins.toJSON (hostTags ++ peerTags declaredPeers);
+  expectedReachable = declaredPeers: builtins.toJSON (reachableHostTags ++ peerTags declaredPeers);
 in
-assert testSources == expectedSources;
-assert lib.all (
-  test: test.proto == "tcp" && test.deny == [ "tag:korolev:22" ]
-) tailnetPolicy.policy.tests;
-assert !(lib.hasInfix "tag:macbook-air" airlessPolicy.rendered);
 runCommand "check-tailnet-policy"
   {
     nativeBuildInputs = [ jq ];
   }
   ''
-    policy=${tailnetPolicy}/policy.hujson
-    airless_policy=${airlessPolicy}/policy.hujson
+    check_policy() {
+      jq -e --argjson tags "$2" --argjson reachable "$3" '
+        (has("ssh") | not)
+        and (has("sshTests") | not)
+        and ((.tagOwners | keys | sort) == ($tags | sort))
+        and all(.tagOwners[]; . == ["autogroup:admin"])
+        and (.grants | length == 1)
+        and (.grants[0].src == ["*"] and .grants[0].ip == ["*"])
+        and ((.grants[0].dst | sort) == ($reachable | sort))
+        and all(.grants[].dst[]; . != "tag:korolev")
+        and (([.tests[].src] | sort) == ($reachable | sort))
+        and all(.tests[]; .proto == "tcp" and .deny == ["tag:korolev:22"])
+        and ([.. | strings] | all(contains("@") | not))
+      ' "$1" >/dev/null
+    }
 
-    jq -e . "$policy" >/dev/null
-    jq -e '
-      ([.grants[].dst[], .ssh[].dst[]] | all(. != "tag:korolev"))
-      and all(.tests[]; .proto == "tcp" and .deny == ["tag:korolev:22"])
-    ' "$policy" >/dev/null
-    jq -e --argjson expected ${lib.escapeShellArg expectedSourcesJson} '
-      ([.tests[].src] | sort) == ($expected | sort)
-    ' "$policy" >/dev/null
+    check_policy ${tailnetPolicy}/policy.hujson \
+      ${lib.escapeShellArg (expectedTags peers)} \
+      ${lib.escapeShellArg (expectedReachable peers)}
+    check_policy ${airlessPolicy}/policy.hujson \
+      ${lib.escapeShellArg (expectedTags airlessPeers)} \
+      ${lib.escapeShellArg (expectedReachable airlessPeers)}
 
-    jq -e . "$airless_policy" >/dev/null
-    if jq -e '.. | strings | select(contains("tag:macbook-air"))' "$airless_policy" >/dev/null; then
+    if jq -e '.. | strings | select(contains("tag:macbook-air"))' \
+      ${airlessPolicy}/policy.hujson >/dev/null
+    then
       echo 'Airless policy retained tag:macbook-air' >&2
       exit 1
     fi
