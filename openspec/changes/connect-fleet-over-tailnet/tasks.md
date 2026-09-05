@@ -52,10 +52,10 @@
 ## 7. Retire `.local`
 
 - [ ] 7.1 Install and authenticate the Tailscale application on the temporary Air as `macbook-air` with `tag:macbook-air` and on the durable desktop with `tag:desktop`. Confirm that both appear in `tailscale status` on the Mac.
-- [ ] 7.2 Change `modules/home/darwin/ssh.nix` to `HostName = "macbook-air"`, and confirm with `ssh -G air` and `ssh -G air-batch` that both resolve `hostname macbook-air` and keep their existing transport policy.
+- [x] 7.2 Change `modules/home/darwin/ssh.nix` to `HostName = "macbook-air"`, and confirm with `ssh -G air` and `ssh -G air-batch` that both resolve `hostname macbook-air` and keep their existing transport policy.
 - [ ] 7.3 Change `modules/home/darwin/network-shares.nix` to the tailnet name and the peer-state reachability probe, activate, and confirm that `~/Air` resolves while the Air is online and that the agent exits 0 without mounting while it is offline.
 - [ ] 7.4 Update `packages/air-batch-config-check.nix` and `packages/air-batch-check-tests.nix` to the new name, run `air-batch-check`, and confirm that all four probes pass over the tailnet.
-- [ ] 7.5 Confirm that no file under `modules/`, `packages/`, `hosts/`, or `docs/` contains a `.local` host suffix or the legacy Air mDNS host name.
+- [x] 7.5 Confirm that no file under `modules/`, `packages/`, `hosts/`, or `docs/` contains a `.local` host suffix or the legacy Air mDNS host name.
 - [x] 7.6 Create a planning issue titled `Retire borrowed Air after research-result retrieval`. Require preserved thesis and TOSEM results, node revocation before return, removal of the tag and policy entries, removal of SSH and SMB configuration and credentials, and removal of the Air role and declaration. Confirm the issue has the `planning` label and links the temporary peer declaration.
 
 ## 8. Verify the Complete Change
