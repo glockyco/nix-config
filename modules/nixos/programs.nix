@@ -60,6 +60,7 @@ in
   # Tailscale SSH host keys from the authenticated control-plane state.
   programs.ssh.extraConfig = ''
     Host macbook-pro
+      User ${macHost.username}
       KnownHostsCommand ${lib.getExe tailnetKnownHosts} %H
       BatchMode yes
       ConnectTimeout 8
