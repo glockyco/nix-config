@@ -10,14 +10,14 @@ The Air is a borrowed research machine. It remains available for a few months so
 
 ## What Changes
 
-- Join the three durable machines and the temporary Air peer to one Tailscale tailnet as tagged nodes: `tag:macbook-pro`, `tag:korolev`, `tag:desktop`, and `tag:air`. MagicDNS names replace every `.local` name. The Air peer declaration records its temporary lifecycle and research-results purpose.
+- Join the three durable machines and the temporary Air peer to one Tailscale tailnet as tagged nodes: `tag:macbook-pro`, `tag:korolev`, `tag:desktop`, and `tag:macbook-air`. MagicDNS names replace every `.local` name. The Air peer declaration records its temporary lifecycle and research-results purpose.
 - Declare the tailnet policy as Nix data and render it as a package. Grants allow every node to reach the Mac, the Air, and the desktop, and allow `korolev` to reach all three. No grant names `korolev` as a destination. Evaluation asserts that invariant, and the policy carries Tailscale `tests` and `sshTests` that assert it again at apply time.
 - Apply the rendered policy through Tailscale's GitOps action: `test` on pull requests, `apply` on `main`, authenticated with a federated identity so the repository stores no long-lived credential. The policy contains no e-mail address, because this repository is public.
 - Run Tailscale SSH on the Mac through the open-source `tailscaled` that nix-darwin installs. Apple's `sshd` stays off. Access rules permit `tag:korolev` to connect as `glockyco` without a prompt and permit the owner's other devices to connect as `glockyco` in check mode.
 - Make `korolev` a Nix remote-build client of the Mac with `nix.buildMachines` over the `ssh-ng` protocol, with no SSH private key. Host keys come from the control plane through a packaged `KnownHostsCommand` program. `korolev` enables `systemd-resolved` and stops WSL from regenerating `resolv.conf`, so MagicDNS can be installed declaratively.
 - Keep `korolev` unreachable: no inbound service, `--shields-up`, Taildrop disabled, firewall closed. The `korolevIsolation` check asserts the new declarations.
 - Keep `glockyco` in the Mac's `trusted-users` with the correct rationale: a remote builder imports unsigned store paths.
-- Point the Air's interactive and batch SSH endpoints and its SMB mount at the tailnet name `air`. Remove every `.local` literal and the mDNS reachability probe. Keep all Air-specific access behind one removable peer declaration.
+- Point the Air's interactive and batch SSH endpoints and its SMB mount at the tailnet name `macbook-air`. Remove every `.local` literal and the mDNS reachability probe. Keep all Air-specific access behind one removable peer declaration.
 - Document and track Air offboarding: preserve the required research results, revoke the node before returning the machine, delete its tag and policy entries, remove its SSH and SMB configuration, and remove its local credentials. No durable gate or workflow may depend on the Air.
 - Add a packaged live check that builds a trivial `aarch64-darwin` derivation from `korolev` and proves that the Mac built it.
 - Record the reversed isolation decision, the tailnet ownership boundary, and the node-join procedure in the architecture document and the `korolev` runbook.

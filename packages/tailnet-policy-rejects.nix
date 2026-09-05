@@ -44,13 +44,13 @@ let
 
   missingLifecycle = force (render {
     peers = peers // {
-      air = removeAttrs peers.air [ "lifecycle" ];
+      macbook-air = removeAttrs peers.macbook-air [ "lifecycle" ];
     };
   });
 
   missingPurpose = force (render {
     peers = peers // {
-      air = removeAttrs peers.air [ "purpose" ];
+      macbook-air = removeAttrs peers.macbook-air [ "purpose" ];
     };
   });
 in

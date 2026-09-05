@@ -16,7 +16,7 @@
 - [x] 3.2 Add the `tests` and `sshTests` blocks and confirm that the rendered file names every reachable tag as a source that must be denied TCP `tag:korolev:22`. The renderer assertion covers every port because no access or SSH rule may name `tag:korolev` as a destination; Tailscale policy tests require one numeric port per destination.
 - [x] 3.3 Add the `tailnetPolicy` check and confirm that `nix build .#checks.x86_64-linux.tailnetPolicy` passes.
 - [x] 3.4 Add `tailnetPolicyRejects` with fixtures that name `korolev` as a destination, contain an `@`, and omit a temporary peer's lifecycle or purpose. Confirm every rejection, then remove one renderer assertion temporarily and confirm the check fails before reverting the probe.
-- [x] 3.5 Add a policy fixture without the temporary Air peer. Confirm that no tag owner, grant, SSH rule, or test names `tag:air` and that every durable topology invariant passes.
+- [x] 3.5 Add a policy fixture without the temporary Air peer. Confirm that no tag owner, grant, SSH rule, or test names `tag:macbook-air` and that every durable topology invariant passes.
 - [x] 3.6 Add `.github/workflows/tailnet-policy.yml` with `test` on pull requests and `apply` on `main`, using the federated identity and `policy-file: result/policy.hujson`; open a pull request and confirm that the `test` job passes against the live tailnet.
 - [x] 3.7 Merge and confirm in the admin console that the applied policy equals the rendered file and that the tests block passed.
 
@@ -51,11 +51,11 @@
 
 ## 7. Retire `.local`
 
-- [ ] 7.1 Install and authenticate the Tailscale application on the temporary Air with `tag:air` and on the durable desktop with `tag:desktop`. Confirm that both appear in `tailscale status` on the Mac.
-- [ ] 7.2 Change `modules/home/darwin/ssh.nix` to `HostName = "air"`, and confirm with `ssh -G air` and `ssh -G air-batch` that both resolve `hostname air` and keep their existing transport policy.
+- [ ] 7.1 Install and authenticate the Tailscale application on the temporary Air as `macbook-air` with `tag:macbook-air` and on the durable desktop with `tag:desktop`. Confirm that both appear in `tailscale status` on the Mac.
+- [ ] 7.2 Change `modules/home/darwin/ssh.nix` to `HostName = "macbook-air"`, and confirm with `ssh -G air` and `ssh -G air-batch` that both resolve `hostname macbook-air` and keep their existing transport policy.
 - [ ] 7.3 Change `modules/home/darwin/network-shares.nix` to the tailnet name and the peer-state reachability probe, activate, and confirm that `~/Air` resolves while the Air is online and that the agent exits 0 without mounting while it is offline.
 - [ ] 7.4 Update `packages/air-batch-config-check.nix` and `packages/air-batch-check-tests.nix` to the new name, run `air-batch-check`, and confirm that all four probes pass over the tailnet.
-- [ ] 7.5 Confirm that no file under `modules/`, `packages/`, `hosts/`, or `docs/` contains `.local` as a host suffix or the string `MacBook-Air-von-ISYS`.
+- [ ] 7.5 Confirm that no file under `modules/`, `packages/`, `hosts/`, or `docs/` contains a `.local` host suffix or the legacy Air mDNS host name.
 - [x] 7.6 Create a planning issue titled `Retire borrowed Air after research-result retrieval`. Require preserved thesis and TOSEM results, node revocation before return, removal of the tag and policy entries, removal of SSH and SMB configuration and credentials, and removal of the Air role and declaration. Confirm the issue has the `planning` label and links the temporary peer declaration.
 
 ## 8. Verify the Complete Change
