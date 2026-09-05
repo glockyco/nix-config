@@ -225,9 +225,13 @@ tailscale debug prefs
 sudo systemsetup -getremotelogin
 sudo launchctl print system/org.nixos.tailnet-sshd
 sudo lsof -nP -a -c sshd -iTCP:22 -sTCP:LISTEN
+sudo /usr/bin/stat -f '%Sp %Su:%Sg %N' \
+  /var/lib/tailnet-sshd /var/lib/tailnet-sshd/authorized_keys \
+  /var/lib/tailnet-sshd/authorized_keys/glockyco
+sudo realpath /var/lib/tailnet-sshd/authorized_keys/glockyco
 ```
 
-`RunSSH` must be false and Remote Login must be off. The dedicated `org.nixos.tailnet-sshd` service runs native OpenSSH; every listening address must belong to the Mac's tailnet interface. Apple's Remote Login listener is not a substitute: its launchd socket ignores `ListenAddress`. Confirm public-key/PAM login on this root service; an unprivileged smoke server does not prove this boundary.
+`RunSSH` must be false and Remote Login must be off. The dedicated `org.nixos.tailnet-sshd` service runs native OpenSSH; every listening address must belong to the Mac's tailnet interface. The authorization file must be a regular `root:wheel` file, its directories must be `root:wheel` with mode `755`, and its canonical path must remain under `/var/lib/tailnet-sshd` rather than enter `/nix/store`. Apple's Remote Login listener is not a substitute: its launchd socket ignores `ListenAddress`. Confirm public-key/PAM login on this root service; an unprivileged smoke server does not prove this boundary.
 
 Activate the WSL client with its existing credential. Inspect root's effective configuration and test native status propagation:
 
@@ -239,7 +243,12 @@ printf 'SSH status: %s\n' "$?"
 tailnet-builder-check
 ```
 
-The client must select the dedicated identity, strict host checking, identities-only, batch mode, an eight-second connection timeout, and no multiplexing. The daemon command must be `/nix/var/nix/profiles/default/bin/nix-daemon`, and the status probe must print `SSH status: 23`. The builder check must report `arm64`, `macbook-pro`, the measured Tailscale path, and `passed` from a fresh remote build.
+The client must select the dedicated identity, strict host checking, identities-only, batch mode, an eight-second connection timeout, and no multiplexing. The daemon command must be `/nix/var/nix/profiles/default/bin/nix-daemon`, and the status probe must print `SSH status: 23`. The builder check must report `arm64`, `macbook-pro`, the measured Tailscale path, and `passed` from a fresh remote build. If authentication fails, collect the Mac's native daemon messages without changing its log level:
+
+```sh
+sudo /usr/bin/log show --last 10m --style compact --info \
+  --predicate 'process BEGINSWITH "sshd"'
+```
 
 The restricted key cannot allocate a PTY or forward ports. It can run arbitrary commands as the Mac's declared user, who is trusted by Nix to import unsigned paths. Treat a compromised key accordingly: remove its public authorization, replace the private key locally, and review the new public key. `restrict` is not a command sandbox.
 

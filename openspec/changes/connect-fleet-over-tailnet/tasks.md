@@ -30,6 +30,7 @@
 - [ ] 4.5 After review and merge, activate from a local Mac administrator session. Confirm `RunSSH` is false, Apple Remote Login is off, the dedicated daemon listens only on tailnet addresses, authentication works, and `ssh ... 'exit 23'` returns 23. Verify the root daemon and PAM boundary rather than substituting an unprivileged smoke.
 - [ ] 4.6 Confirm a LAN connection cannot reach the new SSH listener and the Mac still cannot initiate access to `korolev`. Use a local recovery path for any network interruption.
 - [x] 4.7 Retain the authenticated-state runner and verify it applies `--ssh=false` after `Running`, retries real failures, and never passes unsupported `--advertise-tags` to `tailscale set`.
+- [x] 4.8 Materialize the Darwin authorized-key file outside the Nix store, retain `StrictModes`, restore captured authentication logging, and verify the generated daemon cannot regress to a store-backed authorization path.
 
 ## 5. Linux Host
 

@@ -103,12 +103,13 @@ A temporary peer SHALL serve only its declared short-term purpose. Durable build
 
 ### Requirement: Tailnet SSH access to the Darwin host
 
-The Darwin host SHALL accept SSH through a standard OpenSSH daemon bound only to its tailnet address. It SHALL disable Tailscale SSH and Apple's wildcard Remote Login listener. The Linux Nix daemon SHALL authenticate with a dedicated root-owned client key and verify the server against its declared OpenSSH public host key. SSH SHALL propagate the remote command's exit status without a wrapper.
+The Darwin host SHALL accept SSH through a standard OpenSSH daemon bound only to its tailnet address. It SHALL disable Tailscale SSH and Apple's wildcard Remote Login listener. The Linux Nix daemon SHALL authenticate with a dedicated root-owned client key and verify the server against its declared OpenSSH public host key. The Darwin authorization file SHALL be a regular root-owned file outside the Nix store, and its canonical parent directories SHALL satisfy OpenSSH strict-mode permissions. SSH SHALL propagate the remote command's exit status without a wrapper.
 
 #### Scenario: Build client connects
 
 - **WHEN** the Linux host's Nix daemon opens an SSH connection to the Darwin host
 - **THEN** the dedicated key authenticates as the Darwin host's declared user without a prompt
+- **AND** the server reads it from a regular root-owned authorization file whose canonical path does not enter the Nix store
 - **AND** the key permits command execution but not forwarding or PTY allocation
 
 #### Scenario: An unapproved key connects
