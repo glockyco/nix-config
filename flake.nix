@@ -475,6 +475,9 @@
                 assert !korolevConfig.services.tailscale.openFirewall;
                 assert korolevConfig.services.tailscale.disableTaildrop;
                 assert korolevConfig.services.tailscale.extraSetFlags == [ "--shields-up" ];
+                assert lib.hasInfix "/bin/tailscale-set-after-login --shields-up" (
+                  toString korolevConfig.systemd.services.tailscaled-set.script
+                );
                 assert korolevConfig.nix.distributedBuilds;
                 assert builtins.length korolevBuildMachines == 1;
                 assert korolevBuildMachine.hostName == "macbook-pro";
