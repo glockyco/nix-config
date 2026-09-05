@@ -1,6 +1,6 @@
 ## Superseded — 2026-09-05
 
-[simplify-repository-documentation](../simplify-repository-documentation/proposal.md) replaces this cleanup approach. Do not execute this change or merge its unimplemented specification delta.
+[simplify-repository-documentation](../archive/2026-09-05-simplify-repository-documentation/proposal.md) replaces this cleanup approach. Do not execute this change or merge its unimplemented specification delta.
 
 The former approach required five new changes, a disposition ledger, live Fastmail verification, and a planning-policy check. None is required by the replacement. Historical unchecked tasks remain unimplemented in `tasks.md`.
 

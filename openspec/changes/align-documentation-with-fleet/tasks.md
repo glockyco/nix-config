@@ -1,6 +1,6 @@
 ## Superseded — 2026-09-05
 
-[simplify-repository-documentation](../simplify-repository-documentation/proposal.md) replaces this approach. Do not execute these tasks. Every original task identifier remains unchecked and unimplemented. Overlap with work in the replacement does not complete this proposal.
+[simplify-repository-documentation](../archive/2026-09-05-simplify-repository-documentation/proposal.md) replaces this approach. Do not execute these tasks. Every original task identifier remains unchecked and unimplemented. Overlap with work in the replacement does not complete this proposal.
 
 The list summarizes historical scope, not current commands. Former paths identify historical targets. The architecture manual is removed, but the legacy planning tree remains intact. Unique unresolved intent remains in [design.md](design.md#retained-intent). The specification deltas must not be merged or archived as accepted.
 

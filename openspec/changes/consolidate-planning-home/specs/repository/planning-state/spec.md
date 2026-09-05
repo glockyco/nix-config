@@ -1,6 +1,6 @@
 ## Superseded proposal
 
-This delta remains unimplemented. [simplify-repository-documentation](../../../../simplify-repository-documentation/proposal.md) replaces the cleanup approach. The focused-owner migration and policy enforcement below are historical proposals, not current requirements. Do not merge or archive this delta as accepted.
+This delta remains unimplemented. [simplify-repository-documentation](../../../../archive/2026-09-05-simplify-repository-documentation/proposal.md) replaces the cleanup approach. The focused-owner migration and policy enforcement below are historical proposals, not current requirements. Do not merge or archive this delta as accepted.
 
 ## Purpose
 
