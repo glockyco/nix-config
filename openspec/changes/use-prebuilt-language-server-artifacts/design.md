@@ -53,7 +53,9 @@ The version change is accepted only after the existing C# language smoke exercis
 
 Extend the Darwin build-plan guard's forbidden derivation pattern to match the Nixpkgs source-built `markdown-oxide` and `roslyn-ls` derivations. Name the repository packages as binary packages so the guard distinguishes fixed-output extraction from application compilation.
 
-Add positive controls for both Nixpkgs application derivations, beside the existing .NET and Swift controls. A renamed upstream derivation must fail the control instead of silently weakening the gate. Continue enumerating all Darwin checks, packages, and development shells from flake outputs.
+Use direct source-derivation controls for .NET VMR, its stage0 VMR, unwrapped Swift, Markdown Oxide, and Roslyn. Each control must match its own derivation name through the shared detector. Dependencies from another forbidden class must not hide a missing detector branch. A renamed upstream derivation must fail its control.
+
+The app receives `self.outPath` and inspects that immutable snapshot regardless of its working directory. Resolve the selected Nixpkgs input through the lock graph's root input, not a fixed node name. Evaluate control derivations at runtime so the app does not retain their compiler closures. Continue enumerating all Darwin checks, packages, and development shells from that snapshot. Propagate store-query and inspection errors; only a successful inspection with no match is a clean result.
 
 ### Preserve one language-server selection point
 

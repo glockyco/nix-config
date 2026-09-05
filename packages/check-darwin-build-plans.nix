@@ -1,6 +1,6 @@
 {
   coreutils,
-  flakeSource ? ../.,
+  flakeSource,
   gnugrep,
   jq,
   writeShellApplication,
@@ -29,7 +29,12 @@ writeShellApplication {
   ];
 
   text = ''
-    flake_ref=${flakeSource}
+    if [ "$#" -ne 0 ]; then
+      echo "usage: check-darwin-build-plans (checks its packaged flake snapshot)" >&2
+      exit 64
+    fi
+
+    flake="path:${flakeSource}"
 
     if ! command -v nix >/dev/null 2>&1; then
       echo "check-darwin-build-plans: nix is required and is not on PATH." >&2
@@ -51,39 +56,47 @@ writeShellApplication {
     # derivation name. The controls below prove that every branch still bites.
     pattern='-(dotnet-vmr|dotnet-stage0-vmr|swift|markdown-oxide|roslyn-ls)-[0-9]'
 
-    # The controls need the Nixpkgs this repository pins. Read it from the lock
-    # rather than evaluating the flake from inside itself: `builtins.getFlake`
-    # on a Git reference wants `revCount`, and a CI checkout is shallow.
-    # Interpolating the derivations at build time is worse still, because the
-    # store then has to hold their input closures, which is gigabytes.
-    nixpkgs_type="$(jq -r '.nodes.nixpkgs.locked.type' "$flake_ref/flake.lock")"
-
-    case "$nixpkgs_type" in
-      tarball)
-        nixpkgs="tarball+$(jq -r '.nodes.nixpkgs.locked.url' "$flake_ref/flake.lock")"
-        ;;
-      *)
-        echo "check-darwin-build-plans: the nixpkgs lock entry is of type '$nixpkgs_type'." >&2
-        echo "This app cannot turn that into a flake reference. Teach it the new form" >&2
-        echo "rather than leaving the controls unchecked." >&2
-        exit 1
-        ;;
-    esac
+    # Use the root input, not an unrelated Nixpkgs node in the same lock.
+    # Resolve controls at runtime so this app does not retain their input closures.
+    nixpkgs="$(jq -er '
+      .nodes as $nodes
+      | $nodes[$nodes[.root].inputs.nixpkgs].locked
+      | if .type == "tarball" then
+          "tarball+\(.url)?narHash=\(.narHash | @uri)"
+        else
+          error("check-darwin-build-plans: unsupported root nixpkgs lock type: \(.type)")
+        end
+    ' '${flakeSource}/flake.lock')"
 
     hits() {
-      # `--` because the pattern starts with a dash.
-      nix-store --query --requisites "$1" 2>/dev/null | grep -E -- "$pattern" || true
+      local requisites status
+      requisites="$(nix-store --query --requisites "$1")" || return "$?"
+
+      # Only grep's no-match status is success. Store and inspection errors fail.
+      if printf '%s\n' "$requisites" | grep -E -- "$pattern"; then
+        return 0
+      else
+        status=$?
+        if [ "$status" -eq 1 ]; then
+          return 0
+        fi
+        return "$status"
+      fi
     }
 
-    # A detector that silently stops matching is worse than no detector, because
-    # it reports success forever. Prove it still recognises each forbidden build
-    # before trusting anything it says about this repository.
+    # Match each source derivation itself. A dependency from another forbidden
+    # class must not hide a missing pattern, particularly in Roslyn's closure.
     controls_failed=0
-    for control in dotnetCorePackages.sdk_8_0 swift markdown-oxide roslyn-ls; do
+    for control in \
+      dotnetCorePackages.dotnet_8.vmr \
+      dotnetCorePackages.dotnet_8.vmr.stage0.vmr \
+      swiftPackages.swift-unwrapped \
+      markdown-oxide \
+      roslyn-ls; do
       control_drv="$(nix eval --raw "$nixpkgs#legacyPackages.$system.$control.drvPath")"
 
-      if [ -z "$(hits "$control_drv")" ]; then
-        echo "control failed: $control no longer matches the detection pattern." >&2
+      if ! printf '%s\n' "''${control_drv##*/}" | grep -E -- "$pattern" >/dev/null; then
+        echo "control failed: $control ($control_drv) does not match the detection pattern." >&2
         controls_failed=1
       fi
     done
@@ -100,21 +113,21 @@ writeShellApplication {
     violations=0
     checked=0
     for group in checks packages devShells; do
-      attrs="$(nix eval --json "$flake_ref#$group.$system" --apply builtins.attrNames)"
+      attrs="$(nix eval --json "$flake#$group.$system" --apply builtins.attrNames)"
+      attrs="$(printf '%s' "$attrs" | jq -r '.[]')"
 
-      for attr in $(printf '%s' "$attrs" | jq -r '.[]'); do
+      for attr in $attrs; do
         checked=$((checked + 1))
-        drv="$(nix eval --raw "$flake_ref#$group.$system.$attr.drvPath")"
+        drv="$(nix eval --raw "$flake#$group.$system.$attr.drvPath")"
         offenders="$(hits "$drv")"
 
         if [ -n "$offenders" ]; then
           violations=1
-          offender="$(printf '%s\n' "$offenders" | head -1)"
+          offender="''${offenders%%$'\n'*}"
 
           echo "" >&2
           echo "$group.$system.$attr reaches $(basename "$offender")" >&2
-          nix why-depends --derivation "$flake_ref#$group.$system.$attr" "$offender" 2>/dev/null \
-            | grep -v '^warning' >&2 || true
+          nix why-depends --derivation "$flake#$group.$system.$attr" "$offender" >&2
         fi
       done
     done

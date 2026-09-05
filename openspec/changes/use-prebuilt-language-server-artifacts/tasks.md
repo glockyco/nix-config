@@ -11,7 +11,7 @@
 
 ## 3. Build-Plan and Operations Integration
 
-- [ ] 3.1 Extend `check-darwin-build-plans` to reject source-built Markdown Oxide and Roslyn derivations, add live positive controls for both Nixpkgs packages, and verify the controls fail if each application pattern is removed.
+- [x] 3.1 Extend `check-darwin-build-plans` to reject source-built Markdown Oxide and Roslyn derivations, add live positive controls for both Nixpkgs packages, and verify the controls fail if each application pattern is removed.
 - [x] 3.2 Update the overlapping `align-documentation-with-fleet` delta with the combined release-gate wording and application exclusions, then run strict validation for both active changes.
 - [x] 3.3 Document the official artifact sources, version-and-hash update boundary, personal-plugin release boundary, and required post-update language smoke in the dependency update procedure, then verify the procedure names both packages and both supported systems.
 
