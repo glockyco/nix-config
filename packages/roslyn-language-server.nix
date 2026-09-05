@@ -10,17 +10,17 @@
 }:
 
 let
-  version = "5.8.0-1.26252.1";
+  version = "5.12.0-1.26426.8";
   assets = {
     aarch64-darwin = {
       package = "roslyn-language-server.osx-arm64";
       rid = "osx-arm64";
-      hash = "sha256-o/H/k9hDdiWUEZbCDI0N7mHgQz5qHfEjnJdL4I7BTMU=";
+      hash = "sha256-1W4nJ4hZmgiUQofhcJLQlRoy6FzW99XvLMHkQTMfpTE=";
     };
     x86_64-linux = {
       package = "roslyn-language-server.linux-x64";
       rid = "linux-x64";
-      hash = "sha256-9P7/TyJy4DTuAwJ1PsXCMJR6+jctp2cCUL1fHPgC2go=";
+      hash = "sha256-UPiENfWHVkD7I0GHhhjb+uxDVKGhNO/KwK5VckdEilg=";
     };
   };
   system = stdenvNoCC.hostPlatform.system;

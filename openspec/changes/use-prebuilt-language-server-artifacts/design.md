@@ -43,11 +43,13 @@ Alternatives rejected:
 - GitHub Actions caching: it adds cache upload, restore, eviction, and trust complexity while leaving cache misses expensive. Fixed-output upstream artifacts remove the expensive build instead.
 - A private Cachix cache: unnecessary infrastructure for artifacts their publishers already distribute.
 
-### Use the nearest common published Roslyn tool version
+### Use a compatible published Roslyn tool version
 
-Pin Roslyn `5.8.0-1.26252.1`, the nearest official platform-package release after the current source-built `5.7.0-1.26220.12`. The exact current revision has no official NuGet tool package. Both supported runtime identifiers publish this version.
+Pin Roslyn `5.12.0-1.26426.8` for both supported runtime identifiers. Both official NuGet packages identify source revision `3aeb96c9ecc56a5ee483558f9e648e33e7bfe756` and require the existing .NET 10 runtime. This is a published prerelease, as was the initial `5.8.0-1.26252.1` candidate.
 
-The version change is accepted only after the existing C# language smoke exercises initialization, diagnostics, definition, references, and rename through the wrapper.
+The initial candidate was chosen for proximity to the source-built version. Wrapped acceptance exposed a crash when OMP sent a whole-document update after rename. Roslyn already fixed that case in [PR #84714](https://github.com/dotnet/roslyn/pull/84714), and the selected package source contains that fix. Select for verified client compatibility rather than version proximity. Do not modify OMP, insert a protocol adapter, or add retries.
+
+Accept the version only after fresh wrapped sessions exercise initialization, diagnostics, definition, references, rename, and repeated diagnostics after edits on both hosts. Record cold-start cancellation separately; the post-edit fix does not establish that startup behavior is correct.
 
 ### Detect application source builds explicitly
 
