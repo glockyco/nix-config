@@ -166,6 +166,47 @@ herdr integration status
 
 The system must report `running` with no failed unit. A dirty worktree marks the generation revision with a `-dirty` suffix, and each edit produces another closure. A second activation of the same clean revision registers no second generation.
 
+### Join the tailnet
+
+Restart the distribution after the first activation so WSL stops generating `/etc/resolv.conf` and `systemd-resolved` keeps ownership:
+
+```powershell
+wsl --terminate NixOS
+```
+
+Open the NixOS profile again. Confirm that Windows DNS tunneling remains the upstream resolver and that an employer name and a public name still resolve:
+
+```sh
+resolvectl status
+getent ahosts <employer-hostname>
+getent ahosts github.com
+```
+
+The global DNS server must be `10.255.255.254`. Join this distribution once with its declared tag:
+
+```sh
+sudo tailscale up --advertise-tags=tag:korolev
+```
+
+Complete the displayed browser login. Then confirm the node identity, the shields-up setting, and MagicDNS resolution:
+
+```sh
+tailscale status
+tailscale debug prefs
+getent ahosts macbook-pro
+```
+
+The status must name `tag:korolev`. The preferences must report `ShieldsUp: true`. The Mac must resolve to a `100.64.0.0/10` address.
+
+The root SSH client uses the control plane's rotating host keys and the Mac's declared user. It needs no private key. Confirm the measured daemon path and run the live builder proof:
+
+```sh
+sudo ssh macbook-pro 'command -v nix-daemon'
+tailnet-builder-check
+```
+
+The daemon command must be `/nix/var/nix/profiles/default/bin/nix-daemon`. The builder check must report `arm64`, `macbook-pro`, the measured Tailscale path, and `passed`.
+
 To update OMP later, rerun the binary installer command, run `verify-personal-omp`, and repeat the managed-browser smoke in step 10. No Nix activation is required. Repeat that browser smoke after any NixOS activation that changes the browser ABI. To recover release `v<version>`, use the same target with an explicit tag:
 
 ```sh
