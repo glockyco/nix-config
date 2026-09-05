@@ -32,7 +32,7 @@ Alternative: generate an architecture manual. Rejected because generated volume 
 
 ### 3. Require concrete justification for an operating-procedure exception
 
-Default to no `docs/` tree. Retain a focused file under `docs/operations/` only if it contains necessary repository-specific bootstrap or recovery steps that make the README unclear. State its task and prerequisites, link it from the README, and keep no duplicated command sequence.
+Keep operating documentation minimal. This rule does not apply to unfinished plans under `docs/plans/`. Retain a focused file under `docs/operations/` only if it contains necessary repository-specific bootstrap or recovery steps that make the README unclear. State its task and prerequisites, link it from the README, and keep no duplicated command sequence.
 
 Review WSL import, Windows administrator boundaries, builder credentials, external authorization, and destructive container recovery explicitly. Preserve required ordering, backup conditions, account scope, and manual steps. Do not turn these operations into activation logic to eliminate prose.
 
@@ -54,9 +54,11 @@ Alternative: exempt OpenSpec and agent files from review. Rejected because reade
 
 During implementation, read all artifacts of `align-documentation-with-fleet` and `consolidate-planning-home`. Mark their approach superseded by this change, keeping unchecked tasks visibly unimplemented rather than falsely completed. Do not run an archive operation that merges their unimplemented spec deltas.
 
-Delete duplicate cleanup detail only after preserving unique outstanding intent. For each legacy plan, reuse an existing planning owner where one exists. Otherwise carry only its goal, constraints, open decision, and unscheduled status into a brief retained-intent section of the superseded planning record. This is a finite migration record, not a new backlog or five fully scaffolded changes.
+Keep every legacy planning file and the existing index. Unfinished plans remain distinct and discoverable, outside the README’s everyday operating path. Do not replace them with summaries inside superseded changes. Reconcile only obsolete references; preserve their decisions, open questions, and unfinished work.
 
-Remove `docs/plans/` and its index after this transfer. Git retains completed and superseded history. Do not require live Fastmail verification merely to preserve an unresolved alias action; do not claim that action succeeded.
+Planning migration requires a separate reviewed change. That review must choose an authoritative home, reconcile existing owners, and verify each complete replacement before removing its original. Exploratory plans need not become implementation-ready proposals. No migration, new planning change, external issue, or live Fastmail action is authorized here.
+
+Preserve unique experiments and external-project intent from the removed architecture in the existing record until that separate review.
 
 Alternative: migrate every record into issues or complete OpenSpec proposals. Rejected because that expands work and creates external state without improving the README.
 
@@ -72,7 +74,7 @@ For this documentation-only change, validate command spellings against their act
 
 - [Useful recovery knowledge disappears] → Read each affected procedure fully and preserve its necessary prerequisites before deleting its source.
 - [The README becomes another manual] → Review against reader tasks and the approximate length target; justify every exception separately.
-- [Old plans remain executable-looking] → Add explicit supersession notices and preserve only unique unresolved intent, without marking unfinished work complete.
+- [Old plans remain executable-looking] → Add explicit notices to competing cleanup approaches. Preserve distinct unfinished plans and their status without treating them as execution authorization.
 - [A prose edit changes a contract] → Compare affected requirements for semantic equivalence; defer behavior changes rather than hide them in cleanup.
 - [Documentation reflects concurrent implementation changes incorrectly] → Read the current declarations during implementation and leave unrelated changes untouched.
 

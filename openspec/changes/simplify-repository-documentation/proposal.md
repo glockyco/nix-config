@@ -5,7 +5,7 @@ Current documentation repeats configuration, operating instructions, and plannin
 ## What Changes
 
 - Make one concise README the human entry point for purpose, hosts, development, activation, bootstrap, and recovery.
-- Remove the architecture manual, duplicate configuration descriptions, delivered-work summaries, and legacy planning tree after preserving unique necessary information.
+- Remove the architecture manual, duplicate configuration descriptions, and delivered-work summaries after preserving unique necessary information. Keep the distinct legacy plans and their index; planning migration is outside this cleanup.
 - Retain a separate operating procedure only when essential bootstrap or recovery instructions cannot fit clearly in the README. Each exception must explain a concrete reader need, not preserve an existing file by default.
 - Reduce agent guidance to repository-specific instructions and links. Use declarations, executable checks, and nearby rationale instead of parallel prose inventories.
 - Review all current documentation, including accepted specs and active planning artifacts, for obsolete references and duplicated implementation descriptions. Preserve accepted behavioral requirements and unrelated pending work.

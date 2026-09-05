@@ -48,7 +48,10 @@ D("glockyco.com", REG_NONE,
   // the spam gets tiring, and this record is public and load-bearing. The
   // alias has to exist in its own right.
   //
-  // TTL 300 keeps this revertible in minutes.
+  // Inspect failures on the Mac with `fastmail dmarc --failures-only`.
+  // If legitimate mail fails, change p=quarantine to p=none here, then run
+  // `dnscontrol preview` and `dnscontrol push` from dns/ with authorized
+  // Cloudflare credentials. TTL 300 permits recovery within minutes.
   TXT(
     "_dmarc",
     "v=DMARC1; p=quarantine; sp=reject; np=reject; rua=mailto:dmarc@glockyco.com",

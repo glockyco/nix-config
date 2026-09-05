@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-05
 
-This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern the schedule.
+This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. The scheduling notice below remains authoritative.
 
 The technical proposal, design, specifications, and unchecked tasks remain requirements for future implementation. CLI artifact and task counts describe artifact and task state, not authorization to start work. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules the change after another plan review.
 
@@ -40,8 +40,8 @@ None.
 
 ## Impact
 
-The change affects `flake.nix`, a new `flake-modules/` directory, `hosts/macbook-pro/default.nix`, `hosts/korolev/default.nix`, every file under `packages/`, a new `packages/personal-omp-tests.nix`, `modules/home/omp.nix`, `modules/home/darwin/container-runtime.nix`, `modules/home/darwin/ssh.nix`, `.github/workflows/check.yml`, `README.md`, and the architecture decision log.
+The change affects `flake.nix`, a new `flake-modules/` directory, `hosts/macbook-pro/default.nix`, `hosts/korolev/default.nix`, every file under `packages/`, a new `packages/personal-omp-tests.nix`, `modules/home/omp.nix`, `modules/home/darwin/container-runtime.nix`, `modules/home/darwin/ssh.nix`, `.github/workflows/check.yml`, `README.md`, and the rationale in this change and nearby implementation comments.
 
 It changes no host behavior. The acceptance gate is the one `declare-typed-host-options` established: identical `config.system.build.toplevel.drvPath` for both hosts with `system.configurationRevision` pinned, plus an `nvd` closure diff on each host, recorded in `baseline.md`. No input revision changes while the change is open. The one permitted `flake.lock` edit removes a duplicate `flake-parts` node and changes no `rev`.
 
-Explicit non-goals: the `AIR_BATCH_DOCKER` requirement in `packages/air-batch-check.nix`, the hardcoded Air identity in `packages/air-batch-config-check.nix`, the `computerName` and container sizing literals, the role split of `modules/darwin/` and `modules/nixos/`, the Python programs under `modules/home/darwin/`, the Windows check, the version of Nix on the macOS runner, and every documentation finding. Each belongs to `separate-platform-baseline-from-roles`, `package-user-programs`, `derive-windows-check-from-declaration`, or `align-documentation-with-fleet`.
+Explicit non-goals: the `AIR_BATCH_DOCKER` requirement in `packages/air-batch-check.nix`, the hardcoded Air identity in `packages/air-batch-config-check.nix`, the `computerName` and container sizing literals, the role split of `modules/darwin/` and `modules/nixos/`, the Python programs under `modules/home/darwin/`, the Windows check, the version of Nix on the macOS runner, and every documentation finding. Each belongs to `separate-platform-baseline-from-roles`, `package-user-programs`, `derive-windows-check-from-declaration`, or `simplify-repository-documentation`.

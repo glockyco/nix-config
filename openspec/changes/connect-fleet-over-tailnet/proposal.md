@@ -1,6 +1,6 @@
 ## Current scope: 2026-09-05
 
-Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities). Preserve the deployed Korolev–Mac configuration and its verified SSH/build path. OMP usability and C# acceptance are separate; neither blocks network verification.
+Preserve the deployed Korolev–Mac configuration and its verified SSH/build path. OMP usability and C# acceptance are separate; neither blocks network verification.
 
 Task 5.2 is complete: the coordinated WSL restart preserved resolver ownership, public DNS, MagicDNS, tailnet connectivity, and installed SSH access. The owner does not use employer-internal DNS from WSL, so that check is not applicable. Do not schedule another restart. Task 4.6 also passed: the live LAN and Korolev inbound SSH probes timed out, while the Mac tailnet SSH control succeeded. Preserve the existing no-inbound and tailnet-only boundaries. Only deferred optional tasks remain.
 

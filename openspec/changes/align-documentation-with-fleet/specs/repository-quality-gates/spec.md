@@ -1,3 +1,7 @@
+## Superseded proposal
+
+This delta remains unimplemented. [simplify-repository-documentation](../../../simplify-repository-documentation/proposal.md) replaces the cleanup approach. The issue migration, planning-policy check, and agent-owned gate statement below are historical proposals, not current requirements. Do not merge or archive this delta as accepted.
+
 ## ADDED Requirements
 
 ### Requirement: OpenSpec is the sole planning home

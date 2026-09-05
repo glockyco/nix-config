@@ -84,7 +84,7 @@ No durable builder, storage, authentication, activation, or release gate depends
 
 ## Current verification scope: 2026-09-05
 
-The managed-host deployment and normal remote-build proof have passed; see `tasks.md` for recorded evidence and exact remaining gates. Preserve the installed configuration. Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities), not the historical deployment sequence below.
+The managed-host deployment and normal remote-build proof have passed; see `tasks.md` for recorded evidence and exact remaining gates. Preserve the installed configuration. Follow this current scope, not the historical deployment sequence below.
 
 The coordinated WSL restart and post-restart DNS, MagicDNS, tailnet connectivity, and installed SSH check (task 5.2) passed. Employer-internal DNS is not applicable to the owner's WSL use. Do not repeat that operation. The live SSH isolation check (4.6) also passed: LAN access to the Mac on TCP 22 and Mac access to Korolev on TCP 22 timed out while the Mac tailnet SSH control succeeded. Keep all security invariants unchanged.
 

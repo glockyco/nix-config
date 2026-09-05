@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-05
 
-This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern the schedule.
+This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. The scheduling notice below remains authoritative.
 
 The technical proposal, design, specifications, and unchecked tasks remain requirements for future implementation. CLI artifact and task counts describe artifact and task state, not authorization to start work. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules the change after another plan review.
 
@@ -60,8 +60,8 @@ The technical proposal, design, specifications, and unchecked tasks remain requi
 
 ## 7. Documentation
 
-- [ ] 7.1 Add a decision-log entry to `docs/architecture/personal-omp-environment.md` for the packaged activation programs, the compare-before-write rule, and the user-owned PostgreSQL cluster.
-- [ ] 7.2 Update the `packages/` row of the README layout table to name the user programs and the activation programs. Confirm that `nix fmt -- --fail-on-change` accepts the table.
+- [ ] 7.1 Record the packaged activation programs, compare-before-write rule, and user-owned PostgreSQL cluster in this change and nearby rationale comments.
+- [ ] 7.2 Update relevant README links and activation or recovery instructions for the packaged programs. Confirm that `nix fmt -- --fail-on-change` passes.
 
 ## 8. Verify the Complete Change
 

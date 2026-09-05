@@ -1,39 +1,24 @@
-# Repository Guidance
+# Repository guidance
 
-This repository owns the Apple Silicon and NixOS/WSL workstation configurations. It also owns the immutable OMP wrapper, the personal plugin pin, host activation, and Nix-generation rollback. Homebrew owns the OMP executable on Darwin. The official prebuilt installer owns it in NixOS/WSL.
+[README](README.md) owns host commands and release gates. [Dependency operations](docs/operations/dependency-updates.md) covers updates, external authorization, and release recovery. Read declarations for configuration facts, not historical plans.
 
-## Sources of truth
+## Changes
 
-- Architecture and runtime boundaries: [`docs/architecture/personal-omp-environment.md`](docs/architecture/personal-omp-environment.md)
-- Dependency updates and release procedure: [`docs/operations/dependency-updates.md`](docs/operations/dependency-updates.md)
-- Accepted behavior: [`openspec/specs/`](openspec/specs/)
-- Active implementation work: [`openspec/changes/`](openspec/changes/)
+Use OpenSpec for permanent behavior changes. Read all artifacts of the selected change before editing implementation files. Validate with `openspec validate <change> --strict`; archive only after every acceptance gate passes. Accepted contracts live in `openspec/specs/`.
 
-Use OpenSpec for permanent behavior changes. Read all artifacts for the active change before you edit implementation files. Validate the change with `openspec validate <change> --strict` and archive it only after all acceptance gates pass.
+Retained exploratory and legacy plans remain discoverable through [their index](docs/plans/INDEX.md). Preserve each original until a separately reviewed migration verifies its complete replacement.
+
+An unchecked task or CLI `in-progress` status does not authorize deferred work. Respect each change's scheduling notice. Keep verification evidence with its change, not in a current-state manual.
+
+The personal plugin owns the generated OpenSpec adapters. Do not run `openspec init` here; regenerate adapters in `glockyco/omp-agent-setup` and update its pinned input.
 
 ## Boundaries
 
-Nix owns the OMP wrapper, plugin, Herdr, OpenSpec, and language-server store paths. The platform installer owns the mutable OMP executable. OMP owns writable authentication, configuration, sessions, history, caches, logs, and databases. Do not make activation install, update, or restore the executable or runtime state. Do not install Nix inside CrossOver bottles.
+- Preserve the README's separation between immutable Nix paths, platform-owned OMP executables, and mutable OMP state. Only Herdr's supported integration command manages its generated extension. Do not patch OMP, rewrite its configuration, or add executable fallbacks.
+- Keep project SDKs, builds, deployment, and domain skills in their owning repositories. Add workstation LSP overrides only after representative project verification proves them necessary.
+- Do not install Nix inside CrossOver bottles. Activation may install CrossOver and create an empty bottle, but must not authenticate Steam, update games, install loaders, deploy mods, launch games, or delete bottle data.
+- Preserve Korolev's no-inbound boundary and the Mac's tailnet-only SSH listener. The builder private key stays root-owned outside the repository and Nix store; enrollment and credential rotation are explicit operations. Retain local Mac recovery access for networking changes.
+- Do not execute Windows resources from Nix activation. Keep Windows application policy and administrator operations within the documented manual boundaries.
+- The borrowed Air is temporary, not a durable builder, storage, authentication, or release dependency. [Issue #17](https://github.com/glockyco/nix-config/issues/17) owns result preservation, revocation before return, and complete removal.
 
-Project repositories own their development environments, build commands, and game-specific deployment commands. This repository can install CrossOver and create an empty bottle, but it does not authenticate Steam, update games, install mod loaders, deploy mods, or launch games during activation.
-
-## Release gates
-
-Run the native commands from the repository root:
-
-```sh
-nix fmt -- --fail-on-change
-nix flake check --print-build-logs
-nix run .#check-darwin-build-plans
-nix build .#darwinConfigurations.macbook-pro.system
-```
-
-`check-darwin-build-plans` is separate from `nix flake check` because it reads
-build plans, and a check derivation has no store access. It fails when an output
-reaches a source-built .NET package or a Swift compiler, which Nixpkgs does not
-cache for `aarch64-darwin`: one such dependency once cost this repository a five
-hour CI run.
-
-Use `darwin-switch` only after review and merge. Read its activation output. An OMP executable update does not require Nix activation. Run deterministic verification and the real wrapped-session smoke after an OMP or plugin behavior change. Keep the previous generation until all applicable Nix gates pass.
-
-Do not add an update wrapper. Renovate owns GitHub Actions. The official flake updater owns Nix inputs. Both create review-only pull requests.
+Use the README gates before release and inspect activation output after review and merge. OMP or plugin behavior changes also require the real wrapped-session smoke. Keep previous generations until applicable checks pass. Do not add an update wrapper or competing scheduler; updates remain review-only.

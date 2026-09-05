@@ -1,75 +1,59 @@
-# Provision the korolev NixOS WSL host
+# Provision and recover korolev
 
-## Scope
+Use this procedure for a new NixOS WSL import, Windows setup, or builder recovery.
+Windows owns native applications and employer policy. NixOS owns Linux system and user configuration.
+The official installer owns the OMP executable. OMP owns authentication, sessions, databases, browser downloads, profiles, and caches.
+Keep repositories in the Linux home directory, not `/mnt/c`.
 
-This procedure makes an `x86_64` Windows work machine run the NixOS host `korolev` under WSL 2. Three layers own separate state.
+**Account boundary:** Import, activation, generation rollback, and distribution rollback use the standard Windows account.
+The Windows document also uses that account. Only the Zen installer, Zen policy script, and native Neo driver installation require Administrator credentials.
+The policy script owns only Zen's policy file under Program Files.
+The driver script owns only the native Neo DLLs and keyboard-layout registration.
+ReNeo separately requests those credentials at each sign-in for its runtime process.
+Do not copy another host's credentials or bypass employer policy.
 
-| Layer                | Owns                                                                                                        |
-| -------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Windows              | Windows Terminal, WSL enablement, employer policy, native applications, and the editor                      |
-| NixOS host `korolev` | Linux system scope, user scope, OMP wrapper and plugin, browser ABI, Herdr, OpenSpec, and language tools    |
-| OMP binary installer | the user-local oh-my-pi executable                                                                          |
-| OMP                  | authentication, configuration, sessions, history, browser runtime and profiles, caches, logs, and databases |
+## Import the host
 
-Repositories stay under the Linux home directory, not under `/mnt/c`.
-
-This procedure does not approve external providers, copy credentials from another host, or manage project toolchains. The Windows section installs the declared native applications after the NixOS host is active.
-
-Distribution import, NixOS activation, generation rollback, and distribution rollback run as the standard Windows user. The Windows configuration also uses that account except for three marked operations: the official Zen installer, its policy file, and the native Neo keyboard driver require the separate local `Administrator` credential.
-
-## 1. Confirm the prerequisites
-
-Use tailnet ID `TEHFqtX6D121CNTRL` (`glockyco.github`) with the DNS name `tail8768af.ts.net`. MagicDNS must remain enabled. The control-plane baseline recorded on 2026-09-04 had zero nodes.
-
-Install or update Windows Terminal Stable through the Microsoft-supported or employer-managed channel. Confirm WSL 2 and the architecture:
+Install Windows Terminal Stable and enable WSL 2 through Microsoft-supported or employer-managed channels.
+Confirm the Windows prerequisites:
 
 ```powershell
 wsl --version
 wsl --list --verbose
+$env:PROCESSOR_ARCHITECTURE
 ```
 
-The image build needs one `x86_64-linux` machine with Nix and flakes. The Darwin host cannot cross-build an `x86_64-linux` system, so the existing WSL distribution builds the first image.
+Require `AMD64` from 64-bit PowerShell. Stop on another architecture: this procedure supports only `x86_64-linux` WSL.
 
-## 2. Build the distribution image
+On the image builder, confirm the architecture before making changes:
 
-Check out the reviewed revision on the `x86_64-linux` machine and run:
+```sh
+uname -m
+```
+
+Stop unless the result is `x86_64`. The builder needs Nix and flakes, such as in the previous WSL distribution.
+Build the reviewed revision:
 
 ```sh
 nix build .#nixosConfigurations.korolev.config.system.build.tarballBuilder
 sudo ./result/bin/nixos-wsl-tarball-builder
 ```
 
-The builder writes `nixos.wsl` into the working directory. The image carries the reviewed system closure and no repository checkout.
+The builder writes `nixos.wsl` in the working directory without a repository checkout.
+The Mac cannot cross-build this Linux system.
+Before either host configuration exists, configure the [declared cache and signing key](../../modules/shared/binary-caches.nix) in the builder's Nix settings.
+Alternatively, pass both through `--extra-substituters` and `--extra-trusted-public-keys` as a trusted user.
+An untrusted user cannot add a signing key and must compile instead.
 
-This flake declares no `nixConfig`, so a machine that has neither host configuration reaches the Numtide cache only through its own Nix settings. Pass both values as a trusted user, or state them in `/etc/nix/nix.conf`:
-
-```sh
-# Keep these values aligned with modules/shared/binary-caches.nix.
-nix build \
-  --extra-substituters https://cache.numtide.com \
-  --extra-trusted-public-keys niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g= \
-  .#nixosConfigurations.korolev.config.system.build.tarballBuilder
-```
-
-Nix discards a command-line signing key for a user who is not in `trusted-users`. Such a user compiles the closure instead of substituting it.
-
-## 3. Import the distribution
-
-Import without elevation, and keep the previous distribution registered:
+Import without elevation. Keep the previous distribution registered until all acceptance gates pass:
 
 ```powershell
 wsl --install --from-file nixos.wsl
-```
-
-The import creates the distribution `NixOS` under `%LOCALAPPDATA%\WSL\NixOS`. Confirm that both distributions are registered:
-
-```powershell
 wsl --list --verbose
 ```
 
-## 4. Confirm the imported host
-
-Start the new distribution and confirm the process tree and the declared user:
+The new distribution is `NixOS`, under `%LOCALAPPDATA%\WSL\NixOS`.
+Start it and confirm `systemd`, the [declared user](../../hosts/korolev/default.nix), and `x86_64`:
 
 ```sh
 ps -p 1 -o comm=
@@ -77,38 +61,33 @@ whoami
 uname -m
 ```
 
-The results must be `systemd`, the declared user name, and `x86_64`. Stop if the first result is not `systemd`.
-
-## 5. Run one distribution at a time
-
-WSL puts no distribution in its own cgroup namespace. Every running distribution targets `/user.slice/user-1000.slice/user@1000.service`, and the second one to start cannot attach. The user manager then fails with `Failed to spawn executor: Device or resource busy`, and `nixos-rebuild switch` fails at its user unit reload.
-
-Stop the other distribution from Windows:
+Stop if PID 1 is not `systemd`.
+Run only one distribution at a time: WSL distributions share the user-manager cgroup.
+From Windows, terminate the previous distribution.
+Replace `<previous-distribution>` with its registered name here and in the recovery procedure:
 
 ```powershell
-wsl --terminate Ubuntu-26.04
+wsl --terminate '<previous-distribution>'
 ```
 
-That command returns before the shared cgroup is released. A distribution that had run for one hour still held the path 70 seconds after the command returned. The cgroup directory also stays visible with an empty `cgroup.procs`, because the processes that hold it belong to another PID namespace.
-
-The gate is therefore the observed unit state, not the return of the termination command:
+Termination returns before the shared cgroup is necessarily free. In NixOS, require an active user manager before activation:
 
 ```sh
 systemctl is-active user@1000.service
 ```
 
-The result must be `active`. Start the unit when it reports `failed` or `inactive`:
+If the unit is failed or inactive after the other distribution stops, recover it:
 
 ```sh
 sudo systemctl reset-failed user@1000.service
 sudo systemctl start user@1000.service
 ```
 
-A dead user manager fails an activation a second way. The switch reports `Failed to open dbus connection` and `user activation for user failed`, because no user bus socket exists.
+An occupied cgroup causes `Device or resource busy`. An absent user bus causes `Failed to open dbus connection` during activation.
 
-## 6. Clone the repository
+## Prepare the checkout and authentication
 
-A personal clone belongs under the tree that the conditional Git include names. `programs.git.settings.ghq.root` is `~/src`, and ghq lays a clone out as `~/src/<host>/<owner>/<repo>`:
+Clone under the personal Git include, not directly under `~/src`:
 
 ```sh
 mkdir -p "$HOME/src/github.com/glockyco"
@@ -117,93 +96,83 @@ cd "$HOME/src/github.com/glockyco/nix-config"
 git config user.email
 ```
 
-The result must be `11704293+glockyco@users.noreply.github.com`. A clone in another location, such as directly under `~/src`, reports the global work address instead.
-
-The clone must resolve the published revision. Publish the reviewed revision before the first activation inside the distribution. A clone of an older remote activates cleanly and silently drops every later change.
-
-Entering the clone installs the commit hook. `direnv` enters the development shell for this system, and the shell installs the hook into the working tree:
-
-```sh
-direnv allow
-test -f .git/hooks/pre-commit && printf '%s\n' 'commit-gate=installed'
-```
-
-Run `nix develop --command true` instead when `direnv` is not active. A host with no development shell for its system installs no hook, and a commit there passes no formatting gate and reports nothing.
-
-## 7. Install OMP and activate the host
-
-Install the official prebuilt oh-my-pi release at the wrapper's fixed user-local target. The explicit `--binary` mode prevents a Bun source installation:
+The email must be `11704293+glockyco@users.noreply.github.com`. Other locations use the global employer address.
+Use the reviewed, published revision. An older checkout can activate successfully while dropping newer configuration.
+Follow [Develop](../../README.md#develop), then the WSL OMP installer under [Update](../../README.md#update) and [Activate](../../README.md#activate).
+Activation reconciles Herdr but does not install or invoke OMP.
+Confirm the activated host:
 
 ```sh
-curl -fsSL https://omp.sh/install \
-  | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary
-"$HOME/.local/lib/oh-my-pi/omp" --version
-```
-
-Activate from a committed tree:
-
-```sh
-sudo nixos-rebuild switch --flake .#korolev
-```
-
-Home Manager reconciles Herdr during activation. It does not install, update, or invoke the mutable OMP executable. Verify the complete wrapped environment explicitly:
-
-```sh
-verify-personal-omp
-```
-
-The verifier prints the observed OMP version, the immutable plugin path, and `omp: current`.
-
-Confirm the host result:
-
-```sh
-sudo nixos-rebuild list-generations | cat
 nixos-version --configuration-revision
 systemctl is-system-running
-systemctl --failed --no-legend --plain | cat
-herdr integration status
+systemctl --failed --no-legend --plain
 ```
 
-The system must report `running` with no failed unit. A dirty worktree marks the generation revision with a `-dirty` suffix, and each edit produces another closure. A second activation of the same clean revision registers no second generation.
+Require the reviewed revision, `running`, and no failed units.
+Start `omp` and complete fresh interactive subscription logins for Anthropic and OpenAI.
+Confirm each login with one real response from its provider. Do not transfer authentication databases or tokens.
 
-### Join the tailnet
+Authenticate GitHub through the host's HTTPS credential helper:
 
-Restart the distribution after the first activation so WSL stops generating `/etc/resolv.conf` and `systemd-resolved` keeps ownership:
+```sh
+gh auth login --hostname github.com --git-protocol https --web
+gh auth status
+gh api user --jq '.login'
+git ls-remote https://github.com/glockyco/nix-config HEAD
+```
+
+`gh auth login` can report `read-only file system` after authentication when it writes the Nix-owned `config.yml`.
+The token remains in writable `hosts.yml`, and the host already declares HTTPS. Accept this only if the verification commands succeed.
+Run the [wrapped-session release smoke](dependency-updates.md#release-smoke) in a disposable WSL repository through Windows Terminal Stable.
+Record the tested Terminal, Windows, WSL, and NixOS versions, host architecture, and locked repository revision.
+Then run the browser smoke below.
+Do not force terminal image, keyboard, width, or redraw environment variables to make acceptance pass.
+
+## Managed-browser smoke
+
+In a fresh wrapped OMP session, request:
+
+```text
+Use OMP's managed browser, not the browser relay. Open https://example.com, report the document heading, capture a screenshot, and close the browser.
+```
+
+Require `Example Domain` and a screenshot of the same page, without a missing-library error.
+Repeat after OMP updates, OMP recovery, or activation changes to the browser ABI.
+NixOS supplies the [loader and libraries](../../modules/nixos/programs.nix), not Chromium downloads or browser profiles.
+
+## Join the tailnet and provision the builder
+
+Use tailnet `glockyco.github`, ID `TEHFqtX6D121CNTRL`, with MagicDNS enabled.
+Its DNS domain is in the [shared declaration](../../modules/shared/default.nix).
+After first activation, restart NixOS from Windows so WSL releases resolver ownership:
 
 ```powershell
 wsl --terminate NixOS
 ```
 
-Open the NixOS profile again. Confirm that Windows DNS tunneling remains the upstream resolver and that a public name resolves:
+Reopen NixOS and confirm Windows DNS tunneling remains the global upstream:
 
 ```sh
 resolvectl status
 getent ahosts github.com
 ```
 
-If you use employer-internal services from WSL, also run `getent ahosts <employer-hostname>` with a known internal hostname. Otherwise, that check is not applicable.
-
-The global DNS server must be `10.255.255.254`. Join this distribution once with its declared tag:
+Require the [declared resolver](../../modules/nixos/wsl.nix), `10.255.255.254`.
+If employer-internal services are used from WSL, also resolve a known employer hostname. Otherwise, that check is not applicable.
+Join once with the declared tag and complete the displayed browser login:
 
 ```sh
 sudo tailscale up --advertise-tags=tag:korolev
-```
-
-Complete the displayed browser login. Then confirm the node identity, the shields-up setting, and MagicDNS resolution:
-
-```sh
 tailscale status
 tailscale debug prefs
 getent ahosts macbook-pro
 ```
 
-The status must name `tag:korolev`. The preferences must report `ShieldsUp: true`. The Mac must resolve to a `100.64.0.0/10` address.
+Require `tag:korolev`, `ShieldsUp: true`, and a Mac address within `100.64.0.0/10`.
 
-### Provision the builder credential
-
-Root's SSH client uses a dedicated Ed25519 key at `/root/.ssh/macbook-pro-builder`. The Nix daemon needs this key; the interactive user does not. Keep the private file outside the repository and Nix store. Activation must not generate, replace, or restore it.
-
-For a new client, first confirm that the path does not exist. Create it only if absent:
+The Nix daemon uses root's dedicated key, not the interactive user's credentials.
+Keep the private key outside Git and the Nix store. Activation must never generate or replace it.
+Create it only if absent:
 
 ```sh
 sudo install -d -m 700 /root/.ssh
@@ -213,13 +182,18 @@ sudo stat -c '%U %a %n' /root/.ssh /root/.ssh/macbook-pro-builder
 sudo ssh-keygen -y -f /root/.ssh/macbook-pro-builder
 ```
 
-The directory must be root-owned with mode `700`, and the private file must be root-owned with mode `600`. The last command prints only the public key. Its value must match the Mac's declarative `restrict` authorization before activation. Review a replacement public key as a configuration change; never overwrite an existing private key to make bootstrap pass.
+Require root ownership, directory mode `700`, and private-key mode `600`.
+Review the printed public key against the Mac's [restricted authorization](../../modules/darwin/tailscale.nix) before activation.
+Never overwrite an existing private key to make bootstrap pass.
+The client pins the Mac's actual OpenSSH host key, not a Tailscale SSH key.
+If it changes, verify the replacement from a local Mac terminal before editing the [pin](../../modules/nixos/programs.nix).
+Never disable strict host checking or accept an unverified key.
 
-The client pins the Mac's actual OpenSSH host key through `programs.ssh.knownHosts`. It does not use Tailscale's SSH host keys. If the host key changes, stop and verify the replacement from a local Mac terminal before changing the declaration. Do not use `StrictHostKeyChecking=no` or accept an unverified key.
+### Verify or recover builder access
 
-### Activate and verify the SSH cutover
-
-Build both systems, review, and merge before Mac activation. Keep a local administrator terminal on the Mac and the previous Nix generation. Run `darwin-switch` there, then inspect the native service:
+Build both systems and merge the reviewed configuration before Mac activation.
+Keep a local Mac administrator terminal and the previous Nix generation available.
+After [Mac activation](../../README.md#activate), inspect the native service there:
 
 ```sh
 tailscale debug prefs
@@ -232,9 +206,12 @@ sudo /usr/bin/stat -f '%Sp %Su:%Sg %N' \
 sudo realpath /var/lib/tailnet-sshd/authorized_keys/glockyco
 ```
 
-`RunSSH` must be false and Remote Login must be off. The dedicated `org.nixos.tailnet-sshd` service runs native OpenSSH; every listening address must belong to the Mac's tailnet interface. The authorization file must be a regular `root:wheel` file, its directories must be `root:wheel` with mode `755`, and its canonical path must remain under `/var/lib/tailnet-sshd` rather than enter `/nix/store`. Apple's Remote Login listener is not a substitute: its launchd socket ignores `ListenAddress`. Confirm public-key/PAM login on this root service; an unprivileged smoke server does not prove this boundary.
+Require `RunSSH: false`, Remote Login off, and listening addresses only on the Mac's tailnet interface.
+Require a regular `root:wheel` authorization file and `root:wheel` directories with mode `755`.
+Its canonical path must stay under `/var/lib/tailnet-sshd`, outside `/nix/store`.
+Apple's Remote Login socket ignores `ListenAddress`. An unprivileged smoke server does not prove this root service's public-key/PAM boundary.
 
-Activate the WSL client with its existing credential. Inspect root's effective configuration and test native status propagation:
+After WSL activation with the existing credential, inspect and exercise root's client:
 
 ```sh
 sudo ssh -G macbook-pro
@@ -244,129 +221,36 @@ printf 'SSH status: %s\n' "$?"
 tailnet-builder-check
 ```
 
-The client must select the dedicated identity, strict host checking, identities-only, batch mode, an eight-second connection timeout, and no multiplexing. The daemon command must be `/nix/var/nix/profiles/default/bin/nix-daemon`, and the status probe must print `SSH status: 23`. The builder check must report `arm64`, `macbook-pro`, the measured Tailscale path, and `passed` from a fresh remote build. If authentication fails, collect the Mac's native daemon messages without changing its log level:
+Compare effective settings with the [client declaration](../../modules/nixos/programs.nix), including strict checking, the dedicated identity, and bounded batch connections.
+Require `/nix/var/nix/profiles/default/bin/nix-daemon`, status `23`, and a fresh builder result naming `arm64`, `macbook-pro`, and `passed`.
+The builder check also reports the measured Tailscale path.
+For authentication failures, collect native Mac logs without changing the daemon's log level:
 
 ```sh
 sudo /usr/bin/log show --last 10m --style compact --info \
   --predicate 'process BEGINSWITH "sshd"'
 ```
 
-The restricted key cannot allocate a PTY or forward ports. It can run arbitrary commands as the Mac's declared user, who is trusted by Nix to import unsigned paths. Treat a compromised key accordingly: remove its public authorization, replace the private key locally, and review the new public key. `restrict` is not a command sandbox.
+The restricted key forbids PTYs and forwarding but permits arbitrary commands as the Mac user, who is trusted by Nix.
+`restrict` is not a command sandbox. After compromise, revoke its public authorization, replace the private key locally, and review the replacement public key.
 
-Exercise a disconnected-builder failure only while the local Mac recovery terminal remains available. Confirm failure within the connection timeout, restore the tailnet, and run a fresh builder check. If the cutover fails, roll back the host generation locally; do not rely on the SSH path being repaired. Nix rollback does not erase or restore SSH private keys or Tailscale enrollment.
+Exercise disconnected-builder recovery only with the local Mac recovery terminal available.
+Require failure within the configured connection timeout, restore connectivity, and run a fresh builder check.
+If recovery fails, roll back locally. Nix rollback neither restores keys nor changes Tailscale enrollment.
 
-To update OMP later, rerun the binary installer command, run `verify-personal-omp`, and repeat the managed-browser smoke in step 10. No Nix activation is required. Repeat that browser smoke after any NixOS activation that changes the browser ABI. To recover release `v<version>`, use the same target with an explicit tag:
+## Apply the Windows layer
 
-```sh
-curl -fsSL https://omp.sh/install \
-  | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary --ref v<version>
-verify-personal-omp
-```
-
-## 8. Authenticate providers
-
-Start OMP and use its interactive login:
-
-```sh
-omp
-```
-
-Complete fresh subscription logins for Anthropic and OpenAI. Do not copy authentication databases or tokens from another host. OMP stores the OAuth credentials as the providers `anthropic` and `openai-codex` in `~/.omp/agent/agent.db`.
-
-Confirm each provider with one real model response:
-
-```sh
-omp -p --no-session --no-tools --model opus "Reply with exactly: ANTHROPIC OK"
-omp -p --no-session --no-tools --model openai-codex/gpt-5.4-mini "Reply with exactly: OPENAI OK"
-```
-
-## 9. Authenticate GitHub
-
-This host holds no GitHub key, so `gh` drives Git over HTTPS and answers the Git credential prompt through its declared helper:
-
-```sh
-gh auth login --hostname github.com --git-protocol https --web
-```
-
-The command stores the token in `~/.config/gh/hosts.yml`, which stays writable. It then tries to write `git_protocol` into `~/.config/gh/config.yml`, which Nix owns, so it reports `read-only file system` and exits with status 1 after the authentication completes. The host already declares `https`, so that failure needs no action.
-
-Confirm the result:
-
-```sh
-gh auth status
-gh api user --jq '.login'
-git ls-remote https://github.com/glockyco/nix-config HEAD
-```
-
-## 10. Run the real-session smoke
-
-Create a disposable repository and start the wrapper:
-
-```sh
-mkdir "$HOME/src/omp-wsl-smoke"
-cd "$HOME/src/omp-wsl-smoke"
-git init --initial-branch=main
-omp
-```
-
-Ask OMP:
-
-```text
-This is the WSL release smoke. Do not modify the repository.
-
-1. Report the exact source path of the loaded @glockyco/personal-omp-plugin.
-2. Quote the personal commit policy that applies to creating and amending commits.
-3. Call personal_commit with action=preview, subject="chore: verify WSL smoke", body="The WSL installation must prove that the immutable personal commit extension loads without changing repository state.", and repo=".".
-4. Report whether the preview changed the repository.
-```
-
-The plugin path must be under `/nix/store`. The policy and `personal_commit` tool must be active.
-
-In the same OMP session, run the managed-browser smoke:
-
-```text
-Use OMP's managed browser, not the browser relay. Open https://example.com, report the document heading, capture a screenshot, and close the browser.
-```
-
-The reported heading must be `Example Domain`, and the screenshot must show the same page. OMP must start its downloaded Chromium without a missing-library error. OMP owns the downloaded Chromium version, cache, and browser profile. NixOS supplies only the dynamic loader and shared-library ABI.
-
-After leaving OMP, confirm that the commit preview created no repository state:
-
-```sh
-git status --short
-git log --oneline 2>&1 || true
-```
-
-The status output must be empty, and Git must report that `main` has no commits.
-
-OMP documents these Windows Terminal fallback chords. Use them only when the terminal handles the normal chord:
-
-| Operation                     | OMP fallback  |
-| ----------------------------- | ------------- |
-| Paste image or clipboard text | `Alt+V`       |
-| Queue a follow-up             | `Ctrl+Q`      |
-| Raw text paste                | `Alt+Shift+V` |
-
-Do not force terminal image, keyboard, width, or redraw environment variables for the smoke.
-
-## 11. Prepare the Windows Terminal profile
-
-Windows Terminal enumerates WSL distributions when its process starts, so a distribution imported later is absent from a running window. Close every Windows Terminal window and start Terminal again. The `Microsoft.WSL` generator then adds a `NixOS` profile with its own GUID. The Windows configuration discovers that GUID, makes the profile the default, and preserves the generated profile list.
-
-## 12. Apply the Windows layer
-
-Build the reviewed artifact in NixOS, then copy its files into a writable Windows directory:
+Close all Windows Terminal windows after import, then reopen Terminal so its WSL generator discovers `NixOS`.
+The artifact selects that generated profile without replacing the profile list.
+Build the reviewed [Windows artifact](../../modules/windows/default.nix) in NixOS.
+Use an absent destination under writable `C:\Temp`. Do not merge the artifact into a stale copy.
 
 ```sh
 nix build .#windows-configuration
-chmod -R u+w /mnt/c/Temp/windows-configuration 2>/dev/null || true
-rm -rf /mnt/c/Temp/windows-configuration
 cp -rL result /mnt/c/Temp/windows-configuration
 ```
 
-Enable WinGet Configuration once. The artifact has one document and two narrow Administrator scripts. WinGet 1.29.290 displays the declared elevation shield but does not change a DSC script resource's token on this machine. The separate Administrator account also cannot use the interactive user's per-user DSC package. The official Zen installer can elevate itself, so the document owns the package. Brave installs in user scope without elevation and serves only as the OMP relay browser; Zen remains the interactive default. The generated scripts own only `C:\Program Files\Zen Browser\distribution\policies.json` and the native Neo DLLs and keyboard-layout registration.
-
-Set the artifact paths in a standard PowerShell session:
+In standard PowerShell, enable WinGet Configuration and set the paths:
 
 ```powershell
 winget configure --enable
@@ -375,19 +259,19 @@ $kbdNeo = 'C:\Temp\windows-configuration\apply-kbdneo.ps1'
 $zenPolicies = 'C:\Temp\windows-configuration\apply-zen-policies.ps1'
 ```
 
-Test all three artifacts before the first apply. Exit status 1 means that the test found drift; resource errors are not expected. The WinGet output must show a shield on exactly `package browser`. Brave can install a security update before the repository pin changes. If only `package browser relay` reports drift and `winget list --id Brave.Brave --exact` shows a newer version, update the declared version through review. Do not disable Brave updates or force a downgrade.
+Test all artifacts before the first apply:
 
 ```powershell
-winget configure test `
-  --file $configuration `
-  --accept-configuration-agreements `
-  --disable-interactivity `
-  --suppress-initial-details
+winget configure test --file $configuration --accept-configuration-agreements --disable-interactivity --suppress-initial-details
 powershell -NoProfile -ExecutionPolicy Bypass -File $kbdNeo -Test
 powershell -NoProfile -ExecutionPolicy Bypass -File $zenPolicies -Test
 ```
 
-Open 64-bit Windows PowerShell with **Run as administrator**. Authenticate with the separate local `Administrator` credential, set `$kbdNeo` again, and install the native keyboard driver:
+Exit status `1` means drift, not an acceptable resource error. Require an elevation shield only on `package browser`.
+If only Brave reports drift because a security update exceeds the pin, review an updated declaration.
+Do not disable browser updates or force a downgrade.
+
+Open 64-bit PowerShell with **Run as administrator**, using the separate local `Administrator` credential:
 
 ```powershell
 $kbdNeo = 'C:\Temp\windows-configuration\apply-kbdneo.ps1'
@@ -395,70 +279,55 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $kbdNeo
 powershell -NoProfile -ExecutionPolicy Bypass -File $kbdNeo -Test
 ```
 
-The first command must report `kbdneo: changed; restart Windows before selecting the layout`; the test must then report `kbdneo: desired`. Restart Windows before you apply the document.
-
-After the restart, set the three paths again in a standard PowerShell session. Apply the document from that session. Enter the separate local `Administrator` credential only if the Zen installer requests it.
-
-```powershell
-winget configure `
-  --file $configuration `
-  --accept-configuration-agreements `
-  --disable-interactivity `
-  --suppress-initial-details
-```
-
-The document puts English (United Kingdom) first in the preferred language list and sets it as the Windows UI override, but leaves that entry without an input method. It preserves the `de-DE` and `de-AT` entries, adds `Deutsch (Neo)` to the German input methods, and makes Neo the default. The document sets the short date to ISO 8601 `yyyy-MM-dd`, disables transparency and animation effects, installs the elevated ReNeo logon launcher, installs portable AltSnap, and applies the user-profile application settings.
-
-Sign out and sign in again after the first apply. The new sign-in applies the UI language and starts the ReNeo launcher. Enter the separate local `Administrator` credential at its prompt. If the current session must continue before that sign-out, select `Deutsch (Neo)` with `Win+Space` and start elevated ReNeo from standard PowerShell:
+Require `kbdneo: desired` after installation. Restart Windows before applying the document or selecting the layout.
+After restart, reset the paths in standard PowerShell and apply the document there:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass `
-  -File "$env:LOCALAPPDATA\WindowsConfiguration\start-reneo-elevated.ps1"
+winget configure --file $configuration --accept-configuration-agreements --disable-interactivity --suppress-initial-details
 ```
 
-Enter the separate local `Administrator` credential. The same prompt appears at each later sign-in. One elevated ReNeo process supplies the missing higher layers to ordinary and elevated applications. The native driver supplies only the base layout on UAC's secure desktop.
+Enter the separate Administrator credential only when the Zen installer requests it.
+Do not run the document as Administrator: that account has a different profile and cannot use the interactive user's DSC package.
+Sign out and sign in after the first apply. This applies the UI language and starts ReNeo's elevation launcher.
+Enter the Administrator credential at its prompt, including at subsequent sign-ins.
+If sign-out must wait, select `Deutsch (Neo)` with `Win+Space` and start the launcher from standard PowerShell:
 
-Open 64-bit Windows PowerShell with **Run as administrator** again. Set `$zenPolicies` and apply only the Zen policy file:
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\WindowsConfiguration\start-reneo-elevated.ps1"
+```
+
+The native driver supplies UAC's base layout. Elevated ReNeo supplies higher layers in ordinary and elevated applications, not UAC.
+In Administrator PowerShell, apply only the Zen policy file:
 
 ```powershell
 $zenPolicies = 'C:\Temp\windows-configuration\apply-zen-policies.ps1'
 powershell -NoProfile -ExecutionPolicy Bypass -File $zenPolicies
 ```
 
-Run all three tests again from the standard session, then reapply each artifact in the same context as before. The WinGet test must report that the system is in the described state. The keyboard and policy tests must report `kbdneo: desired` and `Zen policies: desired`. The second apply of every artifact must report no change.
+Repeat all three tests from the standard session. Require the described state, `kbdneo: desired`, and `Zen policies: desired`.
+Reapply each artifact in its original account context and require no changes.
 
-DSC has no generation or transactional rollback. To change the declared state, review a repository revision and reapply its document and scripts. An interrupted apply can leave earlier resources changed, and reverting the artifacts does not uninstall an application unless the declaration explicitly requests its absence.
+**CAUTION: DSC has no generation or transactional rollback.** An interrupted apply can leave earlier resources changed.
+After failure, inspect the reported error and applied state before revising and reapplying the artifact.
+A repository revert neither restores old files nor uninstalls applications unless the declaration explicitly requests that state.
+NixOS rollback affects only Linux state.
 
-PowerToys is one monolithic package. Its other utilities remain installed, but the declaration enables only Command Palette. Portable AltSnap owns modifier dragging and 50/50 edge or corner snapping. The PowerToys parent is the only Command Palette startup owner; leave the separate startup task disabled.
+### Manual Windows settings
 
-The installation-scope audit has three Windows packaging exceptions. Windows Terminal has a per-user AppX registration, but Windows keeps its immutable package payload under `C:\Program Files\WindowsApps`. PowerToys keeps its payload and mutable files under `%LOCALAPPDATA%`, but its bundle also creates a hidden machine-wide MSI registration. Neither resource needs an elevated DSC token. Zen has a machine-wide application payload and policy file. The native Neo driver has checksum-pinned DLLs under `System32` and `SysWOW64` and one keyboard-layout registration under `HKLM`.
+- Use **Settings > Apps > Default apps** for associations. Windows protects them with a generated `UserChoice` hash.
+  Bind `.pdf` to Adobe Acrobat. Bind these extensions to Zed:
+  `.nix`, `.md`, `.json`, `.yaml`, `.yml`, `.toml`, `.sh`, `.ps1`, `.py`, `.js`, `.ts`, `.tsx`, `.rs`, `.go`, `.diff`, `.patch`, `.txt`.
+  Keep the LaTeX previewer decision unresolved.
+- Keep taskbar pins under user control. Supported taskbar layout policy would replace or control the user's pin list.
+- Keep **Country or region** set to Austria. Widgets uses that region for German hosted cards and weather, without an independent content-language control.
+- Set **Settings > System > Display > Night light** to sunset-to-sunrise at 50% strength.
+  Its undocumented CloudStore binary format is outside the declaration.
+- Leave employer-managed applications to device management. Do not add a competing installer or configuration owner.
 
-### Keep the unsupported surface manual
+### Configure and verify the browser relay
 
-Use **Settings > Apps > Default apps** for file associations. Windows protects each current-user choice with a generated `UserChoice` hash. The document does not synthesize that unsupported value. The accepted manual bindings are:
-
-| Application   | Extensions                                                                                                                            |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Zed           | `.nix`, `.md`, `.json`, `.yaml`, `.yml`, `.toml`, `.sh`, `.ps1`, `.py`, `.js`, `.ts`, `.tsx`, `.rs`, `.go`, `.diff`, `.patch`, `.txt` |
-| Adobe Acrobat | `.pdf`                                                                                                                                |
-
-Keep the LaTeX previewer decision in the future `evaluate-pdf-toolset` change. Do not bind it in this workstation change.
-
-Keep taskbar pins in user control. The supported taskbar-layout mechanism is a deployment policy, not a current-user convergence interface; using it here would replace or control the user's pin list. The document changes only taskbar visibility.
-
-Keep **Country or region** set to Austria. The installed Widgets build uses that region to select German Microsoft-hosted cards and taskbar-weather text, even though the Widgets interface follows the `en-GB` culture. It exposes no separate content-language control. Accept that content language instead of changing regional Microsoft services.
-
-Configure Night Light manually under **Settings > System > Display > Night light**. The accepted state is enabled from sunset to sunrise at 50% strength. Windows stores this state in an undocumented CloudStore binary payload, so the document does not write it.
-
-### Configure the OMP browser relay once
-
-Confirm that the Windows apply installed the pinned user-scope browser:
-
-```powershell
-winget list --id Brave.Brave --exact
-```
-
-Install the OMP-owned unpacked extension under Windows LocalAppData from NixOS:
+Confirm Brave installation in standard PowerShell with `winget list --id Brave.Brave --exact`.
+From NixOS, install OMP's unpacked extension into Windows LocalAppData:
 
 ```sh
 windows_local_app_data="$(
@@ -471,209 +340,67 @@ omp browser-relay install --dir "$relay_extension"
 wslpath -w "$relay_extension"
 ```
 
-Copy the printed Windows path. Open Brave manually and create a profile named `OMP Relay`. In that profile, open `brave://extensions`, enable **Developer mode**, select **Load unpacked**, and select the printed directory. Do not install the extension in an employer-managed Edge or Chrome profile. Do not add Brave or the relay to Windows or OMP startup.
-
-Keep only the intended page open in the `OMP Relay` profile. Start an OMP session in NixOS and ask it:
+Open Brave manually with a dedicated `OMP Relay` profile.
+At `brave://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the printed Windows path.
+Do not install the extension in an employer-managed browser profile or add Brave or the relay to startup.
+Keep only the intended page open. From an OMP session in NixOS, request:
 
 ```text
 Use the browser relay, not the managed browser. Adopt the current Brave tab, report its title and URL, capture a screenshot, and leave the page unchanged.
 ```
 
-The reported title, URL, and screenshot must match the visible Brave tab. Close Brave after the session. This profile and unpacked extension are mutable browser and OMP state; Nix renders neither one. Start Brave and request the relay only when a task needs an authenticated Windows browser session.
-
-After the next Windows restart, do not start Brave or OMP before this check. Run it in standard PowerShell:
+Require a title, URL, and screenshot that match the visible tab. Close Brave afterward.
+The extension and profile remain mutable OMP/browser state. Use them only for tasks that require an authenticated Windows browser.
+After the next Windows restart, before starting Brave or OMP, check from standard PowerShell:
 
 ```powershell
 Get-Process brave -ErrorAction SilentlyContinue
 wsl --distribution NixOS -- pgrep -af 'omp browser-relay'
 ```
 
-Both commands must produce no process output. An exit status of 1 from `pgrep` means that the relay is off. Starting NixOS for the check must not start the relay.
+Require no process output. `pgrep` status `1` means the relay is off, even after NixOS starts.
 
-### Verify the Windows roles
+### Verify native integration
 
-In Zed, run `projects: open wsl` from the command palette. Select `NixOS`, then open `/home/user/src/github.com/glockyco/nix-config`. Do not open the `\\wsl.localhost\NixOS\...` path as a local Windows folder. A local folder gives Linux ACP agents a Windows UNC working directory.
+In Zed, use `projects: open wsl`, select `NixOS`, and open `/home/user/src/github.com/glockyco/nix-config`.
+Do not open the UNC path as a local folder: that gives Linux ACP agents a Windows working directory.
+Confirm these live boundaries after sign-in:
 
-After the new sign-in, confirm these behaviors:
+- Zed starts `nixd` and wrapped `omp acp` inside NixOS without SSH. Fork uses the declared `wslgit` bridge.
+- Windows Terminal opens NixOS at the Linux home, with working font glyphs.
+- Neo works in ordinary applications, elevated applications, and UAC, with the higher-layer boundary described above.
+- Command Palette launches applications and switches windows. Its PowerToys parent remains the sole startup owner.
+  After a PowerToys pin change, compare the enabled and disabled module lists with the installed version.
+- AltSnap modifier-drag moves windows and performs 50/50 edge or corner snapping.
+- Zen shows the declared theme. Windows and PowerToys use English, with ISO dates and the regional Widgets exception above.
 
-- Windows and PowerToys use English, and the taskbar date uses `yyyy-MM-dd`. Weather text remains German because the Austrian region controls Microsoft-hosted widget content.
-- `Deutsch (Neo)` remains the default input method. Its base layer works in ordinary applications, elevated applications, and UAC. The elevated ReNeo process supplies higher layers in ordinary and elevated applications. UAC remains base-layer-only.
-- PowerToys Command Palette launches an application and switches to an existing window. No other PowerToys module is enabled.
-- AltSnap modifier-drag moves a window and snaps it to a 50/50 edge or corner region.
-- Zed opens the NixOS worktree through its WSL transport and starts `nixd` and the wrapped `omp acp` command inside NixOS without SSH.
-- Fork opens the same worktree through the pinned `wslgit` bridge. The accepted median `git status` time is 409 ms, compared with 723 ms for Windows Git over the UNC path and 4.3 ms inside NixOS.
-- Zen renders the pinned Catppuccin Mocha theme with Mauve accents.
-- Windows Terminal starts the NixOS default profile in the Linux home directory. JetBrainsMonoNL NF renders Powerline and device glyphs without a font warning.
+## Recover Linux state
 
-## 13. Update the locked environment
-
-Review and fast-forward the clone, then activate again:
-
-```sh
-cd "$HOME/src/github.com/glockyco/nix-config"
-git pull --ff-only
-sudo nixos-rebuild switch --flake .#korolev
-```
-
-The command does not update `flake.lock`.
-
-## Rollback
-
-### Windows layer
-
-WinGet Configuration and DSC have no generation or transactional rollback. Stop after a failed resource, inspect its reported error and the state already applied, then revise and reapply the reviewed artifact. A repository revert changes the next desired state; it does not automatically uninstall applications or restore previous files. Use the NixOS rollback procedures below only for Linux state.
-
-### Generation rollback
-
-Read the retained generations, then restore the previous one:
-
-```sh
-sudo nixos-rebuild list-generations | cat
-sudo nixos-rebuild switch --rollback --no-reexec
-```
-
-`--no-reexec` is required on this host. Without it, `nixos-rebuild` rebuilds itself from `<nixpkgs/nixos>` and fails with `error: file 'nixos-config' was not found in the Nix search path`, because `--rollback` accepts no flake reference.
-
-Select a specific generation through the system profile:
+Use [Recover](../../README.md#recover) for generation listing and rollback.
+The WSL rollback requires `--no-reexec`: rollback accepts no flake reference, and re-execution otherwise searches for an absent `nixos-config`.
+To select a specific retained generation:
 
 ```sh
 sudo nix-env -p /nix/var/nix/profiles/system --switch-generation <number>
 sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
 ```
 
-Both paths restore the system scope and the user scope together, and neither registers a new generation.
-
-### Failed activation
-
-A failed activation script registers its generation and leaves `/run/current-system` unchanged, so the previous closure keeps running. A measured probe reported `Failed to run activate script`, returned exit status 2, registered the new generation, and left no failed unit.
-
-Roll back, then delete the rejected generation:
+A failed activation can register a generation while the previous closure remains active.
+After rollback, delete only the rejected generation if needed:
 
 ```sh
 sudo nix-env -p /nix/var/nix/profiles/system --delete-generations <number>
 ```
 
-### Distribution rollback
-
-The previous distribution stays registered until every acceptance gate passes. Rollback before its removal is a distribution switch:
+Before removing the previous distribution, rollback can instead switch distributions from Windows:
 
 ```powershell
 wsl --terminate NixOS
-wsl --distribution Ubuntu-26.04
+wsl --distribution '<previous-distribution>'
 ```
 
-Rollback after its removal uses a retained NixOS generation.
-
-### OMP-owned state
-
-Generation rollback changes the immutable wrapper, plugin, Herdr, OpenSpec, and language-server paths. It does not change the user-local OMP executable or OMP-owned runtime state. Use the explicit tagged installer command in step 7 to change the OMP version.
-
-For a mutation audit, stop other OMP sessions and capture type, mode, owner, and inode before and after the change:
-
-```sh
-stat -c '%n type=%F mode=%A owner=%U:%G inode=%i' \
-  "$HOME/.omp/agent" \
-  "$HOME/.omp/agent/config.yml" \
-  "$HOME/.omp/agent/agent.db" \
-  "$HOME/.omp/agent/history.db"
-```
-
-Every inode must survive the change. A normal OMP session still changes database sizes and times.
-
-## Failure recovery
-
-Inspect before you make another change:
-
-```sh
-sudo nixos-rebuild list-generations | cat
-systemctl --failed --no-legend --plain | cat
-systemctl is-active user@1000.service
-ls -la "$HOME/.omp/agent/extensions"
-```
-
-Do not delete `~/.omp`, edit `/etc/nixos`, or run `nix flake update` as recovery. Herdr alone owns `~/.omp/agent/extensions/herdr-omp-agent-state.ts`.
-
-## Release evidence
-
-Record these values for the accepted revision:
-
-```powershell
-$terminal = Get-AppxPackage Microsoft.WindowsTerminal
-"windows-terminal=$($terminal.Version)"
-cmd /c ver
-wsl --version
-```
-
-```sh
-. /etc/os-release
-printf 'nixos=%s\n' "$PRETTY_NAME"
-printf 'nixos-build=%s\n' "$BUILD_ID"
-printf 'architecture=%s\n' "$(uname -m)"
-printf 'kernel=%s\n' "$(uname -r)"
-printf 'nix=%s\n' "$(nix --version)"
-printf 'omp=%s\n' "$(omp --version)"
-printf 'openspec=%s\n' "$(openspec --version)"
-printf 'configuration-revision=%s\n' "$(nixos-version --configuration-revision)"
-```
-
-### OpenSSH and builder acceptance: 2026-09-05
-
-Korolev activated reviewed revision `dd445b76ad2444dbea81b00af696554ecf136ce1` as generation 17. Generation 16 remained selectable. System status was `running`, with no failed units. The Mac owner confirmed activation of the corrected regular authorized-key file, disabled Tailscale SSH, disabled Remote Login, and a tailnet-only native listener.
-
-The installed root client passed without temporary SSH configuration:
-
-| Command or boundary                            | Exit status | Observed result                                                                 |
-| ---------------------------------------------- | ----------- | ------------------------------------------------------------------------------- |
-| `sudo ssh macbook-pro 'command -v nix-daemon'` | 0           | `/nix/var/nix/profiles/default/bin/nix-daemon`                                  |
-| `sudo ssh macbook-pro 'exit 23'`               | 23          | No stdout or stderr                                                             |
-| Unapproved key only                            | 255         | `Permission denied (publickey)`                                                 |
-| Forced PTY                                     | 255         | PTY allocation rejected                                                         |
-| Remote forwarding                              | 255         | Forwarding rejected                                                             |
-| Direct TCP forwarding                          | 255         | Administratively prohibited                                                     |
-| `tailnet-builder-check`                        | 0           | Fresh remote build reported `arm64`, `macbook-pro`, and a direct Tailscale path |
-
-Both hosts passed `verify-personal-omp` with OMP `18.1.10`, immutable plugin paths, and `omp: current (v8)`.
-
-At the same revision, Korolev built the Darwin system check through the installed `ssh-ng` builder and received its output into the local store. All-system checks passed. All 22 Darwin check derivations matched native Mac evaluation. Native Darwin flake checks, the complete system build, and the build-plan guard passed through the installed SSH endpoint. The guard inspected 34 outputs with no forbidden source build.
-
-This initial acceptance run did not restart WSL or disconnect either host. Disconnected-builder recovery, LAN rejection, and activated Air/desktop acceptance remain open. The subsequent restart results follow.
-
-### WSL restart evidence: 2026-09-05
-
-The owner confirmed termination and reopening of the `NixOS` distribution from a separate Windows PowerShell terminal. The resumed session verified the unchanged configuration revision `dd445b76ad2444dbea81b00af696554ecf136ce1`.
-
-| Command                                              | Observed result                                                                         |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `systemctl is-system-running`                        | `running`, exit 0                                                                       |
-| `systemctl --failed --no-legend --plain`             | No failed units                                                                         |
-| `resolvectl status`                                  | `resolv.conf mode: stub`; global upstream `10.255.255.254`; Tailscale split DNS present |
-| `readlink -f /etc/resolv.conf`                       | `/run/systemd/resolve/stub-resolv.conf`                                                 |
-| `getent ahosts github.com`                           | Public address returned, exit 0                                                         |
-| `getent ahosts macbook-pro.tail8768af.ts.net`        | `100.88.17.38`, exit 0                                                                  |
-| `tailscale ping --c 1 macbook-pro`                   | Direct pong, exit 0                                                                     |
-| `sudo -n ssh -n macbook-pro 'command -v nix-daemon'` | `/nix/var/nix/profiles/default/bin/nix-daemon`, exit 0                                  |
-| `sudo -n ssh -n macbook-pro 'exit 23'`               | Exit 23, correctly propagated                                                           |
-
-Before the restart, resolved reported `resolv.conf mode: foreign`. After the restart, its stub file owns resolver access and Windows DNS tunneling remains the upstream. No activation, DNS edit, or Tailscale re-enrollment was needed.
-
-Task 5.2 is complete. The owner clarified that employer-internal DNS is not used from WSL; the employer-hostname check is not applicable. This is not a claim that internal employer resolution was tested. The optional fleet gates remain deferred. The subsequent live SSH isolation check passed: Korolev's TCP 22 connection to the Mac LAN address timed out, while the Mac tailnet address returned an OpenSSH banner. The Mac's TCP 22 connection to Korolev's tailnet address also timed out. Each negative probe used a five-second timeout. These checks caused no network interruption or configuration change and establish only the tested SSH reachability boundaries. Task 4.6 is complete.
-
-### Accepted evidence: 2026-09-03
-
-| Item                    | Accepted value                      |
-| ----------------------- | ----------------------------------- |
-| Windows Terminal        | `1.24.11911.0`                      |
-| Windows                 | `10.0.26100.9168`                   |
-| WSL                     | `2.7.12.0`                          |
-| WSL kernel              | `6.18.33.2-microsoft-standard-WSL2` |
-| WSLg                    | `1.0.73.2`                          |
-| Distribution            | `NixOS 26.05 (Yarara)`              |
-| NixOS build             | `26.05.20260814.02e0898`            |
-| Architecture            | `x86_64`                            |
-| Nix                     | `2.34.8`                            |
-| OMP                     | `18.0.10`                           |
-| OpenSpec                | `1.11.0`                            |
-| Implementation revision | `e4ec92b2c3c2`                      |
-| System generation       | `7`                                 |
-
-`nixos-version --configuration-revision` reports the revision of each generation, and the recorded revision is the one the Linux gates ran on. The imported host activated the reviewed revision, and a second activation of the same clean revision registered no further generation. An unprivileged build reached `cache.numtide.com` with no ignored-setting warning. Both providers answered a real request through fresh subscription logins. A real wrapped session in a disposable repository loaded the plugin from `/nix/store`, quoted the personal commit policy, completed a `personal_commit` preview, and left the repository unchanged. A deliberately failing generation kept the previous generation selectable, and the rollback preserved every OMP-owned inode. A container image ran through the `docker` command name and exited with its own status.
+After its removal, use retained NixOS generations.
+Nix rollback restores system and user configuration together, not OMP's executable or writable state.
+Use [OMP version recovery](dependency-updates.md#omp-version-recovery) for that executable.
+Do not delete `~/.omp`, edit `/etc/nixos`, or run `nix flake update` as recovery.
+Herdr alone owns `~/.omp/agent/extensions/herdr-omp-agent-state.ts`.

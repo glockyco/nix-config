@@ -8,7 +8,7 @@ This specification defines how the workstation wraps and verifies a platform-own
 
 ### Requirement: Pinned executable and plugin inputs
 
-The workstation SHALL resolve the personal plugin from an independently locked flake input. The personal plugin input SHALL provide a valid OMP plugin directory and SHALL remain in the `omp-agent-setup` repository rather than being copied into `nix-darwin`. The OMP executable SHALL be mutable platform-owned state: the official Homebrew formula on Darwin and the official prebuilt user-local binary in NixOS/WSL. No supported host SHALL retain a Nix-packaged OMP executable or fallback.
+The workstation SHALL resolve the personal plugin from an independently locked flake input. The personal plugin input SHALL provide a valid OMP plugin directory and SHALL remain in the `omp-agent-setup` repository rather than being copied into `nix-config`. The OMP executable SHALL be mutable platform-owned state: the official Homebrew formula on Darwin and the official prebuilt user-local binary in NixOS/WSL. No supported host SHALL retain a Nix-packaged OMP executable or fallback.
 
 #### Scenario: Build the workstation package
 
