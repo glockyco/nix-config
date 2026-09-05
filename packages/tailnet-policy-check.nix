@@ -13,7 +13,7 @@ let
   testSources = lib.naturalSort (map (test: test.src) tailnetPolicy.policy.tests);
   airlessPolicy = tailnetPolicyRenderer {
     inherit managedHosts;
-    peers = removeAttrs peers [ "air" ];
+    peers = removeAttrs peers [ "macbook-air" ];
   };
   expectedSourcesJson = builtins.toJSON expectedSources;
 in
@@ -21,7 +21,7 @@ assert testSources == expectedSources;
 assert lib.all (
   test: test.proto == "tcp" && test.deny == [ "tag:korolev:22" ]
 ) tailnetPolicy.policy.tests;
-assert !(lib.hasInfix "tag:air" airlessPolicy.rendered);
+assert !(lib.hasInfix "tag:macbook-air" airlessPolicy.rendered);
 runCommand "check-tailnet-policy"
   {
     nativeBuildInputs = [ jq ];
@@ -40,8 +40,8 @@ runCommand "check-tailnet-policy"
     ' "$policy" >/dev/null
 
     jq -e . "$airless_policy" >/dev/null
-    if jq -e '.. | strings | select(contains("tag:air"))' "$airless_policy" >/dev/null; then
-      echo 'Airless policy retained tag:air' >&2
+    if jq -e '.. | strings | select(contains("tag:macbook-air"))' "$airless_policy" >/dev/null; then
+      echo 'Airless policy retained tag:macbook-air' >&2
       exit 1
     fi
 
