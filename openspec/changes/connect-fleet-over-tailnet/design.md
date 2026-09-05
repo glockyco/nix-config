@@ -107,7 +107,7 @@ Implementation creates one planning issue titled `Retire borrowed Air after rese
 - `korolevIsolation` extended: `services.tailscale.enable`, `openFirewall == false`, `disableTaildrop`, `extraSetFlags == [ "--shields-up" ]`, `networking.firewall.allowedUDPPorts == []`, `nix.distributedBuilds`, exactly one build machine named `macbook-pro` with no `sshKey`.
 - `macbookProTailnet`: `services.tailscale.enable`, `extraSetFlags == [ "--ssh" ]`, launchd passes only that supported setting, `services.openssh.enable == null`, and `glockyco` remains in `trusted-users`.
 - `tailnetKnownHostsCommand`: fixture tests from decision 4.
-- Live, packaged as `tailnet-builder-check`: builds `runCommand` output containing `uname -m` and `hostname` with `system = "aarch64-darwin"` and `--rebuild`, asserts `arm64` and `macbook-pro`, then runs `tailscale ping macbook-pro` and prints the path. It is the documented acceptance command for this capability.
+- Live, packaged as `tailnet-builder-check`: builds a uniquely named derivation containing `uname -m` and `hostname` with `system = "aarch64-darwin"`, asserts `arm64` and `macbook-pro`, then runs `tailscale ping macbook-pro` and prints the path. A per-invocation nonce forces a real remote build because Nix 2.33 cannot apply `--rebuild` check mode to a Darwin derivation from the Linux client. It is the documented acceptance command for this capability.
 
 ## Risks / Trade-offs
 
