@@ -22,7 +22,7 @@ Marksman's current official Linux executable is unusable, and pinning the last w
 
 ## Current acceptance scope: 2026-09-05
 
-The migration below is deployed and accepted, not a new execution queue. Tasks 4.3 and 4.4 are complete under the owner-approved nonblocking startup contract. Retain the current package selection and installed configuration. Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities).
+The migration below is deployed and accepted, not a new execution queue. Tasks 4.3 and 4.4 are complete under the owner-approved nonblocking startup contract. Retain the current package selection and installed configuration. Follow [near-term priorities](../../../../docs/architecture/personal-omp-environment.md#near-term-priorities).
 
 Ordinary wrapped OMP file editing and project-command execution have their own recorded result. They do not depend on remote building or on every LSP integration passing. The recorded wrapped HotRepl workflow satisfies C# acceptance on both hosts. Initial semantic results may be incomplete while projects load; require correct diagnostics, navigation, references, cross-file edits, and repeated post-edit diagnostics after loading. Crashes, lost edits, and persistent failures remain unacceptable. Package initialization and direct-server controls alone cannot close this gate.
 
