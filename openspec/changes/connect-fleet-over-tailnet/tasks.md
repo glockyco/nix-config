@@ -45,8 +45,8 @@
 
 - [x] 6.1 Add `packages/tailnet-builder-check.nix` per design decision 8 and install it on `korolev`; run it and confirm that it reports `arm64`, `macbook-pro`, and the `tailscale ping` path.
 - [x] 6.2 Run `nix build .#checks.aarch64-darwin.darwinSystem --print-build-logs` on `korolev` and confirm that the log names the builder and that the output path appears in the local store.
-- [ ] 6.3 Run `nix flake check --all-systems --print-build-logs` on `korolev` and confirm exit 0; compare each `aarch64-darwin` check's derivation path with `nix flake check` output on the Mac at the same revision and confirm equality.
-- [ ] 6.4 Run `ssh macbook-pro nix run <flake-ref>#check-darwin-build-plans` from `korolev` and confirm that it reports the same result as the local run on the Mac.
+- [x] 6.3 Run `nix flake check --all-systems --print-build-logs` on `korolev` and confirm exit 0; compare each `aarch64-darwin` check's derivation path with `nix flake check` output on the Mac at the same revision and confirm equality.
+- [x] 6.4 Run `ssh macbook-pro nix run <flake-ref>#check-darwin-build-plans` from `korolev` and confirm that it reports the same result as the local run on the Mac.
 - [ ] 6.5 Stop `tailscaled` on the Mac and confirm that a Darwin build from `korolev` fails within the connection timeout with a message that names `macbook-pro`; restart it.
 
 ## 7. Retire `.local`
