@@ -2,6 +2,8 @@
 
 Personal workstation configuration for an Apple Silicon MacBook Pro and NixOS under WSL 2. The flake also renders a separately applied Windows configuration and manages [DNS](dns/dnsconfig.js).
 
+## System overview
+
 | Host          | Platform         | Configuration                               |
 | ------------- | ---------------- | ------------------------------------------- |
 | `macbook-pro` | `aarch64-darwin` | [nix-darwin](hosts/macbook-pro/default.nix) |
@@ -10,6 +12,12 @@ Personal workstation configuration for an Apple Silicon MacBook Pro and NixOS un
 Nix owns the host configuration and OMP wrapper, plugin, and language tools. Homebrew on macOS and the official installer on WSL own the OMP executable. OMP owns its writable authentication, configuration, sessions, and databases; activation and Nix rollback do not replace them. Project repositories own their development environments.
 
 [![System overview: pinned inputs and shared and platform-specific modules compose the macOS and NixOS/WSL environments. Windows configuration is applied separately. The OMP detail shows the Nix-managed wrapper, plugin, and language servers interacting with the externally managed executable and writable state.](docs/images/system-overview.webp)](docs/images/system-overview.webp)
+
+## Network
+
+Tailscale connects the managed hosts, personal Windows desktop, and temporary MacBook Air. Korolev can initiate connections but does not accept inbound connections.
+
+[![Tailscale overview: Korolev can initiate connections to the MacBook Pro, Windows desktop, and temporary MacBook Air. Those three peers can initiate connections to one another. Service cards distinguish verified SSH access from pending file-access checks and unverified desktop authentication.](docs/images/tailscale-overview.webp)](docs/images/tailscale-overview.webp)
 
 ## Develop
 
