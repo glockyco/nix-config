@@ -2,7 +2,7 @@
 
 Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities). Preserve the deployed Korolev–Mac configuration and its verified SSH/build path. OMP usability and C# acceptance are separate; neither blocks network verification.
 
-Task 5.2 is complete: the coordinated WSL restart preserved resolver ownership, public DNS, MagicDNS, tailnet connectivity, and installed SSH access. The owner does not use employer-internal DNS from WSL, so that check is not applicable. Do not schedule another restart. Keep task 4.6's live LAN/inbound rejection checks open as a separate isolation gate; do not weaken the existing no-inbound or tailnet-only boundaries.
+Task 5.2 is complete: the coordinated WSL restart preserved resolver ownership, public DNS, MagicDNS, tailnet connectivity, and installed SSH access. The owner does not use employer-internal DNS from WSL, so that check is not applicable. Do not schedule another restart. Task 4.6 also passed: the live LAN and Korolev inbound SSH probes timed out, while the Mac tailnet SSH control succeeded. Preserve the existing no-inbound and tailnet-only boundaries. Only deferred optional tasks remain.
 
 Tasks 6.5, 7.1, 7.3, and 7.4 are deferred optional work: disconnected-builder recovery and Air/desktop enrollment and access. Preserve their unchecked status and technical acceptance contracts. They do not block basic OMP use or the already verified Korolev–Mac connection. Schedule them only when needed and with the owner's coordination. Air offboarding before return remains required, regardless of this scheduling decision.
 
@@ -38,7 +38,7 @@ This change is incomplete and must not be archived as accepted while its gates r
 - [x] 4.3 Update `macbookProTailnet` for the new server and run it on Darwin. Smoke-test native command success/nonzero status, key rejection, host-key mismatch, and restricted-key behavior with a temporary native server.
 - [x] 4.4 Record the upstream nix-darwin `extraSetFlags` pull request and its authenticated-state ordering requirement.
 - [x] 4.5 After review and merge, activate from a local Mac administrator session. Confirm `RunSSH` is false, Apple Remote Login is off, the dedicated daemon listens only on tailnet addresses, authentication works, and `ssh ... 'exit 23'` returns 23. Verify the root daemon and PAM boundary rather than substituting an unprivileged smoke.
-- [ ] 4.6 Confirm a LAN connection cannot reach the new SSH listener and the Mac still cannot initiate access to `korolev`. Use a local recovery path for any network interruption.
+- [x] 4.6 Confirm a LAN connection cannot reach the new SSH listener and the Mac still cannot initiate access to `korolev`. Use a local recovery path for any network interruption.
 - [x] 4.7 Retain the authenticated-state runner and verify it applies `--ssh=false` after `Running`, retries real failures, and never passes unsupported `--advertise-tags` to `tailscale set`.
 - [x] 4.8 Materialize the Darwin authorized-key file outside the Nix store, retain `StrictModes`, restore captured authentication logging, and verify the generated daemon cannot regress to a store-backed authorization path.
 
@@ -102,4 +102,8 @@ Tasks 4.6, 5.2, 6.5, 7.1, 7.3, and 7.4 remained open after this initial acceptan
 
 The owner subsequently restarted `NixOS` from Windows PowerShell and resumed OMP. The [WSL restart evidence](../../../docs/operations/wsl-omp-bootstrap.md#wsl-restart-evidence-2026-09-05) records the post-restart commands at unchanged revision `dd445b76ad2444dbea81b00af696554ecf136ce1`. The system reported `running` with no failed units. Resolved owns `/etc/resolv.conf` through its stub, retains Windows DNS upstream `10.255.255.254`, and supplies MagicDNS. Public resolution, Mac tailnet resolution, direct Tailscale ping, installed SSH access, the `nix-daemon` path, and remote exit status 23 passed without configuration changes.
 
-Task 5.2 is complete. The owner clarified that employer-internal DNS is not used from WSL, so that conditional check is not applicable. Public DNS, resolver ownership, MagicDNS, connectivity, and SSH passed after the actual restart. Do not repeat the restart. Tasks 4.6, 6.5, 7.1, 7.3, and 7.4 are unchanged.
+Task 5.2 is complete. The owner clarified that employer-internal DNS is not used from WSL, so that conditional check is not applicable. Public DNS, resolver ownership, MagicDNS, connectivity, and SSH passed after the actual restart. Do not repeat the restart. Task 4.6 subsequently passed as recorded below. Tasks 6.5, 7.1, 7.3, and 7.4 remain deferred and incomplete.
+
+### Live SSH isolation: 2026-09-05
+
+Task 4.6 passed through bounded TCP connection probes without configuration changes or network interruption. Korolev could not connect to the Mac LAN address on TCP 22 (five-second timeout). The same client connected to the Mac tailnet address on TCP 22 and received `SSH-2.0-OpenSSH_10.3`, providing a reachable positive control. A Python socket probe executed on the Mac through the installed SSH alias could not connect to Korolev's tailnet address on TCP 22 (five-second timeout). These results establish the tested SSH reachability boundaries, not a scan of every port or an authentication rejection. No LAN address was added to configuration. The remaining four unchecked tasks concern only deferred builder recovery and peer enrollment/access.
