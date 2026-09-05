@@ -65,13 +65,86 @@ gh pr list --repo glockyco/erenshor-data-mining --head automation/update-nix-dep
 
 Before merge, inspect `flake.lock`, the updater log, and the dependency release notes. Also inspect the matching `package.json` change in Erenshor when the Nix-provided pnpm version changes.
 
-| Repository             | Required checks                             |
-| ---------------------- | ------------------------------------------- |
-| `omp-agent-setup`      | `check (macos-15)`, `check (ubuntu-latest)` |
-| `nix-config`           | `check (macos-15)`, `check (ubuntu-latest)` |
-| `erenshor-data-mining` | `CI Success`                                |
+| Repository             | Required checks                                     |
+| ---------------------- | --------------------------------------------------- |
+| `omp-agent-setup`      | `check (macos-15)`, `check (ubuntu-latest)`         |
+| `nix-config`           | `check (macos-15)`, `check (ubuntu-latest)`, `test` |
+| `erenshor-data-mining` | `CI Success`                                        |
 
 Main also requires a current pull-request branch and linear history. The policy applies to administrators. Force-push and branch deletion are disabled.
+
+GitHub accepted the `nix-config` main protection settings on 2026-09-05. All three required checks are bound to the GitHub Actions app, ID `15368`. The `test` check is the PR policy validation job, not the deployment job. Strict status checks require an up-to-date PR branch. Main also requires a pull request and resolved review conversations.
+
+The repository has one owner, so the required approval count is zero. Owner review remains procedural, not an independently enforced approval. Before merge, the owner must inspect the complete diff, workflow changes, and check results. Administrator enforcement blocks normal bypass, but an administrator can still change protection settings.
+
+## Tailnet policy release
+
+### Source behavior
+
+`.github/workflows/tailnet-policy.yml` validates every PR to main without path filters. The `test` job uses `TS_TEST_OAUTH_ID` and `TS_TEST_AUDIENCE`, with no fallback to deployment credentials. Missing credentials fail the required check. Each PR has its own cancellable concurrency group.
+
+The `apply` job follows a successful `check` workflow completed from a push to main in this repository. PR checks, failed checks, and checks from another repository cannot authorize apply. Checkout uses that run's exact `head_sha`, with credential persistence disabled. The job renders the policy from that checked revision rather than downloading an upstream workflow artifact.
+
+Apply jobs share one concurrency group with `cancel-in-progress: false` and `queue: max`. Immediately before the provider write, the job queries current main under `set -euo pipefail`. It applies only when main equals the checked SHA. An obsolete revision is skipped; an API error fails the job.
+
+Serialization prevents overlapping writes and automatic cancellation of an active apply. It does not guarantee deployment of every intermediate revision. GitHub queues up to 100 pending jobs; overflow and manual cancellation remain possible. Main can advance after the freshness query because GitHub and Tailscale do not share a transaction. The active checked apply can finish before a newer checked apply.
+
+### Provider authorization
+
+Both identities use issuer `https://token.actions.githubusercontent.com`, separate generated audiences, and the shared `TS_TAILNET` value. GitHub grants `contents: read` by default and `id-token: write` separately to each job. OIDC issuance does not grant Tailscale API permissions. Provider scopes and claim restrictions enforce the read/write boundary, not the action's `test` input.
+
+| Purpose       | Repository inputs                      | Exact Tailscale scopes                                                     |
+| ------------- | -------------------------------------- | -------------------------------------------------------------------------- |
+| PR validation | `TS_TEST_OAUTH_ID`, `TS_TEST_AUDIENCE` | `policy_file:read`, `devices:posture_attributes:read`, `devices:core:read` |
+| Deployment    | `TS_OAUTH_ID`, `TS_AUDIENCE`           | `policy_file`, `devices:posture_attributes`, `devices:core:read`           |
+
+`policy_file:read` permits policy reads, previews, and validation, but not a live policy write. `policy_file` adds the live write operation. Read-only validation still exposes policy and device information. Provider errors in public workflow logs can expose account details.
+
+Configure each identity with its exact actual subject and all corresponding claim restrictions:
+
+| Claim          | PR validation                        | Deployment                                                                 |
+| -------------- | ------------------------------------ | -------------------------------------------------------------------------- |
+| `sub`          | Actual pull-request subject          | Actual main-branch subject                                                 |
+| `repository`   | `glockyco/nix-config`                | `glockyco/nix-config`                                                      |
+| `event_name`   | `pull_request`                       | `workflow_run`                                                             |
+| `base_ref`     | `main`                               | Not applicable                                                             |
+| `ref`          | Not constrained to main              | `refs/heads/main`                                                          |
+| `workflow_ref` | Not constrained to the main revision | `glockyco/nix-config/.github/workflows/tailnet-policy.yml@refs/heads/main` |
+
+Add `repository_id` and `repository_owner_id` restrictions from repository metadata where supported. Use `workflow_ref`, not `job_workflow_ref`, because these jobs do not use a reusable workflow. Do not permit a repository-wide wildcard subject on the deployment identity.
+
+Inspect the subject configuration and immutable repository metadata before configuring provider trust:
+
+```sh
+gh api repos/glockyco/nix-config/actions/oidc/customization/sub
+gh api repos/glockyco/nix-config --jq '{id, created_at, owner_id: .owner.id}'
+```
+
+Legacy default subjects are `repo:glockyco/nix-config:pull_request` and `repo:glockyco/nix-config:ref:refs/heads/main`. They are examples, not verified subjects for this repository. GitHub can use immutable-ID subject formats or custom subject templates. Inspect the existing Tailscale trust configuration and compare each live job's actual `sub` and restricted claims before accepting federation. Record only the selected claims, scope names, issuer, and audience association; never log or persist a bearer token or secret value. Adding a GitHub environment changes the subject and requires a coordinated trust update.
+
+Fork PRs normally cannot access these repository secrets. Import reviewed fork changes onto a repository branch for authenticated validation. Do not skip the required check or use `pull_request_target` to run PR-controlled code with deployment authorization.
+
+### External acceptance
+
+On 2026-09-05, the authenticated Tailscale console saved both separate identities with the scopes above. The deployment subject is `repo:glockyco@11704293/nix-config@1327005249:ref:refs/heads/main`; the PR subject is `repo:glockyco@11704293/nix-config@1327005249:pull_request`. Both restrict `repository_id` to `1327005249` and `repository_owner_id` to `11704293`, in addition to the claim table. Their persisted settings were reopened and inspected. All four identity/audience references were set in GitHub secrets; `TS_TAILNET` was retained.
+
+This proves configured provider restrictions, not live token exchange or deployment. PR write-denial, successful validation with the read-only identity, and actual checked-main deployment remain acceptance gates. Secret names alone do not establish those results.
+
+The pinned `actionlint` rejects `concurrency.queue`. GitHub's [current concurrency documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency) supports `queue: max` with active cancellation disabled. Keep the supported setting and require actual GitHub acceptance; do not filter validator errors or weaken the queue to manufacture a clean lint result.
+
+Before accepting the release path:
+
+1. Provision the read-only identity and its `TS_TEST_*` inputs with the exact scopes and claims above.
+1. Restrict the existing deployment identity to its separate scopes, audience, subject, and claims.
+1. Confirm that PR-issued credentials cannot authorize policy writes or authenticate as the deployment identity.
+1. Run a real PR validation and record the successful GitHub Actions `test` check alongside both native matrix checks.
+1. After review and merge, record successful native main checks followed by apply of their exact checked SHA.
+1. Confirm that the live policy equals that SHA's rendered policy.
+1. Confirm that failed checks and PR check completions cannot deploy, and that obsolete revisions cannot replace current policy.
+
+The Tailscale console's prevent-edits setting points to this repository, but an authorized administrator can override it. Treat such edits as break-glass actions and reconcile them through a reviewed PR. A later GitOps apply replaces console changes.
+
+Provider details: [Tailscale scopes](https://tailscale.com/docs/reference/trust-credentials#scopes), [federation](https://tailscale.com/docs/features/workload-identity-federation), and [GitOps](https://tailscale.com/docs/integrations/github/gitops). GitHub details: [OIDC claims](https://docs.github.com/en/actions/reference/security/oidc), [workflow_run security](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run), and [concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
 
 ## Manual Erenshor update
 
@@ -221,7 +294,7 @@ It must report:
 
 For an `llm-agents`, personal plugin, wrapper, or extension behavior change, start a fresh wrapped OMP session. Ask it to report the loaded `@glockyco/personal-omp-plugin` source path, quote the personal policy, and call `personal_commit` with `action=preview`. The path must be under `/nix/store`, the policy must be available, and preview must not change the repository.
 
-A workflow-only or documentation-only change does not need a model-backed smoke. It still needs both repository checks.
+A workflow-only or documentation-only change does not need a model-backed smoke. It still needs both native matrix checks and the policy `test` check.
 
 ## Rollback
 

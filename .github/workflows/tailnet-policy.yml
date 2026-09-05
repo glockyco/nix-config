@@ -1,42 +1,72 @@
 name: tailnet-policy
 
 on:
-  push:
-    branches: [main]
   pull_request:
-
-concurrency:
-  group: tailnet-policy-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [main]
+  workflow_run:
+    workflows: [check]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   test:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: tailnet-policy-test-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: DeterminateSystems/determinate-nix-action@668647a33843b1f280cb2ef4c41736f86b29f826 # v3
       - run: nix build .#tailnet-policy
       - uses: tailscale/gitops-acl-action@5a4a17f5708e9bf96f4ee915a95e9f83c2eebe1a # v1.5.2
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
-          audience: ${{ secrets.TS_AUDIENCE }}
+          oauth-client-id: ${{ secrets.TS_TEST_OAUTH_ID }}
+          audience: ${{ secrets.TS_TEST_AUDIENCE }}
           tailnet: ${{ secrets.TS_TAILNET }}
           policy-file: result/policy.hujson
           action: test
 
   apply:
-    if: github.event_name == 'push'
+    if: >-
+      github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: tailnet-policy-apply
+      cancel-in-progress: false
+      queue: max
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
       - uses: DeterminateSystems/determinate-nix-action@668647a33843b1f280cb2ef4c41736f86b29f826 # v3
       - run: nix build .#tailnet-policy
+      - name: Check deployment revision
+        id: revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECKED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          current_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [[ "$CHECKED_SHA" == "$current_sha" ]]; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'Not applying an obsolete main revision.'
+            echo 'current=false' >> "$GITHUB_OUTPUT"
+          fi
       - uses: tailscale/gitops-acl-action@5a4a17f5708e9bf96f4ee915a95e9f83c2eebe1a # v1.5.2
+        if: steps.revision.outputs.current == 'true'
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
           audience: ${{ secrets.TS_AUDIENCE }}

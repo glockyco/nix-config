@@ -61,11 +61,11 @@
 
 ## 8. Verify the Combined Revision
 
-- [ ] 8.1 Run `nix fmt -- --fail-on-change`.
-- [ ] 8.2 Run `nix flake check --all-systems --print-build-logs` on `korolev`.
-- [ ] 8.3 Run native Darwin flake checks, the complete Darwin system build, and the Darwin build-plan guard with trustworthy exit status.
-- [ ] 8.4 Run `openspec validate connect-fleet-over-tailnet --strict`.
-- [ ] 8.5 Review the final diff for the approved credential and network boundary: public keys and a private-key path are permitted; private-key material, real account addresses in policy, LAN endpoints, and mDNS endpoints are not.
+- [x] 8.1 Run `nix fmt -- --fail-on-change`.
+- [x] 8.2 Run `nix flake check --all-systems --print-build-logs` on `korolev`.
+- [x] 8.3 Run native Darwin flake checks, the complete Darwin system build, and the Darwin build-plan guard with trustworthy exit status.
+- [x] 8.4 Run `openspec validate connect-fleet-over-tailnet --strict`.
+- [x] 8.5 Review the final diff for the approved credential and network boundary: public keys and a private-key path are permitted; private-key material, real account addresses in policy, LAN endpoints, and mDNS endpoints are not.
 
 ## 9. Documentation
 
