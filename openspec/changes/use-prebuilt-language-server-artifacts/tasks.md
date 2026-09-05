@@ -1,3 +1,9 @@
+## Current scope: 2026-09-05
+
+Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities). The prebuilt cutover is deployed; acceptance is incomplete. Keep the installed architecture and artifact selection while checking OMP in actual repositories. Linux C# remains a specific failed integration, not a blocker for separately verified OMP file/shell use or Tailscale connectivity.
+
+No upstream patches, dependency forks, platform-executable patches, protocol adapters, hidden retries, or workstation-generated solution files are scheduled. Inspect the actual C# repository first and use its existing solution if present. A direct Roslyn diagnostic control is not wrapped-session acceptance. Do not replace packages or project structure merely to make a fixture pass. Preserve all language acceptance gates and keep this change open until they pass; optional fleet work and deferred refactors are not prerequisites.
+
 ## 1. Personal Plugin Cutover
 
 - [x] 1.1 In `glockyco/omp-agent-setup`, create and apply a change that disables OMP's built-in `marksman` server and defines `markdown-oxide` for Markdown files, then verify the plugin package contains both declarations and no Marksman fallback.
@@ -19,7 +25,8 @@
 
 - [x] 4.1 Run the focused package, wrapper-shape, Markdown smoke, C# smoke, and Darwin build-plan checks on their native systems and confirm no build plan reaches a source-built Markdown Oxide or Roslyn derivation.
 - [x] 4.2 Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the applicable native hosts.
-- [ ] 4.3 After review and merge, activate the Darwin generation and run the documented C# and Markdown language smoke through the wrapped OMP environment; keep the previous generation until both pass.
+- [ ] 4.3 Complete the activated C# and Markdown smoke through the installed OMP wrapper on both hosts, using existing project structure from actual repositories. Require diagnostics, cross-file definition, references, rename, and repeated post-edit diagnostics without failed-request retries or hidden restarts. Recover the reported Darwin smoke evidence or run a clearly labeled new acceptance session. Record host, repository, executable/plugin/server versions, requests, results, and file edits. Merge and activation have occurred; do not reactivate an unchanged generation. Keep the previous generation until acceptance passes.
+- [ ] 4.4 Separately verify ordinary OMP use in an actual repository on each host: inspect files, make a controlled edit, and run the repository's normal verification command in its existing development environment. Record the command and result, preserve unrelated work, and remove only the verification edit. Report this result separately from LSP acceptance; do not require remote building or a project-environment migration.
 
 ## Acceptance evidence: 2026-09-05
 
@@ -31,7 +38,7 @@ A sequential Linux reproduction used a transparent protocol relay around the unc
 
 The trace also captured an initial diagnostic cancellation before project loading completed. OMP cancelled the pull after approximately 3.6 seconds; project loading took approximately 20.9 seconds.
 
-The initial conclusion that a new OMP client change was required was too narrow. Roslyn already fixed whole-document updates in PR #84714. The user approved selecting official package `5.12.0-1.26426.8`, whose source contains that fix, without changing OMP. The new pin passed the acceptance below, including post-edit diagnostics and cold-start behavior. Keep 4.3 open until review, merge, and activation acceptance. Do not add a retry wrapper, suppress errors, or patch the platform-owned executable. No host activation or merge has occurred for this change.
+The initial conclusion that a new OMP client change was required was too narrow. Roslyn already fixed whole-document updates in PR #84714. The user approved selecting official package `5.12.0-1.26426.8`, whose source contains that fix, without changing OMP. The new pin passed the pre-activation checks below, including post-edit diagnostics and cold-start behavior. This was not activated acceptance. Review, merge, and host activation later occurred, but 4.3 remains open because the activated Linux C# workflow failed. Do not add a retry wrapper, suppress errors, or patch the platform-owned executable.
 
 ### Compatible artifact acceptance
 
@@ -39,4 +46,14 @@ Revision `e7a7b310e26f3e7b9e3d3261f1d76c5d68d5effa` selects Roslyn `5.12.0-1.264
 
 Fresh wrapped sessions passed Markdown and C# diagnostics, definition, references, and rename on both Linux and Darwin. Each session also returned the original C# compiler error on two sequential post-rename diagnostic requests, then resolved the renamed symbol. No request failed or required a retry, and no restart was reported. No startup or cache warning appeared in the tool output. Direct file checks confirmed the expected LSP edits and preserved both intentional errors. The disposable fixtures were removed.
 
-The all-system flake check passed on Linux. All four release commands passed natively on Darwin at that revision. The build-plan guard inspected 34 outputs without a forbidden source build, and the full Darwin system built successfully. Gate 4.3 remains open: review, merge, activation, and the activated wrapped-session smoke have not occurred.
+The all-system flake check passed on Linux. All four release commands passed natively on Darwin at that revision. The build-plan guard inspected 34 outputs without a forbidden source build, and the full Darwin system built successfully. These are pre-activation results, not evidence that the later activated smoke passed. Gate 4.3 remains open for the failure recorded below.
+
+### Activated outcome and bounded next check
+
+PR #20 was rebase-merged as `75b2c7a568ea1e3d727774b76aef113c7712f78c`. Both hosts subsequently activated the corrected configuration at `dd445b76ad2444dbea81b00af696554ecf136ce1`. Both installed-wrapper verifiers passed with OMP `18.1.10`.
+
+The activated Linux session passed Markdown operations and the managed-browser smoke. Its C# requests lacked the expected CS0029 diagnostic and cross-file definition, and rename was incomplete. No later diagnostic control changes that failed result. The activated Darwin session reported successful Markdown and C# operations, but subsequent independent retrieval of its preserved evidence failed. Recover that evidence or record a new acceptance session before closing the gate.
+
+The pinned Roslyn source captures a pooled project list in a background task before its enclosing scope disposes the list. A lifetime experiment against the installed DLL demonstrated that a deferred read after disposal loses the discovered project. A separate solution-loading control loaded the same project and returned CS0029. These experiments isolate a discovery defect; they do not prove the complete OMP editing workflow or select a production workaround.
+
+The next check uses the actual repository's existing project/solution structure through the installed wrapper. Do not add a solution merely to manufacture acceptance. Keep Linux C# unresolved if this path fails. An upstream contribution is not a prerequisite, and no replacement dependency version has been accepted.

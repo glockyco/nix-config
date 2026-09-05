@@ -1,3 +1,11 @@
+## Scheduling — 2026-09-05
+
+This change is deferred, not canceled or completed. It is not a prerequisite for working OMP or Tailscale. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern scheduling.
+
+Small acceptance-record corrections support the current OMP and Tailscale checks. They do not start this broad documentation rewrite, planning-store migration, issue creation, or absorption of `consolidate-planning-home`.
+
+OpenSpec CLI counts describe artifact and task state, not scheduling authorization. Requirements and unchecked tasks remain preserved. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules and reviews the plan again.
+
 ## Why
 
 The documentation describes a repository that no longer exists. The 2026-09-04 documentation audit found the drift, and every finding was re-verified against the current tree.

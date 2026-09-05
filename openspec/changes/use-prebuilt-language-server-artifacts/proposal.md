@@ -1,3 +1,9 @@
+## Current scope: 2026-09-05
+
+Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities). The prebuilt cutover is deployed; acceptance is incomplete. Keep the installed architecture and artifact selection while checking OMP in actual repositories. Linux C# remains a specific failed integration, not a blocker for separately verified OMP file/shell use or Tailscale connectivity.
+
+No upstream patches, dependency forks, platform-executable patches, protocol adapters, hidden retries, or workstation-generated solution files are scheduled. Inspect the actual C# repository first and use its existing solution if present. A direct Roslyn diagnostic control is not wrapped-session acceptance. Do not replace packages or project structure merely to make a fixture pass. Preserve all language acceptance gates and keep this change open until they pass; optional fleet work and deferred refactors are not prerequisites.
+
 ## Why
 
 Darwin CI still compiles the Markdown and C# language servers from source, which makes the routine workstation check take about 14 minutes. Marksman's current official Linux artifact crashes before starting, while Markdown Oxide and Roslyn publish current, working platform artifacts, so a clean server replacement can preserve the language-server matrix without avoidable application builds.

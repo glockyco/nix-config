@@ -1,6 +1,8 @@
 ## Context
 
-See `proposal.md` for motivation and `specs/repository/planning-state/spec.md` for the contract.
+See `proposal.md` for motivation and the 2026-09-05 scheduling notice. See `specs/repository/planning-state/spec.md` for the retained contract.
+
+This design preserves the deferred scope, not authorization to execute it. Small acceptance-record corrections do not start this planning-store migration or create replacement planning owners. The proposed absorption by `align-documentation-with-fleet` is also deferred. The owner must reconcile both plans before scheduling either. Neither change is canceled or completed now.
 
 The legacy tree contains eight records plus `INDEX.md`. Five records describe work the operator confirmed remains intended. One DMARC record is marked complete but still contains an outstanding alias action. Two OMP records are explicitly superseded by the accepted workstation architecture.
 

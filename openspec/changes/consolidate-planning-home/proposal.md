@@ -1,3 +1,11 @@
+## Scheduling — 2026-09-05
+
+This change is deferred, not canceled or completed. It is not a prerequisite for working OMP or Tailscale. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern scheduling.
+
+Small acceptance-record corrections support the current OMP and Tailscale checks. They do not start this planning-store migration, broad documentation cleanup, or creation of replacement planning owners. The proposed absorption by `align-documentation-with-fleet` is also deferred. This change and its history remain in place.
+
+OpenSpec CLI counts describe artifact and task state, not scheduling authorization. Requirements and unchecked tasks remain preserved. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules and reviews the plan again. That review must reconcile the two planning-home plans before either proceeds.
+
 ## Why
 
 The repository declares OpenSpec as the source of active implementation work, but `docs/plans/` still holds eight records and an index with deferred and draft state. The canonical OMP architecture also cites superseded plans and preserves unscheduled work, so readers must still reconcile two planning systems.

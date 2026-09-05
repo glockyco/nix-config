@@ -1,6 +1,6 @@
 ## Context
 
-See `proposal.md` for motivation. The workstation supports `aarch64-darwin` and `x86_64-linux`. `packages/personal-omp.nix` currently overrides the .NET SDK and runtime with binary Nixpkgs variants, but Nix still compiles the Marksman and Roslyn applications. The Darwin build-plan guard only rejects the expensive compiler toolchains, so both application builds pass the gate.
+This section records the pre-cutover context; see **Current acceptance scope** for scheduled work. See `proposal.md` for motivation. The workstation supports `aarch64-darwin` and `x86_64-linux`. `packages/personal-omp.nix` currently overrides the .NET SDK and runtime with binary Nixpkgs variants, but Nix still compiles the Marksman and Roslyn applications. The Darwin build-plan guard only rejects the expensive compiler toolchains, so both application builds pass the gate.
 
 Marksman's current official Linux executable is unusable, and pinning the last working binary would downgrade Markdown behavior. Markdown Oxide publishes current native release executables for both supported systems. Roslyn publishes signed, platform-specific NuGet tool packages that contain `Microsoft.CodeAnalysis.LanguageServer.dll` and its application payload. The Roslyn package remains framework-dependent and needs a .NET 10 runtime.
 
@@ -19,6 +19,16 @@ Marksman's current official Linux executable is unusable, and pinning the last w
 - Change the OMP executable or unrelated personal-plugin behavior.
 - Package unsupported architectures.
 - Replace the platform-owned OMP executable.
+
+## Current acceptance scope: 2026-09-05
+
+The migration below is deployed, not a new execution queue. Retain the current package selection and installed configuration while completing tasks 4.3 and 4.4. Follow [near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities).
+
+Ordinary wrapped OMP file editing and project-command execution have their own recorded result. They do not depend on remote building or on every LSP integration passing. Linux C# remains failed until its actual editing workflow passes; package initialization and direct-server diagnostic controls cannot close that gate.
+
+Use the actual C# repository's existing project structure and development environment. A real project-owned solution is a supported entry point, not a generated workstation artifact. Do not introduce one solely to make a fixture pass. No upstream patches, forks, new protocol adapters, or package replacements are scheduled. If the supported path fails, record the failure and select a bounded correction from evidence rather than expanding this change automatically.
+
+The older candidate's whole-document update crash and the current package's project-discovery defect are different failures. Keep both historical records, and do not treat the former fix as proof of the latter's acceptance. Preserve the full C# and Markdown operation matrix on both hosts and the previous generations. No new activation is needed to exercise the unchanged installed wrapper.
 
 ## Decisions
 

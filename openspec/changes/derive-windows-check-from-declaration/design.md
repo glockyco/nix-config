@@ -1,6 +1,8 @@
 ## Context
 
-See `proposal.md` for the motivation. The facts that shape the approach:
+See `proposal.md` for the motivation and the 2026-09-05 scheduling notice. This design preserves the deferred scope, not authorization to execute it. Its prerequisite sequence applies only after the owner reviews and schedules the plan again. This refactor is not a prerequisite for working OMP or Tailscale.
+
+The original plan uses these assumptions:
 
 - This change starts after `declare-typed-host-options`, `connect-fleet-over-tailnet`, `key-fleet-by-host`, `separate-platform-baseline-from-roles`, and `package-user-programs` are archived. `flake-modules/packages.nix` owns `overlays.default` and `perSystem.packages`, and `flake-modules/checks.nix` owns every repository check. The overlay builds `windows-configuration` with `final.callPackage ../modules/windows { }`, and `checks.windowsConfiguration` calls `packages/windows-configuration-check.nix` with the overlay attribute as its argument. `separate-platform-baseline-from-roles` moved `EnterprisePoliciesEnabled` out of `modules/shared/zen-policies.nix` and deleted the `removeAttrs` compensation in `files.nix`. `package-user-programs` set the Python convention: `packages/<name>/` with `pyproject.toml`, `src/<module>/` with an `argparse` `main()`, `tests/` with fixtures run by `pytestCheckHook`, and `packages/<name>.nix` with `buildPythonApplication` and `meta`.
 - `modules/windows/default.nix` is a function `{ lib, pkgs }` that returns a `runCommand`. Nothing under `modules/windows/` is a module. The `moduleImports` check reads `./modules` (`flake.nix:246-249`) and accepts the directory because its `default.nix` names every sibling with `import ./<file>`.

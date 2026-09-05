@@ -1,3 +1,11 @@
+## Scheduling — 2026-09-05
+
+This change is deferred, not canceled or completed. It is not a prerequisite for working OMP or Tailscale. [Near-term priorities](../../../docs/architecture/personal-omp-environment.md#near-term-priorities) govern scheduling.
+
+Small acceptance-record corrections support the current OMP and Tailscale checks. They do not start this Windows renderer and check refactor or the separate broad documentation and planning-store migration.
+
+OpenSpec CLI counts describe artifact and task state, not scheduling authorization. Requirements and unchecked tasks remain preserved. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules and reviews the plan again.
+
 ## Why
 
 The Windows layer has one declaration and one check, and the check carries a second copy of the declaration. `packages/windows-configuration-check.py` restates the role set (`:19-28`), the Catppuccin palette (`:29-51`), the PowerToys module set (`:52-88`), the review file set (`:95-113`), the kbdneo pins (`:554-562`), the wslgit pins (`:587-593`), the AltSnap pins (`:613-619`), and the Zen theme hashes (`:515-526`) that `modules/windows/default.nix`, `files.nix`, and `font.nix` already declare. A pin bump is two edits, and the check proves only that the two copies agree. The policy rules exist twice as well: `modules/windows/default.nix:212-221` asserts them at import time, and `windows-configuration-check.py:140-216` re-implements them and still allows a `zen policies` elevated resource (`:212-216`) that no resource declares.

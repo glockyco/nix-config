@@ -4,7 +4,9 @@ These files are tracked records, not an implementation queue. A permanent change
 
 ## Canonical architecture
 
-- [Personal OMP Environment](../architecture/personal-omp-environment.md): accepted architecture; stable workstation base implemented; project migrations and controlled experiments remain planned.
+- [Personal OMP Environment](../architecture/personal-omp-environment.md#near-term-priorities): keep the installed architecture. Prioritize real-repository OMP usability and coordinated WSL restart/network verification. Linux C# remains a failed integration. Broader refactors, project migrations, and experiments are deferred, not complete.
+
+The canonical priority section names the six deferred OpenSpec proposals. Their retained unchecked tasks are not an implementation queue, even when the CLI lists them as `in-progress`. Optional builder recovery and peer enrollment remain separate from basic OMP and Korolev–Mac connectivity. Do not start deferred work automatically after the immediate checks pass.
 
 ## Completed record
 

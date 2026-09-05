@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-Status: stable workstation base implemented; project migrations and controlled experiments remain planned.
+Status: workstation base installed; bounded OMP usability and Tailscale reliability checks are next. Broader refactors, project migrations, and experiments are deferred.
 
 Last reviewed: 2026-09-05.
 
@@ -14,12 +14,12 @@ The legacy OMP consolidation spec and 63-task plan under `docs/plans/` are histo
 
 ## Resume after a new session or compaction
 
-1. Read this document, starting with **Current state** and **Workstreams**.
+1. Read **Current state** and **Near-term priorities** before selecting work. **Workstreams** also contains deferred designs.
 1. Open the active repository named in the current-state table.
 1. Run `openspec list` and `openspec status --change <name>` if that repository has been initialized for OpenSpec.
 1. Read the active change's `proposal.md`, delta specifications, `design.md`, and `tasks.md` before editing code.
 1. Inspect the repository worktree. Preserve unrelated user changes.
-1. Continue from the first incomplete task whose dependencies are complete.
+1. Continue only with scheduled work. An unchecked task or CLI `in-progress` status does not authorize a deferred change.
 
 Before ending a session that changed the implementation:
 
@@ -33,25 +33,47 @@ Session transcripts, OMP memory, chat summaries, and issue comments are supporti
 
 ## Current state
 
-| Workstream                           | State    | Durable execution record                                                                                                | Dependency                              |
-| ------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| Delete the old Air Mnemopi state     | complete | explicit maintenance operation; no migration artifact                                                                   | none                                    |
-| Package the personal OMP plugin      | complete | archived `omp-agent-setup` OpenSpec change `package-personal-omp-plugin`                                                | none                                    |
-| Consume the plugin from `nix-darwin` | complete | archived `nix-darwin` OpenSpec change `consume-personal-omp-plugin`                                                     | verified plugin output contract         |
-| Decouple OMP executable updates      | active   | `nix-darwin` OpenSpec change `manage-omp-with-homebrew`                                                                 | platform-owned prebuilt executables     |
-| Adopt the NixOS WSL host             | complete | `nix-darwin` OpenSpec change `adopt-nixos-wsl-host` and `docs/operations/wsl-omp-bootstrap.md`                          | accepted WSL release evidence           |
-| Manage the Windows layer             | active   | `nix-darwin` OpenSpec change `manage-windows-layer` and `docs/operations/wsl-omp-bootstrap.md`                          | adopted NixOS WSL host                  |
-| Migrate HotRepl                      | ready    | future HotRepl OpenSpec change `nix-development-environment`                                                            | workstation base                        |
-| Migrate Ardenfall                    | blocked  | future Ardenfall OpenSpec change `nix-development-environment`                                                          | HotRepl and workstation base            |
-| Migrate Ancient Kingdoms             | blocked  | future Ancient Kingdoms OpenSpec change `nix-development-environment`                                                   | HotRepl and workstation base            |
-| Migrate Erenshor                     | ready    | existing flake, bootstrap, and Nix-based CI; future OpenSpec change `nix-development-environment`                       | workstation base                        |
-| Evaluate frontend skills             | planned  | `omp-agent-setup` issue, then OpenSpec change when scheduled                                                            | stable base; memory disabled            |
-| Evaluate persistent memory           | planned  | `omp-agent-setup` issue, then OpenSpec change when scheduled                                                            | stable base; no optional frontend skill |
-| Remove the legacy OMP deployment     | complete | immutable plugin repository, removed global shims and managed payloads, and archived mutable-deployment planning record | verified workstation cutover            |
+The workstation base is installed. This is not a claim that every integration has passed acceptance. The following results are recorded checks, not a fresh health check.
 
-The managed hosts now use the reviewed native OpenSSH builder path at `dd445b76ad2444dbea81b00af696554ecf136ce1`. Installed authentication, command status, key restrictions, live remote building, and matching cross-host Darwin derivations passed. Checked-main policy deployment and live-policy equality also passed. The [WSL runbook](../operations/wsl-omp-bootstrap.md#openssh-and-builder-acceptance-2026-09-05) records the evidence. `connect-fleet-over-tailnet` remains active for restart persistence, disconnected-builder recovery, LAN rejection, and unmanaged-peer acceptance.
+| Area                                            | Recorded state                                                                                                                                                             | Execution record                                                                                               |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| OMP installation                                | Both installed wrappers start and both local verifiers passed                                                                                                              | [Prebuilt acceptance](../../openspec/changes/use-prebuilt-language-server-artifacts/tasks.md)                  |
+| Activated OMP workflow                          | Linux Markdown and managed-browser smoke passed; Linux C# failed. Darwin language smoke was reported successful, but independent retrieval of its retained evidence failed | [Prebuilt acceptance](../../openspec/changes/use-prebuilt-language-server-artifacts/tasks.md)                  |
+| Korolev–Mac connectivity                        | Tailnet connectivity, installed SSH authentication, exit status, key restrictions, and live remote builds passed at `dd445b76ad2444dbea81b00af696554ecf136ce1`             | [OpenSSH and builder acceptance](../operations/wsl-omp-bootstrap.md#openssh-and-builder-acceptance-2026-09-05) |
+| Restart and isolation checks                    | WSL restart persistence and live LAN/inbound rejection probes remain unverified                                                                                            | [Tailnet tasks](../../openspec/changes/connect-fleet-over-tailnet/tasks.md)                                    |
+| Optional fleet operations                       | Disconnected-builder recovery and Air/desktop enrollment remain incomplete and deferred                                                                                    | [Tailnet tasks](../../openspec/changes/connect-fleet-over-tailnet/tasks.md)                                    |
+| Platform executable ownership and Windows layer | Delivered and archived; not new implementation work                                                                                                                        | `2026-09-04-manage-omp-with-homebrew` and `2026-09-04-manage-windows-layer` archive records                    |
+| Project migrations and experiments              | Deferred, not the next implementation queue                                                                                                                                | [Workstreams](#workstreams)                                                                                    |
 
-HotRepl is the next migration. Erenshor may proceed independently on the stable workstation base. Planned experiments remain issues until their dependencies are complete. OpenSpec active changes are not a parking lot.
+## Near-term priorities
+
+Decision: 2026-09-05. Keep a clean, idiomatic, working OMP and Tailscale installation. Preserve the current architecture, installed configuration, previous generations, and security boundaries. Do not start another migration to simplify the architecture.
+
+| Track                 | Next bounded work                                                                                                                                                                       | Completion boundary                                                                                                                                           |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OMP usability         | Use the installed wrapper in an actual repository and its existing development environment. Inspect files, make a controlled edit, and run the repository's normal verification command | Record the repository, host, wrapper/plugin versions, operation, and result. Preserve unrelated work                                                          |
+| C# integration        | Inspect the actual repository's project structure. If it already has a solution, exercise that supported path through OMP                                                               | Diagnostics, cross-file definition, references, rename, and post-edit diagnostics must pass. Direct-server controls and successful retries are not acceptance |
+| Tailscale reliability | Coordinate one WSL restart with a recovery terminal. Verify employer/public DNS, MagicDNS, intended connectivity, and normal SSH access afterwards                                      | Record actual post-restart results. Retain the live LAN/inbound rejection gate without weakening isolation                                                    |
+| Optional integrations | Keep the working remote builder. Schedule outage recovery and additional peer enrollment separately when needed                                                                         | Incomplete optional work does not block basic OMP use or the verified Korolev–Mac connection                                                                  |
+
+The prebuilt change owns the OMP acceptance tasks. The tailnet change owns network acceptance. Neither requires the other change to be archived first. A C# failure remains a specific failed capability, not a reason to reopen the workstation architecture.
+
+Do not patch or fork upstream dependencies, patch the platform-owned OMP executable, introduce protocol adapters, or generate solution files in a workstation wrapper. Do not add sleeps, retries, or fallbacks that hide failures. A genuine project-owned solution is normal project structure, but do not introduce one merely to make a fixture pass. If the existing project path fails, record the failure before selecting another bounded correction. An existing official prebuilt version may be evaluated when evidence warrants it; no replacement is selected by this plan.
+
+### Deferred engineering
+
+The following existing proposals are deferred, not complete or canceled:
+
+- `separate-platform-baseline-from-roles`
+- `key-fleet-by-host`
+- `package-user-programs`
+- `derive-windows-check-from-declaration`
+- `align-documentation-with-fleet`
+- `consolidate-planning-home`
+
+Their unchecked tasks and technical contracts remain preserved. OpenSpec's list reports artifact/task state, not scheduling authorization. Read each proposal's scheduling notice before applying it. Resume only after a concrete use or maintenance requirement justifies the work and the owner explicitly schedules and reviews it again. Do not archive incomplete changes to make the list appear complete, or build new planning machinery to represent deferral.
+
+Project migrations, frontend-skill and memory experiments, broader ownership refactors, and cache infrastructure are not near-term prerequisites. Small corrections to inaccurate acceptance records remain in scope. No deferred task starts automatically when the immediate checks finish.
 
 ## Goals
 
@@ -302,7 +324,7 @@ Nix installs only the language-server executables used by active repositories. P
 
 Use OMP's built-in definitions first. Retain the acceptance requirements from the old setup, not the old override file. The fixed smoke matrix covers definition, references, rename where supported, and diagnostics for representative Python, C#, TypeScript/Svelte, Nix, Markdown, LaTeX, and BibTeX repositories.
 
-Do not declare an override or server supported until its representative scenario passes.
+Do not declare an override or server supported until its representative scenario passes. A failed language integration does not invalidate separately verified OMP file editing, shell execution, or network connectivity. Prioritize scenarios from actual repositories; do not require unrelated language work before ordinary OMP use.
 
 ## Durable planning and documentation lifecycle
 
@@ -416,7 +438,7 @@ The repository renders a reviewable WinGet Configuration document and narrow Adm
 
 ### Project migrations
 
-The dependency graph is:
+These migrations are deferred. The following dependency graph applies only after the owner schedules the relevant project migration:
 
 1. complete the workstation base;
 1. migrate HotRepl and Erenshor independently after the base;
@@ -604,7 +626,7 @@ Host cutover passed. `omp-agent-setup` removed the global mutable bootstrap, sym
 
 ### Experiments
 
-After the base and project-independent acceptance gates pass, run the frontend and memory experiments under mutually isolated configurations. Any adoption is a separate change.
+Frontend and memory experiments are deferred. Passing the immediate workstation checks does not schedule them. If the owner later schedules an experiment, use mutually isolated configurations. Any adoption is a separate change.
 
 ## Activation, verification, and rollback
 
@@ -640,7 +662,9 @@ Restore the immediately previous generation with `sudo darwin-rebuild --rollback
 
 ## Acceptance gates
 
-The environment is complete when:
+These are capability-specific acceptance contracts, not one prerequisite list for basic OMP and Tailscale usability. Apply each gate to the capability being changed or accepted. Deferred migrations and experiments remain unaccepted until their own gates pass. The immediate scope is defined in [Near-term priorities](#near-term-priorities).
+
+Retain these contracts:
 
 - one Nix generation selects the OMP wrapper, Herdr, OpenSpec, language servers, and the personal plugin;
 - each wrapper invokes one explicit platform-owned OMP executable without a fallback;
