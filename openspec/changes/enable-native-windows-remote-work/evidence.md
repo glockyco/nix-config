@@ -414,6 +414,41 @@ real operation. The mechanism is unexplained: `AutoAdminLogon` is unset and the
 account has a password, so this is recorded as observed behaviour rather than a
 diagnosed one.
 
+## Task 5.5 — fleet isolation and the Mac builder
+
+Korolev's agent ran these checks and reported them; they are peer-supplied,
+because Korolev accepts no inbound connection. Raw commands, statuses and output
+are in its handoff file.
+
+**`tailnet-builder-check` exited 1.** Its unique Darwin derivation
+`39z1p2xd5zryidksnbf33lgnaz495h7f-tailnet-builder-probe-1788714376-506731-224279-29686.drv`
+built on `ssh-ng://glockyco@macbook-pro`, the log shows the remote build and the
+copy back, and the probe reported architecture `arm64` and builder
+`macbook-pro`. The aggregate check then failed on its final step: `tailscale ping 100.88.17.38` timed out with no reply. The live remote build therefore
+passes and the aggregate check fails; the failure is recorded as a failure and
+the check is not marked green.
+
+The Pro corroborated the build half independently: the probe's output path
+exists in this machine's store with a local build log, so the derivation really
+built here rather than on Korolev.
+
+Supporting results from Korolev: `nix store info --store ssh-ng://macbook-pro`
+exited 0 reporting `Version 2.34.8, Trusted 1`; `ssh macbook-pro 'exit 23'`
+returned `23`; generation 18 is `f576832` with generations 1 to 17 retained. Its
+no-inbound boundary holds, and its journal shows the matching drop for the Pro's
+probe, `100.88.17.38:54855 > 100.117.31.61:22 no rules matched`, which pairs
+with the timeout the Pro measured. No `connect-fleet-over-tailnet` gate was
+touched and nothing was restarted or reconfigured.
+
+The ping failure is not diagnosed. Korolev's journal reports coordination-server
+long-poll timeouts and intermittent Frankfurt relay failures. The Pro is on a
+phone hotspot at `172.20.10.4` with no direct path, and its own `tailscale ping korolev` succeeded through DERP `fra` afterwards, with `BackendState: Running`,
+no health warnings, and a nearest DERP of Nuremberg. So reachability is
+asymmetric or intermittent rather than absent, and the cause is unresolved: it
+may be relay flakiness, the Pro's changed network, or a defect in the check's
+final step. It belongs to `connect-fleet-over-tailnet`, whose gates stay
+unchanged, not to this change.
+
 ## Task 6.2 — cleanup and exclusions
 
 Spike-owned state was removed after verification: the preview staging directory
