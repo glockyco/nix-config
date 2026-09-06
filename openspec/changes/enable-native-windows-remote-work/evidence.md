@@ -323,6 +323,34 @@ fingerprint in the client, and the disconnect and reconnect check in task 4.3
 remain operator steps, because they need the account password and a visible
 screen.
 
+## Task 4.3 — graphical session lifetime
+
+The owner connected from the Pro with Windows App and reports the server
+certificate was correct and the machine kept running across the connection.
+Credentials are set to "ask when required", so the client stores no password,
+and "connect to an admin session" stays off. The certificate comparison is the
+owner's observation; whether the client displayed a full fingerprint or only
+the host name is not recorded here.
+
+The Pro then measured the session state. Session 1, the one signed in at 17:45,
+is retained in `Disc` state after the client disconnected, and the effective
+WinStation limits are `MaxDisconnectionTime=0`, `MaxIdleTime=0` and
+`MaxConnectionTime=0`, so a disconnected session is never timed out or reset.
+UAC remains enabled (`EnableLUA=1`, consent prompt `5`) and no screen-lock or
+elevation policy was weakened.
+
+`fSingleSessionPerUser=1`, so RDP does not create a separate workspace: it takes
+over the account's existing console session. Because the desktop boots into a
+signed-in session, an RDP client reattaches to that session rather than starting
+a private one. Record that as the machine's behaviour; it is not a defect, but
+console and remote graphical access are not independent.
+
+Still open for this task: RDP clients on the Air and on Korolev, which have
+none installed, and a task-survival observation across a deliberate disconnect
+and reconnect. The retained session and zero timeouts show computation is not
+terminated by disconnection, but no specific running task was observed across
+the cycle from the Pro.
+
 ## Task 4.5 — shares
 
 Before: `ADMIN$`, `C` (`C:\`), `C$`, `D` (`D:\`), `D$`, `E$`, `IPC$`. The
