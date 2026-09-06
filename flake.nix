@@ -133,6 +133,9 @@
 
           overlays.default = final: _prev: {
             neo-keyboard-layouts = final.callPackage ./packages/neo-keyboard-layouts.nix { };
+            nixosOptionsDoc = final.callPackage ./packages/options-context.nix {
+              nixosOptionsDoc = _prev.nixosOptionsDoc;
+            };
           };
         };
 
