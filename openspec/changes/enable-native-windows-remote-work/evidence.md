@@ -345,11 +345,13 @@ signed-in session, an RDP client reattaches to that session rather than starting
 a private one. Record that as the machine's behaviour; it is not a defect, but
 console and remote graphical access are not independent.
 
-Still open for this task: RDP clients on the Air and on Korolev, which have
-none installed, and a task-survival observation across a deliberate disconnect
-and reconnect. The retained session and zero timeouts show computation is not
-terminated by disconnection, but no specific running task was observed across
-the cycle from the Pro.
+The owner confirms work in the session survived the disconnect and reconnect
+cycle. That part is the owner's observation; the Pro measured the retained
+session and the zero timeouts that explain it.
+
+Graphical access from the Air and Korolev is out of scope by owner decision, so
+neither has an RDP client and none is declared. Both keep SSH and file
+transfer, which are verified above.
 
 ## Task 4.5 — shares
 
