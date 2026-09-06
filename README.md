@@ -17,13 +17,17 @@ Nix owns the host configuration and OMP wrapper, plugin, and language tools. Hom
 
 Tailscale connects the managed hosts, personal Windows desktop, and temporary MacBook Air. Korolev can initiate connections but does not accept inbound connections.
 
-[![Tailscale overview: Korolev can initiate connections to the MacBook Pro, Windows desktop, and temporary MacBook Air. Those three peers can initiate connections to one another. Service cards distinguish verified SSH access from pending file-access checks and unverified desktop authentication.](docs/images/tailscale-overview.webp)](docs/images/tailscale-overview.webp)
+[![Tailscale overview: Korolev can initiate connections to the MacBook Pro, Windows desktop, and temporary MacBook Air. Those three peers can initiate connections to one another.](docs/images/tailscale-overview.webp)](docs/images/tailscale-overview.webp)
+
+The diagram shows topology only. Its service cards predate the desktop's verification and no longer describe current state; [the change evidence](openspec/changes/enable-native-windows-remote-work/evidence.md) is authoritative.
 
 ### Desktop SSH and file access
 
 After Mac activation, `ssh desktop` opens the Windows account's PowerShell session. Use `ssh desktop-batch 'exit 23'` for unattended commands and `sftp desktop-batch` for transfers. The batch endpoint preserves stdin, disables terminal allocation and connection persistence, and uses an eight-second connection timeout.
 
 Both desktop endpoints require the declared host-key pin and reject password fallback. The selected Windows account has administrator privileges; privileged service changes still require explicit owner approval. Windows absolute SFTP paths use `/D:/Projects/ynab`, not `D:/Projects/ynab`. Keep working copies on local storage and preserve originals during transfers.
+
+Graphical access uses Windows App from this Mac against `desktop.tail8768af.ts.net`. The desktop allows one session per user and boots into a signed-in session, so a connection takes over that session rather than opening a private one, and disconnecting retains its work. The Air and Korolev have no RDP client by design; they use SSH and SFTP.
 
 The desktop access change records [acceptance evidence](openspec/changes/enable-native-windows-remote-work/evidence.md) and [remaining deployment gates](openspec/changes/enable-native-windows-remote-work/tasks.md). The verified standalone Windows OpenSSH server supports hybrid post-quantum key exchange. Its [manual update and recovery procedure](docs/operations/dependency-updates.md#desktop-openssh-maintenance) preserves host keys and tailnet restrictions; client cryptography warnings remain enabled.
 

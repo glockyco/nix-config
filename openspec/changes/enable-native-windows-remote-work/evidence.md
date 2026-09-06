@@ -414,6 +414,22 @@ real operation. The mechanism is unexplained: `AutoAdminLogon` is unset and the
 account has a password, so this is recorded as observed behaviour rather than a
 diagnosed one.
 
+## Task 6.1 — operating guidance
+
+The [dependency runbook](../../../docs/operations/dependency-updates.md#desktop-openssh-maintenance)
+carries the desktop procedure in one place: manual server updates with digest
+and signature checks, the supported remove and install sequence, recovery from
+the retained package, the agent stack's version ownership, per-source key
+revocation with its ACL constraint, the global-section rule for `sshd_config`
+edits, session lifetime for both agent and graphical access, and the
+coordination-server key-expiry check with its command. No second inventory or
+architecture manual was created.
+
+The README entry gained the graphical-access paragraph and a note that the
+tailnet diagram shows topology only: its service cards predate this work and no
+longer describe current state, so the change evidence is authoritative. The
+diagram image itself was not regenerated.
+
 ## Task 5.4 — repeat checks and local recovery
 
 Repeating the setup state checks found no duplication: one enabled inbound rule

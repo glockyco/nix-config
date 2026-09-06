@@ -108,6 +108,16 @@ After installation, use the Pro's pinned `desktop-batch` endpoint to verify the 
 
 To recover from a failed ZIP update, use the local console and the same supported remove/install procedure with the retained accepted package. Restore the saved SSH configuration and ACLs if they changed, restore startup settings, and repeat transport acceptance. Removing the Windows capability can remove its server binary: pointing the service back to `C:\Windows\System32\OpenSSH\sshd.exe` is not a recovery procedure when that file is absent. Returning to capability ownership requires an explicit Windows capability installation, not an executable fallback. Do not reinstall or restart the working server merely to rehearse this procedure.
 
+The desktop's agent stack is manual too, and separate from this repository's wrapper. OMP is the standalone Windows executable under `%LOCALAPPDATA%\omp`, installed with the official installer at a pinned tag and checked against the release digest; do not install it through Bun, which produces a shim this fleet rejects. The personal plugin is a source checkout at the revision this repository pins, loaded with `--plugin-dir` and `--extension`; update it explicitly rather than by automatic pull. Language servers are deliberately absent there. Record any accepted version change with its digest in the owning change.
+
+### Sources, revocation and session lifetime
+
+Each source holds its own key and its own labelled line in `C:\ProgramData\ssh\administrators_authorized_keys`. Enrolled sources are `air`, `pro-enclave`, `pro-yubikey` and `korolev`. Revoke exactly one source by deleting its line, then confirm that source is refused with `Permission denied (publickey)` while the others still authenticate. Keep the file's ACLs granting only `SYSTEM` and `Administrators`; anything wider makes `sshd` refuse every key without a useful error. Add a key only through the desktop's own session, after checking the candidate's fingerprint.
+
+Place any `sshd_config` edit in the global section deliberately. Appending puts the directive after the `Match Group administrators` block, where it applies only to that match, and `sshd -t` accepts the file anyway.
+
+Agent work uses non-interactive commands, `ssh desktop-batch '<command>'`. An agent ends with its SSH connection: no multiplexer is installed and no process survives a dropped client, so resume saved conversation state explicitly rather than expecting a live session. A graphical connection is different: the desktop keeps one session per user with no disconnection timeout, so RDP takes over the signed-in console session and retains its work after disconnecting.
+
 Unattended access also depends on coordination-server state. Keep the desktop's Tailscale key expiry disabled and check it from Windows:
 
 ```powershell
