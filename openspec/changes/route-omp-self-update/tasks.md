@@ -5,9 +5,9 @@
 
 ## 2. Runtime acceptance
 
-- [ ] 2.1 Perform a real WSL binary update through the built wrapper; record initial and final versions, the updated path, and successful `verify-personal-omp` output in change evidence.
-- [ ] 2.2 Run the disposable wrapped-session smoke and `personal_commit` preview; record the immutable plugin path, active policy, and unchanged disposable repository.
-- [ ] 2.3 Run the managed-browser smoke through the candidate wrapped session; record the Example Domain title and screenshot without loader errors.
+- [x] 2.1 Perform a real WSL binary update through the built wrapper; record initial and final versions, the updated path, and successful `verify-personal-omp` output in change evidence.
+- [x] 2.2 Run the disposable wrapped-session smoke and `personal_commit` preview; record the immutable plugin path, active policy, and unchanged disposable repository.
+- [x] 2.3 Run the managed-browser smoke through the candidate wrapped session; record the Example Domain title and screenshot without loader errors.
 
 ## 3. Documentation and release
 
