@@ -414,6 +414,24 @@ real operation. The mechanism is unexplained: `AutoAdminLogon` is unset and the
 account has a password, so this is recorded as observed behaviour rather than a
 diagnosed one.
 
+## Task 6.2 — cleanup and exclusions
+
+Spike-owned state was removed after verification: the preview staging directory
+`C:\ProgramData\omp-openssh-preview-3f038d797eba` is gone, and the accepted
+signed package remains in the recovery directory with its release digest
+`23f50f3458c4c5d0b12217c6a5ddfde0137210a30fa870e98b29827f7b43aba5`. No psmux,
+smoke-repository, transfer or revocation-test artefacts remain in the Windows
+temporary directory. The service binary and running service are intact and
+access still returns exit status `23`. The recovery directory and the plugin
+source checkout are retained deliberately.
+
+Exclusions hold. No hosted collab, session broker, agent service or scheduled
+task was created; the only scheduled tasks and services matching a search are
+pre-existing platform and vendor entries. No agent process runs. No NixOS-WSL
+host is declared under this change, and no employer Windows configuration was
+touched: `modules/windows/` is unchanged. ZeroTier, TeamViewer and Chrome Remote
+Desktop remain installed and unmodified, as recorded in the limitations.
+
 ## Task 6.1 — operating guidance
 
 The [dependency runbook](../../../docs/operations/dependency-updates.md#desktop-openssh-maintenance)
@@ -562,6 +580,27 @@ The console worker completed installation at `C:\Program Files\OpenSSH` after re
 The Pro verified the active service through its normal pinned endpoint: `mlkem768x25519-sha256`, unchanged ED25519 identity, native status `23`, and no weak-key-exchange warning. `Set-Location` to `C:\Program Files\OpenSSH` preserved the spaced path and status `23`. An unapproved key and mismatched host pin each failed with status `255`. Production SFTP round-tripped 65,566 bytes with the isolated test's SHA-256 and empty stderr. Temporary transfer files and test keys were removed.
 
 Pro and Air transport checks do not complete the multi-source tasks. Korolev acceptance, installed Pro client activation, non-tailnet rejection coverage, graphical/share acceptance, and reboot verification remain outstanding. The Pro and Air route the desktop's `10.0.1.2` Ethernet address through their `192.168.0.1` default gateway; neither supplies demonstrated desktop-LAN reachability. No route failure was accepted as firewall proof. Windows service installation was performed at the console.
+
+### Final gate run
+
+Run sequentially on the Pro after every change above, with no evaluation-cache
+contention and no `options.json` context warning:
+
+- `nix fmt -- --fail-on-change`: clean.
+- `openspec validate --all --strict`: 13 passed, 0 failed. One informational
+  note remains about a requirement longer than 500 characters.
+- `nix flake check --print-build-logs`: passed on Darwin; Linux checks are
+  omitted by native-system selection and run on Korolev and in CI.
+- `nix run .#check-darwin-build-plans`: 34 outputs, none reaching a forbidden
+  source build.
+- `nix build .#darwinConfigurations.macbook-pro.system`: succeeded.
+- `darwin-rebuild switch` was run once for the RDP client, and
+  `verify-personal-omp` reported OMP 18.1.12, a `/nix/store` plugin path and
+  `omp: current`.
+
+The temporary-path audit crash did not recur in these runs, which is expected of
+an intermittent defect and is not evidence that it is fixed. It remains an
+upstream defect, recorded above.
 
 ### Native integration gates
 
