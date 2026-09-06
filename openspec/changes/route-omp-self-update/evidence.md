@@ -53,6 +53,10 @@ A fresh session launched through the normal login-shell command resolved the wra
 
 The same session opened the managed browser at `https://example.com/`, reported `Example Domain`, captured `/tmp/omp-sshots-1575474761d137d1.webp`, and closed the browser. The screenshot was visually inspected. No tool or loader error was reported.
 
-## Remaining acceptance
+## Mac activation — 2026-09-06
 
-The clean Mac checkout at `/Users/glockyco/.config/nix-darwin` was advanced to `f680cef` through a bundle fetch and rebase. No remote push or merge commit was used. Mac activation requires the owner's administrator password; unattended sudo is unavailable. Task 3.3 remains incomplete until the Mac is activated and its default-shell and activation smoke checks pass. Do not archive before that acceptance.
+The clean Mac checkout at `/Users/glockyco/.config/nix-darwin` was advanced to `f680cef` through a bundle fetch and rebase. No remote push or merge commit was used. The owner performed the password-authorized activation and confirmed that the supplied activation, verifier, and `omp update --check` procedure worked. This is owner-reported acceptance; those commands were not repeated remotely.
+
+A subsequent fresh session launched through the normal Mac login-shell `omp` command resolved `/nix/store/s81h51dvwaxrx76yb677nqn96j1fckil-omp/bin/omp`. It verified the immutable plugin manifest at `/nix/store/h6mjqcm3rpsj9pdxzn07n9rjbn84f132-personal-omp-plugin-0.1.0`, quoted the loaded personal commit policy, and completed the exact `personal_commit` preview. The disposable repository remained clean with no commits before and after the preview.
+
+All change acceptance tasks are complete. Archival has not been requested.
