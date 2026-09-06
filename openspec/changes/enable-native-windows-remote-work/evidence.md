@@ -244,9 +244,13 @@ No language server the plugin selects exists on Windows: `markdown-oxide`,
 `Microsoft.CodeAnalysis.LanguageServer`, the Svelte server, `marksman`, `nixd`
 and `pyright` are all absent, because Nix packages them for the Macs and
 Korolev and cannot on Windows. The owner then scoped diagnostics out of the
-desktop, because development work stays on the Pro and Korolev. No Windows
-language-server artifact is selected or pinned, and none was faked. Adding one
-later is a dependency change with its own version and provenance work.
+native Windows agent. No Windows language-server artifact is selected or
+pinned, and none was faked.
+
+This is not a claim that the machine will never have language servers. The
+planned NixOS-WSL host will provide them through Nix, inside WSL, for an agent
+running there. That does not satisfy this check and does not reinstate it,
+because the native agent must not resolve tooling through a WSL launcher.
 
 ## Task 3.3 — persistent terminal
 
