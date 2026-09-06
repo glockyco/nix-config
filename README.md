@@ -19,6 +19,14 @@ Tailscale connects the managed hosts, personal Windows desktop, and temporary Ma
 
 [![Tailscale overview: Korolev can initiate connections to the MacBook Pro, Windows desktop, and temporary MacBook Air. Those three peers can initiate connections to one another. Service cards distinguish verified SSH access from pending file-access checks and unverified desktop authentication.](docs/images/tailscale-overview.webp)](docs/images/tailscale-overview.webp)
 
+### Desktop SSH and file access
+
+After Mac activation, `ssh desktop` opens the Windows account's PowerShell session. Use `ssh desktop-batch 'exit 23'` for unattended commands and `sftp desktop-batch` for transfers. The batch endpoint preserves stdin, disables terminal allocation and connection persistence, and uses an eight-second connection timeout.
+
+Both desktop endpoints require the declared host-key pin and reject password fallback. The selected Windows account has administrator privileges; privileged service changes still require explicit owner approval. Windows absolute SFTP paths use `/D:/Projects/ynab`, not `D:/Projects/ynab`. Keep working copies on local storage and preserve originals during transfers.
+
+The [desktop access change](openspec/changes/enable-native-windows-remote-work/tasks.md) records acceptance evidence and remaining deployment gates. The installed Windows OpenSSH build lacks post-quantum key exchange; the client warning remains enabled.
+
 ## Develop
 
 With Nix and flakes installed, enter the pinned environment. It installs the commit hook; `direnv allow` uses the same shell.

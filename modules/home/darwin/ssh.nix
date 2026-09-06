@@ -12,6 +12,25 @@ let
     HostName = "macbook-air";
     User = "joaichberger";
   };
+
+  # The Windows desktop is an unmanaged tailnet peer. Its account is a local
+  # Windows user, so the name differs from this machine's, exactly as the Air's
+  # does. MagicDNS resolves the short name, so no address is recorded here: the
+  # desktop's tailnet address is not stable policy.
+  desktopHost = {
+    HostName = "desktop";
+    User = "User";
+    StrictHostKeyChecking = "yes";
+    UserKnownHostsFile = toString (
+      pkgs.writeText "desktop-known-hosts" ''
+        desktop,desktop.tail8768af.ts.net ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN/+XoGCH3MVvNQuvVfjmidMk5mEa+gqs84C00s6DiEt
+      ''
+    );
+    GlobalKnownHostsFile = "/dev/null";
+    UpdateHostKeys = "no";
+    PasswordAuthentication = "no";
+    KbdInteractiveAuthentication = "no";
+  };
 in
 
 {
@@ -62,6 +81,24 @@ in
       # inheriting the interactive one-hour control-master lifetime. Keep stdin
       # available because rsync carries its protocol over the SSH streams.
       "air-batch" = airHost // {
+        BatchMode = "yes";
+        RequestTTY = "no";
+        ControlMaster = "no";
+        ControlPath = "none";
+        ControlPersist = "no";
+        ConnectTimeout = 8;
+      };
+
+      # Secretive supplies the enrolled client key. Both desktop endpoints use
+      # the owner-verified host pin and reject password fallback. The pin's
+      # fingerprint is SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw.
+      "desktop" = desktopHost;
+
+      # Same reasoning as `air-batch`: an unattended command must exit with its
+      # remote process instead of inheriting the interactive control-master
+      # lifetime. The desktop's agent workflows are driven this way, so the
+      # split matters here for the same reason it does for the Air.
+      "desktop-batch" = desktopHost // {
         BatchMode = "yes";
         RequestTTY = "no";
         ControlMaster = "no";

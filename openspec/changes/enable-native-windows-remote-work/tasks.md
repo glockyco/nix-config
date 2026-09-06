@@ -8,7 +8,7 @@ Keep multi-source tasks unchecked until every named source passes. Preserve all 
 
 The owner reports desktop inventory and version selection complete, with evidence retained on Windows. The reported server configuration uses PowerShell 7, public-key-only authentication, SFTP, and a tailnet-only firewall rule with the broad rule disabled. Three labelled public keys are enrolled. Unattended Tailscale is applied; reboot acceptance remains outstanding.
 
-The owner confirmed the desktop's measured ED25519 fingerprint: `SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw`. The Pro pinned the matching public key for `desktop` and `desktop.tail8768af.ts.net` in its mutable `~/.ssh/known_hosts`. No declarative desktop client alias has been added.
+The owner confirmed the desktop's measured ED25519 fingerprint: `SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw`. The Pro pinned the matching public key for `desktop` and `desktop.tail8768af.ts.net` in its mutable `~/.ssh/known_hosts`. The Pro subsequently integrated the desktop client declaration from `0449822` and added an immutable host-key pin through `UserKnownHostsFile`. Both aliases enforce strict host checking and reject password fallback. The generated configuration was exercised with `ssh -F`; it has not been activated system-wide.
 
 Pro checks used `StrictHostKeyChecking=yes`, `BatchMode=yes`, disabled connection multiplexing, and an eight-second connection timeout:
 
@@ -21,7 +21,24 @@ Pro checks used `StrictHostKeyChecking=yes`, `BatchMode=yes`, disabled connectio
 
 **Accepted administrator access:** the live SSH token reports `WindowsPrincipal.IsInRole(Administrator) = true`. The owner confirmed this account choice and the desktop branch revises tasks 1.1 and 2.1 accordingly. SSH commands have enabled administrator privileges without an additional elevation prompt. Explicit approval for privileged service changes remains an operator policy, not a technical restriction of this SSH account.
 
-Pro transport checks do not complete the multi-source tasks. Korolev/Air acceptance, a permanent managed client entry, non-tailnet rejection coverage, and reboot verification remain outstanding. No Windows server settings were changed from the Pro.
+The generated `desktop` and `desktop-batch` aliases both authenticated as the selected account. The batch alias returned direct exit status `23`, rejected a mismatched pin and an unapproved client key with status `255`, and passed a second 4,114-byte SFTP round trip through a path with spaces. Its SHA-256 was `79c2b3b3bdb2113c14ce49b43beaf962376b68d4e9c6bcd32ef95e67893f536f`. All temporary files and keys were removed. Server `sshd -T` includes `sk-ssh-ed25519@openssh.com`; an actual YubiKey-authenticated session was not exercised.
+
+**Post-quantum warning:** the installed Windows OpenSSH 9.5 server offers no hybrid key exchange. Its bundled `ssh -Q kex` lists none, and `sshd_config` has no explicit `KexAlgorithms` override. The [Win32-OpenSSH 10.0.0.0p2 preview](https://github.com/PowerShell/Win32-OpenSSH/releases/tag/10.0.0.0p2-Preview) adds ML-KEM and sntrup support but is labelled non-production ready. No server upgrade or warning suppression was applied. A preview compatibility spike and any service replacement require separate owner coordination with local recovery. The warning concerns key exchange, not the verified ED25519 host identity.
+
+Pro transport checks do not complete the multi-source tasks. Korolev/Air acceptance, installed-client activation, non-tailnet rejection coverage, and reboot verification remain outstanding. No Windows server settings were changed from the Pro.
+
+### Native integration gates
+
+The Pro completed the following checks for the integrated desktop client declaration:
+
+- `nix fmt -- --fail-on-change`: passed after applying nixfmt's layout to the host-pin expression.
+- `openspec validate --all --strict`: 13 passed, 0 failed.
+- `nix build --no-link --print-build-logs .#checks.aarch64-darwin.airBatchConfiguration`: passed. The check exercises OpenSSH's rendered policy for both endpoint pairs and the desktop's immutable pin.
+- `nix flake check --print-build-logs`: completed successfully on Darwin; Linux checks were omitted by the native-system selection.
+- `nix run .#check-darwin-build-plans`: passed; 34 outputs, none reaching a forbidden source build.
+- `nix build .#darwinConfigurations.macbook-pro.system`: completed successfully. No activation or push occurred.
+
+The successful build was not warning-free. Nix emitted ignored evaluation-cache contention and an `options.json` store-context warning. The Catppuccin FZF and Ghostty derivations logged segmentation faults in the Nixpkgs `audit-tmpdir.sh` pipeline but continued successfully. These dependency-build diagnostics were not fixed or suppressed by this client change; retain them for dependency investigation rather than describing the logs as clean.
 
 ## 1. Establish desktop prerequisites
 
@@ -36,7 +53,7 @@ Pro transport checks do not complete the multi-source tasks. Korolev/Air accepta
 - [x] 2.2 Restrict effective SSH access to the Tailscale addresses and supported address families. Disable the installer's all-profiles rule, verify no broader rule defeats the restriction, and keep the local recovery path working.
 - [ ] 2.3 Enroll the Pro, Air, and Korolev source public keys through the trusted desktop session with per-source labels. Pin the measured server key in their existing configuration owners. Verify each saved `desktop` entry authenticates without password fallback; keep the Mac builder key unchanged.
 - [ ] 2.4 Exercise native commands, paths containing spaces, and exit status 23 from each source. Verify rejection of an unapproved client key and a deliberately mismatched temporary client host-key record without modifying the server key. Confirm the security-key algorithm is accepted, or scope it explicitly.
-- [ ] 2.5 Declare the desktop's interactive and unattended client endpoints alongside the existing Air pair, and extend the batch endpoint checks to cover both destinations.
+- [x] 2.5 Declare the desktop's interactive and unattended client endpoints alongside the existing Air pair, and extend the batch endpoint checks to cover both destinations.
 
 ## 3. Prove the native agent and persistent terminal
 
