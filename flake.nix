@@ -445,12 +445,6 @@
                   }
                   ''
                     test -x ${personalOmp}/bin/omp
-                    grep -qF -- ${lib.escapeShellArg personalOmp.ompExecutable} ${personalOmp}/bin/omp
-                    grep -qF -- ${lib.escapeShellArg personalOmp.ompInstallCommand} ${personalOmp}/bin/omp
-                    ! grep -Eq '/nix/store/[^ ]+/bin/omp' ${personalOmp}/bin/omp
-                    grep -qF -- ${lib.escapeShellArg "--extension ${personalOmp.plugin}"} ${personalOmp}/bin/omp
-                    grep -qF -- ${lib.escapeShellArg "--plugin-dir ${personalOmp.plugin}/lsp"} ${personalOmp}/bin/omp
-                    ! grep -qF /Users/ ${personalOmp}/bin/omp
 
                     test "$(jq -r '.omp.extensions | length' ${personalOmp.plugin}/package.json)" = 1
                     test "$(jq -r '.servers | keys | sort | join(",")' ${personalOmp.plugin}/lsp/lsp.json)" = markdown-oxide,marksman,roslyn-language-server,svelte
@@ -472,6 +466,65 @@
                     test "$(${lib.getExe openspec} --version)" = "${openspec.version}"
                     touch $out
                   '';
+
+              personalOmpRouting =
+                let
+                  probe = pkgs.writeScript "omp-routing-probe" ''
+                    #!${pkgs.python3}/bin/python3
+                    import json, os, shutil, sys
+                    print(json.dumps({"args": sys.argv[1:], "omp": shutil.which("omp")}))
+                    sys.exit(int(os.environ.get("PROBE_STATUS", "0")))
+                  '';
+                  wslWrapper = personalOmp.override {
+                    ompRuntime = {
+                      executable.homeRelative = "standalone/omp";
+                      installCommand = "install-omp-for-routing-check";
+                    };
+                  };
+                  darwinWrapper = personalOmp.override {
+                    ompRuntime = {
+                      executable.absolute = probe;
+                      installCommand = "install-omp-for-routing-check";
+                    };
+                  };
+                in
+                pkgs.runCommand "check-personal-omp-routing" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+                  export HOME="$TMPDIR/home with spaces"
+                  mkdir -p "$HOME/standalone"
+                  cp ${probe} "$HOME/standalone/omp"
+                  chmod +x "$HOME/standalone/omp"
+                  python3 - <<'PY'
+                  import json, os, pathlib, subprocess
+
+                  wsl = "${wslWrapper}/bin/omp"
+                  darwin = "${darwinWrapper}/bin/omp"
+                  target = str(pathlib.Path.home() / "standalone/omp")
+                  plugin_args = ["--extension", "${personalOmp.plugin}", "--plugin-dir", "${personalOmp.plugin}/lsp"]
+                  env = dict(os.environ, PATH=str(pathlib.Path(wsl).parent) + ":" + os.environ["PATH"])
+                  original_path = env["PATH"]
+
+                  def run(wrapper, args, status=0):
+                      result = subprocess.run([wrapper, *args], env=dict(env, PROBE_STATUS=str(status)), text=True, capture_output=True)
+                      assert result.returncode == status, result
+                      return json.loads(result.stdout)
+
+                  update_args = ["update", "--check", "argument with spaces"]
+                  result = run(wsl, update_args, 23)
+                  assert result == {"args": update_args, "omp": target}, result
+                  for args in ([], ["--print", "update"], ["acp"]):
+                      result = run(wsl, args)
+                      assert result == {"args": plugin_args + args, "omp": wsl}, result
+                  result = run(darwin, ["update"])
+                  assert result == {"args": plugin_args + ["update"], "omp": wsl}, result
+                  assert env["PATH"] == original_path
+                  pathlib.Path(target).unlink()
+                  result = subprocess.run([wsl, "update"], env=env, text=True, capture_output=True)
+                  assert result.returncode == 1, result
+                  assert target in result.stderr and "install-omp-for-routing-check" in result.stderr, result
+                  assert not result.stdout, result
+                  PY
+                  touch "$out"
+                '';
 
               personalOmpVerification = pkgs.runCommand "check-personal-omp-verification" { } ''
                 omp_stub=$TMPDIR/omp-stub

@@ -105,6 +105,13 @@ let
       # store-derived name.
       omp_bin=${ompExecutable}
       ${requireOmpExecutable}
+      ${lib.optionalString (ompRuntime.executable ? homeRelative) ''
+        if [ "''${1-}" = update ]; then
+          # The updater identifies its owner through PATH, not the running binary.
+          export PATH="''${omp_bin%/*}:$PATH"
+          exec "$omp_bin" "$@"
+        fi
+      ''}
       exec "$omp_bin" --extension ${plugin} --plugin-dir ${plugin}/lsp "$@"
     '';
   };

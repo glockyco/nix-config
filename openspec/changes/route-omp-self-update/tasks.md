@@ -1,7 +1,7 @@
 ## 1. Wrapper routing
 
-- [ ] 1.1 Add WSL-only leading `update` dispatch to `packages/personal-omp.nix`; verify the built wrapper selects the fixed standalone target without session plugin flags.
-- [ ] 1.2 Add observable regression coverage to the existing wrapper checks; verify update arguments and failing exit status, missing-executable rejection, normal and nested command resolution, and unchanged Darwin routing.
+- [x] 1.1 Add WSL-only leading `update` dispatch to `packages/personal-omp.nix`; verify the built wrapper selects the fixed standalone target without session plugin flags.
+- [x] 1.2 Add observable regression coverage to the existing wrapper checks; verify update arguments and failing exit status, missing-executable rejection, normal and nested command resolution, and unchanged Darwin routing.
 
 ## 2. Runtime acceptance
 
