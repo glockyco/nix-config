@@ -74,6 +74,22 @@ the desktop's own Ethernet segment remains the stronger check; the Pro, the
 Air, and Korolev are all on `192.168.0.0/24` and route `10.0.1.2` through a
 gateway.
 
+## Task 5.2 — different physical network
+
+The owner moved the Pro to a separate network: it holds `172.20.10.4` behind
+gateway `172.20.10.1`, and Tailscale reports no direct path to the desktop, so
+traffic relays through DERP `fra`. From there the saved `desktop-batch` name
+returned `desktop-dbhlrdd\user` with exit status `23`, the interactive
+`desktop` name authenticated, and a 65,536-byte SFTP round trip through a
+filename with spaces matched
+`a75f7305e4514fa623f4fc21c4344a8b8ee4d9877528dc58bbc36232efd18e87` at both
+ends. The desktop logged the authentication from the Pro's tailnet address
+`100.88.17.38`, not from any address on this network, and the desktop's
+`10.0.1.2` LAN address stayed unreachable from it. No router port forwarding
+was introduced.
+
+Not covered here: graphical RDP access from this network, which task 4.3 owns.
+
 ## Task 2.3 / 2.4 — enrollment and authentication
 
 Host key, wire and disk identical:
