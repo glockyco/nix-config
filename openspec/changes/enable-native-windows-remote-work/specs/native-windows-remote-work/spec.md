@@ -80,7 +80,7 @@ Live agent persistence across a lost SSH connection is out of scope: the desktop
 
 ### Requirement: Graphical access with retained disconnected sessions
 
-Authorized source machines SHALL have a usable RDP client path to the desktop with verified server identity and Network Level Authentication. Disconnecting the RDP client SHALL retain ordinary terminal computation in the existing Windows user session. Setup SHALL NOT disable screen locking or bypass elevation prompts to support agents.
+The Pro SHALL have a usable RDP client path to the desktop with verified server identity and Network Level Authentication. Graphical access from the Air and the WSL host is out of scope; only SSH and file transfer are required from them. Disconnecting the RDP client SHALL retain ordinary terminal computation in the existing Windows user session. Setup SHALL NOT disable screen locking or bypass elevation prompts to support agents.
 
 #### Scenario: Return to a graphical work session
 

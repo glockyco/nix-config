@@ -1,6 +1,6 @@
 ## Why
 
-Tailscale enrollment makes the desktop reachable, but does not provide authenticated remote work or persistent native Windows agents. The owner needs commands, files, and graphical access from the Pro, Air, and Korolev.
+Tailscale enrollment makes the desktop reachable, but does not provide authenticated remote work or persistent native Windows agents. The owner needs commands and files from the Pro, Air, and Korolev, and graphical access from the Pro.
 
 The desktop already runs WSL 2 with an Ubuntu distribution and Docker Desktop's distributions, and the owner has since decided that a NixOS-WSL host on the desktop is wanted, mirroring Korolev. The original exclusion of WSL was therefore an assumption about the machine rather than a requirement, and this revision withdraws it. The Windows access layer below stays native and is not built on WSL; the agent surface becomes an explicit open decision instead of a settled one.
 

@@ -82,7 +82,7 @@ Anyone who later needs persistence starts from an open question, not from these 
 
 ### 6. RDP and file access remain independent services
 
-Inspect and reuse existing RDP rather than assuming it is disabled. Keep NLA, verify server identity, and save a desktop connection on each permitted source. Use Windows App on the Macs and a supported Linux RDP client on Korolev if absent. Do not alter Korolev's Windows host. Confirm effective disconnected-session limits preserve work. Disconnect is not sign-out; retain screen locking and UAC.
+Inspect and reuse existing RDP rather than assuming it is disabled. Keep NLA, verify server identity, and save a desktop connection on each permitted source. Use Windows App on the Pro. Graphical access from the Air and Korolev is out of scope: they need SSH and file transfer only, so no client is installed there. Do not alter Korolev's Windows host. Confirm effective disconnected-session limits preserve work. Disconnect is not sign-out; retain screen locking and UAC.
 
 Prove an ordinary terminal task survives RDP disconnect and returns in the same user session. Launch graphical applications in that session; SSH service context does not imply access to its screen. Reboot and sign-out end live agent sessions. Recovery uses explicit OMP resume, never automatic replay of mutations.
 
