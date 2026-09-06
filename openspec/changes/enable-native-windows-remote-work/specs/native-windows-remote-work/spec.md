@@ -53,7 +53,8 @@ WSL may be installed on the desktop and SHALL NOT be treated as a defect. A requ
 - **WHEN** the operator starts the configured agent in a disposable Windows checkout
 - **THEN** the agent completes a harmless repository task using Windows tools
 - **AND** the personal policy extension loads and completes a commit preview without creating a commit
-- **AND** required shell, Git, OpenSpec, research-helper, and language-server functions pass their applicable smoke checks
+- **AND** required shell, Git, OpenSpec, and research-helper functions pass their applicable smoke checks
+- **AND** language-server diagnostics are out of scope on the desktop, because development work stays on the Macs and the WSL host
 
 #### Scenario: Inspect local runtime ownership
 
