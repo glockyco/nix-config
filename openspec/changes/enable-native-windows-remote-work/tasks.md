@@ -4,20 +4,39 @@ The owner approved Pro-only SSH/SFTP access before the native agent and broader 
 
 Keep multi-source tasks unchecked until every named source passes. Preserve all remaining acceptance gates; this order does not reduce the change's scope. Review the selected Windows account's file permissions before wider enrollment. Desktop-access authorization does not authorize financial-data replication to Korolev or the borrowed Air.
 
-The Mac application-directory and command-path inspection found no installed RDP client. Existing read-only probes found desktop RDP and SMB ports reachable and SSH timed out. No authenticated Windows session or project transfer has occurred. Task 1.1 requires owner-entered credentials through a trusted local or verified RDP session before deployment.
+## Pro acceptance evidence: 2026-09-06
+
+The owner reports desktop inventory and version selection complete, with evidence retained on Windows. The reported server configuration uses PowerShell 7, public-key-only authentication, SFTP, and a tailnet-only firewall rule with the broad rule disabled. Three labelled public keys are enrolled. Unattended Tailscale is applied; reboot acceptance remains outstanding.
+
+The owner confirmed the desktop's measured ED25519 fingerprint: `SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw`. The Pro pinned the matching public key for `desktop` and `desktop.tail8768af.ts.net` in its mutable `~/.ssh/known_hosts`. No declarative desktop client alias has been added.
+
+Pro checks used `StrictHostKeyChecking=yes`, `BatchMode=yes`, disabled connection multiplexing, and an eight-second connection timeout:
+
+- Authentication returned `desktop-dbhlrdd\user` and PowerShell `7.6.5`.
+- Direct remote `exit 23` returned SSH status `23`. A nested PowerShell invocation without explicit exit forwarding returned `1`; use the direct command for this acceptance check.
+- A temporary mismatched host pin failed with status `255` and host-key verification failure.
+- A temporary unapproved client key, with the agent disabled and `IdentitiesOnly=yes`, failed with status `255` and `Permission denied (publickey)`.
+- A 4,114-byte binary SFTP payload round-tripped through a temporary Windows filename containing spaces. SHA-256 matched: `e7da80720257726b2bf9cf4f4a78307f3a50312b899bfef23a9846ef142eba15`. Windows absolute SFTP paths require `/C:/...`; `C:/...` was treated as relative and failed before creating a file. Remote and local smoke files and temporary keys were removed.
+- Read-only metadata confirmed `D:\Projects\ynab` exists, already contains `.git`, and includes `statements` and `.venv`. No project content was copied or executed.
+
+**Accepted administrator access:** the live SSH token reports `WindowsPrincipal.IsInRole(Administrator) = true`. The owner confirmed this account choice and the desktop branch revises tasks 1.1 and 2.1 accordingly. SSH commands have enabled administrator privileges without an additional elevation prompt. Explicit approval for privileged service changes remains an operator policy, not a technical restriction of this SSH account.
+
+Pro transport checks do not complete the multi-source tasks. Korolev/Air acceptance, a permanent managed client entry, non-tailnet rejection coverage, and reboot verification remain outstanding. No Windows server settings were changed from the Pro.
 
 ## 1. Establish desktop prerequisites
 
-- [ ] 1.1 Obtain authenticated local or RDP access with owner-entered credentials. Verify the actual desktop identity, Windows edition/build, supported security-update status, and intended non-administrator account. Stop before deployment if support or authorization is missing.
-- [ ] 1.2 Inventory native tools, SSH/RDP/SMB services, effective firewall rules, shares, session limits, and power settings. Capture only change-owned settings for rollback and verify a separate local administrator recovery session remains available.
-- [ ] 1.3 Select exact native OMP, plugin source, psmux, and dependency versions with upstream provenance. Verify Windows artifacts exist and the plugin revision matches its recorded source; do not install a Nix-store payload or WSL launcher.
+- [x] 1.1 Obtain authenticated local or RDP access with owner-entered credentials. Verify the actual desktop identity, Windows edition/build, supported security-update status, and the account selected for remote access. Stop before deployment if support or authorization is missing.
+- [x] 1.2 Inventory native tools, SSH/RDP/SMB services, effective firewall rules, shares, session limits, and power settings. Capture only change-owned settings for rollback and record the available local recovery path.
+- [x] 1.3 Select exact native OMP, plugin source, psmux, and dependency versions with upstream provenance. Verify Windows artifacts exist and the plugin revision matches its recorded source; do not install a Nix-store payload, and do not accept a WSL launcher as a native tool.
+- [ ] 1.4 Record the desktop's independent remote-access products with their effective firewall scope, and note that the tailnet restriction in this change covers only the services it configures.
 
 ## 2. Establish authenticated native SSH
 
-- [ ] 2.1 Configure Windows OpenSSH Server, PowerShell 7, public-key-only access for the selected account, and SFTP. Verify effective server configuration and authorization-file ACLs locally before exposing the listener.
-- [ ] 2.2 Restrict effective SSH access to the Tailscale interface and supported address families. Verify no broader rule defeats that restriction and a local recovery path still works.
-- [ ] 2.3 Enroll separate Pro and Korolev user public keys through the trusted desktop session. Pin the measured server key in their existing configuration owners. Verify each saved `desktop` entry authenticates without password fallback; keep the Mac builder key unchanged.
-- [ ] 2.4 Exercise native commands, paths containing spaces, and exit status 23 from both sources. Verify rejection of an unapproved client key and a deliberately mismatched temporary client host-key record without modifying the server key.
+- [x] 2.1 Configure Windows OpenSSH Server, PowerShell 7, public-key-only access for the selected account, and SFTP. Disable password *and* keyboard-interactive authentication in the global section, and verify effective server configuration and authorization-file ACLs locally before exposing the listener.
+- [x] 2.2 Restrict effective SSH access to the Tailscale addresses and supported address families. Disable the installer's all-profiles rule, verify no broader rule defeats the restriction, and keep the local recovery path working.
+- [ ] 2.3 Enroll the Pro, Air, and Korolev source public keys through the trusted desktop session with per-source labels. Pin the measured server key in their existing configuration owners. Verify each saved `desktop` entry authenticates without password fallback; keep the Mac builder key unchanged.
+- [ ] 2.4 Exercise native commands, paths containing spaces, and exit status 23 from each source. Verify rejection of an unapproved client key and a deliberately mismatched temporary client host-key record without modifying the server key. Confirm the security-key algorithm is accepted, or scope it explicitly.
+- [ ] 2.5 Declare the desktop's interactive and unattended client endpoints alongside the existing Air pair, and extend the batch endpoint checks to cover both destinations.
 
 ## 3. Prove the native agent and persistent terminal
 
@@ -33,13 +52,13 @@ The Mac application-directory and command-path inspection found no installed RDP
 - [ ] 4.2 Inspect and preserve existing RDP settings where suitable. Keep NLA and screen locking; scope effective RDP rules, including UDP if enabled, to Tailscale. Verify server certificate identity through the trusted local session before saving client connections.
 - [ ] 4.3 Provide and exercise RDP clients on Pro, Air, and Korolev without modifying Korolev's Windows host. Start a harmless terminal task, disconnect, and reconnect as the same Windows user. Verify the task and session survived and inspect effective disconnected-session limits.
 - [ ] 4.4 Transfer a disposable file over SFTP from each source and verify round-trip hashes. Confirm working checkouts remain on local Windows storage rather than a mounted share.
-- [ ] 4.5 Select or create a bounded transfer folder with owner approval. Configure SMB share and NTFS permissions without guest access or new whole-disk shares. Verify graphical browsing from the Macs, authenticated access from Korolev, round-trip hashes, and denied unauthorized/read-only writes. Inspect inherited SMB exposure and scope effective rules to Tailscale.
+- [ ] 4.5 Inspect the existing shares and record them with their share and NTFS permissions. Remove the redundant explicit whole-volume shares that duplicate the platform's administrative shares, with owner confirmation per share, and add no new whole-volume or guest-accessible share. Verify graphical browsing from the Macs, authenticated access from Korolev, round-trip hashes, and denied unauthorized/read-only writes. Note that administrator membership, not a share, is what grants whole-volume reach.
 
 ## 5. Verify integrated operation and recovery
 
 - [ ] 5.1 Compare successful tailnet access with denied non-tailnet access for SSH, RDP, and SMB from a source with demonstrated LAN reachability. Verify IPv4 and IPv6 where available and inspect effective rules; record unavailable coverage rather than accepting route failures as firewall proof.
 - [ ] 5.2 Coordinate a source on a different physical network and exercise saved-name SSH, RDP, and file access. Record actual results without introducing router port forwarding.
-- [ ] 5.3 Enable supported unattended Tailscale operation and inspect remote-service startup. Coordinate one desktop reboot with local disk-unlock recovery available. Verify remote access before interactive Windows sign-in, then explicitly resume saved agent history without automatically restarting or replaying work.
+- [ ] 5.3 Verify the enabled unattended Tailscale operation and inspect remote-service startup. Coordinate one desktop restart, using a true restart because Fast Startup is enabled, and record that no volume is encrypted so no preboot unlock applies. Verify remote access before interactive Windows sign-in, then explicitly resume saved agent history without automatically restarting or replaying work.
 - [ ] 5.4 Repeat setup state checks and exercise restoration of one change-owned service setting through local recovery. Verify no duplicate rules, keys, or shares and no deletion of repositories or agent state; return to the accepted configuration afterward.
 - [ ] 5.5 Verify Korolev still rejects incoming fleet connections and run the existing live Mac builder and command-status checks. Preserve previous generations and leave unrelated `connect-fleet-over-tailnet` gates unchanged.
 

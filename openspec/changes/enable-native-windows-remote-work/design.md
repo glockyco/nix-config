@@ -2,13 +2,25 @@
 
 See [proposal](proposal.md) for motivation and scope. This design is required because service authorization, process lifetime, and platform packaging cross security boundaries.
 
-Read-only evidence from 2026-09-05:
+Read-only evidence from 2026-09-05, superseded in part by the measured inventory below:
 
 - `desktop` is enrolled as `tag:desktop`, address `100.91.92.64`. Connections must use its MagicDNS name, not this recorded address.
 - RDP negotiated TLS with CredSSP/NLA over Tailscale. TCP 445 accepted a connection; WinRM timed out. Earlier SSH probes timed out.
-- LAN probes timed out from Korolev and reported no route from the Pro. These do not establish effective firewall enforcement.
-- The console reported Windows 10 22H2. Edition, patch support, account permissions, installed tools, and session policies remain uninspected.
-- Upstream OMP publishes Windows binaries. No native agent, authenticated file access, RDP login, or session-persistence trial ran on this desktop.
+- Upstream OMP publishes Windows binaries.
+
+Measured on the desktop on 2026-09-06, replacing the earlier unknowns:
+
+- Windows 10 Pro N (`ProfessionalN`) 22H2. Build `19045.6466` at inventory, `19045.7663` after enrollment in consumer ESU and the pending servicing run.
+- Consumer ESU is an account entitlement delivered through Windows Update. Every `Client-ESU-Year*` SKU reports `LicenseStatus=0`, so licensing state is not a usable gate; a post-2025-10-14 cumulative update is the evidence that the support path works. Windows itself reports `LicenseStatus=5`, which did not block servicing.
+- The only enabled account is a local administrator with a blank password, and the built-in `Administrator` is disabled. There is no separate standard user and no second administrator recovery account.
+- `OpenSSH.Server` was `NotPresent`; the OpenSSH client, PowerShell 7.6.5, Git, Node, Bun, Python 3.13 and `gh` were present. `rg`, `openspec` and `psmux` were absent. OMP 18.1.11 was already installed as a Bun-global shim, the distribution this design rejects.
+- `bash` resolves to `C:\Windows\system32\bash.exe`, the WSL launcher. WSL 2 already hosts Ubuntu plus Docker Desktop's distributions.
+- 1,921 firewall rules, 1,513 of them enabled inbound allow rules, almost all application-scoped. No enabled inbound rule permits 3389, 445 or 139: `Remote Desktop - User Mode` and `File and Printer Sharing` are all disabled. Inbound reach comes from two `Tailscale-In` rules that allow any protocol to `100.91.92.64/32` and the tailnet IPv6 address, so RDP and SMB were already tailnet-only, and destination-scoped rather than interface-bound.
+- Shares `C` and `D` map `C:\` and `D:\` with the account granted Full, alongside the default `C$`, `D$`, `E$`, `ADMIN$` and `IPC$`. `LimitBlankPasswordUse=1` blocks network logon while the account password is blank.
+- RDP is enabled with NLA and TLS, no session time limits and `fResetBroken=0`, so disconnected sessions persist. Its certificate is `CN=DESKTOP-DBHLRDD`, expiring 2026-12-12.
+- No BitLocker: every volume is `FullyDecrypted` with protection off, so there is no preboot unlock to preserve.
+- Sleep on AC is disabled, but Fast Startup is enabled, so a reboot verification must be a true restart.
+- ZeroTier, TeamViewer and Chrome Remote Desktop are installed with application-scoped inbound allow rules. TeamViewer's are Public-profile only and every active interface is Private, so those are currently inert.
 
 ## Goals / Non-Goals
 
@@ -28,13 +40,19 @@ This retains the fleet's unmanaged-peer boundary. A declarative desktop configur
 
 ### 2. Bootstrap through an approved Windows session
 
-First obtain authenticated local or RDP access. The owner enters account credentials and administrator approvals locally. Record the intended ordinary user and existing service configuration without exporting secrets. Keep a local administrator recovery path before modifying listeners or firewall rules.
+First obtain authenticated local or RDP access. The owner enters account credentials and administrator approvals locally. Record the intended user and existing service configuration without exporting secrets. Keep a local administrator recovery path before modifying listeners or firewall rules.
+
+The measured machine has one enabled account, which is a local administrator, and no second administrator account to recover through. The owner accepted that account for SSH rather than creating a standard user, so the recovery path is the local interactive session itself. Elevation is approved at the console; a UAC prompt raised from an unattended context expires after roughly two minutes and auto-denies, so privileged steps run in an already-elevated session instead.
 
 Inspect Windows edition and supported security-update status. An unsupported OS without an approved update-support path blocks new service deployment; do not schedule an unrequested OS upgrade. Inspect existing RDP credentials/certificate through the trusted local session before saving remote connections. A successful unauthenticated handshake is not server-certificate verification.
 
 ### 3. OpenSSH, PowerShell, and separate source credentials
 
-Use Windows OpenSSH Server and PowerShell 7 as the default interactive shell. Configure public-key-only SSH for the selected non-administrator account and preserve SFTP. Verify the Windows authorization-file ACLs and effective OpenSSH configuration, not just file content. Do not run agents with an elevated token.
+Use Windows OpenSSH Server and PowerShell 7 as the default interactive shell. Configure public-key-only SSH for the selected account and preserve SFTP. Verify the Windows authorization-file ACLs and effective OpenSSH configuration, not just file content.
+
+The selected account is a local administrator, so `sshd` reads `__PROGRAMDATA__/ssh/administrators_authorized_keys` through its `Match Group administrators` block, not the profile's `.ssh`. That file's ACLs must grant only Administrators and SYSTEM or keys are silently refused. Per-source revocation is therefore a single labelled line in that one file. The Pro observed enabled administrator privileges in the SSH token. Agents inherit that token without an additional elevation prompt. This is the accepted account choice; console approval for privileged service changes remains operator policy, not token isolation.
+
+Disabling `PasswordAuthentication` alone is insufficient: the Windows server still offers `keyboard-interactive`, which reaches the same credential. Both must be disabled, and both must sit in the global section, because a directive placed after a `Match` block applies only to that match.
 
 Each source owns its private key. Reuse an appropriate existing user key where its policy permits; otherwise generate a new user-owned desktop-access key locally. Never reuse Korolev's root-owned Mac builder key. Enroll public keys through the trusted desktop session and pin the measured host key on clients. Record source labels so the Air key can be revoked independently.
 
@@ -42,7 +60,7 @@ Use existing platform SSH configuration ownership for managed clients, and a nor
 
 ### 4. Native OMP and the personal plugin source
 
-Install the official Windows executable, explicitly selecting the standalone distribution rather than accidentally choosing a Bun-global installation. Select and record a verified version during implementation. Establish provider authentication locally through supported login flows.
+Install the official Windows executable, explicitly selecting the standalone distribution rather than the Bun-global installation already present on this machine. Select and record a verified version during implementation. Establish provider authentication locally through supported login flows.
 
 Load the plugin from a verified source revision through its supported extension and plugin-directory flags. Start from the repository's recorded personal-plugin input revision, but do not copy its Nix-store output or interpreter paths. The source checkout is updated explicitly, not by automatic pull at launch. Retain the previous accepted version for recovery.
 
@@ -70,16 +88,27 @@ Use SFTP for common cross-platform transfers. Add or reuse an operator-selected 
 
 ### 7. Restrict effective access, not just new allow rules
 
-The existing tailnet grants already authorize the desktop and exclude Korolev. Keep policy unchanged. Scope Windows SSH, RDP, and SMB rules to the Tailscale interface and relevant IPv4/IPv6 addresses as supported by the host. Inspect all effective rules and existing broad service exceptions. Source-address ranges alone do not establish interface isolation.
+The existing tailnet grants already authorize the desktop and exclude Korolev. Keep policy unchanged. Scope Windows SSH, RDP, and SMB rules to the Tailscale addresses and relevant address families as supported by the host. Inspect all effective rules and existing broad service exceptions. Source-address ranges alone do not establish interface isolation.
+
+The capability installer adds an all-profiles allow rule for port 22; disable it and add a rule whose local address is the tailnet address, rather than relying on the `Tailscale-In` any-protocol rule. That keeps the restriction inspectable and honours the requirement that losing Tailscale must not leave a permissive path.
+
+ZeroTier, TeamViewer and Chrome Remote Desktop reach the desktop through their own authenticated relays, not through an inbound tailnet path, so scoping firewall rules cannot bound them. Record them and their effective scope; do not remove working owner tooling to make the tailnet claim look broader than the requirement states. Taildrop is unavailable to this host because a tagged node has no user owner, which is consistent with SFTP being the chosen transfer mechanism.
 
 Validate allowed Tailscale paths alongside denied LAN paths from a source with independently demonstrated LAN reachability. Include RDP UDP where enabled and both IP families where available. Review inherited SMB rules and administrative shares so new access is not accidentally broader than intended. Do not delete unrelated existing shares.
 
-Enable Tailscale's supported unattended operation and verify service startup after an owner-coordinated reboot. Preserve disk encryption and any required local preboot unlock. Do not promise continuous remote availability during sleep or automatic wake. No public ports, exit nodes, relay service, or inbound Korolev rules are needed.
+Enable Tailscale's supported unattended operation and verify service startup after an owner-coordinated reboot. No volume on this machine is encrypted, so there is no preboot unlock to preserve; record that rather than implying one exists. Fast Startup is enabled, so a reboot verification must be a true restart. Do not promise continuous remote availability during sleep or automatic wake. No public ports, exit nodes, relay service, or inbound Korolev rules are needed.
+
+### 8. WSL is permitted; a NixOS-WSL desktop host is follow-on work
+
+WSL already runs on this machine and the owner wants a NixOS-WSL host here, mirroring Korolev. Permit WSL and stop treating its presence as a defect. The native Windows access layer in this change does not depend on it, and the native agent's toolchain still must not resolve through a WSL launcher.
+
+Declaring that host is deliberately out of scope here. `flake.nix` keys its host table by system, `hosts.x86_64-linux` is Korolev, and the flake records that Korolev is the only `x86_64-linux` host, so a second Linux host has no row to occupy. The deferred `key-fleet-by-host` change re-keys the table by host name and is the prerequisite; its own scheduling notice requires the owner to schedule it after a plan review. A desktop NixOS-WSL host is the concrete use requirement that notice asks for, but it is a separate change, and the agent surface for the desktop stays undecided until it exists.
 
 ## Risks / Trade-offs
 
-- No authenticated desktop access yet -> bootstrap and inventory precede installation; no speculative account or edition assumptions.
-- Windows 10 support status is unknown -> require a supported security-update path before expanding exposure.
+- The SSH token has enabled administrator privileges -> accepted account choice; keys live in the restricted administrators file. Privileged service changes still need console approval, which is operator policy rather than token isolation.
+- One enabled account and no second administrator -> the local interactive session is the only recovery path; do not modify listeners without it available.
+- Consumer ESU reports no licensed SKU -> gate on a delivered post-end-of-support cumulative update instead, and re-check after each servicing run.
 - psmux and OMP compatibility is source-backed only -> retain live disconnect/reattach as a blocking acceptance gate.
 - Manual desktop setup can drift -> retain one concise procedure, accepted versions, and repeatable state checks; no competing generator.
 - RDP locking differs from GUI automation -> test terminal retention, but keep unattended GUI automation outside scope.
