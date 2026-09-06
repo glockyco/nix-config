@@ -78,7 +78,7 @@ Disable WSL `generateResolvConf`, enable `systemd-resolved`, and declare the mea
 
 ### 7. Temporary Air integration
 
-The SSH aliases and SMB endpoint use `macbook-air`. Preserve the existing Secure Enclave client authentication and batch transport rules. The SMB agent uses Tailscale peer state for reachability. Live acceptance requires enrolled nodes, activated client configuration, SSH probes, and online/offline mount behavior.
+The SSH aliases and SMB endpoint use `macbook-air`. Preserve the existing Secure Enclave client authentication and batch transport rules. The SMB agent uses Tailscale peer state for reachability. Acceptance includes enrolled nodes, activated client configuration, and passing SSH probes. The owner confirmed that SMB works and waived the deliberate fresh-mount/offline trial on 2026-09-06. Offline suppression remains unmeasured.
 
 No durable builder, storage, authentication, activation, or release gate depends on the Air. The offboarding issue requires preservation of research results, node revocation before return, then removal of the declaration, policy, SSH/SMB endpoints, credentials, and Air role. The future physical return does not keep this change open.
 
@@ -88,7 +88,7 @@ The managed-host deployment and normal remote-build proof have passed; see `task
 
 The coordinated WSL restart and post-restart DNS, MagicDNS, tailnet connectivity, and installed SSH check (task 5.2) passed. Employer-internal DNS is not applicable to the owner's WSL use. Do not repeat that operation. The live SSH isolation check (4.6) also passed: LAN access to the Mac on TCP 22 and Mac access to Korolev on TCP 22 timed out while the Mac tailnet SSH control succeeded. Keep all security invariants unchanged.
 
-On 2026-09-06, the owner authorized the remaining Air/desktop acceptance work and removed the builder outage drill from scope. Former task 6.5 is not a passing check: bounded failure and recovery after a deliberate outage remain unverified. Keep the Pro connected. Air offboarding remains required only before its eventual return, not before this change closes. This change remains open until all retained acceptance gates pass.
+On 2026-09-06, the owner authorized the remaining Air/desktop acceptance work and removed the builder outage drill from scope. Former task 6.5 is not a passing check: bounded failure and recovery after a deliberate outage remain unverified. Keep the Pro connected. Air offboarding remains required only before its eventual return, not before this change closes. All retained gates are now accepted, including the owner-reported SMB result and explicit mount/offline trial waiver.
 
 ## Verification and Migration
 

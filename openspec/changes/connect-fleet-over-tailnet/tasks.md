@@ -6,7 +6,7 @@ Task 5.2 is complete: the coordinated WSL restart preserved resolver ownership, 
 
 On 2026-09-06, the owner authorized the remaining Air/desktop acceptance work and removed the builder outage drill from scope. Former task 6.5 is not a passing check: bounded failure and recovery after a deliberate outage remain unverified. Keep the Pro connected. Air offboarding remains required only before its eventual return, not before this change closes.
 
-This change is incomplete and must not be archived as accepted while its gates remain open. CLI task counts do not authorize deferred work. Do not redesign working networking, SSH, policy deployment, or remote building to close the near-term checks.
+All retained acceptance tasks are complete. Air SMB acceptance uses the owner's report and explicit waiver of the deliberate mount/offline trial. Archive does not authorize Air retirement, network changes, or a push.
 
 ## 1. Tailnet Account and Trust
 
@@ -65,7 +65,7 @@ This change is incomplete and must not be archived as accepted while its gates r
 
 - [x] 7.1 Install and authenticate Tailscale on the temporary Air and durable desktop with their declared names/tags; confirm both nodes appear.
 - [x] 7.2 Change the Air SSH aliases to `macbook-air` while retaining their existing transport policy.
-- [ ] 7.3 Activate the tailnet SMB endpoint and peer-state probe; confirm online mounting and offline no-mount behavior.
+- [x] 7.3 Accept the activated tailnet SMB endpoint and peer-state probe on the owner's confirmation that it works. The owner waived a deliberate fresh-mount/offline trial on 2026-09-06; offline suppression is not claimed as measured.
 - [x] 7.4 Run the four `air-batch-check` probes over the enrolled and activated tailnet path.
 - [x] 7.5 Remove legacy mDNS endpoint literals from configuration, packages, hosts, and operating documentation.
 - [x] 7.6 Track Air retirement in the planning issue: preserve results, revoke before return, and remove policy, declaration, endpoints, credentials, and role.
@@ -90,7 +90,7 @@ Measured on the Pro without changing enrollment or disconnecting any host:
 
 - `tailscale status --json` reports both peers online with exactly their declared tags. The Air has `tag:macbook-air` and MagicDNS name `macbook-air.tail8768af.ts.net.`. The desktop has `tag:desktop` and MagicDNS name `desktop.tail8768af.ts.net.`. Its OS HostName remains `DESKTOP-DBHLRDD`; this is distinct from its correct MagicDNS name. Task 7.1 passes without re-enrollment.
 - `AIR_BATCH_DOCKER=/usr/local/bin/docker air-batch-check` exited 0. Resolved policy, detached-stdin command, status 23 propagation, read-only rsync transfer, executable resolution, Linux Docker inspection, and persistent-master absence all passed. Task 7.4 is complete.
-- The activated launch agent invokes `/nix/store/5fijr0p54hiv2yfqicb1pmsjcnkzjzgy-mount-air-share` every 60 seconds. `mount -t smbfs` reports `//joaichberger@macbook-air/Macintosh%20HD` at `/Volumes/Macintosh HD-1`. Invoking the installed script exited 0 with the share already mounted. This exercises only its existing-mount branch, not a fresh mount or offline suppression. Task 7.3 remains open. A live trial needs a safe unmounted share and a coordinated temporary Air disconnection; no such interruption occurred.
+- The activated launch agent invokes `/nix/store/5fijr0p54hiv2yfqicb1pmsjcnkzjzgy-mount-air-share` every 60 seconds. `mount -t smbfs` reports `//joaichberger@macbook-air/Macintosh%20HD` at `/Volumes/Macintosh HD-1`. Invoking the installed script exited 0 with the share already mounted. This exercises only its existing-mount branch, not a fresh mount or offline suppression. The owner subsequently confirmed that SMB works and waived the deliberate fresh-mount/offline trial. Task 7.3 is accepted on that report and decision, not on measured offline suppression. No share was unmounted and no host was disconnected.
 
 The owner removed former task 6.5 from scope. Neither bounded builder failure nor deliberate disconnect/reconnect recovery is claimed as verified. The Air remains in use; no offboarding action was performed. Earlier evidence below remains historical.
 
