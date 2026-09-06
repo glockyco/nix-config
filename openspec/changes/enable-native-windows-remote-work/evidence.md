@@ -240,12 +240,13 @@ misread a fragment as an instruction, created a commit in the disposable
 repository and undid it with `git reset --soft`. The preview itself changed
 nothing, but the disposable repository was not pristine at that moment.
 
-Blocking gap for task 3.2: no language server the plugin selects exists on
-Windows. `markdown-oxide`, `Microsoft.CodeAnalysis.LanguageServer`, the Svelte
-server, `marksman`, `nixd` and `pyright` are all absent, because Nix packages
-them for the Macs and Korolev and cannot on Windows. Selecting, pinning and
-verifying Windows language-server artifacts is dependency work this change has
-not done, so diagnostics are unproven and no substitute was fabricated.
+No language server the plugin selects exists on Windows: `markdown-oxide`,
+`Microsoft.CodeAnalysis.LanguageServer`, the Svelte server, `marksman`, `nixd`
+and `pyright` are all absent, because Nix packages them for the Macs and
+Korolev and cannot on Windows. The owner then scoped diagnostics out of the
+desktop, because development work stays on the Pro and Korolev. No Windows
+language-server artifact is selected or pinned, and none was faked. Adding one
+later is a dependency change with its own version and provenance work.
 
 ## Task 3.3 — persistent terminal
 
