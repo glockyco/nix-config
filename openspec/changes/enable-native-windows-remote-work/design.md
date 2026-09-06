@@ -72,15 +72,13 @@ Verify command discovery from the actual SSH-launched agent, including paths con
 
 Smoke-test extension loading, a commit preview, OpenSpec discovery, and a local Python helper invocation in a disposable checkout. Do not fabricate missing dependencies or silently remove personal capabilities. Plugin compatibility defects belong to a separate change in `omp-agent-setup`; this change remains blocked until its accepted revision works.
 
-### 5. psmux owns live terminal persistence
+### 5. Terminal convenience without a persistence guarantee
 
-The proposed terminal path is `SSH -> psmux -> OMP`, with one named session per repository/task. Use upstream session creation, listing, detach, and attach commands rather than a custom launcher. Keep multiplexer control endpoints local to Windows; remote access goes through authenticated SSH.
+This desktop is driven for agentic work through non-interactive `ssh <command>` invocations, so live agent persistence across a lost SSH connection buys nothing and this change accepts no such capability. An agent started through SSH may end with its connection, and OMP's saved conversation state is resumed explicitly. The procedure must not describe resumed history as a surviving process, and no custom broker, service, or scheduled task is introduced to manufacture persistence.
 
-Released psmux v3.3.8 explicitly requests Windows job breakaway when starting its server, but can fall back without it. Therefore startup alone is insufficient evidence. Verify graceful detachment and abrupt SSH-client termination during a bounded, harmless agent task. Record the unchanged agent process identity, continuing output, cross-source reattachment, and a subsequent prompt.
+psmux stays installed for terminal convenience: `SSH -> psmux -> shell`, using upstream session commands rather than a launcher, with control endpoints local to Windows. Its accepted checks are rendering, resizing, Unicode, paste, and loopback-only endpoints. Do not enable unsafe mouse overrides on Windows 10 ConPTY.
 
-Windows 10 ConPTY has documented mouse limitations. Start with ordinary SSH and keyboard interaction; verify rendering, resizing, paste, Unicode, and interrupt handling. Do not enable unsafe mouse overrides. A required workaround or failed persistence trial triggers design review, not a false completion or substitution of RDP for SSH acceptance.
-
-Alternatives: ordinary `Start-Process` does not prove escape from an SSH process job; OMP resume restores history, not a live process. RPC/RPC-UI are stdio interfaces, not reconnectable session servers. WezTerm has a native Windows mux server, but its SSH lifetime still needs proof and requires compatible clients. No custom broker is justified before testing psmux.
+Its persistence behaviour is deliberately unverified. Released psmux v3.3.8 requests Windows job breakaway but can fall back, so an agent may or may not survive a dropped client; nothing here relies on the answer. Interrupt handling is likewise unverified, because an injected key is not a terminal interrupt and a terminal-attached client was unavailable. Anyone who later needs persistence must run the detachment and abrupt-termination trials and record process identity, continuing output, and cross-source reattachment before claiming it.
 
 ### 6. RDP and file access remain independent services
 

@@ -62,20 +62,15 @@ WSL may be installed on the desktop and SHALL NOT be treated as a defect. A requ
 - **THEN** no executable or interpreter used by the native Windows agent resolves through WSL or a Nix store path
 - **AND** provider authentication was established locally rather than copied from another machine
 
-### Requirement: Persistent interactive agent sessions
+### Requirement: Honest agent session lifetime
 
-An agent started through SSH SHALL continue in its native Windows session after the initiating SSH connection ends. An authorized client on another machine SHALL reattach to the same live session and retain interactive control. Starting a new process from conversation history SHALL NOT count as live reattachment.
-
-#### Scenario: Reattach after deliberate detachment
-
-- **WHEN** the operator detaches from a running agent session and reconnects from another authorized source
-- **THEN** the same agent process remains available with its output and pending interaction intact
+Live agent persistence across a lost SSH connection is out of scope: the desktop is driven for agentic work through non-interactive SSH commands. An agent started through SSH MAY end with its connection. The procedure SHALL NOT claim that a process survived a lost connection, and SHALL NOT present resumed conversation history as a live process. A multiplexer MAY be installed for convenience without being an accepted capability.
 
 #### Scenario: Lose the initiating connection
 
-- **WHEN** the initiating SSH client is terminated during a bounded harmless agent task
-- **THEN** the task continues without that client
-- **AND** another authorized source reattaches, observes the result, and submits another prompt
+- **WHEN** the initiating SSH client is terminated during an agent task
+- **THEN** the procedure makes no claim that the task continued
+- **AND** the operator resumes saved conversation state explicitly rather than relying on a live process
 
 #### Scenario: Recover after reboot
 
@@ -151,6 +146,7 @@ The operating procedure SHALL identify installed versions, owned settings, local
 
 #### Scenario: Reach the rebooted desktop
 
-- **WHEN** the operator completes an approved desktop reboot and any required local disk unlock
-- **THEN** Tailscale and configured remote services become reachable without an interactive Windows sign-in
+- **WHEN** the operator completes an approved desktop reboot
+- **THEN** Tailscale and configured remote services start automatically and become reachable again
+- **AND** the desktop's automatic sign-on session is recorded as its normal startup state, with its console-access consequence
 - **AND** agent execution still requires an explicit operator action
