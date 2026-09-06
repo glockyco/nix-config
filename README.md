@@ -35,7 +35,7 @@ With Nix and flakes installed, enter the pinned environment. It installs the com
 nix develop
 ```
 
-Run release gates from the repository root, using each host's installed Nix:
+Run release gates in order from the repository root, using each host's installed Nix. Finish each Nix command before starting the next; concurrent evaluations of this flake can contend on the shared SQLite evaluation cache.
 
 ```sh
 nix fmt -- --fail-on-change
