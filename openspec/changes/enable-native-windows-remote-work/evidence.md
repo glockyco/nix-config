@@ -197,8 +197,11 @@ keeps its access until the owner retires the machine.
 
 Still unproven elsewhere:
 
-- System-wide activation of the Pro client declaration. The generated
-  configuration has passed live checks with `ssh -F`.
+The Pro's client declaration is now activated system-wide. `darwin-rebuild switch` completed, `~/.ssh/config` is a symlink into the Home Manager
+generation and contains both desktop endpoints, and `ssh desktop-batch` without
+`-F` returned `desktop-dbhlrdd\user` with exit status `23`.
+`verify-personal-omp` reports OMP 18.1.12, a plugin path under `/nix/store`, and
+`omp: current`.
 
 ## Task 3.1 / 3.2 — native agent
 
@@ -288,6 +291,37 @@ deleted. `psmux` no longer resolves, and `omp` still resolves to the standalone
 install at 18.1.12. The desktop carries no dependency, and no manual update
 burden, for a capability nobody uses. The version and digest above are retained
 only so a later attempt starts from a known artifact.
+
+## Task 4.2 — graphical access
+
+Measured from the desktop before any client connected. RDP is enabled
+(`fDenyTSConnections=0`), the service runs, Network Level Authentication is
+required (`UserAuthentication=1`) and the security layer is TLS
+(`SecurityLayer=2`). `Remote Desktop Users` is empty; access comes from the
+account's administrator membership. No RDP setting was changed.
+
+The listener binds TCP and UDP 3389 on all interfaces, and both
+`Remote Desktop - User Mode` rules are disabled. Reachability therefore comes
+only from the two `Tailscale-In` rules that allow any protocol to the tailnet
+addresses, which matches the measured refusal on `10.0.1.2` and acceptance on
+`100.91.92.64`. The scope is effective, but it rests on an allow-any rule for
+those addresses rather than an RDP-specific rule; record that rather than
+claiming a dedicated RDP restriction.
+
+The server certificate is the auto-generated self-signed one:
+`CN=DESKTOP-DBHLRDD`, SHA-1 `6F7E0751FF7B3513320941130F996B8161BA086F`,
+SHA-256 `b7:ca:a3:3f:8b:d6:c9:8f:a6:aa:44:c6:2a:a3:e2:73:b1:9e:c5:d3:99:53:03:30:d2:3f:d4:c7:c2:47:50:7b`,
+valid to 2026-12-12. No certificate is selected in the registry, so Windows
+regenerates it around expiry and the thumbprint changes then; a change at any
+other time warrants investigation. The operator compares this fingerprint in
+the client on first connect.
+
+The Pro now has a declared RDP client: the `windows-app` cask, activated with
+`darwin-rebuild switch`, installing Windows App 11.4.0. No connection was saved
+and no credential was stored by this change. Connecting, verifying the
+fingerprint in the client, and the disconnect and reconnect check in task 4.3
+remain operator steps, because they need the account password and a visible
+screen.
 
 ## Task 4.5 — shares
 
