@@ -6,6 +6,7 @@ The desktop already runs WSL 2 with an Ubuntu distribution and Docker Desktop's 
 
 ## What Changes
 
+- Repair the native release-gate defects discovered during client verification: the dependency audit pipeline crash, documentation declaration paths that lose store context, and contention from concurrent Nix evaluations. Preserve auditing, documentation, caching, and the existing package-set ownership.
 - Establish native Windows OpenSSH with PowerShell, per-source public keys, verified host identity, and convenient client connections to `desktop`. The desktop's SSH account is the owner's existing local administrator account, not a new standard user.
 - Install and verify native OMP with a pinned personal plugin source release and the native tools its workflows require. Keep credentials and agent state local to Windows.
 - Prove `psmux` terminal persistence with a real agent task, an abrupt SSH disconnect, and reattachment from another machine before accepting it.

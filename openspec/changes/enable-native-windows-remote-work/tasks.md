@@ -4,41 +4,13 @@ The owner approved Pro-only SSH/SFTP access before the native agent and broader 
 
 Keep multi-source tasks unchecked until every named source passes. Preserve all remaining acceptance gates; this order does not reduce the change's scope. Review the selected Windows account's file permissions before wider enrollment. Desktop-access authorization does not authorize financial-data replication to Korolev or the borrowed Air.
 
-## Pro acceptance evidence: 2026-09-06
+The owner also approved a post-quantum OpenSSH compatibility test and, after it passed, service replacement with local console recovery. The owner requested fixes for all dependency diagnostics found during native verification. Section 7 tracks those repairs. The subsequent desktop handoff requests the remaining transport acceptance checks; Pro and Air authentication and transfers are now exercised. Native agent installation, RDP credentials, and disruptive restart operations still require their own prerequisites and owner coordination.
 
-The owner reports desktop inventory and version selection complete, with evidence retained on Windows. The reported server configuration uses PowerShell 7, public-key-only authentication, SFTP, and a tailnet-only firewall rule with the broad rule disabled. Three labelled public keys are enrolled. Unattended Tailscale is applied; reboot acceptance remains outstanding.
+## Acceptance evidence
 
-The owner confirmed the desktop's measured ED25519 fingerprint: `SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw`. The Pro pinned the matching public key for `desktop` and `desktop.tail8768af.ts.net` in its mutable `~/.ssh/known_hosts`. The Pro subsequently integrated the desktop client declaration from `0449822` and added an immutable host-key pin through `UserKnownHostsFile`. Both aliases enforce strict host checking and reject password fallback. The generated configuration was exercised with `ssh -F`; it has not been activated system-wide.
-
-Pro checks used `StrictHostKeyChecking=yes`, `BatchMode=yes`, disabled connection multiplexing, and an eight-second connection timeout:
-
-- Authentication returned `desktop-dbhlrdd\user` and PowerShell `7.6.5`.
-- Direct remote `exit 23` returned SSH status `23`. A nested PowerShell invocation without explicit exit forwarding returned `1`; use the direct command for this acceptance check.
-- A temporary mismatched host pin failed with status `255` and host-key verification failure.
-- A temporary unapproved client key, with the agent disabled and `IdentitiesOnly=yes`, failed with status `255` and `Permission denied (publickey)`.
-- A 4,114-byte binary SFTP payload round-tripped through a temporary Windows filename containing spaces. SHA-256 matched: `e7da80720257726b2bf9cf4f4a78307f3a50312b899bfef23a9846ef142eba15`. Windows absolute SFTP paths require `/C:/...`; `C:/...` was treated as relative and failed before creating a file. Remote and local smoke files and temporary keys were removed.
-- Read-only metadata confirmed `D:\Projects\ynab` exists, already contains `.git`, and includes `statements` and `.venv`. No project content was copied or executed.
-
-**Accepted administrator access:** the live SSH token reports `WindowsPrincipal.IsInRole(Administrator) = true`. The owner confirmed this account choice and the desktop branch revises tasks 1.1 and 2.1 accordingly. SSH commands have enabled administrator privileges without an additional elevation prompt. Explicit approval for privileged service changes remains an operator policy, not a technical restriction of this SSH account.
-
-The generated `desktop` and `desktop-batch` aliases both authenticated as the selected account. The batch alias returned direct exit status `23`, rejected a mismatched pin and an unapproved client key with status `255`, and passed a second 4,114-byte SFTP round trip through a path with spaces. Its SHA-256 was `79c2b3b3bdb2113c14ce49b43beaf962376b68d4e9c6bcd32ef95e67893f536f`. All temporary files and keys were removed. Server `sshd -T` includes `sk-ssh-ed25519@openssh.com`; an actual YubiKey-authenticated session was not exercised.
-
-**Post-quantum warning:** the installed Windows OpenSSH 9.5 server offers no hybrid key exchange. Its bundled `ssh -Q kex` lists none, and `sshd_config` has no explicit `KexAlgorithms` override. The [Win32-OpenSSH 10.0.0.0p2 preview](https://github.com/PowerShell/Win32-OpenSSH/releases/tag/10.0.0.0p2-Preview) adds ML-KEM and sntrup support but is labelled non-production ready. No server upgrade or warning suppression was applied. A preview compatibility spike and any service replacement require separate owner coordination with local recovery. The warning concerns key exchange, not the verified ED25519 host identity.
-
-Pro transport checks do not complete the multi-source tasks. Korolev/Air acceptance, installed-client activation, non-tailnet rejection coverage, and reboot verification remain outstanding. No Windows server settings were changed from the Pro.
-
-### Native integration gates
-
-The Pro completed the following checks for the integrated desktop client declaration:
-
-- `nix fmt -- --fail-on-change`: passed after applying nixfmt's layout to the host-pin expression.
-- `openspec validate --all --strict`: 13 passed, 0 failed.
-- `nix build --no-link --print-build-logs .#checks.aarch64-darwin.airBatchConfiguration`: passed. The check exercises OpenSSH's rendered policy for both endpoint pairs and the desktop's immutable pin.
-- `nix flake check --print-build-logs`: completed successfully on Darwin; Linux checks were omitted by the native-system selection.
-- `nix run .#check-darwin-build-plans`: passed; 34 outputs, none reaching a forbidden source build.
-- `nix build .#darwinConfigurations.macbook-pro.system`: completed successfully. No activation or push occurred.
-
-The successful build was not warning-free. Nix emitted ignored evaluation-cache contention and an `options.json` store-context warning. The Catppuccin FZF and Ghostty derivations logged segmentation faults in the Nixpkgs `audit-tmpdir.sh` pipeline but continued successfully. These dependency-build diagnostics were not fixed or suppressed by this client change; retain them for dependency investigation rather than describing the logs as clean.
+[Desktop and Pro measurements](evidence.md) record completed checks, live state,
+and remaining limitations. Multi-source tasks remain unchecked until all named
+sources pass.
 
 ## 1. Establish desktop prerequisites
 
@@ -85,3 +57,10 @@ The successful build was not warning-free. Nix emitted ignored evaluation-cache 
 - [ ] 6.2 Record acceptance evidence and remaining limitations with this change. Remove only spike-owned files and sessions after verification. Confirm no hosted collab, custom broker, automatic agent restart, or employer Windows changes were introduced, and that no NixOS-WSL host was declared under this change.
 - [ ] 6.3 Run `openspec validate enable-native-windows-remote-work --strict` and `nix fmt -- --fail-on-change`. For any Nix/client changes, run the repository release gates: `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` using the required native hosts. Record unavailable gates explicitly.
 - [ ] 6.4 Inspect task-owned staged changes and create atomic commits after their applicable verification. Verify all required runtime gates have evidence before archive; do not substitute artifact completion for working desktop access or push without authorization.
+
+## 7. Repair discovered native build diagnostics
+
+- [x] 7.1 Diagnose the dependency audit pipeline crash and record it as an upstream Nixpkgs defect. A local fix requires patching the Nixpkgs source, which rebuilds the toolchain from source and is rejected. Do not disable the audit, suppress its output, or vendor a patched standard environment.
+- [ ] 7.2 Fix documentation declaration paths through the existing documentation transformation interface. Preserve option content and caller-supplied declaration links, and build the affected documentation without a missing-context warning.
+- [ ] 7.3 Run release gates sequentially against the shared evaluation cache. Verify the recorded SQLite contention does not recur without disabling or deleting the cache.
+- [ ] 7.4 Run the complete native release gates sequentially after integration. Record exact remaining diagnostics, preserve package-set ownership, and commit each verified change without pushing.

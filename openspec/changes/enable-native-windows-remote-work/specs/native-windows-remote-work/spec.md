@@ -140,7 +140,7 @@ This restriction covers the services this change configures. Independent remote-
 
 ### Requirement: Explicit operational recovery
 
-The operating procedure SHALL identify installed versions, owned settings, local recovery access, key revocation, and service rollback. Repeating setup SHALL NOT duplicate keys, shares, or firewall rules. Service recovery SHALL preserve repositories and agent state. Desktop remote access SHALL return after an approved reboot without automatic agent execution.
+The operating procedure SHALL identify installed versions, owned settings, local recovery access, key revocation, and service rollback. Repeating setup SHALL NOT duplicate keys, shares, or firewall rules. Service recovery SHALL preserve repositories and agent state. Desktop remote access SHALL return after an approved reboot without automatic agent execution. The desktop's Tailscale node key expiry SHALL be disabled and verified in node status. The operating procedure SHALL identify this coordination-server setting as state outside the repository's host and policy declarations.
 
 #### Scenario: Repeat or reverse setup
 

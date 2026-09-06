@@ -1,7 +1,8 @@
 # Acceptance evidence
 
-Measured on the desktop. This file records what was observed, not what was
-intended. An item without evidence is listed as unproven rather than assumed.
+Measurements from the desktop and Pro are identified below. An item without
+evidence remains unproven. The Pro imported desktop commits `c565650`,
+`1fba420`, `8e48c00`, and `3ae6d5c` directly over SSH, without a GitHub push.
 
 ## Environment
 
@@ -19,9 +20,11 @@ intended. An item without evidence is listed as unproven rather than assumed.
 `sshd` and `ssh-agent` run automatically. Default shell is PowerShell 7.6.5.
 Effective configuration, global scope:
 
-    pubkeyauthentication yes
-    passwordauthentication no
-    kbdinteractiveauthentication no
+```
+pubkeyauthentication yes
+passwordauthentication no
+kbdinteractiveauthentication no
+```
 
 `PasswordAuthentication no` alone was insufficient: the server still offered
 `keyboard-interactive`, and a probe returned
@@ -35,14 +38,17 @@ removed: `NT AUTHORITY\SYSTEM:(F)`, `BUILTIN\Administrators:(F)`.
 
 ## Task 2.2 — tailnet-scoped listener
 
-Only one enabled firewall rule reaches port 22:
+One enabled rule explicitly names TCP port 22. The Tailscale address rules
+below also permit SSH:
 
-    OpenSSH SSH Server (tailnet only)   enabled=Yes  action=Allow  protocol=TCP
-      localIP=100.91.92.64, fd7a:115c:a1e0::5a39:5c41
-    OpenSSH SSH Server (sshd)           enabled=No   [installer default, disabled]
+```
+OpenSSH SSH Server (tailnet only)   enabled=Yes  action=Allow  protocol=TCP
+  localIP=100.91.92.64, fd7a:115c:a1e0::5a39:5c41
+OpenSSH SSH Server (sshd)           enabled=No   [installer default, disabled]
+```
 
-No enabled inbound rule permits 3389, 445 or 139; the 14 platform rules naming
-those ports are all disabled. Inbound reach for RDP and SMB comes from two
+The 14 platform rules explicitly naming ports 3389, 445 or 139 are disabled.
+Inbound reach for RDP and SMB comes from two
 `Tailscale-In` rules allowing any protocol to the tailnet addresses, so those
 services were already tailnet-only before this change.
 
@@ -54,35 +60,42 @@ external source with demonstrated LAN reachability.
 
 Host key, wire and disk identical:
 
-    SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw  (ED25519)
+```
+SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw  (ED25519)
+```
 
 Enrolled, each with a revocation label on its own line:
 
-| Label | Type | Fingerprint |
-| --- | --- | --- |
-| `air` | ED25519 | `SHA256:kgUu4MgKK+87Fax0fwsQoMVfcMNCI+kR5TqlMzSBEeM` |
-| `pro-enclave` | ECDSA | `SHA256:yNSLyqA+u4s4Fa8TNIq9U2DpxWgHlwldVFxPZ99FGNE` |
+| Label         | Type       | Fingerprint                                          |
+| ------------- | ---------- | ---------------------------------------------------- |
+| `air`         | ED25519    | `SHA256:kgUu4MgKK+87Fax0fwsQoMVfcMNCI+kR5TqlMzSBEeM` |
+| `pro-enclave` | ECDSA      | `SHA256:yNSLyqA+u4s4Fa8TNIq9U2DpxWgHlwldVFxPZ99FGNE` |
 | `pro-yubikey` | ED25519-SK | `SHA256:nBDQ2kAH2q7ylUIJGQz48/YLqr9sWpL3n2qRowd3Z54` |
 
 `pro-enclave` is proven: 24 accepted `publickey` authentications from
 `100.88.17.38` between 14:35 and 15:12 on 2026-09-06, no failures recorded, and
 the Pro verified the host key fingerprint before accepting it.
 
+`pro-yubikey` authenticated against the upgraded service with `IdentityAgent=none`,
+`IdentitiesOnly=yes`, and the explicit `id_ed25519_sk` identity. Windows logged
+`Accepted publickey ... ED25519-SK` with the enrolled fingerprint at
+15:35:16 +02:00 on 2026-09-06. No algorithm override was needed.
+
+The Air used its existing enrolled ED25519 key, without exporting private-key
+material. Its new `~/.ssh/config` scopes `desktop` and `desktop-batch` to that
+identity and the dedicated pin file `~/.ssh/known_hosts_desktop`. The saved batch
+endpoint returned native exit status `23` and passed a 65,536-byte SFTP round
+trip through a filename with spaces. SHA-256:
+`dd8430af20d29b52a8b34d1eacef6639bf51487b308d27de37d6fd6e7652e573`.
+All temporary transfer files were removed. No financial data was copied.
+
 Unproven:
 
-- `pro-yubikey`. The server accepts the algorithm: `sshd -T` on 10.0p2 lists
-  `sk-ssh-ed25519@openssh.com` and `sk-ecdsa-sha2-nistp256@openssh.com` among
-  `pubkeyacceptedalgorithms`. No `ED25519-SK` authentication has occurred, so the
-  credential itself is still untested. This is the credential intended to survive
-  losing the Pro, so an untested recovery path is the risk, not a formality. Close
-  it with a deliberate `IdentitiesOnly=yes -i ~/.ssh/id_ed25519_sk` connection.
-- `air`. Enrolled, never exercised.
-- Korolev. No key enrolled; the host was offline throughout.
-- Exit status 23 passthrough, paths containing spaces, rejection of an
-  unapproved key, and a deliberately mismatched client host-key record.
-- Saved client endpoints. The Pro authenticates through its global Secretive
-  identity with an explicit user and address, not through a declared `desktop`
-  entry.
+- Korolev enrollment, commands, and SFTP. The desktop worker reported it offline.
+- Air and Korolev rejection/revocation checks. The Pro passed the rejection
+  checks against the upgraded service.
+- System-wide activation of the Pro client declaration. The generated
+  configuration has passed live checks with `ssh -F`.
 
 ## Task 4.5 — shares
 
@@ -93,10 +106,14 @@ explicit `C` and `D` shares granted `DESKTOP-DBHLRDD\User` Full.
 account is a local administrator, so `C$` and `D$` already grant it identical
 reach. Rollback, if ever wanted:
 
-    New-SmbShare -Name 'C' -Path 'C:\'
-    New-SmbShare -Name 'D' -Path 'D:\'
+```
+New-SmbShare -Name 'C' -Path 'C:\' -FullAccess 'DESKTOP-DBHLRDD\User'
+New-SmbShare -Name 'D' -Path 'D:\' -FullAccess 'DESKTOP-DBHLRDD\User'
+```
 
-After: `ADMIN$`, `C$`, `D$`, `E$`, `IPC$`. No capability changed.
+After: `ADMIN$`, `C$`, `D$`, `E$`, `IPC$`, confirmed from the Pro with
+`Get-SmbShare`. The administrator retains volume access through administrative
+shares; the removed share names no longer resolve.
 
 Still required: SFTP round-trip hashes from each source, graphical browsing
 from the Macs, authenticated access from Korolev, and denied
@@ -107,7 +124,9 @@ unauthorized/read-only writes.
 `ForceDaemon: true`, so Tailscale runs before interactive sign-in. Node key
 expiry is disabled, matching Korolev and the Pro; it previously expired
 2027-03-04, 179 days out. That setting is coordination-server state and cannot
-be expressed in this repository.
+be expressed in this repository. The Pro independently observed
+`(tailscale status --json | ConvertFrom-Json).Self.KeyExpiry` as `null`, with
+`Online: true` and `tag:desktop`.
 
 No volume is encrypted (`FullyDecrypted`, protection off), so no preboot unlock
 applies. Fast Startup is enabled, so the reboot gate needs a true restart. The
@@ -118,11 +137,11 @@ restart itself is not yet performed with remote access verified before sign-in.
 Upgraded from the Windows capability build to the standalone Win32-OpenSSH
 release on 2026-09-06:
 
-| | Before | After |
-| --- | --- | --- |
-| Version | `OpenSSH_for_Windows_9.5p1`, LibreSSL 3.8.2 | `OpenSSH_for_Windows_10.0p2`, LibreSSL 4.2.0 |
-| Binary | `C:\Windows\System32\OpenSSH\sshd.exe` | `C:\Program Files\OpenSSH\sshd.exe` |
-| Servicing | Windows Update / ESU | **manual** |
+|           | Before                                      | After                                        |
+| --------- | ------------------------------------------- | -------------------------------------------- |
+| Version   | `OpenSSH_for_Windows_9.5p1`, LibreSSL 3.8.2 | `OpenSSH_for_Windows_10.0p2`, LibreSSL 4.2.0 |
+| Binary    | `C:\Windows\System32\OpenSSH\sshd.exe`      | `C:\Program Files\OpenSSH\sshd.exe`          |
+| Servicing | Windows Update / ESU                        | **manual**                                   |
 
 The accepted version is 10.0p2 (release files dated 2025-10-22). All 14
 executables and `install-sshd.ps1` carried valid Microsoft Corporation
@@ -148,27 +167,109 @@ server runs 10.0p2; mixed client and server versions are supported.
 
 ## Limitations
 
-- The SSH server is no longer serviced by Windows Update. Removing the
-  `OpenSSH.Server` capability moved that burden to manual updates of the
-  standalone release, on a machine already on extended support. The accepted
-  version above must be revisited deliberately; the repository conventions
-  forbid an update wrapper or scheduler, so this belongs in the operating
-  procedure.
-- The SSH account is a local administrator. Accepted deviation: keys live in
-  the administrators file with restricted ACLs, agents are not launched
-  elevated, and privileged changes still require console approval.
+- The standalone OpenSSH server requires manual updates. Windows Update no
+  longer services it after removal of the `OpenSSH.Server` capability.
+  Keep this operation in the existing procedure, not an update wrapper.
+
+- The SSH account has enabled administrator privileges. Agents inherit this
+  token without an additional elevation prompt. Keys remain in the restricted
+  administrators file. Console approval for privileged service changes is
+  operator policy, not token isolation.
+
 - One enabled account and no second administrator, so the local interactive
   session is the only recovery path.
+
 - Taildrop cannot reach this host: a tagged node has no user owner. SFTP is the
   transfer mechanism, consistent with the design.
+
 - ZeroTier, TeamViewer and Chrome Remote Desktop remain installed and reach the
   desktop through their own authenticated relays. TeamViewer's rules are
   Public-profile only and every active interface is Private, so those are
   currently inert. The tailnet restriction covers the services this change
   configures, not these products.
+
 - A UAC prompt raised from an unattended context expires after roughly two
   minutes and auto-denies, so privileged steps require an already-elevated
   session.
-- Nix gates could not run: Nix is not installed on Windows. `nix fmt`,
-  `nix flake check`, `check-darwin-build-plans` and the Darwin system build
-  must run on the Pro.
+
+- Nix is not installed on Windows. The Pro ran the native gates recorded
+  below; their dependency diagnostics remain separate from Windows acceptance.
+
+## Pro acceptance evidence: 2026-09-06
+
+The owner reports desktop inventory and version selection complete, with evidence retained on Windows. The reported server configuration uses PowerShell 7, public-key-only authentication, SFTP, and a tailnet-only firewall rule with the broad rule disabled. Three labelled public keys are enrolled. Unattended Tailscale is applied; reboot acceptance remains outstanding.
+
+The owner confirmed the desktop's measured ED25519 fingerprint: `SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw`. The Pro pinned the matching public key for `desktop` and `desktop.tail8768af.ts.net` in its mutable `~/.ssh/known_hosts`. The Pro subsequently integrated the desktop client declaration from `0449822` and added an immutable host-key pin through `UserKnownHostsFile`. Both aliases enforce strict host checking and reject password fallback. The generated configuration was exercised with `ssh -F`; it has not been activated system-wide.
+
+Pro checks used `StrictHostKeyChecking=yes`, `BatchMode=yes`, disabled connection multiplexing, and an eight-second connection timeout:
+
+- Authentication returned `desktop-dbhlrdd\user` and PowerShell `7.6.5`.
+- Direct remote `exit 23` returned SSH status `23`. A nested PowerShell invocation without explicit exit forwarding returned `1`; use the direct command for this acceptance check.
+- A temporary mismatched host pin failed with status `255` and host-key verification failure.
+- A temporary unapproved client key, with the agent disabled and `IdentitiesOnly=yes`, failed with status `255` and `Permission denied (publickey)`.
+- A 4,114-byte binary SFTP payload round-tripped through a temporary Windows filename containing spaces. SHA-256 matched: `e7da80720257726b2bf9cf4f4a78307f3a50312b899bfef23a9846ef142eba15`. Windows absolute SFTP paths require `/C:/...`; `C:/...` was treated as relative and failed before creating a file. Remote and local smoke files and temporary keys were removed.
+- Read-only metadata confirmed `D:\Projects\ynab` exists, already contains `.git`, and includes `statements` and `.venv`. No project content was copied or executed.
+
+**Accepted administrator access:** the live SSH token reports `WindowsPrincipal.IsInRole(Administrator) = true`. The owner confirmed this account choice and the desktop branch revises tasks 1.1 and 2.1 accordingly. SSH commands have enabled administrator privileges without an additional elevation prompt. Explicit approval for privileged service changes remains an operator policy, not a technical restriction of this SSH account.
+
+The generated `desktop` and `desktop-batch` aliases both authenticated as the selected account. The batch alias returned direct exit status `23`, rejected a mismatched pin and an unapproved client key with status `255`, and passed a second 4,114-byte SFTP round trip through a path with spaces. Its SHA-256 was `79c2b3b3bdb2113c14ce49b43beaf962376b68d4e9c6bcd32ef95e67893f536f`. All temporary files and keys were removed. Server `sshd -T` includes `sk-ssh-ed25519@openssh.com`; the YubiKey was subsequently authenticated against the upgraded service, as recorded above.
+
+**Post-quantum upgrade:** the previous Windows OpenSSH 9.5 server offered no hybrid key exchange. Its bundled `ssh -Q kex` listed none, and `sshd_config` had no explicit `KexAlgorithms` override. The [Win32-OpenSSH 10.0.0.0p2 preview](https://github.com/PowerShell/Win32-OpenSSH/releases/tag/10.0.0.0p2-Preview) adds ML-KEM and sntrup support but is labelled non-production ready. The warning concerns key exchange, not the verified ED25519 host identity. The owner approved a preview test and then approved service replacement while available at the Windows console. No warning suppression was applied.
+
+The Pro tested the preview through its supported `sshd -i` single-connection mode over the existing authenticated SSH transport. This test created no listener, service, or firewall rule. The inner session negotiated `mlkem768x25519-sha256` by default and retained the pinned ED25519 identity. Explicit ML-KEM and sntrup sessions both returned status `23`. A mismatched host pin and an unapproved client key each failed with status `255`. Preview SFTP round-tripped a binary file through a filename with spaces; SHA-256 was `d4e6ea0c0433cd115ddd43caea1b6bab2846da14167f734f3d7ce3c45a8b20db`. Temporary transfer files and test keys were removed. The outer 9.5 transport still emitted the expected warning; this test did not prove a production service upgrade.
+
+The `OpenSSH-Win64.zip` SHA-256 matched GitHub's release digest, `23f50f3458c4c5d0b12217c6a5ddfde0137210a30fa870e98b29827f7b43aba5`. All 15 binary files and five PowerShell scripts/modules had valid Microsoft Authenticode signatures. The signed MSI also matched its release digest, but its `WixFirewallException` table creates an unrestricted inbound TCP/22 rule. The supported ZIP installer was selected instead; its source has no firewall mutation.
+
+The console worker completed installation at `C:\Program Files\OpenSSH` after removing the Windows Server capability. The earlier instruction to point `sshd` back to the in-box binary was withdrawn because capability removal can remove that binary. Protected recovery data at `C:\ProgramData\OpenSSH-recovery-3f038d797eba` contains SSH configuration and keys with ACLs, registry exports, service and firewall measurements, and the verified accepted ZIP as `OpenSSH-Win64-10.0.0.0p2.zip`. No private key left Windows. The [manual recovery procedure](../../../docs/operations/dependency-updates.md#desktop-openssh-maintenance) uses the retained package and supported service removal/installation, not an executable fallback.
+
+The Pro verified the active service through its normal pinned endpoint: `mlkem768x25519-sha256`, unchanged ED25519 identity, native status `23`, and no weak-key-exchange warning. `Set-Location` to `C:\Program Files\OpenSSH` preserved the spaced path and status `23`. An unapproved key and mismatched host pin each failed with status `255`. Production SFTP round-tripped 65,566 bytes with the isolated test's SHA-256 and empty stderr. Temporary transfer files and test keys were removed.
+
+Pro and Air transport checks do not complete the multi-source tasks. Korolev acceptance, installed Pro client activation, non-tailnet rejection coverage, graphical/share acceptance, and reboot verification remain outstanding. The Pro and Air route the desktop's `10.0.1.2` Ethernet address through their `192.168.0.1` default gateway; neither supplies demonstrated desktop-LAN reachability. No route failure was accepted as firewall proof. Windows service installation was performed at the console.
+
+### Native integration gates
+
+The Pro completed the following checks for the integrated desktop client declaration:
+
+- `nix fmt -- --fail-on-change`: passed after applying nixfmt's layout to the host-pin expression.
+- `openspec validate --all --strict`: 13 passed, 0 failed.
+- `nix build --no-link --print-build-logs .#checks.aarch64-darwin.airBatchConfiguration`: passed. The check exercises OpenSSH's rendered policy for both endpoint pairs and the desktop's immutable pin.
+- `nix flake check --print-build-logs`: completed successfully on Darwin; Linux checks were omitted by the native-system selection.
+- `nix run .#check-darwin-build-plans`: passed; 34 outputs, none reaching a forbidden source build.
+- `nix build .#darwinConfigurations.macbook-pro.system`: completed successfully. No activation or push occurred.
+
+The successful build was not warning-free. Nix emitted ignored evaluation-cache contention and an `options.json` store-context warning. The Catppuccin FZF and Ghostty derivations logged segmentation faults in the Nixpkgs `audit-tmpdir.sh` pipeline but continued successfully. These dependency-build diagnostics were not fixed or suppressed by the client commit `a81924c`.
+
+### Temporary-path audit defects (upstream)
+
+Reproduced with the original derivations and no environment changes:
+`nix build --no-link --rebuild --print-build-logs` against the pinned
+`catppuccin-fzf` and `catppuccin-ghostty` derivations. The classifier subshell
+in Nixpkgs `pkgs/build-support/setup-hooks/audit-tmpdir.sh` reported
+`Segmentation fault: 11`, in one observed run for Ghostty only. Both builds
+still exited successfully, because the audit waits for its two handler
+subshells and never collects the classifier's status. Two distinct defects:
+an intermittent Darwin crash, and a check that reports success while part of
+the output went unclassified. No forbidden temporary-path reference was found
+in any theme output.
+
+The crash cause is unproven. Exhausted without a stack: no crash report or core
+file exists for the sandboxed builders; cross-user attach is refused; and
+address-sanitizer builds of the exact pinned Bash, with and without native
+language support, completed the exact derivation without a sanitizer report.
+Behavioural evidence favours locale handling in the forked classifier over the
+`read` reallocation path: `isELF` and `isScript` set `LANG=C` per file, the
+pinned Bash links CoreFoundation directly, and a variant holding `LC_ALL=C`
+across the classifier passed four runs where the original crashed in one of
+three. That is a correlation, not a proven cause.
+
+No local fix was applied. The hook is a standard-environment default setup
+hook with no override interface, so replacing it means patching the Nixpkgs
+source; a dry run of that approach rebuilds the bootstrap toolchain from source
+and loses every cached path, which the build-plan guard rejects. Disabling the
+audit, suppressing its output, or vendoring a patched standard environment were
+also rejected. This belongs upstream. Themes and their applications work; the
+defect is confined to the build-time check.
+
+### Evaluation cache
+
+The earlier native gates ran concurrently and contended on the same `eval-cache-v6` SQLite file. The installed evaluator is Determinate Nix `3.21.9` / Nix `2.34.8`. Nix's [evaluation-cache implementation](https://github.com/NixOS/nix/blob/2.34.8/src/libexpr/eval-cache.cc) keeps a database transaction open and marks caching failed after a SQLite write error; successful evaluation does not make that diagnostic harmless evidence of a clean gate. The README now requires sequential gate execution. Verification must retain the existing cache and report whether the diagnostic recurs; it must not disable caching or remove the database.

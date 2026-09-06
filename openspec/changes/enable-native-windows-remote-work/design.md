@@ -106,6 +106,18 @@ WSL already runs on this machine and the owner wants a NixOS-WSL host here, mirr
 
 Declaring that host is deliberately out of scope here. `flake.nix` keys its host table by system, `hosts.x86_64-linux` is Korolev, and the flake records that Korolev is the only `x86_64-linux` host, so a second Linux host has no row to occupy. The deferred `key-fleet-by-host` change re-keys the table by host name and is the prerequisite; its own scheduling notice requires the owner to schedule it after a plan review. A desktop NixOS-WSL host is the concrete use requirement that notice asks for, but it is a separate change, and the agent surface for the desktop stays undecided until it exists.
 
+### 9. Repair native gate defects without weakening acceptance
+
+The owner approved repairs to dependency defects exposed by the Pro's release gates. Keep them in the existing package overlay and preserve the single package set shared by each host and its outputs. Do not disable temporary-path auditing, discard documentation, suppress warnings, or disable the evaluation cache.
+
+Documentation normalization composes the existing `nixosOptionsDoc.transformOptions` interface. After the caller's transformation, convert only declarations under the pinned Nixpkgs source into `<nixpkgs/...>` references. Preserve caller-generated URL records and unrelated option fields. This removes build-machine store locations from documentation without importing a second Nixpkgs package set.
+
+The temporary-path audit crash stays an upstream Nixpkgs defect. Its hook belongs to the standard environment, which offers no override for replacing a default setup hook, so a local fix means patching the Nixpkgs source. A dry run of that approach rebuilds the bootstrap toolchain from source, which the build-plan guard rejects and which is a worse outcome than the defect. Do not disable the audit, suppress its output, or vendor a patched standard environment. Record the diagnosis and both defects instead: an intermittent classifier crash on Darwin, and a background classifier whose failure the audit never collects.
+
+Run the final Nix gates sequentially to avoid simultaneous writers to their shared SQLite evaluation cache.
+
+The approved Windows preview remains a manual platform operation. Verify release digests and Microsoft signatures, test the existing host identity and authentication policy in isolation, and retain local recovery before service replacement. Use the supported ZIP installation procedure rather than the MSI's broad firewall exception. Preserve host keys, authorization, and the tailnet restriction; do not suppress the post-quantum warning on the old service.
+
 ## Risks / Trade-offs
 
 - The SSH token has enabled administrator privileges -> accepted account choice; keys live in the restricted administrators file. Privileged service changes still need console approval, which is operator policy rather than token isolation.
