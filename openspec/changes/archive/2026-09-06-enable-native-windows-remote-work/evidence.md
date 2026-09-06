@@ -527,7 +527,7 @@ Desktop remain installed and unmodified, as recorded in the limitations.
 
 ## Task 6.1 — operating guidance
 
-The [dependency runbook](../../../docs/operations/dependency-updates.md#desktop-openssh-maintenance)
+The [dependency runbook](../../../../docs/operations/dependency-updates.md#desktop-openssh-maintenance)
 carries the desktop procedure in one place: manual server updates with digest
 and signature checks, the supported remove and install sequence, recovery from
 the retained package, the agent stack's version ownership, per-source key
@@ -668,7 +668,7 @@ The Pro tested the preview through its supported `sshd -i` single-connection mod
 
 The `OpenSSH-Win64.zip` SHA-256 matched GitHub's release digest, `23f50f3458c4c5d0b12217c6a5ddfde0137210a30fa870e98b29827f7b43aba5`. All 15 binary files and five PowerShell scripts/modules had valid Microsoft Authenticode signatures. The signed MSI also matched its release digest, but its `WixFirewallException` table creates an unrestricted inbound TCP/22 rule. The supported ZIP installer was selected instead; its source has no firewall mutation.
 
-The console worker completed installation at `C:\Program Files\OpenSSH` after removing the Windows Server capability. The earlier instruction to point `sshd` back to the in-box binary was withdrawn because capability removal can remove that binary. Protected recovery data at `C:\ProgramData\OpenSSH-recovery-3f038d797eba` contains SSH configuration and keys with ACLs, registry exports, service and firewall measurements, and the verified accepted ZIP as `OpenSSH-Win64-10.0.0.0p2.zip`. No private key left Windows. The [manual recovery procedure](../../../docs/operations/dependency-updates.md#desktop-openssh-maintenance) uses the retained package and supported service removal/installation, not an executable fallback.
+The console worker completed installation at `C:\Program Files\OpenSSH` after removing the Windows Server capability. The earlier instruction to point `sshd` back to the in-box binary was withdrawn because capability removal can remove that binary. Protected recovery data at `C:\ProgramData\OpenSSH-recovery-3f038d797eba` contains SSH configuration and keys with ACLs, registry exports, service and firewall measurements, and the verified accepted ZIP as `OpenSSH-Win64-10.0.0.0p2.zip`. No private key left Windows. The [manual recovery procedure](../../../../docs/operations/dependency-updates.md#desktop-openssh-maintenance) uses the retained package and supported service removal/installation, not an executable fallback.
 
 The Pro verified the active service through its normal pinned endpoint: `mlkem768x25519-sha256`, unchanged ED25519 identity, native status `23`, and no weak-key-exchange warning. `Set-Location` to `C:\Program Files\OpenSSH` preserved the spaced path and status `23`. An unapproved key and mismatched host pin each failed with status `255`. Production SFTP round-tripped 65,566 bytes with the isolated test's SHA-256 and empty stderr. Temporary transfer files and test keys were removed.
 

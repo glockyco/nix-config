@@ -80,7 +80,7 @@ verify-personal-omp
 
 ## Desktop OpenSSH maintenance
 
-The personal desktop uses the standalone Win32-OpenSSH ZIP distribution, not the Windows `OpenSSH.Server` capability or an MSI installation. Windows Update and ESU no longer service this SSH server. Review its version manually against [upstream releases](https://github.com/PowerShell/Win32-OpenSSH/releases); the accepted release and verification results are in the [desktop change evidence](../../openspec/changes/enable-native-windows-remote-work/evidence.md). Do not add an updater or execute Windows installers from Nix activation.
+The personal desktop uses the standalone Win32-OpenSSH ZIP distribution, not the Windows `OpenSSH.Server` capability or an MSI installation. Windows Update and ESU no longer service this SSH server. Review its version manually against [upstream releases](https://github.com/PowerShell/Win32-OpenSSH/releases); the accepted release and verification results are in the [desktop change evidence](../../openspec/changes/archive/2026-09-06-enable-native-windows-remote-work/evidence.md). Do not add an updater or execute Windows installers from Nix activation.
 
 Perform service changes at the Windows console in an administrator PowerShell session. The selected SSH account also has enabled administrator privileges, but stopping its transport is not a safe way to run its installer. Keep the console available and preserve repositories, agent state, host keys, and labelled authorization entries.
 

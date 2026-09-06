@@ -24,7 +24,7 @@ Measured on the desktop on 2026-09-06, replacing the earlier unknowns:
 
 ## Goals / Non-Goals
 
-**Goals:** Use existing native services and a maintained terminal multiplexer. Preserve local recovery and distinguish live process persistence from saved conversation recovery.
+**Goals:** Use existing native services without adding a terminal multiplexer. Preserve local recovery and distinguish live process persistence from saved conversation recovery.
 
 **Non-goals:** A general fleet framework, custom agent service, or changes to the work-machine Windows document. GUI automation and exact-console viewing are not acceptance substitutes for RDP access.
 
@@ -34,7 +34,7 @@ Measured on the desktop on 2026-09-06, replacing the earlier unknowns:
 
 Use supported Windows installers, service controls, and firewall tools. Extend an existing focused operations document with the desktop procedure and link it from README. Do not create another architecture manual or duplicate the employer-oriented `modules/windows/` document.
 
-The procedure records exact accepted OMP, plugin, psmux, and dependency versions and upstream provenance. Repeated operations compare existing state before adding keys, shares, or rules. It does not become an update wrapper or scheduler. Nix owns only applicable source-client configuration, not desktop installation or mutable runtime state.
+The procedure records exact accepted OMP, plugin, and dependency versions and upstream provenance. Repeated operations compare existing state before adding keys, shares, or rules. It does not become an update wrapper or scheduler. Nix owns only applicable source-client configuration, not desktop installation or mutable runtime state.
 
 This retains the fleet's unmanaged-peer boundary. A declarative desktop configuration generator would require a separate reviewed ownership change, not an incidental extension of employer provisioning.
 
@@ -86,7 +86,7 @@ SMB is recorded, not adopted: SFTP is the accepted transfer mechanism, no share 
 
 Prove an ordinary terminal task survives RDP disconnect and returns in the same user session. Launch graphical applications in that session; SSH service context does not imply access to its screen. Reboot and sign-out end live agent sessions. Recovery uses explicit OMP resume, never automatic replay of mutations.
 
-Use SFTP for common cross-platform transfers. Add or reuse an operator-selected SMB transfer folder with explicit share and NTFS permissions; do not share full disks. Default to a dedicated transfer folder, and add research/project folders only after owner selection. Test content hashes and denied access. Keep active repositories local and transfer results deliberately.
+Use SFTP for common cross-platform transfers. Do not add SMB shares. Test content hashes and denied access. Keep active repositories local and transfer results deliberately.
 
 ### 7. Restrict effective access, not just new allow rules
 
@@ -125,7 +125,7 @@ The approved Windows preview remains a manual platform operation. Verify release
 - The SSH token has enabled administrator privileges -> accepted account choice; keys live in the restricted administrators file. Privileged service changes still need console approval, which is operator policy rather than token isolation.
 - One enabled account and no second administrator -> the local interactive session is the only recovery path; do not modify listeners without it available.
 - Consumer ESU reports no licensed SKU -> gate on a delivered post-end-of-support cumulative update instead, and re-check after each servicing run.
-- psmux and OMP compatibility is source-backed only -> retain live disconnect/reattach as a blocking acceptance gate.
+- SSH agent processes can end with their connection -> use explicit saved-session recovery; live persistence is outside the accepted scope.
 - Manual desktop setup can drift -> retain one concise procedure, accepted versions, and repeatable state checks; no competing generator.
 - RDP locking differs from GUI automation -> test terminal retention, but keep unattended GUI automation outside scope.
 - Host-level access changes can strand recovery -> retain local access and snapshots of only the settings this change owns.
@@ -137,8 +137,8 @@ The approved Windows preview remains a manual platform operation. Verify release
 1. Establish tailnet-restricted OpenSSH/SFTP and one Pro client. Prove host identity, authentication, native command status, effective network isolation, and a disposable transfer with matching hashes.
 1. Use the verified Pro transfer path for the separately operated YNAB migration. Preserve the Windows original. Repository publication, financial-data storage, synchronization, and backups remain outside this access change.
 1. Review the intended Windows account's filesystem access before enrolling other sources. Separate keys support revocation but do not isolate files between clients using the same account. Do not infer permission to copy financial data to Korolev or the borrowed Air from desktop-access authorization.
-1. Install the native agent stack and complete the psmux trial from Pro to Korolev before wider client rollout.
-1. Complete Air client enrollment, RDP, selected file access, and all-source checks. Extend Air offboarding with desktop key revocation.
+1. Install the native agent stack and verify it from the Pro and Korolev before wider client rollout.
+1. Complete Air client enrollment, Pro RDP, selected file access, and all-source checks. Extend Air offboarding with desktop key revocation.
 1. Verify network isolation, a different-network connection, and a coordinated desktop reboot. Recheck the existing Mac builder path.
 1. Record evidence and accepted versions with this change. Keep operator instructions concise and separate from transient execution evidence.
 

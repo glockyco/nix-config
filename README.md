@@ -19,7 +19,7 @@ Tailscale connects the managed hosts, personal Windows desktop, and temporary Ma
 
 [![Tailscale overview: Korolev can initiate connections to the MacBook Pro, Windows desktop, and temporary MacBook Air. Those three peers can initiate connections to one another.](docs/images/tailscale-overview.webp)](docs/images/tailscale-overview.webp)
 
-The diagram shows topology only. Its service cards predate the desktop's verification and no longer describe current state; [the change evidence](openspec/changes/enable-native-windows-remote-work/evidence.md) is authoritative.
+The diagram shows topology only. Its service cards predate the desktop's verification and no longer describe current state; [the change evidence](openspec/changes/archive/2026-09-06-enable-native-windows-remote-work/evidence.md) is authoritative.
 
 ### Desktop SSH and file access
 
@@ -29,7 +29,7 @@ Both desktop endpoints require the declared host-key pin and reject password fal
 
 Graphical access uses Windows App from this Mac against `desktop.tail8768af.ts.net`. The desktop allows one session per user and boots into a signed-in session, so a connection takes over that session rather than opening a private one, and disconnecting retains its work. The Air and Korolev have no RDP client by design; they use SSH and SFTP.
 
-The desktop access change records [acceptance evidence](openspec/changes/enable-native-windows-remote-work/evidence.md) and [remaining deployment gates](openspec/changes/enable-native-windows-remote-work/tasks.md). The verified standalone Windows OpenSSH server supports hybrid post-quantum key exchange. Its [manual update and recovery procedure](docs/operations/dependency-updates.md#desktop-openssh-maintenance) preserves host keys and tailnet restrictions; client cryptography warnings remain enabled.
+The desktop access change records [acceptance evidence](openspec/changes/archive/2026-09-06-enable-native-windows-remote-work/evidence.md) and [completed deployment gates](openspec/changes/archive/2026-09-06-enable-native-windows-remote-work/tasks.md). The verified standalone Windows OpenSSH server supports hybrid post-quantum key exchange. Its [manual update and recovery procedure](docs/operations/dependency-updates.md#desktop-openssh-maintenance) preserves host keys and tailnet restrictions; client cryptography warnings remain enabled.
 
 ## Develop
 
