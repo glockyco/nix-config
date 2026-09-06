@@ -70,7 +70,7 @@ Pin the Mac's actual OpenSSH public host key in `programs.ssh.knownHosts`. Delet
 
 `services.tailscale` on `korolev` sets `--shields-up`, disables Taildrop, and opens no firewall port. Its authenticated-state runner preserves the setting across first-time enrollment. No SSH server or other inbound service is added.
 
-`tailnet-builder-check` builds a unique Darwin derivation containing the builder's architecture and hostname, checks `arm64` and `macbook-pro`, and records `tailscale ping` output. Its nonce prevents a cached output from posing as a live remote build. A disconnected builder must fail within the declared connection timeout and recover after reconnection.
+`tailnet-builder-check` builds a unique Darwin derivation containing the builder's architecture and hostname, checks `arm64` and `macbook-pro`, and records `tailscale ping` output. Its nonce prevents a cached output from posing as a live remote build. The owner removed the deliberate outage drill from acceptance on 2026-09-06. Bounded failure and recovery after a deliberate outage remain unverified; the configured SSH timeout is unchanged.
 
 ### 6. Declarative WSL DNS
 
@@ -88,7 +88,7 @@ The managed-host deployment and normal remote-build proof have passed; see `task
 
 The coordinated WSL restart and post-restart DNS, MagicDNS, tailnet connectivity, and installed SSH check (task 5.2) passed. Employer-internal DNS is not applicable to the owner's WSL use. Do not repeat that operation. The live SSH isolation check (4.6) also passed: LAN access to the Mac on TCP 22 and Mac access to Korolev on TCP 22 timed out while the Mac tailnet SSH control succeeded. Keep all security invariants unchanged.
 
-Disconnected-builder recovery and Air/desktop enrollment/access (6.5, 7.1, 7.3, 7.4) are deferred optional operations, not prerequisites for basic OMP or verified Korolev–Mac connectivity. Their requirements remain unchanged and unaccepted. Air revocation before return is still mandatory. No optional operation starts automatically after the restart check. This change remains open until all its retained acceptance gates pass.
+On 2026-09-06, the owner authorized the remaining Air/desktop acceptance work and removed the builder outage drill from scope. Former task 6.5 is not a passing check: bounded failure and recovery after a deliberate outage remain unverified. Keep the Pro connected. Air offboarding remains required only before its eventual return, not before this change closes. This change remains open until all retained acceptance gates pass.
 
 ## Verification and Migration
 
@@ -96,7 +96,7 @@ Disconnected-builder recovery and Air/desktop enrollment/access (6.5, 7.1, 7.3, 
 1. Generate the root-owned client key; read the Mac's existing public host key through the authenticated channel. Declare only public material and the private key's path.
 1. Build both host systems and run deterministic gates. Smoke-test native OpenSSH command success, nonzero exit, rejected keys, host-key mismatch, and tailnet-only listening. Unprivileged test-server evidence does not prove the root launchd or PAM configuration.
 1. Review and merge before Mac activation. Activate from a local administrator session so a transport failure cannot strand recovery. Confirm Tailscale SSH is disabled, Apple Remote Login is off, the dedicated daemon listens only on tailnet addresses, and native SSH returns the remote status.
-1. Activate the WSL client with its already-provisioned credential. Run the unique remote build, all-system checks, and native Darwin store inspection over the new endpoint. Exercise disconnect/reconnect with a local recovery path on the Mac.
+1. Activate the WSL client with its already-provisioned credential. Run the unique remote build, all-system checks, and native Darwin store inspection over the new endpoint.
 1. Restart WSL and complete DNS acceptance. Enroll unmanaged peers and complete the Air's activated SSH/SMB acceptance.
 1. Keep the previous Nix generations until every applicable gate passes. Roll back locally if SSH cutover fails. A generation rollback does not erase client or host private keys, Tailscale enrollment, or application runtime state. Revoke compromised credentials explicitly.
 

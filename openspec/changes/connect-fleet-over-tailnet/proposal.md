@@ -2,9 +2,9 @@
 
 Preserve the deployed Korolev–Mac configuration and its verified SSH/build path. OMP usability and C# acceptance are separate; neither blocks network verification.
 
-Task 5.2 is complete: the coordinated WSL restart preserved resolver ownership, public DNS, MagicDNS, tailnet connectivity, and installed SSH access. The owner does not use employer-internal DNS from WSL, so that check is not applicable. Do not schedule another restart. Task 4.6 also passed: the live LAN and Korolev inbound SSH probes timed out, while the Mac tailnet SSH control succeeded. Preserve the existing no-inbound and tailnet-only boundaries. Only deferred optional tasks remain.
+Task 5.2 is complete: the coordinated WSL restart preserved resolver ownership, public DNS, MagicDNS, tailnet connectivity, and installed SSH access. The owner does not use employer-internal DNS from WSL, so that check is not applicable. Do not schedule another restart. Task 4.6 also passed: the live LAN and Korolev inbound SSH probes timed out, while the Mac tailnet SSH control succeeded. Preserve the existing no-inbound and tailnet-only boundaries. The remaining Air/desktop acceptance work is authorized below.
 
-Tasks 6.5, 7.1, 7.3, and 7.4 are deferred optional work: disconnected-builder recovery and Air/desktop enrollment and access. Preserve their unchecked status and technical acceptance contracts. They do not block basic OMP use or the already verified Korolev–Mac connection. Schedule them only when needed and with the owner's coordination. Air offboarding before return remains required, regardless of this scheduling decision.
+On 2026-09-06, the owner authorized the remaining Air/desktop acceptance work and removed the builder outage drill from scope. Former task 6.5 is not a passing check: bounded failure and recovery after a deliberate outage remain unverified. Keep the Pro connected. Air offboarding remains required only before its eventual return, not before this change closes.
 
 This change is incomplete and must not be archived as accepted while its gates remain open. CLI task counts do not authorize deferred work. Do not redesign working networking, SSH, policy deployment, or remote building to close the near-term checks.
 
@@ -30,7 +30,7 @@ The Air is borrowed temporarily for PhD thesis and TOSEM research-result retriev
 - Preserve `korolev` isolation: no inbound service, shields-up, no Taildrop, and no open firewall port. Manage WSL DNS through resolved, with the Windows DNS-tunneling upstream preserved across a real restart.
 - Point the Air's SSH and SMB clients at `macbook-air`. Keep the existing Secure Enclave authentication and batch transport. Prove activated online/offline behavior after enrollment.
 - Track Air offboarding outside this active change: preserve results, revoke the node before return, and remove its declaration, policy, endpoints, credentials, and role.
-- Prove live remote builds, native command failure propagation, key rejection, tailnet-only listening, disconnected-builder failure/recovery, and native release gates. Keep deployment gates open until exercised after review and merge.
+- Prove live remote builds, native command failure propagation, key rejection, tailnet-only listening, and native release gates. Keep deployment gates open until exercised after review and merge.
 
 ## Capabilities
 
