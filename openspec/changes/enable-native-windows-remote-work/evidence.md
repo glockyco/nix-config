@@ -70,10 +70,12 @@ the Pro verified the host key fingerprint before accepting it.
 
 Unproven:
 
-- `pro-yubikey`. No `ED25519-SK` acceptance appears in the log, so the security
-  key algorithm is untested. This is the credential intended to survive losing
-  the Pro, so an untested recovery path is the risk, not a formality. Close it
-  with a deliberate `IdentitiesOnly=yes -i ~/.ssh/id_ed25519_sk` connection.
+- `pro-yubikey`. The server accepts the algorithm: `sshd -T` on 10.0p2 lists
+  `sk-ssh-ed25519@openssh.com` and `sk-ecdsa-sha2-nistp256@openssh.com` among
+  `pubkeyacceptedalgorithms`. No `ED25519-SK` authentication has occurred, so the
+  credential itself is still untested. This is the credential intended to survive
+  losing the Pro, so an untested recovery path is the risk, not a formality. Close
+  it with a deliberate `IdentitiesOnly=yes -i ~/.ssh/id_ed25519_sk` connection.
 - `air`. Enrolled, never exercised.
 - Korolev. No key enrolled; the host was offline throughout.
 - Exit status 23 passthrough, paths containing spaces, rejection of an
@@ -111,8 +113,47 @@ No volume is encrypted (`FullyDecrypted`, protection off), so no preboot unlock
 applies. Fast Startup is enabled, so the reboot gate needs a true restart. The
 restart itself is not yet performed with remote access verified before sign-in.
 
+## SSH server version
+
+Upgraded from the Windows capability build to the standalone Win32-OpenSSH
+release on 2026-09-06:
+
+| | Before | After |
+| --- | --- | --- |
+| Version | `OpenSSH_for_Windows_9.5p1`, LibreSSL 3.8.2 | `OpenSSH_for_Windows_10.0p2`, LibreSSL 4.2.0 |
+| Binary | `C:\Windows\System32\OpenSSH\sshd.exe` | `C:\Program Files\OpenSSH\sshd.exe` |
+| Servicing | Windows Update / ESU | **manual** |
+
+The accepted version is 10.0p2 (release files dated 2025-10-22). All 14
+executables and `install-sshd.ps1` carried valid Microsoft Corporation
+Authenticode signatures; no MSI product is registered, so this is the GitHub zip
+extracted in place. The `OpenSSH.Server` capability was removed first, both
+because `install-sshd.ps1` uses `New-Service` and cannot create services that
+already exist, and so that Windows Update cannot later reinstate a second `sshd`
+over the standalone one.
+
+Verified after the upgrade: services Running/Automatic; `sshd_config` hash
+unchanged; `pubkeyauthentication yes`, `passwordauthentication no`,
+`kbdinteractiveauthentication no`; `administrators_authorized_keys` ACLs still
+Administrators and SYSTEM only; port 22 still scoped to the tailnet addresses;
+refusal without a key reports `Permission denied (publickey).` The ED25519 host
+key is byte-identical, so no client re-pins.
+
+Side effects recorded: the installer added `RedirectionGuard` image-file
+execution options for `sshd.exe` and `ssh-agent.exe`, granted
+`NT AUTHORITY\Authenticated Users` read access to `C:\Program Files\OpenSSH\moduli`,
+and appended its directory to the machine `PATH`. Until a re-login, `ssh` and
+`ssh-keygen` on this host still resolve to the 9.5p1 client in System32 while the
+server runs 10.0p2; mixed client and server versions are supported.
+
 ## Limitations
 
+- The SSH server is no longer serviced by Windows Update. Removing the
+  `OpenSSH.Server` capability moved that burden to manual updates of the
+  standalone release, on a machine already on extended support. The accepted
+  version above must be revisited deliberately; the repository conventions
+  forbid an update wrapper or scheduler, so this belongs in the operating
+  procedure.
 - The SSH account is a local administrator. Accepted deviation: keys live in
   the administrators file with restricted ACLs, agents are not launched
   elevated, and privileged changes still require console approval.
