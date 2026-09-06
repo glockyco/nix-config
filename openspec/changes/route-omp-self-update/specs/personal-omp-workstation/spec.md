@@ -2,7 +2,7 @@
 
 ### Requirement: Default wrapped command
 
-Except for the explicit WSL `update` subcommand, the default `omp` command SHALL invoke the platform-owned OMP executable with the immutable personal plugin enabled. On Darwin, the wrapper SHALL invoke the OMP executable from the stable Apple Silicon Homebrew prefix. In NixOS/WSL, the wrapper SHALL invoke the official prebuilt OMP executable from one fixed user-local path. For normal sessions, the wrapper SHALL add only the curated language-server executables required by the supported matrix to its `PATH`. The WSL update invocation SHALL additionally prioritize the configured standalone executable's directory without changing the caller's environment.
+Except for the explicit `update` subcommand, the default `omp` command SHALL invoke the platform-owned OMP executable with the immutable personal plugin enabled. On Darwin, the wrapper SHALL invoke the OMP executable from the stable Apple Silicon Homebrew prefix. In NixOS/WSL, the wrapper SHALL invoke the official prebuilt OMP executable from one fixed user-local path. For normal sessions, the wrapper SHALL add only the curated language-server executables required by the supported matrix to its `PATH`. The update invocation SHALL additionally prioritize the owning platform's executable directory without changing the caller's environment.
 
 #### Scenario: Resolve the default command
 
@@ -19,13 +19,15 @@ Except for the explicit WSL `update` subcommand, the default `omp` command SHALL
 
 ### Requirement: Explicit platform OMP updates
 
-OMP executable updates SHALL remain explicit operations outside Nix activation. Darwin SHALL use the official Homebrew upgrade operation. NixOS/WSL SHALL support `omp update` through the default wrapper to update its fixed user-local executable with the upstream binary updater. Each update path SHALL install an official prebuilt release and SHALL NOT build OMP from source. The official WSL installer SHALL remain the bootstrap and pinned recovery path.
+OMP executable updates SHALL remain explicit operations outside Nix activation. Darwin SHALL support `omp update` through the default wrapper and delegate installation to the official Homebrew formula. The update SHALL NOT replace the Homebrew executable through standalone binary installation. NixOS/WSL SHALL support `omp update` through the default wrapper to update its fixed user-local executable with the upstream binary updater. Each update path SHALL install an official prebuilt release and SHALL NOT build OMP from source. The official WSL installer SHALL remain the bootstrap and pinned recovery path.
 
 #### Scenario: Update OMP on Darwin
 
-- **WHEN** the operator runs the documented Homebrew upgrade operation
-- **THEN** Homebrew updates the official OMP formula without a repository change
-- **AND** the Nix-managed wrapper invokes the updated executable
+- **WHEN** the operator runs `omp update` through the default Darwin wrapper
+- **THEN** the upstream updater selects Homebrew ownership rather than the Nix wrapper or standalone binary replacement
+- **AND** Homebrew performs the official formula upgrade without a repository change or Nix generation
+- **AND** the wrapper preserves update arguments and exit status without session plugin arguments
+- **AND** the Nix-managed wrapper invokes the Homebrew-owned executable afterward
 
 #### Scenario: Update OMP in WSL
 
@@ -36,10 +38,16 @@ OMP executable updates SHALL remain explicit operations outside Nix activation. 
 
 #### Scenario: Preserve normal command resolution
 
-- **WHEN** a normal WSL OMP session starts after update routing is available
+- **WHEN** a normal OMP session on either supported platform starts after update routing is available
 - **THEN** the immutable personal plugin and language tools remain enabled
 - **AND** nested `omp` commands continue to resolve to the Nix wrapper
 - **AND** an argument containing `update` outside the leading subcommand does not select update routing
+
+#### Scenario: Unavailable Homebrew formula
+
+- **WHEN** the Darwin update invocation cannot resolve the official Homebrew formula prefix
+- **THEN** it fails without modifying the executable
+- **AND** it does not fall back to standalone binary replacement
 
 #### Scenario: Missing WSL executable
 
