@@ -70,7 +70,11 @@ writeShellApplication {
     printf '%s\n' "tailnet-builder-check: architecture $architecture"
     printf '%s\n' "tailnet-builder-check: builder $builder_host"
 
-    if ! ping_output=$(tailscale ping --c 1 "$expected_host" 2>&1); then
+    # `--until-direct` defaults true, so the default ping keeps retrying until a
+    # direct path exists and fails when only a relayed one does. A relayed route
+    # is a supported path here: a source behind a restrictive network reaches the
+    # fleet through DERP. Require a reply, not a direct path.
+    if ! ping_output=$(tailscale ping --c 1 --until-direct=false "$expected_host" 2>&1); then
       printf '%s\n' "$ping_output" >&2
       exit 1
     fi
