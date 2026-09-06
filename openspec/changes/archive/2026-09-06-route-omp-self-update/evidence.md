@@ -59,4 +59,4 @@ The clean Mac checkout at `/Users/glockyco/.config/nix-darwin` was advanced to `
 
 A subsequent fresh session launched through the normal Mac login-shell `omp` command resolved `/nix/store/s81h51dvwaxrx76yb677nqn96j1fckil-omp/bin/omp`. It verified the immutable plugin manifest at `/nix/store/h6mjqcm3rpsj9pdxzn07n9rjbn84f132-personal-omp-plugin-0.1.0`, quoted the loaded personal commit policy, and completed the exact `personal_commit` preview. The disposable repository remained clean with no commits before and after the preview.
 
-All change acceptance tasks are complete. Archival has not been requested.
+All change acceptance tasks are complete.
