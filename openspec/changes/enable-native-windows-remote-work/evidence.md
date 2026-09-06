@@ -409,6 +409,38 @@ real operation. The mechanism is unexplained: `AutoAdminLogon` is unset and the
 account has a password, so this is recorded as observed behaviour rather than a
 diagnosed one.
 
+## Task 5.4 — repeat checks and local recovery
+
+Repeating the setup state checks found no duplication: one enabled inbound rule
+for port 22, four authorization lines that are all unique, one `sshd` and one
+`ssh-agent` service pointing at `C:\Program Files\OpenSSH`, and the share list
+unchanged at `ADMIN$`, `C$`, `D$`, `E$`, `IPC$`.
+
+Recovery was exercised on a change-owned setting. The backup copy of
+`sshd_config` matched the live file exactly
+(`149482896CFC790654B7F28DEC7DD6BCE75372FED8290AF31552D91B5295B0FD`). The Pro
+appended `LogLevel VERBOSE`, validated with `sshd -t`, restarted the service and
+kept working access; it then restored the file from the recovery copy,
+validated, restarted, and confirmed the hash returned to that baseline. After
+restoring, the effective configuration again reports `pubkeyauthentication yes`,
+`passwordauthentication no`, `kbdinteractiveauthentication no`, the service is
+`Running` and `Automatic`, and file ACLs are unchanged. The Pro's batch endpoint
+and the Air both returned exit status `23` afterwards. The host key file is
+byte-identical to its recorded hash, so no client needs re-pinning, and no
+repository or agent state was touched.
+
+The perturbation reproduced a hazard this change already documents: appending to
+`sshd_config` placed the directive after the `Match Group administrators` block,
+so `sshd -T` still reported `loglevel INFO`. `sshd -t` accepted the file anyway.
+Any future edit must be placed in the global section deliberately, not appended.
+
+Two leftovers are recorded rather than removed. `C:\ProgramData\ssh` still holds
+the desktop worker's `sshd_config.pre-change` and `sshd_config.pre-10.0p2`
+copies. `C:\WINDOWS\System32\OpenSSH` still holds the in-box client tools and
+remains on the machine `PATH`, although its `sshd.exe` is gone with the removed
+capability; `ssh` resolves to the standalone `C:\Program Files\OpenSSH\ssh.exe`
+at 10.0p2, so client and server versions now match.
+
 ## SSH server version
 
 Upgraded from the Windows capability build to the standalone Win32-OpenSSH
