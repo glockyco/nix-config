@@ -6,7 +6,7 @@ Task 5.2 is complete: the coordinated WSL restart preserved resolver ownership, 
 
 On 2026-09-06, the owner authorized the remaining Air/desktop acceptance work and removed the builder outage drill from scope. Former task 6.5 is not a passing check: bounded failure and recovery after a deliberate outage remain unverified. Keep the Pro connected. Air offboarding remains required only before its eventual return, not before this change closes.
 
-This change is incomplete and must not be archived as accepted while its gates remain open. CLI task counts do not authorize deferred work. Do not redesign working networking, SSH, policy deployment, or remote building to close the near-term checks.
+All retained acceptance tasks are complete. Air SMB acceptance uses the owner's report and explicit waiver of the deliberate mount/offline trial. Archive does not authorize Air retirement, network changes, or a push.
 
 ## Why
 
@@ -28,7 +28,7 @@ The Air is borrowed temporarily for PhD thesis and TOSEM research-result retriev
 - Keep one root-owned builder private key on `korolev`, outside the repository and Nix store. Declare its restricted public authorization on the Mac and pin the Mac's actual OpenSSH public host key. Remove the obsolete Tailscale `KnownHostsCommand` implementation and callers.
 - Declare one `ssh-ng` Darwin builder from the Mac's host declaration. Keep its user in `trusted-users` because remote builds import unsigned paths. The credential permits remote build and verification commands; it is not a command sandbox.
 - Preserve `korolev` isolation: no inbound service, shields-up, no Taildrop, and no open firewall port. Manage WSL DNS through resolved, with the Windows DNS-tunneling upstream preserved across a real restart.
-- Point the Air's SSH and SMB clients at `macbook-air`. Keep the existing Secure Enclave authentication and batch transport. Prove activated online/offline behavior after enrollment.
+- Point the Air's SSH and SMB clients at `macbook-air`. Keep the existing Secure Enclave authentication and batch transport. Accept the activated SMB integration on the owner's report that it works; the owner waived the deliberate fresh-mount/offline trial.
 - Track Air offboarding outside this active change: preserve results, revoke the node before return, and remove its declaration, policy, endpoints, credentials, and role.
 - Prove live remote builds, native command failure propagation, key rejection, tailnet-only listening, and native release gates. Keep deployment gates open until exercised after review and merge.
 
