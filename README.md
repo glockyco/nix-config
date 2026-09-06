@@ -94,13 +94,15 @@ nix flake update                       # all inputs
 nix flake update personal-omp-plugin   # plugin only
 ```
 
-OMP updates need no repository change or Nix activation. On macOS:
+OMP updates need no repository change or Nix activation. On macOS and WSL:
 
 ```sh
-brew upgrade can1357/tap/omp
+omp update
 ```
 
-On WSL, use the same official binary installation command for first install and updates:
+The wrapper routes updates to Homebrew on macOS and the standalone binary updater on WSL. Normal sessions retain the Nix-managed plugin and language tools.
+
+For the first WSL installation, use the official binary installer:
 
 ```sh
 curl -fsSL https://omp.sh/install \
