@@ -78,6 +78,45 @@ curl -fsSL https://omp.sh/install \
 verify-personal-omp
 ```
 
+## Desktop OpenSSH maintenance
+
+The personal desktop uses the standalone Win32-OpenSSH ZIP distribution, not the Windows `OpenSSH.Server` capability or an MSI installation. Windows Update and ESU no longer service this SSH server. Review its version manually against [upstream releases](https://github.com/PowerShell/Win32-OpenSSH/releases); the accepted release and verification results are in the [desktop change evidence](../../openspec/changes/enable-native-windows-remote-work/evidence.md). Do not add an updater or execute Windows installers from Nix activation.
+
+Perform service changes at the Windows console in an administrator PowerShell session. The selected SSH account also has enabled administrator privileges, but stopping its transport is not a safe way to run its installer. Keep the console available and preserve repositories, agent state, host keys, and labelled authorization entries.
+
+Before an update:
+
+1. Identify the service binaries and package owner. Do not mix the Windows capability, MSI, and ZIP installation methods.
+1. Retain the accepted ZIP and back up `C:\ProgramData\ssh`, including file ACLs, in a local directory restricted to Administrators and SYSTEM. Record service startup settings and effective firewall rules. Do not export private keys to another host or repository.
+1. Select an exact release. Check the ZIP's SHA-256 against GitHub's release digest, then verify valid Microsoft Authenticode signatures on its executables, DLLs, and PowerShell scripts. Review preview status explicitly.
+1. Test the candidate with the existing host key and authentication policy before replacing services. Do not accept a handshake alone as proof of command or SFTP compatibility.
+
+Follow the [upstream ZIP installation procedure](https://github.com/PowerShell/Win32-OpenSSH/wiki/Install-Win32-OpenSSH). For an existing ZIP installation, its signed `uninstall-sshd.ps1` stops and removes both `sshd` and `ssh-agent`. Confirm that both service registrations are gone before installing the selected package; do not repeat `install-sshd.ps1` against a service pending deletion. Close service-management handles if Windows reports pending deletion, and coordinate a restart if Windows requires one. Keep the old package directory until acceptance passes.
+
+Install the verified package at `C:\Program Files\OpenSSH`, with write access restricted to Administrators and SYSTEM. From the local administrator session:
+
+```powershell
+$ErrorActionPreference = 'Stop'
+& 'C:\Program Files\OpenSSH\install-sshd.ps1'
+Get-Service sshd, ssh-agent | Set-Service -StartupType Automatic
+Start-Service sshd, ssh-agent
+```
+
+Do not enable the broad `OpenSSH SSH Server (sshd)` firewall rule. The reviewed preview MSI also adds an unrestricted TCP/22 exception; do not substitute it for the ZIP procedure. Preserve the existing tailnet-destination rules, public-key-only authentication, PowerShell default shell, and SFTP subsystem. Check the active server binary independently of `ssh.exe` on `PATH`; client and server versions can differ.
+
+After installation, use the Pro's pinned `desktop-batch` endpoint to verify the negotiated key exchange, unchanged host identity, native command status, a spaced-path SFTP round trip, and rejection of an unapproved key and mismatched host pin. Verify both services' startup state and effective firewall rules. Keep the client cryptography warning enabled.
+
+To recover from a failed ZIP update, use the local console and the same supported remove/install procedure with the retained accepted package. Restore the saved SSH configuration and ACLs if they changed, restore startup settings, and repeat transport acceptance. Removing the Windows capability can remove its server binary: pointing the service back to `C:\Windows\System32\OpenSSH\sshd.exe` is not a recovery procedure when that file is absent. Returning to capability ownership requires an explicit Windows capability installation, not an executable fallback. Do not reinstall or restart the working server merely to rehearse this procedure.
+
+Unattended access also depends on coordination-server state. Keep the desktop's Tailscale key expiry disabled and check it from Windows:
+
+```powershell
+(tailscale status --json | ConvertFrom-Json).Self |
+  Select-Object DNSName, Online, KeyExpiry
+```
+
+Require the intended desktop identity, `Online: true`, and `KeyExpiry: null`. This setting is not part of the repository's rendered tailnet policy. A tagged node cannot receive Taildrop; use authenticated SFTP. A reboot test requires an owner-coordinated true restart and verification before interactive sign-in. Never weaken the blank-password network-logon restriction to enable RDP; setting account credentials is a separate owner operation.
+
 ## Tailnet authorization recovery
 
 Use this procedure when policy federation fails or its trust configuration changes.
