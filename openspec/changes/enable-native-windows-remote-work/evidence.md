@@ -469,12 +469,43 @@ route is the expected one for a source behind a restrictive network; the Pro
 itself is relay-only on a hotspot. The check now passes `--until-direct=false`,
 requiring a reply rather than a direct path.
 
-Verifying the fixed script needs Korolev: it is a Linux package and no Linux
-builder is reachable from the Pro, so the Pro confirmed only that it evaluates
-and that the built derivation carries the flag. Whether the first failure would
-also disappear now is untested, and the underlying relay instability is not
+**Accepted run with the fixed check.** Korolev fetched `c2cb167` directly,
+fast-forwarded, and reported `nix fmt -- --fail-on-change`, strict OpenSpec
+validation and a native `nix flake check` all exiting 0, with 16 checks run and
+aarch64-darwin omitted, plus a nonfatal `install-info` warning for
+`gawknotes.info`. `nixos-rebuild switch` exited 0, no units failed,
+`verify-personal-omp` passed with OMP 18.1.10 and the same plugin, and previous
+generations were kept.
+
+It then ran the installed `tailnet-builder-check` exactly once: **exit 0**. The
+probe built on `ssh-ng://glockyco@macbook-pro`, the ping reported
+`pong from macbook-pro (100.88.17.38) via DERP(fra) in 69ms`, and the check
+printed `passed`. So a relayed path now satisfies it, as intended.
+
+The Pro corroborated the build half independently: the probe output
+`6m3ljbcsgqm39j9k383hxsqzxvgs6189-tailnet-builder-probe-1788715089-679467-231485-10446`
+exists in this machine's store and contains `arm64` and `macbook-pro`.
+
+The earlier failures stay recorded as measured. Whether the first, no-reply
+failure would recur is untested, and the underlying relay instability is not
 attributed to this change. The `connect-fleet-over-tailnet` gates stay
 unchanged.
+
+## Task 6.4 — commits and archive readiness
+
+Every change landed as its own commit after its applicable verification, with
+nothing staged that the task did not own. The desktop's own commits were
+cherry-picked with their original authorship rather than squashed into a
+reconciliation commit, and corrections were added as new commits rather than
+amended over valid checkpoints, so the wrong claims stay visible: the inherited
+blank-password claim, the language-server exclusion first justified by ignoring
+this machine's planned WSL host, and the abandoned attempt to patch the Nixpkgs
+source.
+
+Nothing was pushed, and no archive is authorised here. Two conditions remain
+for whoever archives this change: the accepted scope reductions must be read as
+decisions rather than as verified capabilities, and the temporary-path audit
+crash stays an unresolved upstream defect that no gate here fixed.
 
 ## Task 6.2 — cleanup and exclusions
 
