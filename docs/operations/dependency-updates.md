@@ -115,7 +115,7 @@ Unattended access also depends on coordination-server state. Keep the desktop's 
   Select-Object DNSName, Online, KeyExpiry
 ```
 
-Require the intended desktop identity, `Online: true`, and `KeyExpiry: null`. This setting is not part of the repository's rendered tailnet policy. A tagged node cannot receive Taildrop; use authenticated SFTP. A reboot test requires an owner-coordinated true restart and verification before interactive sign-in. Never weaken the blank-password network-logon restriction to enable RDP; setting account credentials is a separate owner operation.
+Require the intended desktop identity, `Online: true`, and `KeyExpiry: null`. This setting is not part of the repository's rendered tailnet policy. A tagged node cannot receive Taildrop; use authenticated SFTP. A reboot test requires an owner-coordinated true restart; verify that the services return automatically. The desktop starts into a signed-in session, so pre-sign-in access is not a state it reaches. Never weaken `LimitBlankPasswordUse` or store a logon password in the registry to keep an automatic sign-on; account credentials are the owner's operation.
 
 ## Tailnet authorization recovery
 
