@@ -4,9 +4,9 @@
 
 - [x] 1.2 Add observable regression coverage to the existing wrapper checks; verify update arguments and failing exit status, missing-executable rejection, normal and nested command resolution, and unchanged Darwin routing.
 
-- [ ] 1.3 Extend leading `update` routing to Darwin through the official Homebrew formula prefix; verify failed prefix resolution stops without fallback and normal sessions remain wrapped.
+- [x] 1.3 Extend leading `update` routing to Darwin through the official Homebrew formula prefix; verify failed prefix resolution stops without fallback and normal sessions remain wrapped.
 
-- [ ] 1.4 Update routing regression coverage for both platforms; verify Darwin preserves arguments and exit status without session flags and does not expose the update path to normal sessions.
+- [x] 1.4 Update routing regression coverage for both platforms; verify Darwin preserves arguments and exit status without session flags and does not expose the update path to normal sessions.
 
 ## 2. Runtime acceptance
 

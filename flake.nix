@@ -481,18 +481,31 @@
                       installCommand = "install-omp-for-routing-check";
                     };
                   };
+                  brewProbe = pkgs.writeShellScript "brew-routing-probe" ''
+                    test "$*" = '--prefix can1357/tap/omp'
+                    if [ "''${BREW_PREFIX_STATUS:-0}" != 0 ]; then
+                      exit "$BREW_PREFIX_STATUS"
+                    fi
+                    printf '%s\n' "''${BREW_PREFIX-$HOME/standalone}"
+                  '';
+                  homebrew = pkgs.runCommand "routing-homebrew" { } ''
+                    mkdir -p "$out/bin"
+                    ln -s ${probe} "$out/bin/omp"
+                    ln -s ${brewProbe} "$out/bin/brew"
+                  '';
                   darwinWrapper = personalOmp.override {
                     ompRuntime = {
-                      executable.absolute = probe;
+                      executable.absolute = "${homebrew}/bin/omp";
                       installCommand = "install-omp-for-routing-check";
                     };
                   };
                 in
                 pkgs.runCommand "check-personal-omp-routing" { nativeBuildInputs = [ pkgs.python3 ]; } ''
                   export HOME="$TMPDIR/home with spaces"
-                  mkdir -p "$HOME/standalone"
+                  mkdir -p "$HOME/standalone/bin"
                   cp ${probe} "$HOME/standalone/omp"
-                  chmod +x "$HOME/standalone/omp"
+                  cp ${probe} "$HOME/standalone/bin/omp"
+                  chmod +x "$HOME/standalone/omp" "$HOME/standalone/bin/omp"
                   python3 - <<'PY'
                   import json, os, pathlib, subprocess
 
@@ -509,13 +522,15 @@
                       return json.loads(result.stdout)
 
                   update_args = ["update", "--check", "argument with spaces"]
-                  result = run(wsl, update_args, 23)
-                  assert result == {"args": update_args, "omp": target}, result
-                  for args in ([], ["--print", "update"], ["acp"]):
-                      result = run(wsl, args)
-                      assert result == {"args": plugin_args + args, "omp": wsl}, result
-                  result = run(darwin, ["update"])
-                  assert result == {"args": plugin_args + ["update"], "omp": wsl}, result
+                  for wrapper, update_target in ((wsl, target), (darwin, str(pathlib.Path.home() / "standalone/bin/omp"))):
+                      result = run(wrapper, update_args, 23)
+                      assert result == {"args": update_args, "omp": update_target}, result
+                      for args in ([], ["--print", "update"], ["acp"]):
+                          result = run(wrapper, args)
+                          assert result == {"args": plugin_args + args, "omp": wsl}, result
+                  for overrides, status in (({"BREW_PREFIX_STATUS": "19"}, 19), ({"BREW_PREFIX": ""}, 1), ({"BREW_PREFIX": "/absent-formula"}, 1)):
+                      result = subprocess.run([darwin, "update"], env=dict(env, **overrides), text=True, capture_output=True)
+                      assert result.returncode == status and not result.stdout, result
                   assert env["PATH"] == original_path
                   pathlib.Path(target).unlink()
                   result = subprocess.run([wsl, "update"], env=env, text=True, capture_output=True)
