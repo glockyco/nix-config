@@ -52,9 +52,27 @@ Inbound reach for RDP and SMB comes from two
 `Tailscale-In` rules allowing any protocol to the tailnet addresses, so those
 services were already tailnet-only before this change.
 
-Not proven from the desktop: denial of a non-tailnet path. Traffic to the
-host's own addresses is not filtered locally, so task 5.1 still requires an
-external source with demonstrated LAN reachability.
+The Pro later compared both paths from the desktop's WSL distribution, whose
+network stack is separate from the Windows host and is not a tailnet node.
+Each check opened a TCP connection and recorded the exit status, so a refusal
+is a filtering result rather than an unmeasured route failure:
+
+| Port | `10.0.1.2` (Ethernet) | `192.168.96.1` (host from WSL) | `100.91.92.64` (tailnet) |
+| ---- | --------------------- | ------------------------------ | ------------------------ |
+| 22   | timed out             | timed out                      | connected                |
+| 3389 | timed out             | timed out                      | connected                |
+| 445  | timed out             | timed out                      | connected                |
+
+The tailnet address answers on all three ports from the same source that both
+non-tailnet addresses refuse, which demonstrates reachability and therefore
+enforcement rather than an absent route.
+
+Still open for task 5.1: this source shares the physical machine, and the
+desktop's Ethernet interface carries no global IPv6 address, only a
+link-local one, so IPv6 coverage on a non-tailnet path is untested. A source on
+the desktop's own Ethernet segment remains the stronger check; the Pro, the
+Air, and Korolev are all on `192.168.0.0/24` and route `10.0.1.2` through a
+gateway.
 
 ## Task 2.3 / 2.4 — enrollment and authentication
 
@@ -91,7 +109,14 @@ All temporary transfer files were removed. No financial data was copied.
 
 Unproven:
 
-- Korolev enrollment, commands, and SFTP. The desktop worker reported it offline.
+- Korolev enrollment, commands, and SFTP. The host is now reachable: the owner
+  repaired its Tailscale service, and it answers `tailscale ping` directly at
+  `192.168.0.236` while reporting `Online: true`. Its own no-inbound boundary
+  still holds, verified from the Pro: `ssh korolev` returned status `255` with a
+  connection timeout, and TCP port 22 refused a bare connection. Nothing on the
+  Pro or the desktop can therefore drive Korolev's client checks; they run from
+  Korolev after it activates the declared endpoints below and enrolls its own
+  user key.
 - Air and Korolev rejection/revocation checks. The Pro passed the rejection
   checks against the upgraded service.
 - System-wide activation of the Pro client declaration. The generated
