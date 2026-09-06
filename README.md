@@ -25,7 +25,7 @@ After Mac activation, `ssh desktop` opens the Windows account's PowerShell sessi
 
 Both desktop endpoints require the declared host-key pin and reject password fallback. The selected Windows account has administrator privileges; privileged service changes still require explicit owner approval. Windows absolute SFTP paths use `/D:/Projects/ynab`, not `D:/Projects/ynab`. Keep working copies on local storage and preserve originals during transfers.
 
-The [desktop access change](openspec/changes/enable-native-windows-remote-work/tasks.md) records acceptance evidence and remaining deployment gates. The installed Windows OpenSSH build lacks post-quantum key exchange; the client warning remains enabled.
+The desktop access change records [acceptance evidence](openspec/changes/enable-native-windows-remote-work/evidence.md) and [remaining deployment gates](openspec/changes/enable-native-windows-remote-work/tasks.md). The verified standalone Windows OpenSSH server supports hybrid post-quantum key exchange. Its [manual update and recovery procedure](docs/operations/dependency-updates.md#desktop-openssh-maintenance) preserves host keys and tailnet restrictions; client cryptography warnings remain enabled.
 
 ## Develop
 
