@@ -147,8 +147,3 @@ The Linux host SHALL declare the Darwin host as a remote builder for `aarch64-da
 
 - **WHEN** the operator runs the documented builder check on the Linux host while the Darwin host is connected
 - **THEN** the check builds a derivation that records the building machine and confirms that the Darwin host built it
-
-#### Scenario: Darwin host unreachable
-
-- **WHEN** the Darwin host is not connected to the tailnet
-- **THEN** a build that requires it fails within the declared connection timeout with a message that names the builder

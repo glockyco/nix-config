@@ -2,9 +2,9 @@
 
 Preserve the deployed Korolev–Mac configuration and its verified SSH/build path. OMP usability and C# acceptance are separate; neither blocks network verification.
 
-Task 5.2 is complete: the coordinated WSL restart preserved resolver ownership, public DNS, MagicDNS, tailnet connectivity, and installed SSH access. The owner does not use employer-internal DNS from WSL, so that check is not applicable. Do not schedule another restart. Task 4.6 also passed: the live LAN and Korolev inbound SSH probes timed out, while the Mac tailnet SSH control succeeded. Preserve the existing no-inbound and tailnet-only boundaries. Only deferred optional tasks remain.
+Task 5.2 is complete: the coordinated WSL restart preserved resolver ownership, public DNS, MagicDNS, tailnet connectivity, and installed SSH access. The owner does not use employer-internal DNS from WSL, so that check is not applicable. Do not schedule another restart. Task 4.6 also passed: the live LAN and Korolev inbound SSH probes timed out, while the Mac tailnet SSH control succeeded. Preserve the existing no-inbound and tailnet-only boundaries. The remaining Air/desktop acceptance work is authorized below.
 
-Tasks 6.5, 7.1, 7.3, and 7.4 are deferred optional work: disconnected-builder recovery and Air/desktop enrollment and access. Preserve their unchecked status and technical acceptance contracts. They do not block basic OMP use or the already verified Korolev–Mac connection. Schedule them only when needed and with the owner's coordination. Air offboarding before return remains required, regardless of this scheduling decision.
+On 2026-09-06, the owner authorized the remaining Air/desktop acceptance work and removed the builder outage drill from scope. Former task 6.5 is not a passing check: bounded failure and recovery after a deliberate outage remain unverified. Keep the Pro connected. Air offboarding remains required only before its eventual return, not before this change closes.
 
 This change is incomplete and must not be archived as accepted while its gates remain open. CLI task counts do not authorize deferred work. Do not redesign working networking, SSH, policy deployment, or remote building to close the near-term checks.
 
@@ -59,14 +59,14 @@ This change is incomplete and must not be archived as accepted while its gates r
 - [x] 6.2 Build the Darwin system check from `korolev`; confirm the remote builder runs and its output enters the local store.
 - [x] 6.3 Run all-system checks on the combined revision and compare Darwin check derivations with native evaluation of that same revision.
 - [x] 6.4 Run the packaged Darwin build-plan inspection from Linux through native SSH and confirm its output and exit status match a local Darwin invocation.
-- [ ] 6.5 With local Mac recovery available, disconnect its tailnet, prove a new Darwin build fails within the connection timeout naming the builder, reconnect, and prove a fresh build succeeds.
+  Former task 6.5 was removed by owner decision on 2026-09-06. No outage drill was performed.
 
 ## 7. Retire mDNS Endpoints
 
-- [ ] 7.1 Install and authenticate Tailscale on the temporary Air and durable desktop with their declared names/tags; confirm both nodes appear.
+- [x] 7.1 Install and authenticate Tailscale on the temporary Air and durable desktop with their declared names/tags; confirm both nodes appear.
 - [x] 7.2 Change the Air SSH aliases to `macbook-air` while retaining their existing transport policy.
 - [ ] 7.3 Activate the tailnet SMB endpoint and peer-state probe; confirm online mounting and offline no-mount behavior.
-- [ ] 7.4 Run the four `air-batch-check` probes over the enrolled and activated tailnet path.
+- [x] 7.4 Run the four `air-batch-check` probes over the enrolled and activated tailnet path.
 - [x] 7.5 Remove legacy mDNS endpoint literals from configuration, packages, hosts, and operating documentation.
 - [x] 7.6 Track Air retirement in the planning issue: preserve results, revoke before return, and remove policy, declaration, endpoints, credentials, and role.
 
@@ -83,6 +83,16 @@ This change is incomplete and must not be archived as accepted while its gates r
 - [x] 9.1 Record the 2026-09-05 OpenSSH correction, credential trust impact, tailnet-only listener, policy identity separation, deployment protections, and unchanged temporary-peer boundary in the architecture document.
 - [x] 9.2 Update the WSL runbook for credential provisioning, root SSH checks, host-key replacement, local Mac activation/recovery, DNS restart acceptance, and live builder verification.
 - [x] 9.3 Reconcile the README and dependency-update procedure with the combined native gates and checked policy deployment. Do not report external activation or provider checks as complete before they run.
+
+## Acceptance evidence: 2026-09-06
+
+Measured on the Pro without changing enrollment or disconnecting any host:
+
+- `tailscale status --json` reports both peers online with exactly their declared tags. The Air has `tag:macbook-air` and MagicDNS name `macbook-air.tail8768af.ts.net.`. The desktop has `tag:desktop` and MagicDNS name `desktop.tail8768af.ts.net.`. Its OS HostName remains `DESKTOP-DBHLRDD`; this is distinct from its correct MagicDNS name. Task 7.1 passes without re-enrollment.
+- `AIR_BATCH_DOCKER=/usr/local/bin/docker air-batch-check` exited 0. Resolved policy, detached-stdin command, status 23 propagation, read-only rsync transfer, executable resolution, Linux Docker inspection, and persistent-master absence all passed. Task 7.4 is complete.
+- The activated launch agent invokes `/nix/store/5fijr0p54hiv2yfqicb1pmsjcnkzjzgy-mount-air-share` every 60 seconds. `mount -t smbfs` reports `//joaichberger@macbook-air/Macintosh%20HD` at `/Volumes/Macintosh HD-1`. Invoking the installed script exited 0 with the share already mounted. This exercises only its existing-mount branch, not a fresh mount or offline suppression. Task 7.3 remains open. A live trial needs a safe unmounted share and a coordinated temporary Air disconnection; no such interruption occurred.
+
+The owner removed former task 6.5 from scope. Neither bounded builder failure nor deliberate disconnect/reconnect recovery is claimed as verified. The Air remains in use; no offboarding action was performed. Earlier evidence below remains historical.
 
 ## Acceptance evidence: 2026-09-05
 
