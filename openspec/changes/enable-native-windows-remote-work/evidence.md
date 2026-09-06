@@ -89,6 +89,7 @@ Enrolled, each with a revocation label on its own line:
 | `air`         | ED25519    | `SHA256:kgUu4MgKK+87Fax0fwsQoMVfcMNCI+kR5TqlMzSBEeM` |
 | `pro-enclave` | ECDSA      | `SHA256:yNSLyqA+u4s4Fa8TNIq9U2DpxWgHlwldVFxPZ99FGNE` |
 | `pro-yubikey` | ED25519-SK | `SHA256:nBDQ2kAH2q7ylUIJGQz48/YLqr9sWpL3n2qRowd3Z54` |
+| `korolev`     | ED25519    | `SHA256:3BjfAMmCOeoqV50VRCIBzFIGAuNG4LQ3MCcYUAyc248` |
 
 `pro-enclave` is proven: 24 accepted `publickey` authentications from
 `100.88.17.38` between 14:35 and 15:12 on 2026-09-06, no failures recorded, and
@@ -107,17 +108,36 @@ trip through a filename with spaces. SHA-256:
 `dd8430af20d29b52a8b34d1eacef6639bf51487b308d27de37d6fd6e7652e573`.
 All temporary transfer files were removed. No financial data was copied.
 
-Unproven:
+Korolev is reachable again after the owner repaired its Tailscale service; it
+answers `tailscale ping` directly at `192.168.0.236` and reports
+`Online: true`. Its own no-inbound boundary still holds, verified from the Pro:
+`ssh korolev` returned status `255` with a connection timeout, and TCP port 22
+refused a bare connection.
 
-- Korolev enrollment, commands, and SFTP. The host is now reachable: the owner
-  repaired its Tailscale service, and it answers `tailscale ping` directly at
-  `192.168.0.236` while reporting `Online: true`. Its own no-inbound boundary
-  still holds, verified from the Pro: `ssh korolev` returned status `255` with a
-  connection timeout, and TCP port 22 refused a bare connection. Nothing on the
-  Pro or the desktop can therefore drive Korolev's client checks; they run from
-  Korolev after it activates the declared endpoints below and enrolls its own
-  user key.
-- Air and Korolev rejection/revocation checks. The Pro passed the rejection
+Korolev fetched revision `f576832` over SSH and activated it with
+`nixos-rebuild switch`. Its report records formatting, strict OpenSpec
+validation, 25 Linux flake checks, no failed units, retained previous
+generation, and the existing Mac transport still returning status `23`. Its
+installed endpoints use the declared pin and its preserved user key at
+`/home/user/.ssh/id_ed25519`, which is separate from the root-owned builder
+credential. Its first attempt reached the desktop and passed host verification
+but was refused with `Permission denied (publickey)`, because the key was not
+yet authorized.
+
+The Pro then enrolled the `korolev` key from the desktop. The candidate parsed
+and matched its reported fingerprint before it reached the authorization file;
+the three existing lines were unchanged, the file grew from three entries to
+four, and its ACLs still grant only SYSTEM and Administrators. `sshd -t`
+accepts the configuration and existing Pro access still authenticates. No
+private key left Korolev.
+
+Unproven for Korolev: its own command, exit-status, spaced-path, rejection and
+SFTP checks. They must run from Korolev, because its no-inbound boundary means
+neither the Pro nor the desktop can drive it.
+
+Still unproven elsewhere:
+
+- Air and Korolev rejection and revocation checks. The Pro passed the rejection
   checks against the upgraded service.
 - System-wide activation of the Pro client declaration. The generated
   configuration has passed live checks with `ssh -F`.
