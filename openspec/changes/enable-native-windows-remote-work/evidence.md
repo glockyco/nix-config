@@ -200,6 +200,83 @@ Still unproven elsewhere:
 - System-wide activation of the Pro client declaration. The generated
   configuration has passed live checks with `ssh -F`.
 
+## Task 3.1 / 3.2 — native agent
+
+Accepted versions, installed from the Pro over SSH:
+
+| Component       | Version                                    | Source and check                                                                                                                                                               |
+| --------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| OMP             | 18.1.12                                    | Official `install.ps1` at that tag with `-Binary`; `omp-windows-x64.exe` SHA-256 `1195236da00e218c8d5eb56144a481f0622d4c7123f8a563c7128ae4e4a341f0` matched the release digest |
+| Personal plugin | `4707024f3c20031a3650dc98db74940f0ae9a648` | Source checkout at `D:\Projects\omp-agent-setup`, the revision this repository pins; no Nix-store payload copied                                                               |
+| psmux           | 3.3.8                                      | Release archive SHA-256 `1ad127ba937194a890b933a73d9b023e297bd73dc742abd841bf159984c2effe` matched the release digest                                                          |
+| ripgrep         | 15.2.0                                     | `winget install BurntSushi.ripgrep.MSVC`                                                                                                                                       |
+| OpenSpec        | 1.12.0                                     | Already present, matching the version `llm-agents` packages                                                                                                                    |
+
+The rejected Bun-global distribution is gone: `bun remove -g` unregistered the
+package, and the leftover `omp.exe` and `omp.bunx` shims were deleted, but only
+after the owner stopped an OMP process that had been holding `omp.exe` open.
+That process belonged to the owner's own session, so it was left alone until
+then. `omp` in a fresh SSH session now resolves to
+`C:\Users\User\AppData\Local\omp\omp.exe` alone and reports `omp/18.1.12`. The
+installer selected Git Bash at `C:\Program Files\Git\bin\bash.exe` as the shell
+path, not the WSL `bash.exe` on `PATH`, which the design forbids.
+
+Smoke checks ran with `--plugin-dir` and `--extension` pointed at the source
+checkout, in a disposable Windows repository:
+
+- The agent reported the loaded plugin path `D:\Projects\omp-agent-setup\plugin`
+  and quoted the commit-policy skill, so extension and skills load from source.
+- `personal_commit` with `action=preview` printed the formatted subject and body
+  and left the repository unchanged.
+- `openspec list` in `D:\Projects\nix-config` reported all six changes with task
+  counts; the repository stayed clean afterwards.
+- The research helper `fetch_pdf.py` ran under Python 3.13.3 and printed its
+  interface.
+- A provider credential was already present, so a non-interactive run completed
+  without transferring any credential from the Pro.
+
+Recorded rather than hidden: during the commit-preview check the agent
+misread a fragment as an instruction, created a commit in the disposable
+repository and undid it with `git reset --soft`. The preview itself changed
+nothing, but the disposable repository was not pristine at that moment.
+
+Blocking gap for task 3.2: no language server the plugin selects exists on
+Windows. `markdown-oxide`, `Microsoft.CodeAnalysis.LanguageServer`, the Svelte
+server, `marksman`, `nixd` and `pyright` are all absent, because Nix packages
+them for the Macs and Korolev and cannot on Windows. Selecting, pinning and
+verifying Windows language-server artifacts is dependency work this change has
+not done, so diagnostics are unproven and no substitute was fabricated.
+
+## Task 3.3 — persistent terminal
+
+psmux 3.3.8 created, listed and killed a named session over SSH, with the
+working directory set to a repository. Its two listening endpoints are both on
+`127.0.0.1`, so its control interface stays local to Windows as the design
+requires. Through `capture-pane`, the session rendered
+`Grüße — ✅ 日本語 ← →` correctly, `resize-window` reported `100x24`, and
+`paste-buffer` delivered a buffer that the shell executed.
+
+Interrupt handling is unproven. Injected `send-keys C-c` and the literal
+control byte `send-keys -H 03` both failed to stop a running loop in the pane:
+the log kept growing, and only `kill-session` stopped it. That is not a verdict
+on psmux, because an injected key is not a terminal interrupt, and no real
+attached client could be created from this session: macOS `script` refuses to
+allocate a PTY when its input is a socket, and the harness's supervised-process
+launcher fails with `ENOENT` before starting a command. A terminal-attached
+Ctrl-C from the owner or from a peer agent with a real terminal is still
+required.
+
+Also recorded: two of my own errors while driving the pane. An unclosed quote
+in a `send-keys` argument left the pane in a PowerShell continuation prompt
+that silently swallowed later input, and a malformed loop kept running until I
+noticed. Both were cleared by recreating the session. All test sessions, the
+ticker script, its log and the disposable repository were removed, and no OMP
+process remains.
+
+Tasks 3.4 and 3.5 remain unproven for the same reason as interrupt handling:
+detachment, cross-source reattachment and abrupt client termination during a
+live agent task all need an interactive terminal client.
+
 ## Task 4.5 — shares
 
 Before: `ADMIN$`, `C` (`C:\`), `C$`, `D` (`D:\`), `D$`, `E$`, `IPC$`. The
