@@ -45,7 +45,7 @@ The successful build was not warning-free. Nix emitted ignored evaluation-cache 
 - [x] 1.1 Obtain authenticated local or RDP access with owner-entered credentials. Verify the actual desktop identity, Windows edition/build, supported security-update status, and the account selected for remote access. Stop before deployment if support or authorization is missing.
 - [x] 1.2 Inventory native tools, SSH/RDP/SMB services, effective firewall rules, shares, session limits, and power settings. Capture only change-owned settings for rollback and record the available local recovery path.
 - [x] 1.3 Select exact native OMP, plugin source, psmux, and dependency versions with upstream provenance. Verify Windows artifacts exist and the plugin revision matches its recorded source; do not install a Nix-store payload, and do not accept a WSL launcher as a native tool.
-- [ ] 1.4 Record the desktop's independent remote-access products with their effective firewall scope, and note that the tailnet restriction in this change covers only the services it configures.
+- [x] 1.4 Record the desktop's independent remote-access products with their effective firewall scope, and note that the tailnet restriction in this change covers only the services it configures. Captured in the design's measured evidence and in decision 7; no product is removed or reconfigured.
 
 ## 2. Establish authenticated native SSH
 
