@@ -18,6 +18,18 @@ The terminal-backed fresh session completed the requested `personal_commit` prev
 
 The managed browser opened `https://example.com/`, reported the title and heading `Example Domain`, captured `/tmp/omp-sshots-1575400e649c9402.webp`, and closed successfully. The screenshot was visually inspected. No loader error occurred. An earlier non-PTY smoke launch waited for piped stdin; it was stopped before the terminal-backed run.
 
-Native release gates, review, merge, and activation are not complete. The default shell still uses the previously activated wrapper.
+## Cross-platform routing and Homebrew update — 2026-09-06
 
-The user requested macOS `omp update` support during implementation. Native SSH access succeeds, and `brew --prefix can1357/tap/omp` reports `/opt/homebrew/opt/omp`. The planned Darwin exclusion needs revision before implementation.
+- Rebased the WSL implementation checkpoint onto the Mac's seven retained commits; its current commit is `2cea737`. History integration used rebase, not a merge commit.
+- Cross-platform implementation checkpoint: `0c51407`.
+- Wrapper and routing-check builds passed on `x86_64-linux` and the native `aarch64-darwin` builder. The first fixture run failed because its formula lacked a `bin` directory; the corrected fixture passed on both systems.
+- WSL candidate: `/nix/store/qxacx5vigd43gh73xlilm5gqin25dy8c-omp/bin/omp`. Its `update --check` reported 18.1.12 and already current.
+- Darwin candidate: `/nix/store/s81h51dvwaxrx76yb677nqn96j1fckil-omp/bin/omp`.
+- The Mac already had 18.1.12. The candidate's `update --force` explicitly reported `Updating Homebrew formulae...`, `Updating via Homebrew...`, and `Reinstalling can1357/tap/omp`.
+- Homebrew reinstalled `/opt/homebrew/Cellar/omp/18.1.12`; OMP verified 18.1.12 afterward. `brew list --versions omp` reported `omp 18.1.12`.
+- `verify-personal-omp` reported OMP 18.1.12, plugin `/nix/store/h6mjqcm3rpsj9pdxzn07n9rjbn84f132-personal-omp-plugin-0.1.0`, and `omp: current (v8)`.
+- The candidate's subsequent `update --check` reported already current.
+
+The native Mac session read the candidate wrapper and plugin manifest, reported the immutable extension path above, quoted the loaded commit policy, and completed the exact `personal_commit` preview. Its disposable repository remained clean with zero commits. The builder key rejected a PTY request; the successful session used its existing batch-only SSH boundary with stdin closed. No SSH policy changed.
+
+Native release gates, review, and activation are not complete. Default shells still use the previously activated wrappers.
