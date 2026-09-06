@@ -261,15 +261,13 @@ requires. Through `capture-pane`, the session rendered
 `Grüße — ✅ 日本語 ← →` correctly, `resize-window` reported `100x24`, and
 `paste-buffer` delivered a buffer that the shell executed.
 
-Interrupt handling is unproven. Injected `send-keys C-c` and the literal
-control byte `send-keys -H 03` both failed to stop a running loop in the pane:
-the log kept growing, and only `kill-session` stopped it. That is not a verdict
-on psmux, because an injected key is not a terminal interrupt, and no real
-attached client could be created from this session: macOS `script` refuses to
-allocate a PTY when its input is a socket, and the harness's supervised-process
-launcher fails with `ENOENT` before starting a command. A terminal-attached
-Ctrl-C from the owner or from a peer agent with a real terminal is still
-required.
+Interrupt handling is unverified and now out of scope. Injected `send-keys C-c`
+and the literal control byte `send-keys -H 03` both failed to stop a running
+loop in the pane; only `kill-session` stopped it. That is no verdict on psmux,
+because an injected key is not a terminal interrupt, and no attached client
+could be created here: macOS `script` refuses a PTY when its input is a socket,
+and the harness's supervised-process launcher fails with `ENOENT`. The owner
+then dropped this check.
 
 Also recorded: two of my own errors while driving the pane. An unclosed quote
 in a `send-keys` argument left the pane in a PowerShell continuation prompt
@@ -278,9 +276,13 @@ noticed. Both were cleared by recreating the session. All test sessions, the
 ticker script, its log and the disposable repository were removed, and no OMP
 process remains.
 
-Tasks 3.4 and 3.5 remain unproven for the same reason as interrupt handling:
-detachment, cross-source reattachment and abrupt client termination during a
-live agent task all need an interactive terminal client.
+Live persistence is out of scope: this desktop is driven for agentic work
+through non-interactive `ssh <command>` invocations, which the transport checks
+above already cover. Attached multiplexer sessions are a human workflow the
+owner does not use here, so the detachment and abrupt-termination trials were
+not run and psmux's job-breakaway behaviour on this machine stays unknown.
+Nothing in the accepted contract depends on it. psmux remains installed only as
+a convenience and can be removed without affecting any accepted capability.
 
 ## Task 4.5 — shares
 
@@ -314,8 +316,23 @@ be expressed in this repository. The Pro independently observed
 `Online: true` and `tag:desktop`.
 
 No volume is encrypted (`FullyDecrypted`, protection off), so no preboot unlock
-applies. Fast Startup is enabled, so the reboot gate needs a true restart. The
-restart itself is not yet performed with remote access verified before sign-in.
+applies.
+
+The owner restarted the desktop on 2026-09-06. It was a genuine full boot, not a
+Fast Startup resume: `Microsoft-Windows-Kernel-Boot` event 27 reported
+`boot type 0x0` at 17:45:31. Afterwards `sshd`, `ssh-agent` and `Tailscale` were
+all `StartMode=Auto` and `Running`, the node reported `Online: true` with
+`KeyExpiry: null`, and the Pro's `desktop-batch` endpoint returned exit status
+`23` about one minute after boot, with the newly registered standalone service
+binaries. Remote access therefore returns automatically after a restart, with no
+operator action.
+
+Access before interactive sign-in was not measured, and does not apply. An
+interactive logon for `User` appears at 17:45:47, sixteen seconds after boot and
+before the first successful probe: with a blank password and Automatic Restart
+Sign-On enabled, the machine signs itself in. The owner confirms this is how the
+desktop always starts, so a signed-out state is not a condition this desktop
+reaches, and testing it would prove nothing about real operation.
 
 ## SSH server version
 
@@ -363,6 +380,13 @@ server runs 10.0p2; mixed client and server versions are supported.
 
 - One enabled account and no second administrator, so the local interactive
   session is the only recovery path.
+
+- The account password is blank and Automatic Restart Sign-On is enabled, so the
+  desktop always boots into a signed-in session. Anyone with physical console
+  access therefore reaches that session without a credential. This is the
+  owner's accepted arrangement; remote access remains public-key only. Setting a
+  password for RDP would end automatic sign-on unless the password were stored
+  in the registry in clear text, which was rejected.
 
 - Taildrop cannot reach this host: a tagged node has no user owner. SFTP is the
   transfer mechanism, consistent with the design.
