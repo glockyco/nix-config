@@ -12,7 +12,7 @@
 - The candidate wrapper's `--version` reported 18.1.12.
 - `nix fmt` changed no files; implementation commit hooks passed.
 
-## Remaining acceptance
+## WSL wrapped-session and browser smoke
 
 The terminal-backed fresh session completed the requested `personal_commit` preview and quoted the active personal policy. Its skill read resolved to the immutable plugin above, but its final response did not identify the plugin source. A second fresh session read the candidate wrapper and plugin manifest, reported that source as `@glockyco/personal-omp-plugin` version 0.1.0, quoted the loaded policy, and completed the exact preview successfully. The disposable repository remained clean with zero commits.
 
@@ -32,4 +32,15 @@ The managed browser opened `https://example.com/`, reported the title and headin
 
 The native Mac session read the candidate wrapper and plugin manifest, reported the immutable extension path above, quoted the loaded commit policy, and completed the exact `personal_commit` preview. Its disposable repository remained clean with zero commits. The builder key rejected a PTY request; the successful session used its existing batch-only SSH boundary with stdin closed. No SSH policy changed.
 
-Native release gates, review, and activation are not complete. Default shells still use the previously activated wrappers.
+## Release gates — 2026-09-06
+
+- Linux: `nix fmt -- --fail-on-change` passed without changes. `nix flake check --all-systems --print-build-logs` evaluated both systems and completed the Linux checks successfully.
+- Mac: all native gates ran in `/tmp/nix-config-omp-c3034f0` at commit `c3034f0`, transferred as an incremental Git bundle. The working Mac checkout was not changed.
+- Native `nix fmt -- --fail-on-change` and `nix flake check --print-build-logs` passed.
+- Native `nix run .#check-darwin-build-plans` reported `35 outputs, none reaching a forbidden source build`.
+- Native `nix build .#darwinConfigurations.macbook-pro.system --no-link --print-out-paths` passed and produced `/nix/store/1msbdrln56sp1d7n9s4792y6ndvya7i4-darwin-system-26.05.c3e90c8`.
+- `openspec validate route-omp-self-update --strict` passed.
+
+## Remaining acceptance
+
+Task 3.3 requires review and approved release integration before both host activations and default-shell checks. No push or host activation was performed. Default shells still use the previously activated wrappers. Do not archive this change before activation acceptance.
