@@ -371,9 +371,13 @@ After: `ADMIN$`, `C$`, `D$`, `E$`, `IPC$`, confirmed from the Pro with
 `Get-SmbShare`. The administrator retains volume access through administrative
 shares; the removed share names no longer resolve.
 
-Still required: SFTP round-trip hashes from each source, graphical browsing
-from the Macs, authenticated access from Korolev, and denied
-unauthorized/read-only writes.
+SMB is not an accepted capability of this change. The owner keeps SFTP as the
+transfer mechanism, and its round-trip hashes are verified from the Pro, the Air
+and Korolev above, so SMB browsing, authenticated SMB access and
+write-restriction checks were dropped rather than performed. File sharing was
+left as measured: the administrative shares remain, no share was added, and no
+guest access was enabled. The service stays reachable only through the tailnet
+addresses, as the port comparison above shows.
 
 ## Task 5.3 — unattended operation
 
