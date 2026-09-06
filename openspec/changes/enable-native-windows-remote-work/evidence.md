@@ -151,11 +151,36 @@ entries from `100.117.31.61` between 17:07:40 and 17:08:41 +02:00 with no
 failure entries, and no `korolev*` leftovers remain in the Windows temporary
 directory. The Pro did not repeat Korolev's checks.
 
+The Air's rejection checks then ran from the Air itself. A first attempt was
+invalid and is recorded rather than discarded: with the Air's own
+`~/.ssh/config` in effect, `ssh -i <disposable key>` still offered the enrolled
+identity and authenticated, so the check proved nothing. Repeated with
+`-F /dev/null` and an explicit identity, the disposable key was refused with
+status `255` and `Permission denied (publickey)`, a mismatched pin was refused
+with `255` and `Host key verification failed`, and the enrolled Air key returned
+status `23` in the same run.
+
+### Selective revocation
+
+Proven with a disposable authorization, so no real source lost access. A
+throwaway ED25519 key was enrolled as a fifth labelled line,
+`SHA256:bBk3/++KTijWrOekiBTDR/BOswunTtQrk0IE7EVlpbg revocation-test`, and
+authenticated with status `23`. Removing only that labelled line returned the
+file to four entries and to its exact pre-test SHA-256,
+`F5BCB19B72841AB9C85C8311789971F63962354F77909DF9C7F496F184158659`, with ACLs
+still granting only SYSTEM and Administrators. The revoked key was then refused
+with status `255` and `Permission denied (publickey)`, while `pro-enclave`
+returned `23` and the Air returned `23` through its own endpoint. The
+disposable key was removed from the Pro. Revocation therefore removes exactly
+one source, which is the mechanism the Air's offboarding depends on.
+
+[Issue #17](https://github.com/glockyco/nix-config/issues/17) now carries that
+action: remove the labelled `air` line from the desktop's authorization file and
+confirm the refusal, and remove the Air's own desktop entries and pin. The Air
+keeps its access until the owner retires the machine.
+
 Still unproven elsewhere:
 
-- Air rejection checks, and selective revocation from any source. The Pro
-  measured its own rejection checks and Korolev reported its own; no source has
-  yet proven that removing one labelled line revokes exactly that source.
 - System-wide activation of the Pro client declaration. The generated
   configuration has passed live checks with `ssh -F`.
 
