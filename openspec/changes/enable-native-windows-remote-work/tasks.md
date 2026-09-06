@@ -23,8 +23,8 @@ sources pass.
 
 - [x] 2.1 Configure Windows OpenSSH Server, PowerShell 7, public-key-only access for the selected account, and SFTP. Disable password *and* keyboard-interactive authentication in the global section, and verify effective server configuration and authorization-file ACLs locally before exposing the listener.
 - [x] 2.2 Restrict effective SSH access to the Tailscale addresses and supported address families. Disable the installer's all-profiles rule, verify no broader rule defeats the restriction, and keep the local recovery path working.
-- [ ] 2.3 Enroll the Pro, Air, and Korolev source public keys through the trusted desktop session with per-source labels. Pin the measured server key in their existing configuration owners. Verify each saved `desktop` entry authenticates without password fallback; keep the Mac builder key unchanged.
-- [ ] 2.4 Exercise native commands, paths containing spaces, and exit status 23 from each source. Verify rejection of an unapproved client key and a deliberately mismatched temporary client host-key record without modifying the server key. Confirm the security-key algorithm is accepted, or scope it explicitly.
+- [x] 2.3 Enroll the Pro, Air, and Korolev source public keys through the trusted desktop session with per-source labels. Pin the measured server key in their existing configuration owners. Verify each saved `desktop` entry authenticates without password fallback; keep the Mac builder key unchanged.
+- [x] 2.4 Exercise native commands, paths containing spaces, and exit status 23 from each source. Verify rejection of an unapproved client key and a deliberately mismatched temporary client host-key record without modifying the server key. Confirm the security-key algorithm is accepted, or scope it explicitly.
 - [x] 2.5 Declare the desktop's interactive and unattended client endpoints alongside the existing Air pair, and extend the batch endpoint checks to cover both destinations.
 
 ## 3. Prove the native agent and persistent terminal
@@ -37,10 +37,10 @@ sources pass.
 
 ## 4. Complete graphical and file access
 
-- [ ] 4.1 Configure the Air's independent desktop public-key authorization and saved SSH entry. Verify native command success and failure status. Prove selective revocation with a temporary test authorization, then add the Air key-removal action to its existing offboarding owner without prematurely revoking required access.
+- [x] 4.1 Configure the Air's independent desktop public-key authorization and saved SSH entry. Verify native command success and failure status. Prove selective revocation with a temporary test authorization, then add the Air key-removal action to its existing offboarding owner without prematurely revoking required access.
 - [ ] 4.2 Inspect and preserve existing RDP settings where suitable. Keep NLA and screen locking; scope effective RDP rules, including UDP if enabled, to Tailscale. Verify server certificate identity through the trusted local session before saving client connections.
 - [ ] 4.3 Provide and exercise RDP clients on Pro, Air, and Korolev without modifying Korolev's Windows host. Start a harmless terminal task, disconnect, and reconnect as the same Windows user. Verify the task and session survived and inspect effective disconnected-session limits.
-- [ ] 4.4 Transfer a disposable file over SFTP from each source and verify round-trip hashes. Confirm working checkouts remain on local Windows storage rather than a mounted share.
+- [x] 4.4 Transfer a disposable file over SFTP from each source and verify round-trip hashes. Confirm working checkouts remain on local Windows storage rather than a mounted share.
 - [ ] 4.5 Inspect the existing shares and record them with their share and NTFS permissions. Remove the redundant explicit whole-volume shares that duplicate the platform's administrative shares, with owner confirmation per share, and add no new whole-volume or guest-accessible share. Verify graphical browsing from the Macs, authenticated access from Korolev, round-trip hashes, and denied unauthorized/read-only writes. Note that administrator membership, not a share, is what grants whole-volume reach.
 
 ## 5. Verify integrated operation and recovery
