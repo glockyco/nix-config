@@ -76,9 +76,9 @@ Smoke-test extension loading, a commit preview, OpenSpec discovery, and a local 
 
 This desktop is driven for agentic work through non-interactive `ssh <command>` invocations, so live agent persistence across a lost SSH connection buys nothing and this change accepts no such capability. An agent started through SSH may end with its connection, and OMP's saved conversation state is resumed explicitly. The procedure must not describe resumed history as a surviving process, and no custom broker, service, or scheduled task is introduced to manufacture persistence.
 
-psmux stays installed for terminal convenience: `SSH -> psmux -> shell`, using upstream session commands rather than a launcher, with control endpoints local to Windows. Its accepted checks are rendering, resizing, Unicode, paste, and loopback-only endpoints. Do not enable unsafe mouse overrides on Windows 10 ConPTY.
+No multiplexer is part of the accepted desktop. psmux 3.3.8 was installed during investigation and removed afterwards, so the desktop carries no dependency for a capability nobody uses and no manual update burden for one.
 
-Its persistence behaviour is deliberately unverified. Released psmux v3.3.8 requests Windows job breakaway but can fall back, so an agent may or may not survive a dropped client; nothing here relies on the answer. Interrupt handling is likewise unverified, because an injected key is not a terminal interrupt and a terminal-attached client was unavailable. Anyone who later needs persistence must run the detachment and abrupt-termination trials and record process identity, continuing output, and cross-source reattachment before claiming it.
+Anyone who later needs persistence starts from an open question, not from these results: released psmux v3.3.8 requests Windows job breakaway but can fall back, so whether an agent survives a dropped client is untested here. Proving it requires the detachment and abrupt-termination trials with recorded process identity, continuing output and cross-source reattachment, plus a terminal-attached interrupt. Rendering, resizing, Unicode, paste and loopback-only endpoints did pass while it was installed.
 
 ### 6. RDP and file access remain independent services
 
