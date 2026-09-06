@@ -105,13 +105,23 @@ let
       # store-derived name.
       omp_bin=${ompExecutable}
       ${requireOmpExecutable}
-      ${lib.optionalString (ompRuntime.executable ? homeRelative) ''
-        if [ "''${1-}" = update ]; then
-          # The updater identifies its owner through PATH, not the running binary.
-          export PATH="''${omp_bin%/*}:$PATH"
-          exec "$omp_bin" "$@"
-        fi
-      ''}
+      if [ "''${1-}" = update ]; then
+        # The updater identifies its owner through PATH, not the running binary.
+        ${
+          if ompRuntime.executable ? homeRelative then
+            ''export PATH="''${omp_bin%/*}:$PATH"''
+          else
+            ''
+              omp_prefix="$("''${omp_bin%/*}/brew" --prefix can1357/tap/omp)"
+              if [ -z "$omp_prefix" ] || [ ! -x "$omp_prefix/bin/omp" ]; then
+                printf 'Homebrew OMP formula executable not found at %s/bin/omp.\n' "$omp_prefix" >&2
+                exit 1
+              fi
+              export PATH="$omp_prefix/bin:''${omp_bin%/*}:$PATH"
+            ''
+        }
+        exec "$omp_bin" "$@"
+      fi
       exec "$omp_bin" --extension ${plugin} --plugin-dir ${plugin}/lsp "$@"
     '';
   };
