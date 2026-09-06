@@ -98,6 +98,8 @@ Validate allowed Tailscale paths alongside denied LAN paths from a source with i
 
 Enable Tailscale's supported unattended operation and verify service startup after an owner-coordinated reboot. No volume on this machine is encrypted, so there is no preboot unlock to preserve; record that rather than implying one exists. Fast Startup is enabled, so a reboot verification must be a true restart. Do not promise continuous remote availability during sleep or automatic wake. No public ports, exit nodes, relay service, or inbound Korolev rules are needed.
 
+Unattended operation is not sufficient by itself: the node's key expiry must also be disabled, as it already is on Korolev and the Pro. An expiring key removes the desktop from the tailnet and requires console re-authentication, which is precisely what remote access is meant to avoid. That setting lives on the coordination server, not in the rendered policy file and not in any host declaration, so this repository cannot express it. The operating procedure owns it, together with the verification that the node reports no expiry.
+
 ### 8. WSL is permitted; a NixOS-WSL desktop host is follow-on work
 
 WSL already runs on this machine and the owner wants a NixOS-WSL host here, mirroring Korolev. Permit WSL and stop treating its presence as a defect. The native Windows access layer in this change does not depend on it, and the native agent's toolchain still must not resolve through a WSL launcher.
