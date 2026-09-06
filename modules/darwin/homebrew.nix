@@ -56,6 +56,11 @@ in
       # Secretive needs a signed app bundle for Secure Enclave and Touch ID entitlements.
       "secretive"
 
+      # Microsoft's RDP client for the Windows desktop, shipped as a signed pkg
+      # with a system extension; nixpkgs has no equivalent. Connections and
+      # credentials stay in its mutable state, not in this declaration.
+      "windows-app"
+
       # The cask bundles the Safari extension (`Contents/PlugIns/safari.appex`), so no
       # Mac App Store copy is needed.
       "bitwarden"
