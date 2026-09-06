@@ -252,10 +252,10 @@ planned NixOS-WSL host will provide them through Nix, inside WSL, for an agent
 running there. That does not satisfy this check and does not reinstate it,
 because the native agent must not resolve tooling through a WSL launcher.
 
-## Task 3.3 — persistent terminal
+## Task 3.3 — terminal investigation, then removal
 
-psmux 3.3.8 created, listed and killed a named session over SSH, with the
-working directory set to a repository. Its two listening endpoints are both on
+While installed, psmux 3.3.8 created, listed and killed a named session over
+SSH, with the working directory set to a repository. Its two listening endpoints are both on
 `127.0.0.1`, so its control interface stays local to Windows as the design
 requires. Through `capture-pane`, the session rendered
 `Grüße — ✅ 日本語 ← →` correctly, `resize-window` reported `100x24`, and
@@ -281,8 +281,13 @@ through non-interactive `ssh <command>` invocations, which the transport checks
 above already cover. Attached multiplexer sessions are a human workflow the
 owner does not use here, so the detachment and abrupt-termination trials were
 not run and psmux's job-breakaway behaviour on this machine stays unknown.
-Nothing in the accepted contract depends on it. psmux remains installed only as
-a convenience and can be removed without affecting any accepted capability.
+
+psmux was then removed: server stopped, `C:\Users\User\AppData\Local\Programs\psmux`
+deleted, its user `PATH` entry removed, and its `~/.psmux` state directory
+deleted. `psmux` no longer resolves, and `omp` still resolves to the standalone
+install at 18.1.12. The desktop carries no dependency, and no manual update
+burden, for a capability nobody uses. The version and digest above are retained
+only so a later attempt starts from a known artifact.
 
 ## Task 4.5 — shares
 
