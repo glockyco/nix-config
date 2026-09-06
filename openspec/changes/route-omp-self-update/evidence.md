@@ -41,6 +41,18 @@ The native Mac session read the candidate wrapper and plugin manifest, reported 
 - Native `nix build .#darwinConfigurations.macbook-pro.system --no-link --print-out-paths` passed and produced `/nix/store/1msbdrln56sp1d7n9s4792y6ndvya7i4-darwin-system-26.05.c3e90c8`.
 - `openspec validate route-omp-self-update --strict` passed.
 
+## WSL activation — 2026-09-06
+
+The owner authorized activation. `sudo nixos-rebuild switch --flake .#korolev` activated committed revision `f680cef` successfully as system generation 20. Previous generations, including generation 19, remain available.
+
+The selected system is `/nix/store/sxb73z7x3lqh9ps38j1m0hxk7799m6vh-nixos-system-korolev-26.05.20260903.a5cc6f2`. Activation output and the Home Manager journal showed successful configuration activation and Herdr reconciliation. `systemctl is-system-running` reported `running`, with no failed units.
+
+A fresh `zsh -lic` session resolved `omp` to `/etc/profiles/per-user/user/bin/omp`. Plain `omp update --check` reported 18.1.12 and already current. `verify-personal-omp` reported the immutable plugin and `omp: current (v8)`.
+
+A fresh session launched through the normal login-shell command resolved the wrapper to `/nix/store/qxacx5vigd43gh73xlilm5gqin25dy8c-omp/bin/omp`. It verified the immutable plugin manifest and personal policy and completed the exact commit preview. The disposable repository remained clean with zero commits.
+
+The same session opened the managed browser at `https://example.com/`, reported `Example Domain`, captured `/tmp/omp-sshots-1575474761d137d1.webp`, and closed the browser. The screenshot was visually inspected. No tool or loader error was reported.
+
 ## Remaining acceptance
 
-Task 3.3 requires review and approved release integration before both host activations and default-shell checks. No push or host activation was performed. Default shells still use the previously activated wrappers. Do not archive this change before activation acceptance.
+The clean Mac checkout at `/Users/glockyco/.config/nix-darwin` was advanced to `f680cef` through a bundle fetch and rebase. No remote push or merge commit was used. Mac activation requires the owner's administrator password; unattended sudo is unavailable. Task 3.3 remains incomplete until the Mac is activated and its default-shell and activation smoke checks pass. Do not archive before that acceptance.
