@@ -333,11 +333,13 @@ binaries. Remote access therefore returns automatically after a restart, with no
 operator action.
 
 Access before interactive sign-in was not measured, and does not apply. An
-interactive logon for `User` appears at 17:45:47, sixteen seconds after boot and
-before the first successful probe: with a blank password and Automatic Restart
-Sign-On enabled, the machine signs itself in. The owner confirms this is how the
-desktop always starts, so a signed-out state is not a condition this desktop
-reaches, and testing it would prove nothing about real operation.
+interactive logon for `User` appears at 17:45:47, sixteen seconds after boot,
+before the first successful probe, with no lock screen present. The owner
+confirms the desktop always starts into a signed-in session, so a signed-out
+state is not a condition it reaches and testing it would prove nothing about
+real operation. The mechanism is unexplained: `AutoAdminLogon` is unset and the
+account has a password, so this is recorded as observed behaviour rather than a
+diagnosed one.
 
 ## SSH server version
 
@@ -386,12 +388,12 @@ server runs 10.0p2; mixed client and server versions are supported.
 - One enabled account and no second administrator, so the local interactive
   session is the only recovery path.
 
-- The account password is blank and Automatic Restart Sign-On is enabled, so the
-  desktop always boots into a signed-in session. Anyone with physical console
-  access therefore reaches that session without a credential. This is the
-  owner's accepted arrangement; remote access remains public-key only. Setting a
-  password for RDP would end automatic sign-on unless the password were stored
-  in the registry in clear text, which was rejected.
+- The desktop starts into a signed-in session, which the owner confirms is its
+  normal state. The mechanism is not established: `AutoAdminLogon` is not set,
+  and the account has a password, last set 2019-10-13. `PasswordRequired` is
+  `false`, which is a policy flag and not evidence of an empty password. An
+  earlier claim in this record that the password was blank came from a
+  desktop-side report and was wrong; it is corrected here rather than reused.
 
 - Taildrop cannot reach this host: a tagged node has no user owner. SFTP is the
   transfer mechanism, consistent with the design.
