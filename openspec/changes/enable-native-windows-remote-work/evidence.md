@@ -88,7 +88,12 @@ ends. The desktop logged the authentication from the Pro's tailnet address
 `10.0.1.2` LAN address stayed unreachable from it. No router port forwarding
 was introduced.
 
-Not covered here: graphical RDP access from this network, which task 4.3 owns.
+Graphical access was exercised from this same off-network position. The
+desktop's `TerminalServices-LocalSessionManager` log records reconnect (25) and
+disconnect (24) events from the Pro's tailnet address `100.88.17.38` at 18:11
+and 18:20, while the Pro held `172.20.10.4` behind a different gateway. That
+also corroborates the disconnect and reconnect cycle in task 4.3 independently
+of the owner's report. No router port forwarding was introduced.
 
 ## Task 2.3 / 2.4 — enrollment and authentication
 
