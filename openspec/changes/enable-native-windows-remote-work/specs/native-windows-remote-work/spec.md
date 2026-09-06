@@ -6,7 +6,9 @@ Provide authenticated remote work on the personal Windows desktop, including per
 
 ### Requirement: Explicit desktop provisioning boundary
 
-Desktop setup SHALL use supported native Windows tools and explicit operator actions. Nix activation SHALL NOT apply desktop settings. The employer Windows configuration SHALL remain unchanged. Routine agents SHALL run without elevation. Credentials, SSH private keys, and agent state SHALL remain outside the repository and Nix store.
+Desktop setup SHALL use supported native Windows tools and explicit operator actions. Nix activation SHALL NOT apply desktop settings. The employer Windows configuration SHALL remain unchanged. Credentials, SSH private keys, and agent state SHALL remain outside the repository and Nix store.
+
+The selected desktop account is the owner's existing local administrator account. Its SSH sessions have enabled administrator privileges without an additional elevation prompt. Agents SHALL use the approved SSH session without adding a separate elevation mechanism, scheduled task, or agent service. Privileged service changes SHALL still require explicit local approval. This approval requirement is an operator policy, not a technical restriction of the account's token.
 
 #### Scenario: Provision the personal desktop
 
@@ -42,7 +44,9 @@ The Pro, Air, and Korolev SHALL connect to `desktop` through native OpenSSH usin
 
 ### Requirement: Native agent environment
 
-OMP SHALL operate in a local Windows checkout using native tools without WSL. The personal plugin SHALL load from a recorded, verified source revision, not a copied Nix-store wrapper. Required workflow dependencies SHALL resolve natively. Each installation SHALL keep its own writable authentication and session state.
+OMP SHALL operate in a local Windows checkout using native Windows tools. The personal plugin SHALL load from a recorded, verified source revision, not a copied Nix-store wrapper. Required workflow dependencies SHALL resolve natively. Each installation SHALL keep its own writable authentication and session state.
+
+WSL may be installed on the desktop and SHALL NOT be treated as a defect. A required native tool SHALL NOT be satisfied by a WSL launcher: in particular the desktop's `bash.exe` resolves to WSL, so a native shell requirement SHALL be met by PowerShell or Git Bash instead. A NixOS-WSL host on this machine is a separate configuration with its own agent installation and is outside this capability.
 
 #### Scenario: Complete native repository work
 
@@ -54,7 +58,7 @@ OMP SHALL operate in a local Windows checkout using native tools without WSL. Th
 #### Scenario: Inspect local runtime ownership
 
 - **WHEN** the operator checks the agent's executable, plugin, and state paths
-- **THEN** no executable or interpreter depends on WSL or a Nix-store path
+- **THEN** no executable or interpreter used by the native Windows agent resolves through WSL or a Nix store path
 - **AND** provider authentication was established locally rather than copied from another machine
 
 ### Requirement: Persistent interactive agent sessions
@@ -96,7 +100,9 @@ Authorized source machines SHALL have a usable RDP client path to the desktop wi
 
 ### Requirement: Authenticated bounded file access
 
-Authorized sources SHALL transfer files through SFTP. Graphical file browsing SHALL expose only operator-selected SMB folders with explicit share and filesystem permissions. New shares SHALL NOT expose whole disks or enable guest access. Working repositories SHALL remain local to the desktop.
+Authorized sources SHALL transfer files through SFTP. Working repositories SHALL remain local to the desktop. New SMB shares SHALL NOT enable guest access, and share and filesystem permissions SHALL be explicit and inspected.
+
+Because the selected account is a local administrator, whole-volume access over SMB follows from the platform's administrative shares and SHALL NOT be reported as a bounded-folder guarantee. The implementation SHALL record which shares exist, SHALL NOT add a redundant explicit whole-volume share alongside them, and SHALL leave unrelated existing shares in place.
 
 #### Scenario: Transfer a file without corruption
 
@@ -112,6 +118,8 @@ Authorized sources SHALL transfer files through SFTP. Graphical file browsing SH
 ### Requirement: Tailnet-only access and existing fleet isolation
 
 Desktop SSH, RDP, and SMB access SHALL be restricted to approved tailnet paths through effective host service and firewall settings. Existing broader rules SHALL NOT defeat that boundary. The implementation SHALL preserve Korolev's no-inbound policy and the Pro's existing builder access. Loss of Tailscale SHALL NOT create a permissive listener or firewall fallback.
+
+This restriction covers the services this change configures. Independent remote-access products already installed on the desktop reach it through their own authenticated relays rather than through an inbound tailnet path, so they are outside the boundary this requirement asserts. The implementation SHALL enumerate them with their effective firewall scope rather than claim the desktop is reachable only through the tailnet.
 
 #### Scenario: Compare allowed and denied paths
 
