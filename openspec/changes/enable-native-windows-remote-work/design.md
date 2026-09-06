@@ -89,7 +89,9 @@ Enable Tailscale's supported unattended operation and verify service startup aft
 ## Migration Plan
 
 1. Inspect the desktop through an authenticated session and record current owned settings and recovery access.
-1. Establish tailnet-restricted OpenSSH and one Pro client, then prove authentication and native command status.
+1. Establish tailnet-restricted OpenSSH/SFTP and one Pro client. Prove host identity, authentication, native command status, effective network isolation, and a disposable transfer with matching hashes.
+1. Use the verified Pro transfer path for the separately operated YNAB migration. Preserve the Windows original. Repository publication, financial-data storage, synchronization, and backups remain outside this access change.
+1. Review the intended Windows account's filesystem access before enrolling other sources. Separate keys support revocation but do not isolate files between clients using the same account. Do not infer permission to copy financial data to Korolev or the borrowed Air from desktop-access authorization.
 1. Install the native agent stack and complete the psmux trial from Pro to Korolev before wider client rollout.
 1. Complete Air client enrollment, RDP, selected file access, and all-source checks. Extend Air offboarding with desktop key revocation.
 1. Verify network isolation, a different-network connection, and a coordinated desktop reboot. Recheck the existing Mac builder path.

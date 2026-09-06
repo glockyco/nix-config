@@ -1,3 +1,11 @@
+## Execution priority: 2026-09-06
+
+The owner approved Pro-only SSH/SFTP access before the native agent and broader client rollout, to enable a separate YNAB migration. Complete desktop support, identity, account, and local-recovery checks first. Then perform the Pro portions of tasks 2.1–2.4, the SFTP transfer check in 4.4, and applicable network-isolation checks in 5.1. Neither psmux nor SMB is a prerequisite for this transfer.
+
+Keep multi-source tasks unchecked until every named source passes. Preserve all remaining acceptance gates; this order does not reduce the change's scope. Review the selected Windows account's file permissions before wider enrollment. Desktop-access authorization does not authorize financial-data replication to Korolev or the borrowed Air.
+
+The Mac application-directory and command-path inspection found no installed RDP client. Existing read-only probes found desktop RDP and SMB ports reachable and SSH timed out. No authenticated Windows session or project transfer has occurred. Task 1.1 requires owner-entered credentials through a trusted local or verified RDP session before deployment.
+
 ## 1. Establish desktop prerequisites
 
 - [ ] 1.1 Obtain authenticated local or RDP access with owner-entered credentials. Verify the actual desktop identity, Windows edition/build, supported security-update status, and intended non-administrator account. Stop before deployment if support or authorization is missing.
