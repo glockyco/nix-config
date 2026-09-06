@@ -440,14 +440,41 @@ probe, `100.88.17.38:54855 > 100.117.31.61:22 no rules matched`, which pairs
 with the timeout the Pro measured. No `connect-fleet-over-tailnet` gate was
 touched and nothing was restarted or reconfigured.
 
-The ping failure is not diagnosed. Korolev's journal reports coordination-server
-long-poll timeouts and intermittent Frankfurt relay failures. The Pro is on a
-phone hotspot at `172.20.10.4` with no direct path, and its own `tailscale ping korolev` succeeded through DERP `fra` afterwards, with `BackendState: Running`,
-no health warnings, and a nearest DERP of Nuremberg. So reachability is
-asymmetric or intermittent rather than absent, and the cause is unresolved: it
-may be relay flakiness, the Pro's changed network, or a defect in the check's
-final step. It belongs to `connect-fleet-over-tailnet`, whose gates stay
-unchanged, not to this change.
+**First failure, unstable network.** The ping produced no reply at all. Korolev's
+journal reported coordination-server long-poll timeouts and intermittent
+Frankfurt relay failures. The Pro was on a phone hotspot at `172.20.10.4` with
+no direct path, yet reached Korolev through DERP `fra` afterwards with
+`BackendState: Running`, no health warnings, and a nearest DERP of Nuremberg.
+That measurement stands as recorded and predates the owner stabilising
+Korolev's network.
+
+**Second failure, stable network, different cause.** Korolev repeated the check
+after its network was stable. It again built a unique Darwin derivation,
+`29kcw4nh550zrfj4px090ha4hajkazhv-tailnet-builder-probe-1788714631-558417-225918-14236.drv`,
+on `ssh-ng://glockyco@macbook-pro`, returning `arm64` and `macbook-pro`. This
+time the ping received a pong through DERP `fra` in 62 ms, then printed
+`direct connection not established` and exited 1. Separately,
+`tailscale ping --c 1 --until-direct=false macbook-pro` returned a relayed pong
+and exit 0.
+
+The Pro reproduced the same behaviour in the other direction: against Korolev, a
+relayed pong exits 1 with default flags and exits 0 with `--until-direct=false`.
+`tailscale ping --help` confirms `--until-direct` defaults true.
+
+The second failure is therefore a checker-contract defect rather than
+unreachability. `packages/tailnet-builder-check.nix` called
+`tailscale ping --c 1`, which retries until a direct path exists and fails when
+only a relayed one does. No requirement asks for a direct path, and a relayed
+route is the expected one for a source behind a restrictive network; the Pro
+itself is relay-only on a hotspot. The check now passes `--until-direct=false`,
+requiring a reply rather than a direct path.
+
+Verifying the fixed script needs Korolev: it is a Linux package and no Linux
+builder is reachable from the Pro, so the Pro confirmed only that it evaluates
+and that the built derivation carries the flag. Whether the first failure would
+also disappear now is untested, and the underlying relay instability is not
+attributed to this change. The `connect-fleet-over-tailnet` gates stay
+unchanged.
 
 ## Task 6.2 — cleanup and exclusions
 
