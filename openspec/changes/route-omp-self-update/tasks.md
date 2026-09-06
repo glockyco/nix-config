@@ -24,4 +24,4 @@
 
 - [x] 3.1 Update README routine guidance to `omp update` on both platforms; verify bootstrap and pinned recovery retain the owning platform installer.
 - [x] 3.2 Run `openspec validate route-omp-self-update --strict` and all README release gates, including native platform checks; record each result with this change.
-- [ ] 3.3 After review and rebase integration, activate both committed host configurations and inspect output; verify plain `omp update --check` from each default shell and repeat the required activation smoke before acceptance.
+- [x] 3.3 After review and rebase integration, activate both committed host configurations and inspect output; verify plain `omp update --check` from each default shell and repeat the required activation smoke before acceptance.
