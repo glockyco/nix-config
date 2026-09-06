@@ -131,14 +131,31 @@ four, and its ACLs still grant only SYSTEM and Administrators. `sshd -t`
 accepts the configuration and existing Pro access still authenticates. No
 private key left Korolev.
 
-Unproven for Korolev: its own command, exit-status, spaced-path, rejection and
-SFTP checks. They must run from Korolev, because its no-inbound boundary means
-neither the Pro nor the desktop can drive it.
+Korolev then ran its own checks and reported them to the Pro. These results are
+peer-supplied, not measured on the Pro, because Korolev's no-inbound boundary
+means neither the Pro nor the desktop can drive it. Its report records both
+aliases authenticating as `desktop-dbhlrdd\user` with exit status `23`, the
+`C:\Program Files\OpenSSH` path preserved with status `23`, an unapproved key
+refused with `255` and `Permission denied (publickey)`, a mismatched host pin
+refused with `255` after the client printed the desktop's real fingerprint, and
+a 65,818-byte SFTP round trip through paths containing spaces whose Linux
+source, `Get-FileHash` result on Windows, and downloaded copy all matched
+`643877f72eaf860f07a998ce975ce6056c14421df13cc1d3111430fb5759eda4`. Production
+commands had empty standard error, and it reports removing every temporary
+file, key and pin.
+
+The Pro corroborated the parts observable from the desktop rather than
+restating the report: `OpenSSH/Operational` records seven
+`Accepted publickey ... ED25519 SHA256:3BjfAMmCOeoqV50VRCIBzFIGAuNG4LQ3MCcYUAyc248`
+entries from `100.117.31.61` between 17:07:40 and 17:08:41 +02:00 with no
+failure entries, and no `korolev*` leftovers remain in the Windows temporary
+directory. The Pro did not repeat Korolev's checks.
 
 Still unproven elsewhere:
 
-- Air and Korolev rejection and revocation checks. The Pro passed the rejection
-  checks against the upgraded service.
+- Air rejection checks, and selective revocation from any source. The Pro
+  measured its own rejection checks and Korolev reported its own; no source has
+  yet proven that removing one labelled line revokes exactly that source.
 - System-wide activation of the Pro client declaration. The generated
   configuration has passed live checks with `ssh -F`.
 
