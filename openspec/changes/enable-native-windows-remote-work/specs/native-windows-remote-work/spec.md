@@ -96,20 +96,20 @@ The Pro SHALL have a usable RDP client path to the desktop with verified server 
 
 ### Requirement: Authenticated bounded file access
 
-Authorized sources SHALL transfer files through SFTP. Working repositories SHALL remain local to the desktop. New SMB shares SHALL NOT enable guest access, and share and filesystem permissions SHALL be explicit and inspected.
+Authorized sources SHALL transfer files through SFTP, which is the accepted transfer mechanism. Working repositories SHALL remain local to the desktop. SMB is not an accepted capability of this change: no new share SHALL be added, no guest access SHALL be enabled, and the platform's existing administrative shares SHALL be recorded rather than exercised.
 
 Because the selected account is a local administrator, whole-volume access over SMB follows from the platform's administrative shares and SHALL NOT be reported as a bounded-folder guarantee. The implementation SHALL record which shares exist, SHALL NOT add a redundant explicit whole-volume share alongside them, and SHALL leave unrelated existing shares in place.
 
 #### Scenario: Transfer a file without corruption
 
-- **WHEN** an authorized source uploads and downloads a file through SFTP or an approved SMB share
+- **WHEN** an authorized source uploads and downloads a file through SFTP
 - **THEN** the returned bytes match the original
 
-#### Scenario: Restrict a shared folder
+#### Scenario: Leave file sharing unchanged
 
-- **WHEN** an unauthorized account accesses an approved share or a read-only account attempts a write
-- **THEN** Windows denies the operation
-- **AND** unrelated folders receive no new share authorization
+- **WHEN** the implementation finishes
+- **THEN** no share was added and no guest access was enabled
+- **AND** the remaining administrative shares are recorded, with whole-volume reach attributed to administrator membership rather than to a share
 
 ### Requirement: Tailnet-only access and existing fleet isolation
 
