@@ -19,6 +19,36 @@ Published the user-approved branch `fix/wsl-terminal-hyperlinks` to `https://git
 - Korolev completed source preparation and selected `generations/v18.1.13-tnmqfjfj`, with result commit equal to the pinned patch tip. All three package checks, 361 regressions across ten files, native loading, and immutable plugin registration passed. The packaged wrapper reported `18.1.13` from `/tmp`.
 - An initial native-load probe omitted the raw binding's required tab-width argument. Preparation failed without selecting that candidate. The corrected probe and a complete subsequent preparation passed. A concurrent rollback attempt was rejected while preparation held the lock.
 
-## Deployment prerequisites
+## Update and recovery verification
 
-The Mac is reachable through its existing tailnet SSH endpoint and reports `Darwin arm64`. Its installed Nix is Determinate Nix 3.21.9 / Nix 2.34.8. Remote `sudo -n true` requires a password; system activation needs an operator-authorized local administrator step. No privilege or authentication configuration was changed.
+The latest stable tag remained `v18.1.13`. Each host prepared a temporary local mirror with the same five patches and different commit identities. `git diff --exit-code` proved that its source tree matched the published tip. This supplied a changed input for a real, fully checked native update without publishing verification commits.
+
+On both hosts, an unavailable patch input left `current` and `previous` unchanged. Rollback succeeded with the GitHub client disabled and both remote paths unavailable. A subsequent default update returned unchanged without creating another generation. Both hosts ended on the canonical published patch tip. Temporary mirrors, fault-injection configurations, fetch probes, and failed candidates were removed; current and previous verified generations remain.
+
+## Korolev acceptance
+
+Activated implementation commit `0e0d30cad34d40b1da5ad9c74ec21953a060f3f4` with `sudo nixos-rebuild switch --flake .#korolev`. Activation succeeded, and the Home Manager log showed Herdr reconciliation without source preparation.
+
+- A fresh login shell resolved `omp` and `omp-dev-update` through `/etc/profiles/per-user/user/bin`.
+- `verify-personal-omp` reported the canonical commit, version `18.1.13`, immutable plugin `/nix/store/x2bq1ds306bni8y869w5gdcfk2g0zj19-personal-omp-plugin-0.1.0`, and `omp: current (v8)`.
+- A fresh Herdr tab recognized the activated source OMP as ready. Its model-backed smoke reported the immutable plugin path and personal commit policy, then completed the required `personal_commit` preview. The disposable repository remained empty, unstaged, and without a commit.
+- The same session opened `https://example.com` in the managed browser, reported `Example Domain`, captured the [verified screenshot](browser-smoke.webp), and closed the browser. The temporary Herdr tab was closed afterward.
+- The activated `omp acp` completed a newline-framed JSON-RPC initialization with protocol version `1` and agent version `18.1.13`; the smoke process was stopped.
+
+## Mac runtime verification
+
+The Mac independently selected `generations/v18.1.13-tqkiqh1m` at the canonical patch tip. All three package checks, 361 regressions across ten files, native loading, and immutable plugin registration passed. The packaged source verifier reported version `18.1.13`, plugin `/nix/store/h6mjqcm3rpsj9pdxzn07n9rjbn84f132-personal-omp-plugin-0.1.0`, and `omp: current (v8)`.
+
+A private Git bundle transferred the committed implementation to the Mac without pushing `nix-config` or changing its existing checkout. A complete native `nix flake check` passed from that review checkout, including the Darwin system build.
+
+## Remaining operator gate
+
+The Mac's installed Nix is Determinate Nix 3.21.9 / Nix 2.34.8. Remote `sudo -n true` requires a password. No privilege or authentication configuration was changed. From a Mac terminal, activate the retained review checkout:
+
+```sh
+cd ~/.local/share/nix-config-review/maintain-patched-omp-0e0d30c/checkout
+sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
+verify-personal-omp
+```
+
+Task 4.3 still requires activation output review and the fresh wrapped-session smoke in Herdr. Task 4.4 remains blocked by that gate. The temporary Korolev launcher, developer checkout, previous Nix generations, and installer-owned files remain intact.
