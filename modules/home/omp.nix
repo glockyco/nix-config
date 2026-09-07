@@ -1,7 +1,6 @@
 {
   inputs,
   lib,
-  osConfig,
   pkgs,
   ...
 }:
@@ -16,7 +15,6 @@ let
       markdownOxide
       roslynLanguageServer
       ;
-    inherit (osConfig.host) ompRuntime;
     inherit (llmAgents) herdr;
     plugin = inputs.personal-omp-plugin.packages.${system}.default;
   };
@@ -25,12 +23,13 @@ in
 {
   home.packages = [
     personalOmp
+    personalOmp.devUpdate
     personalOmp.verifyPersonalOmp
     llmAgents.openspec
   ];
 
-  # OMP keeps its executable and runtime state writable. Nix supplies the
-  # wrapper, personal plugin, language servers, Herdr, and OpenSpec.
+  # Source preparation is explicit. Activation reconciles Herdr without
+  # preparing or launching OMP, and leaves source selection unchanged.
   home.activation.reconcileHerdrOmp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     run ${lib.getExe personalOmp.reconcileHerdrOmp}
   '';

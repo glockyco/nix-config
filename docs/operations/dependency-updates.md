@@ -56,27 +56,18 @@ Do not add sleeps, hidden retries, or timeout overrides to manufacture acceptanc
 
 ## OMP version recovery
 
-Nix rollback preserves the platform-owned OMP executable and writable OMP state.
-Use the platform installer to recover an earlier release, then repeat [Release smoke](#release-smoke).
-Do not delete `~/.omp` or copy credentials, databases, or browser profiles from another host.
-
-On Darwin, Homebrew's [`version-install`](https://docs.brew.sh/Manpage) extracts a release from the [official tap](https://github.com/can1357/homebrew-tap).
-Replace `<version>` with the release number without a leading `v`:
+Nix rollback preserves the selected OMP source generation and writable application state.
+On macbook-pro and korolev, select the previous verified generation without a download or rebuild:
 
 ```sh
-brew unlink can1357/tap/omp
-brew version-install can1357/tap/omp <version>
-brew link --overwrite --force "omp@<version>"
+omp-dev-update --rollback
 verify-personal-omp
 ```
 
-On WSL, use the explicit release tag at the wrapper's fixed target:
+Rollback fails without changing the selection when no previous generation exists. Repeat [Release smoke](#release-smoke) afterward.
+Do not delete retained generation directories while sessions use them, delete `~/.omp`, or copy credentials and databases from another host.
 
-```sh
-curl -fsSL https://omp.sh/install \
-  | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary --ref v<version>
-verify-personal-omp
-```
+An update failure leaves the current generation selected and reports the failed phase and candidate location. Resolve patch conflicts in the maintained Git series, publish only with explicit authorization, and review its pinned input here before retrying. Do not edit an active generation or use the official installer as a fallback.
 
 ## Desktop OpenSSH maintenance
 

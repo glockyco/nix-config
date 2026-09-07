@@ -192,7 +192,6 @@
                 markdownOxide
                 roslynLanguageServer
                 ;
-              inherit (configuredHost) ompRuntime;
               inherit (llmAgents) herdr;
               plugin = inputs.personal-omp-plugin.packages.${system}.default;
             };
@@ -246,6 +245,7 @@
             packages = {
               inherit openspec;
               markdown-oxide = markdownOxide;
+              omp-dev-update = personalOmp.devUpdate;
               personal-omp = personalOmp;
               roslyn-language-server = roslynLanguageServer;
               tailnet-policy = tailnetPolicy;
@@ -433,11 +433,17 @@
                 assert hostConfiguration.pkgs.stdenv.hostPlatform.system == system;
                 pkgs.runCommand "check-fleet-surface" { } "touch $out";
 
+              personalOmpUpdate = personalOmp.devUpdate.tests;
+
               personalOmpShape =
                 let
-                  zshInit =
-                    hostConfiguration.config.home-manager.users.${configuredHost.username}.programs.zsh.initContent;
+                  homeConfiguration = hostConfiguration.config.home-manager.users.${configuredHost.username};
+                  installed = map toString homeConfiguration.home.packages;
+                  zshInit = homeConfiguration.programs.zsh.initContent;
                 in
+                assert builtins.elem (toString personalOmp) installed;
+                assert builtins.elem (toString personalOmp.devUpdate) installed;
+                assert builtins.elem (toString personalOmp.verifyPersonalOmp) installed;
                 assert lib.hasInfix "path=(\"/etc/profiles/per-user/${configuredHost.username}/bin\"" zshInit;
                 pkgs.runCommand "check-personal-omp-shape"
                   {
@@ -445,6 +451,8 @@
                   }
                   ''
                     test -x ${personalOmp}/bin/omp
+                    test -x ${personalOmp.devUpdate}/bin/omp-dev-update
+                    test -x ${personalOmp.verifyPersonalOmp}/bin/verify-personal-omp
 
                     test "$(jq -r '.omp.extensions | length' ${personalOmp.plugin}/package.json)" = 1
                     test "$(jq -r '.servers | keys | sort | join(",")' ${personalOmp.plugin}/lsp/lsp.json)" = markdown-oxide,marksman,roslyn-language-server,svelte
@@ -467,124 +475,168 @@
                     touch $out
                   '';
 
-              personalOmpRouting =
+              personalOmpGeneration =
                 let
-                  probe = pkgs.writeScript "omp-routing-probe" ''
+                  probe = pkgs.writeScript "omp-generation-probe" ''
                     #!${pkgs.python3}/bin/python3
                     import json, os, shutil, sys
-                    print(json.dumps({"args": sys.argv[1:], "omp": shutil.which("omp")}))
+                    print(json.dumps({"args": sys.argv[1:], "cwd": os.getcwd(), "omp": shutil.which("omp"), "launcher": sys.argv[0], "nixd": shutil.which("nixd")}))
                     sys.exit(int(os.environ.get("PROBE_STATUS", "0")))
                   '';
-                  wslWrapper = personalOmp.override {
-                    ompRuntime = {
-                      executable.homeRelative = "standalone/omp";
-                      installCommand = "install-omp-for-routing-check";
-                    };
-                  };
-                  brewProbe = pkgs.writeShellScript "brew-routing-probe" ''
-                    test "$*" = '--prefix can1357/tap/omp'
-                    if [ "''${BREW_PREFIX_STATUS:-0}" != 0 ]; then
-                      exit "$BREW_PREFIX_STATUS"
-                    fi
-                    printf '%s\n' "''${BREW_PREFIX-$HOME/standalone}"
-                  '';
-                  homebrew = pkgs.runCommand "routing-homebrew" { } ''
-                    mkdir -p "$out/bin"
-                    ln -s ${probe} "$out/bin/omp"
-                    ln -s ${brewProbe} "$out/bin/brew"
-                  '';
-                  darwinWrapper = personalOmp.override {
-                    ompRuntime = {
-                      executable.absolute = "${homebrew}/bin/omp";
-                      installCommand = "install-omp-for-routing-check";
-                    };
-                  };
                 in
-                pkgs.runCommand "check-personal-omp-routing" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+                pkgs.runCommand "check-personal-omp-generation" { nativeBuildInputs = [ pkgs.python3 ]; } ''
                   export HOME="$TMPDIR/home with spaces"
-                  mkdir -p "$HOME/standalone/bin"
-                  cp ${probe} "$HOME/standalone/omp"
-                  cp ${probe} "$HOME/standalone/bin/omp"
-                  chmod +x "$HOME/standalone/omp" "$HOME/standalone/bin/omp"
+                  mkdir -p "$HOME"
                   python3 - <<'PY'
                   import json, os, pathlib, subprocess
 
-                  wsl = "${wslWrapper}/bin/omp"
-                  darwin = "${darwinWrapper}/bin/omp"
-                  target = str(pathlib.Path.home() / "standalone/omp")
+                  wrapper = "${personalOmp}/bin/omp"
+                  home = pathlib.Path.home()
+                  state = home / ".local/share/omp-dev"
+                  generation = state / "generations/selected generation"
+                  generation.mkdir(parents=True)
+                  launcher = generation / "omp"
+                  launcher.write_bytes(pathlib.Path("${probe}").read_bytes())
+                  launcher.chmod(0o755)
+                  current = state / "current"
+                  current.symlink_to(generation.relative_to(state))
+                  retained = state / "generations/retained"
+                  retained.mkdir()
+                  (retained / "omp").write_text("retained source launcher\n")
+                  (state / "previous").symlink_to(retained.relative_to(state))
+                  agent = home / ".omp/agent"
+                  agent.mkdir(parents=True)
+                  (agent / "settings.json").write_text('{"defaultModel": "preserve-me"}\n')
+                  official = home / ".local/lib/oh-my-pi/omp"
+                  official.parent.mkdir(parents=True)
+                  official.write_bytes(launcher.read_bytes())
+                  official.chmod(0o755)
+                  work = home / "project with spaces"
+                  work.mkdir()
                   plugin_args = ["--extension", "${personalOmp.plugin}", "--plugin-dir", "${personalOmp.plugin}/lsp"]
-                  env = dict(os.environ, PATH=str(pathlib.Path(wsl).parent) + ":" + os.environ["PATH"])
-                  original_path = env["PATH"]
+                  env = dict(os.environ, PATH=str(pathlib.Path(wrapper).parent) + ":" + os.environ["PATH"])
 
-                  def run(wrapper, args, status=0):
-                      result = subprocess.run([wrapper, *args], env=dict(env, PROBE_STATUS=str(status)), text=True, capture_output=True)
+                  def snapshot():
+                      return {
+                          str(path.relative_to(home)): (
+                              path.lstat().st_mode,
+                              os.readlink(path) if path.is_symlink() else path.read_bytes() if path.is_file() else None,
+                          )
+                          for path in home.rglob("*")
+                      }
+
+                  def run(args, status=0):
+                      before = snapshot()
+                      result = subprocess.run([wrapper, *args], cwd=work, env=dict(env, PROBE_STATUS=str(status)), text=True, capture_output=True, timeout=15)
+                      assert snapshot() == before, "wrapper changed source or application state"
+                      return result
+
+                  for args, status in (([], 0), (["--print", "update", "argument with spaces", ""], 23), (["acp"], 0)):
+                      result = run(args, status)
                       assert result.returncode == status, result
-                      return json.loads(result.stdout)
+                      assert json.loads(result.stdout) == {
+                          "args": plugin_args + args,
+                          "cwd": str(work.resolve()),
+                          "omp": wrapper,
+                          "launcher": str(launcher.resolve()),
+                          "nixd": "${pkgs.nixd}/bin/nixd",
+                      }, result
 
-                  update_args = ["update", "--check", "argument with spaces"]
-                  for wrapper, update_target in ((wsl, target), (darwin, str(pathlib.Path.home() / "standalone/bin/omp"))):
-                      result = run(wrapper, update_args, 23)
-                      assert result == {"args": update_args, "omp": update_target}, result
-                      for args in ([], ["--print", "update"], ["acp"]):
-                          result = run(wrapper, args)
-                          assert result == {"args": plugin_args + args, "omp": wsl}, result
-                  for overrides, status in (({"BREW_PREFIX_STATUS": "19"}, 19), ({"BREW_PREFIX": ""}, 1), ({"BREW_PREFIX": "/absent-formula"}, 1)):
-                      result = subprocess.run([darwin, "update"], env=dict(env, **overrides), text=True, capture_output=True)
-                      assert result.returncode == status and not result.stdout, result
-                  assert env["PATH"] == original_path
-                  pathlib.Path(target).unlink()
-                  result = subprocess.run([wsl, "update"], env=env, text=True, capture_output=True)
-                  assert result.returncode == 1, result
-                  assert target in result.stderr and "install-omp-for-routing-check" in result.stderr, result
-                  assert not result.stdout, result
+                  result = run(["update", "--check", "argument with spaces"])
+                  assert result.returncode == 1 and not result.stdout, result
+                  assert "omp-dev-update" in result.stderr, result
+
+                  launcher.chmod(0o644)
+                  result = run([])
+                  assert result.returncode == 1 and not result.stdout, result
+                  assert str(launcher.resolve()) in result.stderr and "omp-dev-update" in result.stderr, result
+                  launcher.chmod(0o755)
+                  current.unlink()
+                  for dangling in (False, True):
+                      if dangling:
+                          current.symlink_to("generations/absent")
+                      result = run([])
+                      assert result.returncode == 1 and not result.stdout, result
+                      assert str(current) in result.stderr and "omp-dev-update" in result.stderr, result
+                      result = run(["update"])
+                      assert result.returncode == 1 and not result.stdout, result
+                      assert "omp-dev-update" in result.stderr and str(current) not in result.stderr, result
                   PY
                   touch "$out"
                 '';
 
-              personalOmpVerification = pkgs.runCommand "check-personal-omp-verification" { } ''
-                omp_stub=$TMPDIR/omp-stub
-                cat > "$omp_stub" <<'EOF'
-                #!${pkgs.runtimeShell}
-                printf '%s\n' "$*" > "$OMP_CALLS"
-                printf '%s\n' '17.2.15'
-                EOF
-                chmod +x "$omp_stub"
+              personalOmpVerification =
+                let
+                  versionProbe = pkgs.writeScript "omp-version-probe" ''
+                    #!${pkgs.python3}/bin/python3
+                    import os, sys
+                    if sys.argv[1:] != ["--extension", "${personalOmp.plugin}", "--plugin-dir", "${personalOmp.plugin}/lsp", "--version"]:
+                        sys.exit(2)
+                    print(os.environ.get("PROBE_VERSION", "18.1.12-patched"))
+                    sys.exit(int(os.environ.get("PROBE_STATUS", "0")))
+                  '';
+                  herdrProbe = pkgs.writeScript "herdr-verification-probe" ''
+                    #!${pkgs.python3}/bin/python3
+                    import os, sys
+                    if sys.argv[1:] != ["integration", "status"]:
+                        sys.exit(2)
+                    print(os.environ.get("STATUS", "omp: current (v8)"))
+                  '';
+                in
+                pkgs.runCommand "check-personal-omp-verification" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+                  export HOME="$TMPDIR/home with spaces"
+                  mkdir -p "$HOME"
+                  python3 - <<'PY'
+                  import json, os, pathlib, subprocess
 
-                herdr_stub=$TMPDIR/herdr-stub
-                cat > "$herdr_stub" <<'EOF'
-                #!${pkgs.runtimeShell}
-                printf '%s\n' "$*" > "$HERDR_CALLS"
-                printf '%s\n' "''${STATUS:-omp: current (v8)}"
-                EOF
-                chmod +x "$herdr_stub"
+                  state = pathlib.Path.home() / ".local/share/omp-dev"
+                  generation = state / "generations/verified-generation"
+                  checkout = generation / "checkout"
+                  checkout.mkdir(parents=True)
+                  (generation / "dev-profile").symlink_to("${pkgs.bash}")
+                  launcher = generation / "omp"
+                  launcher.write_bytes(pathlib.Path("${versionProbe}").read_bytes())
+                  launcher.chmod(0o755)
+                  metadata = {
+                      "release": "v18.1.12",
+                      "upstream": "1" * 40,
+                      "patchBase": "a1b254047d12e143b7c6011536e918c6c35c5906",
+                      "patchTip": "62aa62869813e2834dc5887453f0f6c984953442",
+                      "commit": "2" * 40,
+                      "system": "${system}",
+                  }
+                  manifest = generation / "generation.json"
+                  manifest.write_text(json.dumps(metadata))
+                  current = state / "current"
+                  current.symlink_to(generation.relative_to(state))
+                  env = dict(os.environ, HERDR_BIN="${herdrProbe}")
 
-                export OMP_BIN="$omp_stub"
-                export HERDR_BIN="$herdr_stub"
-                export OMP_CALLS=$TMPDIR/omp.calls
-                export HERDR_CALLS=$TMPDIR/herdr.calls
-                ${lib.getExe personalOmp.verifyPersonalOmp} > $TMPDIR/output
+                  def run(**overrides):
+                      return subprocess.run(["${lib.getExe personalOmp.verifyPersonalOmp}"], env=dict(env, **overrides), text=True, capture_output=True)
 
-                test "$(cat "$OMP_CALLS")" = "--extension ${personalOmp.plugin} --plugin-dir ${personalOmp.plugin}/lsp --version"
-                test "$(cat "$HERDR_CALLS")" = "integration status"
-                grep -qF 'OMP: 17.2.15' $TMPDIR/output
-                grep -qF 'Plugin: ${personalOmp.plugin}' $TMPDIR/output
-                grep -qF 'omp: current (v8)' $TMPDIR/output
+                  result = run()
+                  assert result.returncode == 0, result
+                  for value in (*metadata.values(), "18.1.12-patched", "${personalOmp.plugin}", "omp: current (v8)"):
+                      assert value in result.stdout, (value, result)
+                  for overrides in ({"STATUS": "omp: outdated (v7)"}, {"PROBE_VERSION": ""}, {"PROBE_STATUS": "23"}):
+                      result = run(**overrides)
+                      assert result.returncode != 0 and not result.stdout, result
 
-                if STATUS='omp: outdated (v7)' ${lib.getExe personalOmp.verifyPersonalOmp} >/dev/null 2>&1; then
-                  echo 'verification accepted an outdated Herdr integration' >&2
-                  exit 1
-                fi
-
-                missing_omp=$TMPDIR/missing-omp
-                if OMP_BIN="$missing_omp" ${lib.getExe personalOmp.verifyPersonalOmp} >/dev/null 2>$TMPDIR/missing.err; then
-                  echo 'verification accepted a missing OMP executable' >&2
-                  exit 1
-                fi
-                grep -qF "$missing_omp" $TMPDIR/missing.err
-                grep -qF -- ${lib.escapeShellArg personalOmp.ompInstallCommand} $TMPDIR/missing.err
-
-                touch $out
-              '';
+                  manifest.write_text("invalid json")
+                  result = run()
+                  assert result.returncode != 0 and not result.stdout, result
+                  manifest.write_text(json.dumps(metadata))
+                  launcher.unlink()
+                  result = run()
+                  assert result.returncode == 1 and not result.stdout, result
+                  assert str(launcher.resolve()) in result.stderr and "omp-dev-update" in result.stderr, result
+                  current.unlink()
+                  result = run()
+                  assert result.returncode == 1 and not result.stdout, result
+                  assert str(current) in result.stderr and "omp-dev-update" in result.stderr, result
+                  PY
+                  touch "$out"
+                '';
 
               herdrOmpReconciliation = pkgs.runCommand "check-herdr-omp-reconciliation" { } ''
                 stub=$TMPDIR/herdr-stub

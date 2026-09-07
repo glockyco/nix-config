@@ -29,8 +29,8 @@ in
     taps = [ "can1357/tap" ];
 
     brews = [
-      # OMP releases frequently. Homebrew owns the mutable executable while
-      # Nix keeps the wrapper, personal plugin, and language servers immutable.
+      # Retain the official installation for pre-cutover Nix generations.
+      # The source-generation wrapper does not use this executable.
       "can1357/tap/omp"
     ];
 
