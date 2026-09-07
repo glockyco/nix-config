@@ -2,20 +2,13 @@
   herdr,
   lib,
   markdownOxide,
-  ompRuntime,
   pkgs,
   plugin,
   roslynLanguageServer,
 }:
 
 let
-  ompExecutableValue =
-    if ompRuntime.executable ? absolute then
-      toString ompRuntime.executable.absolute
-    else
-      "$HOME/${ompRuntime.executable.homeRelative}";
-  ompExecutable = ''"${ompExecutableValue}"'';
-  inherit (ompRuntime) installCommand;
+  devUpdate = pkgs.callPackage ./omp-dev-update.nix { inherit plugin; };
 
   languageServers = with pkgs; [
     markdownOxide
@@ -27,12 +20,16 @@ let
     typescript-language-server
   ];
 
-  requireOmpExecutable = ''
-    if [ ! -x "$omp_bin" ]; then
-      # Keep variables literal so the displayed install command remains reusable.
-      # shellcheck disable=SC2016
-      printf 'oh-my-pi executable not found at %s.\nInstall it with:\n  %s\n' \
-        "$omp_bin" ${lib.escapeShellArg installCommand} >&2
+  resolveGeneration = ''
+    : "''${HOME:?HOME must be set}"
+    current="$HOME/.local/share/omp-dev/current"
+    if [ ! -L "$current" ] || ! generation="$(${pkgs.coreutils}/bin/readlink -e "$current")"; then
+      printf 'No OMP source generation is selected at %s.\nRun omp-dev-update to initialize it.\n' "$current" >&2
+      exit 1
+    fi
+    omp_bin="$generation/omp"
+    if [ ! -f "$omp_bin" ] || [ ! -x "$omp_bin" ]; then
+      printf 'OMP source launcher is missing or unusable at %s.\nRun omp-dev-update to prepare a generation.\n' "$omp_bin" >&2
       exit 1
     fi
   '';
@@ -65,13 +62,19 @@ let
 
   verifyPersonalOmp = pkgs.writeShellApplication {
     name = "verify-personal-omp";
-    runtimeInputs = [ pkgs.gnugrep ];
+    runtimeInputs = [
+      pkgs.gnugrep
+      pkgs.jq
+    ];
     text = ''
-      omp_bin="''${OMP_BIN:-${ompExecutableValue}}"
+      ${resolveGeneration}
+      metadata="$(${lib.getExe devUpdate} --status)"
+      if ! jq -e --argjson selected "$metadata" '. == $selected' "$generation/generation.json" >/dev/null; then
+        printf 'OMP selection changed during verification. Run verify-personal-omp again.\n' >&2
+        exit 1
+      fi
       herdr_bin="''${HERDR_BIN:-${lib.getExe herdr}}"
-      plugin_dir="''${PERSONAL_OMP_PLUGIN_DIR:-${plugin}}"
-
-      ${requireOmpExecutable}
+      plugin_dir=${plugin}
 
       test -f "$plugin_dir/package.json"
       test -f "$plugin_dir/extensions/personal-commit.ts"
@@ -79,7 +82,7 @@ let
       test -d "$plugin_dir/commands"
       test ! -e "$plugin_dir/lsp/commands"
 
-      omp_version="$($omp_bin --extension "$plugin_dir" --plugin-dir "$plugin_dir/lsp" --version)"
+      omp_version="$("$omp_bin" --extension "$plugin_dir" --plugin-dir "$plugin_dir/lsp" --version)"
       test -n "$omp_version"
 
       herdr_status="$($herdr_bin integration status)"
@@ -89,6 +92,7 @@ let
         exit 1
       fi
 
+      printf '%s\n' "$metadata" | jq -r '"Release: \(.release)\nUpstream: \(.upstream)\nPatch: \(.patchBase)..\(.patchTip)\nCommit: \(.commit)\nSystem: \(.system)"'
       printf 'OMP: %s\nPlugin: %s\n%s\n' "$omp_version" "$plugin_dir" "$omp_status"
     '';
   };
@@ -97,31 +101,18 @@ let
     name = "omp";
     runtimeInputs = languageServers;
     text = ''
+      if [ "''${1-}" = update ]; then
+        printf 'Use omp-dev-update to update the patched OMP source generation.\n' >&2
+        exit 1
+      fi
+      ${resolveGeneration}
+
       # Each flag is aimed at what only it provides. --extension loads the
       # personal_commit extension, the skills, the rules, and the OpenSpec
       # workflow commands. --plugin-dir loads the LSP overrides, and points at
       # the scoped lsp/ root: aiming it at the package root would rescan
       # commands/ and register every workflow command a second time under a
       # store-derived name.
-      omp_bin=${ompExecutable}
-      ${requireOmpExecutable}
-      if [ "''${1-}" = update ]; then
-        # The updater identifies its owner through PATH, not the running binary.
-        ${
-          if ompRuntime.executable ? homeRelative then
-            ''export PATH="''${omp_bin%/*}:$PATH"''
-          else
-            ''
-              omp_prefix="$("''${omp_bin%/*}/brew" --prefix can1357/tap/omp)"
-              if [ -z "$omp_prefix" ] || [ ! -x "$omp_prefix/bin/omp" ]; then
-                printf 'Homebrew OMP formula executable not found at %s/bin/omp.\n' "$omp_prefix" >&2
-                exit 1
-              fi
-              export PATH="$omp_prefix/bin:''${omp_bin%/*}:$PATH"
-            ''
-        }
-        exec "$omp_bin" "$@"
-      fi
       exec "$omp_bin" --extension ${plugin} --plugin-dir ${plugin}/lsp "$@"
     '';
   };
@@ -129,12 +120,11 @@ in
 wrapper.overrideAttrs (old: {
   passthru = (old.passthru or { }) // {
     inherit
+      devUpdate
       languageServers
       plugin
       reconcileHerdrOmp
       verifyPersonalOmp
       ;
-    inherit ompExecutable ompRuntime;
-    ompInstallCommand = installCommand;
   };
 })

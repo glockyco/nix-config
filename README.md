@@ -9,9 +9,9 @@ Personal workstation configuration for an Apple Silicon MacBook Pro and NixOS un
 | `macbook-pro` | `aarch64-darwin` | [nix-darwin](hosts/macbook-pro/default.nix) |
 | `korolev`     | `x86_64-linux`   | [NixOS/WSL](hosts/korolev/default.nix)      |
 
-Nix owns the host configuration and OMP wrapper, plugin, and language tools. Homebrew on macOS and the official installer on WSL own the OMP executable. OMP owns its writable authentication, configuration, sessions, and databases; activation and Nix rollback do not replace them. Project repositories own their development environments.
+Nix owns the host configuration and OMP wrapper, updater, plugin, and language tools. `omp-dev-update` prepares patched OMP source generations independently on each host. OMP owns its writable authentication, configuration, sessions, and databases; activation and Nix rollback do not replace them. Project repositories own their development environments.
 
-[![System overview: pinned inputs and shared and platform-specific modules compose the macOS and NixOS/WSL environments. Windows configuration is applied separately. The OMP detail shows the Nix-managed wrapper, plugin, and language servers interacting with the externally managed executable and writable state.](docs/images/system-overview.webp)](docs/images/system-overview.webp)
+[![System overview: pinned inputs and shared and platform-specific modules compose the macOS and NixOS/WSL environments. Windows configuration is applied separately. The OMP detail shows the Nix-managed wrapper, plugin, and language servers interacting with the host-local source runtime and writable state.](docs/images/system-overview.webp)](docs/images/system-overview.webp)
 
 ## Network
 
@@ -77,7 +77,7 @@ Later activations use `darwin-switch`, which also prints the closure diff. On Ko
 sudo nixos-rebuild switch --flake .#korolev
 ```
 
-Run `verify-personal-omp` afterward. It reports the OMP version, plugin store path, and current Herdr integration. After OMP or plugin behavior changes, also complete the [release smoke](docs/operations/dependency-updates.md#release-smoke).
+Run `verify-personal-omp` afterward. It reports the selected release and commits, OMP version, plugin store path, and current Herdr integration. After OMP or plugin behavior changes, also complete the [release smoke](docs/operations/dependency-updates.md#release-smoke).
 
 For a new Windows machine, follow [WSL and Windows provisioning](docs/operations/wsl-omp-bootstrap.md). It covers image import, credentials, the separate Windows apply, and recovery. Run one WSL distribution at a time; confirm `systemctl is-active user@1000.service` reports `active` before activation.
 
@@ -94,20 +94,14 @@ nix flake update                       # all inputs
 nix flake update personal-omp-plugin   # plugin only
 ```
 
-OMP updates need no repository change or Nix activation. On macOS and WSL:
+On macbook-pro and korolev, initialize or update the patched OMP runtime explicitly:
 
 ```sh
-omp update
+omp-dev-update
+omp
 ```
 
-The wrapper routes updates to Homebrew on macOS and the standalone binary updater on WSL. Normal sessions retain the Nix-managed plugin and language tools.
-
-For the first WSL installation, use the official binary installer:
-
-```sh
-curl -fsSL https://omp.sh/install \
-  | PI_INSTALL_DIR="$HOME/.local/lib/oh-my-pi" sh -s -- --binary
-```
+The updater checks a host-native source generation before selecting it. Failed updates leave the current generation unchanged. The [patch input](packages/omp-dev-update.nix) is pinned; changing the maintained patches requires a reviewed pin update. Normal sessions retain the immutable plugin and language tools. Use `omp-dev-update --rollback` for [OMP recovery](docs/operations/dependency-updates.md#omp-version-recovery), not `omp update` or Nix rollback.
 
 Run the verifier and applicable release smoke before accepting the update.
 
@@ -125,4 +119,4 @@ sudo nixos-rebuild list-generations | cat
 sudo nixos-rebuild switch --rollback --no-reexec
 ```
 
-Then repeat verification. Nix rollback restores immutable tools, not OMP versions, credentials, tailnet enrollment, or application data. For a rejected OMP release, use [platform version recovery](docs/operations/dependency-updates.md#omp-version-recovery). Windows configuration has no generation rollback.
+Then repeat verification. Nix rollback restores immutable tools, not OMP versions, credentials, tailnet enrollment, or application data. For a rejected OMP release, use [source-generation recovery](docs/operations/dependency-updates.md#omp-version-recovery). Windows configuration has no generation rollback.

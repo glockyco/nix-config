@@ -1,19 +1,19 @@
 ## 1. Shared patch source
 
-- [ ] 1.1 After explicit publication permission, push the five reviewed commits to the existing personal fork and record the upstream base and patch-tip identities; verify both hosts can fetch that exact range independently.
+- [x] 1.1 After explicit publication permission, push the five reviewed commits to the existing personal fork and record the upstream base and patch-tip identities; verify both hosts can fetch that exact range independently.
 
 ## 2. Source updater
 
-- [ ] 2.1 Package `omp-dev-update` with declared dependencies and pinned patch inputs; verify stable-release selection, input ancestry, and first-run initialization against temporary Git repositories.
-- [ ] 2.2 Prepare detached candidates at permanent generation paths with retained upstream development profiles, frozen dependency installation, and host-native builds; verify failures cannot modify the selected generation or create global Bun links.
-- [ ] 2.3 Add candidate package checks, patch regressions, native loading, and plugin-aware launch verification before promotion; demonstrate that each failed preparation phase prevents promotion.
-- [ ] 2.4 Implement locking, atomic selection, unchanged-input no-op, and offline rollback; verify concurrent attempts, interruption, first-install rollback rejection, and previous-generation retention with deterministic behavioral tests.
+- [x] 2.1 Package `omp-dev-update` with declared dependencies and pinned patch inputs; verify stable-release selection, input ancestry, and first-run initialization against temporary Git repositories.
+- [x] 2.2 Prepare detached candidates at permanent generation paths with retained upstream development profiles, frozen dependency installation, and host-native builds; verify failures cannot modify the selected generation or create global Bun links.
+- [x] 2.3 Add candidate package checks, patch regressions, native loading, and plugin-aware launch verification before promotion; demonstrate that each failed preparation phase prevents promotion.
+- [x] 2.4 Implement locking, atomic selection, unchanged-input no-op, and offline rollback; verify concurrent attempts, interruption, first-install rollback rejection, and previous-generation retention with deterministic behavioral tests.
 
 ## 3. Workstation integration
 
-- [ ] 3.1 Update `packages/personal-omp.nix` and `modules/home/omp.nix` to expose the updater and launch the selected generation; verify argument and working-directory preservation, plugin injection, missing-generation errors, and rejection of `omp update`.
-- [ ] 3.2 Replace obsolete runtime declarations in `modules/fleet/host.nix` and both host configurations; update `flake.nix` routing, shape, and verifier checks and prove both system outputs expose the shared commands without activation-time preparation.
-- [ ] 3.3 Update README commands, dependency recovery, WSL bootstrap, and conflicting repository guidance with concise source-update instructions; verify that no active instruction still directs the patched installation through official executable updates.
+- [x] 3.1 Update `packages/personal-omp.nix` and `modules/home/omp.nix` to expose the updater and launch the selected generation; verify argument and working-directory preservation, plugin injection, missing-generation errors, and rejection of `omp update`.
+- [x] 3.2 Replace obsolete runtime declarations in `modules/fleet/host.nix` and both host configurations; update `flake.nix` routing, shape, and verifier checks and prove both system outputs expose the shared commands without activation-time preparation.
+- [x] 3.3 Update README commands, dependency recovery, WSL bootstrap, and conflicting repository guidance with concise source-update instructions; verify that no active instruction still directs the patched installation through official executable updates.
 
 ## 4. Cross-platform acceptance
 

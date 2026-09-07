@@ -2,7 +2,7 @@
 
 Use this procedure for a new NixOS WSL import, Windows setup, or builder recovery.
 Windows owns native applications and employer policy. NixOS owns Linux system and user configuration.
-The official installer owns the OMP executable. OMP owns authentication, sessions, databases, browser downloads, profiles, and caches.
+`omp-dev-update` owns the patched OMP source generation. OMP owns authentication, sessions, databases, browser downloads, profiles, and caches.
 Keep repositories in the Linux home directory, not `/mnt/c`.
 
 **Account boundary:** Import, activation, generation rollback, and distribution rollback use the standard Windows account.
@@ -98,7 +98,7 @@ git config user.email
 
 The email must be `11704293+glockyco@users.noreply.github.com`. Other locations use the global employer address.
 Use the reviewed, published revision. An older checkout can activate successfully while dropping newer configuration.
-Follow [Develop](../../README.md#develop), then the WSL OMP installer under [Update](../../README.md#update) and [Activate](../../README.md#activate).
+Follow [Develop](../../README.md#develop) and [Activate](../../README.md#activate), then initialize OMP with `omp-dev-update` as described under [Update](../../README.md#update).
 Activation reconciles Herdr but does not install or invoke OMP.
 Confirm the activated host:
 
