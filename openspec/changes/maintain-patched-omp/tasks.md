@@ -17,7 +17,7 @@
 
 ## 4. Cross-platform acceptance
 
-- [ ] 4.1 Run strict OpenSpec validation and the README's applicable Nix gates for both configured systems; retain exact results with this change and leave unrelated scheduled changes untouched.
-- [ ] 4.2 On korolev, prepare a real generation, activate the reviewed wrapper, and exercise launch, successful update, failed-update preservation, and offline rollback; verify native loading, `verify-personal-omp`, the real wrapped-session smoke, and `omp acp` startup.
+- [x] 4.1 Run strict OpenSpec validation and the README's applicable Nix gates for both configured systems; retain exact results with this change and leave unrelated scheduled changes untouched.
+- [x] 4.2 On korolev, prepare a real generation, activate the reviewed wrapper, and exercise launch, successful update, failed-update preservation, and offline rollback; verify native loading, `verify-personal-omp`, the real wrapped-session smoke, and `omp acp` startup.
 - [ ] 4.3 On macbook-pro, independently prepare a real generation and repeat activation, launch, update, failure preservation, rollback, native loading, and the wrapped-session smoke; verify operation in Herdr without relying on Korolev or the borrowed Air.
 - [ ] 4.4 After both host acceptance gates pass, remove the temporary Korolev launcher and obsolete default routing without deleting developer checkout or installer-owned data; verify fresh shells resolve only the supported wrapper and retain the previous working generations.
