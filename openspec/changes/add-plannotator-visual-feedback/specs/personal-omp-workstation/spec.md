@@ -10,7 +10,7 @@ The default `omp` command SHALL invoke the selected source generation with the i
 - **THEN** the resolved executable is the Nix-managed workstation wrapper
 - **AND** the wrapper invokes the selected verified source generation
 - **AND** OMP discovers the packaged personal extensions, skills, rule, and LSP overrides
-- **AND** annotation commands resolve the declared downstream-patched Plannotator executable without requiring upstream publication
+- **AND** annotation commands resolve the unmodified vendor Plannotator executable from the declared commit-pinned input
 
 #### Scenario: Start OMP from Windows Zed
 
@@ -54,9 +54,10 @@ The WSL host SHALL expose no network service reachable from another host and SHA
 - **THEN** tailnet policy permits the network connection and OpenSSH authenticates the dedicated builder key
 - **AND** the client key is readable only by root, and only its public key and private-key path enter the configuration
 
-#### Scenario: Open and close a local annotation review
+#### Scenario: Open and end a local annotation review
 
 - **WHEN** a local OMP session on WSL opens a visual annotation review
 - **THEN** only a temporary loopback listener is created
 - **AND** the local Windows browser can reach it without tailnet publication or a firewall change
-- **AND** ending the review removes its listener
+- **AND** a terminal result, explicit cancellation, session navigation, or shutdown removes the owned listener
+- **AND** tab closure alone can leave the review pending until `/plannotator-cancel` or another cancellation event

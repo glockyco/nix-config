@@ -1,13 +1,14 @@
-## 1. Downstream delivery prerequisites
+## Approved scope and historical work
 
-Implementation authorization (2026-09-08): the user authorized the companion `omp-agent-setup` work and preparation of the client-lease fix in a local Plannotator checkout. The user subsequently selected downstream-first delivery as the default. Upstream publication and submission are deferred until all downstream work and acceptance are complete, and may be omitted entirely. Companion publication, merging, and activation retain their explicit authorization boundaries.
+On 2026-09-08, the user approved removal of the downstream client-lease patch and custom CI caching as disproportionate. The OMP adapter and on-demand commit-pinned vendor input remain required. Closing a tab can leave a review pending. `/plannotator-cancel`, session navigation, and shutdown are the supported cancellation paths. No automatic tab-close guarantee, approval mode, new timeout, or fallback replaces the patch.
 
-This revision changes planning artifacts only. The next apply step implements the downstream package patch in `nix-config`; it must not perform upstream submission work. Existing local implementation evidence remains valid for the paths it exercised, but its upstream-publication blocker is superseded by this decision. Preserve that historical evidence and record final patched-package verification during implementation. Companion delivery and native acceptance remain required.
+Historical tasks 1.2–1.4 completed the local lease fix, downstream packaging, and patched-browser checks. Historical task 3.2 selected that package and the reviewed plugin. Historical tasks 4.1 and 4.2 passed native build gates for the patched selection. Their completed evidence remains in `evidence.md`. The patch requirements are cancelled, not requirements to restore the patch. Final stock-package selection and native gates below remain open until verified.
+
+## 1. Stock-package delivery prerequisites
 
 - [x] 1.1 Deliver a separately authorized companion OpenSpec change in `omp-agent-setup` for the adapter contract in this change; verify its proposal, specs, design, and tasks pass strict validation and link its identity here.
-- [x] 1.2 Obtain a reviewed local annotation-only client-lease fix without `--gate`; verify in the actual browser that closing a local `annotate --json` tab returns `dismissed` after a finite documented grace period, while a brief reconnect does not cancel it.
-- [x] 1.3 Check in the reviewed client-lease patch with its upstream base and originating commit; append it through `overrideAttrs` to the existing pinned `llm-agents.nix` package while preserving existing patches, dependencies, and build phases. Build it for `aarch64-darwin` and `x86_64-linux`, and record source, patch, version, and output identities without requiring upstream publication.
-- [x] 1.4 Verify the final patched package retains annotation-only dismissal and reconnect behavior; retain the lifecycle regressions and document patch review on dependency updates. Remove the patch only when the selected package independently passes equivalent native behavior checks; upstream rejection or non-submission must not block downstream delivery.
+- [x] 1.2 Remove the downstream client-lease patch and package override. Verify both hosts select the unmodified vendor package from the on-demand commit-pinned input. Record source, version, derivation, and output identities.
+- [x] 1.3 Reconcile the companion contract and user instructions with explicit cancellation after tab closure. Verify the adapter retains cancellation on session navigation and shutdown, without a new timeout, approval mode, or fallback.
 
 ## 2. Companion plugin delivery
 
@@ -24,25 +25,25 @@ This revision changes planning artifacts only. The next apply step implements th
 ## 3. Workstation composition
 
 - [x] 3.1 Pass the compatible Plannotator package through every `packages/personal-omp.nix` call site and add it to wrapper-local runtime inputs, separately from language servers; verify both host evaluations and inspect their build plans without adding another packaging route.
-- [x] 3.2 Select the reviewed companion `personal-omp-plugin` revision and the downstream-patched executable; retain the existing `llm-agents` pin unless verified build requirements need an update. Verify the locked source and checked-in patch identities match the delivery evidence. Do not publish to upstream or update unrelated inputs.
+- [x] 3.2 Select the reviewed companion `personal-omp-plugin` revision and unmodified vendor executable. Retain the on-demand `plannotator-packages` pin. Verify final locked source and package identities against delivery evidence. Do not update unrelated inputs.
 - [x] 3.3 Extend `verify-personal-omp` to report the selected Plannotator path and version without starting a browser; verify it still reports the source-generation identity, immutable plugin, and current Herdr integration.
 - [x] 3.4 Update affected wrapper and plugin-discovery checks in `flake.nix`; verify pinned Plannotator takes precedence over a conflicting caller executable while argument forwarding, working directory, nested OMP resolution, and parent-shell isolation remain unchanged.
 - [x] 3.5 Verify evaluated activation declarations contain no Plannotator invocation, installer, generated extension copy, mutable OMP configuration rewrite, firewall opening, or tailnet publication; preserve the existing source-update and Herdr ownership contracts.
 
 ## 4. Release and native acceptance
 
-- [x] 4.1 Run `nix fmt -- --fail-on-change` and then `nix flake check --print-build-logs` in the documented order; verify applicable checks on both native systems and record results with this change.
-- [x] 4.2 On macbook-pro, run `nix run .#check-darwin-build-plans` and then `nix build .#darwinConfigurations.macbook-pro.system`; verify both gates pass without depending on the borrowed Air.
+- [ ] 4.1 Run `nix fmt -- --fail-on-change` and then `nix flake check --print-build-logs` against the final stock-package selection. Verify applicable checks on both native systems. Record results with this change.
+- [ ] 4.2 On macbook-pro, run `nix run .#check-darwin-build-plans` and then `nix build .#darwinConfigurations.macbook-pro.system`. Verify both gates pass for the final stock-package selection without depending on the borrowed Air.
 - [ ] 4.3 After review and merge, activate each host, inspect activation output, and run `verify-personal-omp` plus the existing real wrapped-session release smoke; record both immutable package paths and confirm normal personal plugin behavior remains available.
 - [ ] 4.4 In a real local OMP session through Herdr on korolev, annotate a document and the last response in the Windows browser; submit highlighted comments and replacement suggestions, and verify correct source attribution, one feedback delivery, no source edits, and no approval controls.
 - [ ] 4.5 Repeat the document and last-response feedback round trips in a real wrapped OMP session and local browser on macbook-pro; record the observed browser surface and feedback in that session.
-- [ ] 4.6 On both hosts, exercise dismissal, tab closure, brief reconnect, explicit cancellation, a browser that never connects, session/branch navigation, and two simultaneous sessions; verify the documented close grace period, no cross-session delivery, and owned process/listener/snapshot cleanup.
+- [ ] 4.6 On both hosts, exercise dismissal, explicit cancellation after tab closure, and cancellation when no browser connects. Exercise session/branch navigation, session shutdown, and two simultaneous sessions. Verify no cross-session delivery and owned process/listener/snapshot cleanup after each terminal outcome. Record any pending review after tab closure without requiring automatic settlement or a reconnect grace period.
 - [ ] 4.7 Verify the live review listeners bind only to loopback and that another tailnet node cannot reach korolev's review; confirm the local Windows browser still works with no firewall or tailnet policy change.
 - [ ] 4.8 Verify Nix rollback restores the previous wrapper, plugin, and Plannotator selection while preserving OMP source-generation selection and mutable OMP/Plannotator data; retain the previous generation until both hosts pass acceptance.
 
 ## 5. Documentation and specification integration
 
 - [ ] 5.1 After native smoke passes, update the existing workstation README and dependency operations release smoke with command usage, ownership, cancellation, and recovery; verify instructions name no planner, gate, PR feature, installer, or extra updater. Remove only task-owned throwaway verification data.
-- [ ] 5.2 Record upstream-base, downstream-patch, plugin, package, browser, lifecycle, and platform evidence with this change; verify every delivery and acceptance task has concrete evidence rather than inferred success. Record upstream contribution as deferred and optional, never as a release or archive gate.
+- [ ] 5.2 Record final vendor source, plugin, stock-package, browser, cancellation, and platform evidence with this change. Preserve superseded patch and cache evidence as historical. Verify every active acceptance task has concrete evidence rather than inferred success. Do not require upstream contribution or cold/warm cache acceptance.
 - [ ] 5.3 After `maintain-patched-omp` passes its own acceptance and synchronizes its default-command delta, reconcile this delta against the resulting main spec; verify no source-generation contract is reverted and the Plannotator runtime addition survives synchronization.
 - [ ] 5.4 Run `openspec validate add-plannotator-visual-feedback --strict` and archive only after all tasks pass; verify the resulting main specs preserve annotation-only behavior and the no-inbound network boundary.

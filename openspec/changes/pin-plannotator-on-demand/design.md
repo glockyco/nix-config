@@ -1,58 +1,50 @@
 ## Context
 
-See `proposal.md` for motivation. The existing workflow installs Determinate Nix on two native runners and uses the configured Numtide binary cache. It does not retain our downstream-built store outputs between jobs. Repository secrets contain Tailscale authorization only; no cache-provider credential is configured.
+See `proposal.md` for motivation. The central controller runs a complete `nix flake update`. There is no target-local update workflow. Other tools use the rolling `llm-agents` package set.
 
-The central controller runs a complete `nix flake update` and may change only declared paths, including this repository's `flake.lock`. There is no target-local update workflow. Both wrapper compositions currently select Plannotator from the same rolling `llm-agents` package set used for other tools.
+The initial implementation added an independent Plannotator input, retained the downstream client-lease patch, and added CI output caching. On 2026-09-08, the user approved removal of the patch and custom cache. `evidence.md` preserves the earlier observations as historical evidence, not final stock-package acceptance.
 
 ## Goals / Non-Goals
 
-**Goals:** Make Plannotator release advancement deliberate. Reuse its actual derived output across fresh CI runners. Preserve the existing package recipe and complete validation gates.
+**Goals:** Make Plannotator advancement deliberate. Use the unmodified vendor package on both hosts. Preserve the existing adapter and required release gates.
 
-**Non-Goals:** A second scheduler, an updater script, an external cache account, a host binary-cache service, a frozen workstation toolchain, or weaker release acceptance.
+**Non-Goals:** Custom CI caching, cold/warm performance acceptance, a second scheduler, an updater script, a maintained patch, or a frozen workstation toolchain. Automatic tab-close cancellation, approval mode, new timeouts, and browser fallbacks are also excluded.
 
 ## Decisions
 
 ### Declare an immutable package-source input
 
-Add `plannotator-packages` as another instance of `github:numtide/llm-agents.nix`, with the reviewed full commit in the declared URL. Initially use the currently verified source revision. Preserve the vendor's own locked transitive inputs. The existing declaration explicitly forbids following workstation `nixpkgs`, because the vendor requires its pinned unstable package set and cache.
+Use `plannotator-packages` as another instance of `github:numtide/llm-agents.nix`, with the reviewed full commit in the declared URL. Retain revision `b1c9a31450a814e50cddc3ab683b05c1dff7bb01`, which supplies Plannotator 0.27.12. Preserve the vendor's locked transitive inputs instead of following workstation `nixpkgs`.
 
-Select only Plannotator from this package set in both compositions. Continue to append the downstream patch through `packages/plannotator.nix`. Other tools retain their existing `llm-agents` input.
+Select only Plannotator from this package set in both wrapper compositions. Use the vendor package directly, without `packages/plannotator.nix` or the local client-lease patch. Vendor packaging patches remain part of the unmodified package. Other tools retain their existing `llm-agents` input.
 
-An explicit Plannotator update changes the declared revision in `flake.nix`, then updates `plannotator-packages` in the lock. A complete automatic lock update cannot advance that declared commit. Its vendor toolchain stays locked too; unrelated workstation inputs can still advance. Verify this with the actual central updater command in a disposable checkout, not a source-text assertion.
+An explicit Plannotator update changes the declared revision in `flake.nix`, then updates `plannotator-packages` in the lock. A complete automatic lock update cannot advance that declared commit. Its vendor toolchain stays locked too. Unrelated workstation inputs can still advance.
 
-Do not add an updater exclusion or special case to the controller. A floating second input would not solve the problem: the complete update would advance it too. Copying the vendor package recipe would introduce another maintenance owner.
+Verify the final stock selection with the actual central updater command in a disposable checkout. Compare both host selections with their vendor packages. Do not infer final selection correctness from earlier patched-output identities.
 
-### Cache derived outputs in existing GitHub CI
+Do not add an updater exclusion or controller special case. A floating second input would not prevent advancement. A copied package recipe would introduce another maintenance owner.
 
-Use the maintained `nix-community/cache-nix-action`, pinned to a reviewed commit. Its documented supported installers include the existing Determinate action, on Linux and macOS. Use separate restore and save phases so only a successful required-check run publishes a new cache.
+### Remove the custom cache path
 
-Derive the primary key from the native Nix system, a cache-layout version, and the evaluated patched Plannotator derivation identity. Do not key solely on its human-readable version or the whole flake lock. Package source, patch, and toolchain changes must invalidate the identity; unrelated lock changes need not do so.
+Remove the added cache action, derivation-key logic, explicit cache output root, retention policy, and restore/save steps. Preserve the original native CI checks and Darwin build-plan guard. Existing Nix substitution and ordinary builds remain the only package acquisition paths.
 
-After restore, run the existing Darwin build-plan guard on macOS. Then build Plannotator with a job-local output link before the flake checks. This keeps its closure rooted during cache garbage collection. Cache hits still run the ordinary checks and package validation. Use a 2 GiB garbage-collection target per native cache; it is a target, not a guarantee when live roots exceed it. Record actual cache size and adjust within GitHub's repository quota before acceptance. Never run this garbage collection on workstation hosts.
+Cold/warm runs, cache sizes, restore failure experiments, and cache publication are no longer acceptance requirements. The historical cache review remains useful evidence of the superseded implementation, not a requirement to retain it.
 
-Archive only `/nix/store` and the Nix store database. Exclude installer metadata, which can contain a GitHub token. The action prepends `/nix` to its path input, so exclude that broad root before re-including the store and database directories.
+### Preserve annotation and release boundaries
 
-Save only after successful checks. Keep GitHub's normal branch and pull-request cache isolation. Do not use `pull_request_target`, grant new write credentials, import caches from arbitrary repositories, or add a host trusted key. No custom cache purge scheduler or cross-ref cache promotion is proposed.
+The adapter still invokes annotation-only JSON mode. Closing a tab can leave its review pending. `/plannotator-cancel` stops the owned review, and session navigation or shutdown also cancels it. No new timeout, approval mode, browser script, or fallback replaces the removed lease patch.
 
-A missing, evicted, incompatible, or unavailable cache must leave an ordinary source build available. Cache-save failure must not replace a successful check result with a claim of reusable output. Report the cache failure and verify a later hit before accepting the feature.
+Native browser, explicit cancellation, session isolation, network, activation, and rollback checks remain required by `add-plannotator-visual-feedback`. The maintenance change verifies the on-demand pin and final package selection. It does not claim those separate release gates complete.
 
-### Preserve the trust and release boundaries
-
-GitHub Actions cache is a CI optimization, not a binary substituter for the Mac or Korolev. Hosts reuse their existing local store outputs until collection or changed derivations require another build.
-
-Successful PR caches remain PR-scoped. A protected main-branch run must populate a base cache before new PRs can reuse it. Expect initial cold builds on each architecture, including a main-branch population build. Do not promise that the current in-flight release becomes faster.
-
-Native browser, lifecycle, network, rollback, and downstream patch review requirements remain unchanged. Keep this implementation separate from `add-plannotator-visual-feedback` acceptance.
+Run ordered native repository checks and the Darwin build-plan/system-build gates against the final stock selection. Earlier patched-package results remain historical and do not satisfy these gates.
 
 ## Risks / Trade-offs
 
-- An unchanged application version can rebuild after a Bun, Nixpkgs, dependency, or patch change. The evaluated derivation, not the version label, is the cache identity.
-- GitHub cache quotas and eviction make reuse best-effort. Measure cold and warm runs, transfer sizes, and source-build absence on both systems.
-- The cache action merges Nix store databases. Confirm compatibility with the installed Nix and SQLite versions on both actual runners; do not replace the native Nix check client.
-- A 2 GiB collection target cannot discard live roots. Retain the package output, inspect size, and avoid accumulating broad fallback caches.
-- A new Plannotator update still needs a source build and full behavior verification. On-demand selection reduces unnecessary updates, not required correctness work.
+- An unchanged application version can rebuild after a vendor dependency or package recipe change. A version label is not a derivation identity.
+- Existing substitutes are not guaranteed to remain available. Normal source builds must remain possible.
+- A closed tab can leave an owned process and snapshot pending until explicit cancellation, navigation, or shutdown.
+- An explicit Plannotator update still requires package review and applicable native behavior checks.
 
 ## References
 
 - [Central updater contract](https://github.com/glockyco/dependency-automation)
-- [Cache action compatibility, isolation, and limitations](https://github.com/nix-community/cache-nix-action)

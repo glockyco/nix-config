@@ -33,43 +33,10 @@ jobs:
             extra-substituters = https://cache.numtide.com
             extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
 
-      # Use the patched derivation, not the whole lock or application version.
-      - name: Select Plannotator cache identity
-        id: plannotator-cache-key
-        shell: bash
-        run: |
-          system=$(nix eval --impure --raw --expr builtins.currentSystem)
-          installable=".#packages.${system}.personal-omp.plannotator"
-          derivation=$(nix eval --raw "${installable}.drvPath")
-          printf '%s\n' \
-            "installable=$installable" \
-            "derivation=$derivation" \
-            "key=plannotator-v1-${system}-${derivation##*/}" | tee -a "$GITHUB_OUTPUT"
-
-      # v7 supports Determinate Nix; it requires Nix >= 2.24 and SQLite >= 3.37.
-      # Cache only store paths and their database, not installer metadata or tokens.
-      # Exact keys retain GitHub's normal branch and pull-request visibility.
-      - name: Restore Plannotator store cache
-        id: plannotator-cache-restore
-        continue-on-error: true
-        uses: nix-community/cache-nix-action/restore@7df957e333c1e5da7721f60227dbba6d06080569 # v7
-        with:
-          primary-key: ${{ steps.plannotator-cache-key.outputs.key }}
-          paths: |
-            !/nix
-            /nix/store
-            /nix/var/nix/db
-
       # Reject uncached source toolchains and language servers before building
       # repository checks. This app needs store access outside a check sandbox.
       - if: runner.os == 'macOS'
         run: nix run .#check-darwin-build-plans
-
-      # Build on hits and misses. This output link retains the closure during GC.
-      - name: Build and root Plannotator
-        env:
-          PLANNOTATOR: ${{ steps.plannotator-cache-key.outputs.installable }}
-        run: nix build "$PLANNOTATOR" --print-build-logs --out-link "$RUNNER_TEMP/plannotator"
 
       # On macOS this builds `darwinSystem`; on Linux it is the host closure,
       # the module-import and the formatting checks. Evaluation errors, build
@@ -90,17 +57,3 @@ jobs:
           "$RUNNER_TEMP/host-nix/bin/nix" \
             --extra-experimental-features 'nix-command flakes' \
             flake check --print-build-logs
-
-      # No post-job save: a failed guard, build, or check must not publish a cache.
-      # The 2 GiB target applies only here; live roots can exceed it.
-      - name: Save checked Plannotator store cache
-        if: success() && steps.plannotator-cache-restore.outputs.hit-primary-key != 'true'
-        continue-on-error: true
-        uses: nix-community/cache-nix-action/save@7df957e333c1e5da7721f60227dbba6d06080569 # v7
-        with:
-          primary-key: ${{ steps.plannotator-cache-key.outputs.key }}
-          paths: |
-            !/nix
-            /nix/store
-            /nix/var/nix/db
-          gc-max-store-size: 2G

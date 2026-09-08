@@ -6,7 +6,7 @@ Provide browser-based visual feedback on documents and assistant responses in a 
 
 ### Requirement: Declarative executable and adapter ownership
 
-The workstation SHALL supply a pinned Plannotator executable on macbook-pro and korolev through the existing `llm-agents.nix` package with a reviewed, checked-in downstream patch. The OMP adapter SHALL belong to the immutable personal plugin in `omp-agent-setup`. The adapter SHALL invoke the supplied executable without installing software, selecting versions, or loading the Plannotator Pi extension. Preferences, review history, and temporary data SHALL remain outside the Nix store and tracked source files.
+The workstation SHALL supply the unmodified vendor Plannotator package on macbook-pro and korolev through the commit-pinned `plannotator-packages` input. The OMP adapter SHALL belong to the immutable personal plugin in `omp-agent-setup`. The adapter SHALL invoke the supplied executable without installing software, selecting versions, or loading the Plannotator Pi extension. Preferences, review history, and temporary data SHALL remain outside the Nix store and tracked source files.
 
 #### Scenario: Launch from a clean managed session
 
@@ -14,21 +14,21 @@ The workstation SHALL supply a pinned Plannotator executable on macbook-pro and 
 - **THEN** visual annotation commands and the pinned Plannotator executable are available without a mutable plugin checkout or installer
 - **AND** activation has not opened a browser or rewritten OMP configuration
 
-### Requirement: Downstream-first package delivery
+### Requirement: Unmodified vendor package delivery
 
-The workstation SHALL maintain the annotation-only client-lease fix as a checked-in patch appended to the existing package derivation. It SHALL preserve existing packaging patches, locked dependencies, and the build recipe. Both hosts SHALL use the same patch source. Package updates SHALL verify patch applicability and required behavior. Delivery and acceptance SHALL NOT depend on upstream submission, acceptance, release, or package publication. Upstream submission SHALL remain deferred until downstream acceptance is complete and SHALL remain optional afterward.
+The workstation SHALL use the vendor package without a local client-lease patch or separate package recipe. Both hosts SHALL select the same commit-pinned vendor source. Application advancement SHALL require an explicit source update. Package updates SHALL verify annotation-only feedback and explicit cancellation before release. Delivery SHALL NOT require an upstream contribution or custom CI caching.
 
-#### Scenario: Upstream contribution is absent, pending, or rejected
+#### Scenario: Select the vendor package
 
-- **WHEN** no accepted upstream release contains the fix
-- **THEN** both hosts can build and use the reviewed downstream-patched package without an upstream contribution
-- **AND** all browser, network, lifecycle, and rollback acceptance gates still apply
+- **WHEN** both hosts evaluate their annotation executable
+- **THEN** each selection equals the corresponding unmodified vendor package from the declared input
+- **AND** browser, network, lifecycle, activation, and rollback acceptance gates remain required
 
-#### Scenario: Update or retire the downstream patch
+#### Scenario: Update the selected package
 
-- **WHEN** the selected package version changes
-- **THEN** review verifies patch applicability and the annotation-only lifecycle behavior before release
-- **AND** the patch is removed only after the selected package provides equivalent behavior and passes applicable native checks
+- **WHEN** an explicit Plannotator update changes the declared source revision
+- **THEN** review verifies annotation-only feedback and explicit cancellation with the selected package
+- **AND** routine complete lock updates cannot advance the declared Plannotator source revision
 
 ### Requirement: Annotate a document snapshot
 
@@ -98,16 +98,22 @@ The integration SHALL expose visual feedback without plan mode, approval control
 - **THEN** the interaction offers annotation rather than an approval gate
 - **AND** submission does not authorize implementation or change the active planning workflow
 
-### Requirement: Bounded review lifecycle
+### Requirement: Explicit review lifecycle
 
-The integration SHALL allow one active review per OMP session and independent reviews in separate sessions. It SHALL provide `/plannotator-cancel`. Dismissal, browser tab closure, explicit cancellation, and session shutdown SHALL terminate the review without feedback or approval. Browser closure SHALL settle within a documented finite disconnect grace period. Terminal outcomes SHALL release the owned child process, listener, and temporary snapshot without deleting Plannotator user history or preferences.
+The integration SHALL allow one active review per OMP session and independent reviews in separate sessions. It SHALL provide `/plannotator-cancel`. Dismissal, explicit cancellation, session navigation, and session shutdown SHALL terminate the review without feedback or approval. Browser tab closure MAY leave a review pending and SHALL NOT imply approval. The integration SHALL NOT promise automatic tab-close settlement or add approval mode, a timeout, or a fallback to obtain it. Terminal outcomes SHALL release the owned child process, listener, and temporary snapshot without deleting Plannotator user history or preferences.
 
-#### Scenario: Close the annotation tab
+#### Scenario: Recover after closing the annotation tab
 
-- **WHEN** the user closes the review tab without submitting annotations
-- **THEN** the review reports cancellation after the disconnect grace period
-- **AND** no approval or implementation message reaches OMP
-- **AND** the process and temporary review files are released
+- **WHEN** the user closes the review tab without submitting annotations and the review remains pending
+- **THEN** the session retains pending status and supports `/plannotator-cancel`
+- **AND** explicit cancellation releases the owned process, listener, and temporary review files
+- **AND** no feedback, approval, or implementation message reaches OMP
+
+#### Scenario: End the owning session
+
+- **WHEN** the session shuts down or navigates to another session or branch during a pending review
+- **THEN** the adapter cancels the owned review and releases its resources
+- **AND** later browser submissions cannot enter another conversation
 
 #### Scenario: Cancel a browser that did not open
 
