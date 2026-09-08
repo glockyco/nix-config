@@ -16,3 +16,8 @@
 
 - [x] 3.1 Enable `mdformat-frontmatter` alongside the existing GFM plugin in `treefmt.nix`, without excluding skill files or updating the lock. Verify metadata preservation and idempotence through `nix fmt`, then repeat fresh wrapped-session discovery and explicit invocation on both hosts using the formatted skill.
 - [x] 3.2 Run `openspec validate guide-omp-updates --strict` and the README's applicable release gates with sequential Nix evaluations. Record fresh-session and scenario evidence with this change, distinguishing fixtures from actual host results; verify the skill implementation does not modify updater semantics or close any `maintain-patched-omp` acceptance task.
+
+## 4. Herdr prerequisite clarification
+
+- [x] 4.1 Clarify the Bash-based Herdr prerequisite in the procedure and reference it from the skill. Preserve control boundaries, distinguish command errors from missing markers, and retain independent verification when Herdr is unavailable.
+- [x] 4.2 Verify the actual command/Eval environment mismatch and rehearse both managed and unavailable Herdr decisions. Record observed evidence and limits, then run formatting, strict OpenSpec validation, and applicable release gates.

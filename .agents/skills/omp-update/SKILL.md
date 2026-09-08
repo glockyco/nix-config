@@ -28,7 +28,7 @@ Read current declarations and installed inputs as directed by the procedure. Do 
    - **Patch conflict:** refresh and verify the maintained range in a separate worktree. Obtain explicit publication permission, publish the reviewed range, integrate its exact pins, complete applicable activation, and resume the update.
    - **Other preparation failure:** diagnose the reported phase and repair its cause. Never suppress checks or switch to an official executable fallback.
    - **Rejected after selection:** follow authorized source recovery and verify the recovered runtime. Recovery is not a successful upgrade.
-1. Run `verify-personal-omp` and complete the documented release smoke in a fresh wrapped session through Herdr. Include the applicable WSL browser check. An existing session can still run the old generation.
+1. Run `verify-personal-omp` and complete the documented release smoke in a fresh wrapped session through Herdr. Follow the procedure's **Herdr prerequisite** before controlling panes. Include the applicable WSL browser check. An existing session can still run the old generation.
 1. Continue through all authorized steps. If an approval, credential interaction, or real prerequisite is unavailable, finish reachable safe work and state the exact blocker and next action.
 
 ## Preserve boundaries

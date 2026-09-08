@@ -69,6 +69,14 @@ Request missing permissions for concrete operations and destinations. Preserve u
 
 Completion means the selected runtime passed `verify-personal-omp` and the documented release smoke, including a fresh wrapped session, immutable personal plugin, current Herdr integration, harmless commit preview, and WSL browser checks when applicable. A previous session can still use an older generation. Report updated, already current, recovered, or blocked distinctly, with exact identities and observed checks. A patch branch, successful build, or version string alone is not an updated-runtime deliverable.
 
+### Check Herdr in the command environment
+
+Check `HERDR_ENV` through the Bash tool that will execute Herdr. Eval can expose a different environment; its missing marker alone must not block a managed session. A Bash value of `1` leads to the installed `herdr --skill` policy, not blanket permission to control panes.
+
+An absent or different Bash value prohibits controlling the user's Herdr session. Never set the marker to bypass this boundary. Complete independent verification, including the managed-browser smoke when available, and report only the remaining checks as blocked. A failed command check must retain its actual error rather than imply an absent marker.
+
+Verify both decisions in bounded model rehearsals and inspect the real command/Eval mismatch separately. These checks refine guidance; they do not repair the harness environment or require a production update.
+
 ### Verify the guidance in its actual host
 
 Verify metadata discovery in a fresh wrapped OMP session rooted in the repository on each supported host. Ask an ordinary update-related question with an explicit read-only constraint, without supplying the skill body or naming it. Confirm that the session discovers the authored skill, reads the correct repository procedures, and identifies local scope and authorization boundaries. Also verify explicit `/skill:omp-update` invocation. Record the resolved skill path and any discovery warnings; do not solve collisions by installing another copy or rewriting user configuration.

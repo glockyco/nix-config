@@ -103,6 +103,19 @@ Keep evidence with the change or session, not as historical release facts in thi
 
 ## Release smoke
 
+### Herdr prerequisite
+
+Before controlling panes, check `HERDR_ENV` with `printenv HERDR_ENV` through the Bash tool that will execute Herdr.
+Eval's environment can differ from the command environment; a missing Eval value alone does not establish a Herdr blocker.
+
+- If Bash reports `1`, read `herdr --skill` and follow its control policy for the fresh wrapped-session smoke.
+- If the marker is absent or not `1`, do not control the user's Herdr session or set the marker yourself. Complete independent checks, including the managed-browser smoke when available. Report the fresh Herdr-session checks as blocked and request that the operator resume them from a Herdr-managed OMP session.
+- If the command check fails for another reason, report that error rather than interpreting it as an absent marker.
+
+Herdr availability does not establish permission to control unrelated panes. A missing marker does not establish that OMP's managed browser is unavailable.
+
+### Runtime checks
+
 After activation or an OMP executable change, run `verify-personal-omp`.
 It must report the observed OMP version, a plugin path under `/nix/store`, and `omp: current`.
 For an `llm-agents`, plugin, wrapper, extension, or OMP executable change, start a fresh wrapped `omp` session in a disposable repository.
