@@ -6,7 +6,7 @@ Keep Plannotator release advancement explicit and reuse verified package outputs
 
 ### Requirement: On-demand application advancement
 
-Routine dependency automation SHALL NOT advance the selected Plannotator source revision or application version. An explicit Plannotator update SHALL review and change its declared source selection. Other tools SHALL retain their existing update ownership. Followed toolchain updates MAY rebuild the same application version.
+Routine dependency automation SHALL NOT advance the selected Plannotator source revision or application version. An explicit Plannotator update SHALL review and change its declared source selection. Other tools SHALL retain their existing update ownership. Build-dependency or downstream-patch changes MAY rebuild the same application version.
 
 #### Scenario: Routine complete lock update
 

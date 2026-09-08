@@ -14,11 +14,11 @@ The central controller runs a complete `nix flake update` and may change only de
 
 ### Declare an immutable package-source input
 
-Add `plannotator-packages` as another instance of `github:numtide/llm-agents.nix`, with the reviewed full commit in the declared URL. Initially use the currently verified source revision. Follow the workstation `nixpkgs` input, consistent with existing package composition.
+Add `plannotator-packages` as another instance of `github:numtide/llm-agents.nix`, with the reviewed full commit in the declared URL. Initially use the currently verified source revision. Preserve the vendor's own locked transitive inputs. The existing declaration explicitly forbids following workstation `nixpkgs`, because the vendor requires its pinned unstable package set and cache.
 
 Select only Plannotator from this package set in both compositions. Continue to append the downstream patch through `packages/plannotator.nix`. Other tools retain their existing `llm-agents` input.
 
-An explicit Plannotator update changes the declared revision in `flake.nix`, then updates `plannotator-packages` in the lock. A complete automatic lock update cannot advance that declared commit. It may still change followed toolchain inputs. Verify this with the actual central updater command in a disposable checkout, not a source-text assertion.
+An explicit Plannotator update changes the declared revision in `flake.nix`, then updates `plannotator-packages` in the lock. A complete automatic lock update cannot advance that declared commit. Its vendor toolchain stays locked too; unrelated workstation inputs can still advance. Verify this with the actual central updater command in a disposable checkout, not a source-text assertion.
 
 Do not add an updater exclusion or special case to the controller. A floating second input would not solve the problem: the complete update would advance it too. Copying the vendor package recipe would introduce another maintenance owner.
 
@@ -29,6 +29,8 @@ Use the maintained `nix-community/cache-nix-action`, pinned to a reviewed commit
 Derive the primary key from the native Nix system, a cache-layout version, and the evaluated patched Plannotator derivation identity. Do not key solely on its human-readable version or the whole flake lock. Package source, patch, and toolchain changes must invalidate the identity; unrelated lock changes need not do so.
 
 After restore, run the existing Darwin build-plan guard on macOS. Then build Plannotator with a job-local output link before the flake checks. This keeps its closure rooted during cache garbage collection. Cache hits still run the ordinary checks and package validation. Use a 2 GiB garbage-collection target per native cache; it is a target, not a guarantee when live roots exceed it. Record actual cache size and adjust within GitHub's repository quota before acceptance. Never run this garbage collection on workstation hosts.
+
+Archive only `/nix/store` and the Nix store database. Exclude installer metadata, which can contain a GitHub token. The action prepends `/nix` to its path input, so exclude that broad root before re-including the store and database directories.
 
 Save only after successful checks. Keep GitHub's normal branch and pull-request cache isolation. Do not use `pull_request_target`, grant new write credentials, import caches from arbitrary repositories, or add a host trusted key. No custom cache purge scheduler or cross-ref cache promotion is proposed.
 
