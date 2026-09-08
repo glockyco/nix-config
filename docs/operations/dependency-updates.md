@@ -52,6 +52,16 @@ Patch conflicts require review, not omission or a gate-mode workaround. Keep the
 
 The patched derivation can require an uncached build on each architecture. An explicit vendor revision, dependency, toolchain, or patch change can require a rebuild even if the application version stays unchanged. Nix reuses completed store outputs while their inputs remain unchanged. Neither startup nor activation builds or patches a mutable Plannotator installation.
 
+### Native CI cache
+
+The [check workflow](../../.github/workflows/check.yml) uses GitHub Actions cache for Nix store outputs and their database. It excludes installer metadata and credentials. The key combines the native system, cache-layout version, and evaluated patched Plannotator derivation. An unrelated lock change does not invalidate an unchanged derivation.
+
+Restore precedes the Darwin build-plan guard and package build. A job-local output link retains the package during cache garbage collection. Every required check still runs on a hit. Only successful checks permit a new cache save. The 2 GiB collection target applies only to CI; live roots can exceed it.
+
+GitHub controls cache quota, eviction, and ref visibility. A PR cache remains PR-scoped. A successful main-branch run must populate a base cache before other PRs can reuse it. Initial runs and changed derivations need cold builds. This cache is not a workstation binary substituter and adds no host trusted key.
+
+For a cache miss or service failure, retain the ordinary build and required checks. Inspect restore and save logs separately from build failures. Confirm a later restore before reporting cache reuse. Do not bypass checks, copy caches across refs, or change workstation trust to repair CI caching. If the cache layout changes, advance its key version so incompatible archives are not selected.
+
 ## Agent-led OMP updates
 
 The repository-local [omp-update skill](../../.agents/skills/omp-update/SKILL.md) guides an agent through this procedure.
