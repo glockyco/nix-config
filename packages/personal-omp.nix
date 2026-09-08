@@ -3,6 +3,7 @@
   lib,
   markdownOxide,
   pkgs,
+  plannotator,
   plugin,
   roslynLanguageServer,
 }:
@@ -84,6 +85,9 @@ let
 
       omp_version="$("$omp_bin" --extension "$plugin_dir" --plugin-dir "$plugin_dir/lsp" --version)"
       test -n "$omp_version"
+      plannotator_bin=${lib.getExe plannotator}
+      plannotator_version="$("$plannotator_bin" --version)"
+      test "$plannotator_version" = "plannotator ${plannotator.version}"
 
       herdr_status="$($herdr_bin integration status)"
       omp_status="$(printf '%s\n' "$herdr_status" | grep '^omp:' || true)"
@@ -93,13 +97,13 @@ let
       fi
 
       printf '%s\n' "$metadata" | jq -r '"Release: \(.release)\nUpstream: \(.upstream)\nPatch: \(.patchBase)..\(.patchTip)\nCommit: \(.commit)\nSystem: \(.system)"'
-      printf 'OMP: %s\nPlugin: %s\n%s\n' "$omp_version" "$plugin_dir" "$omp_status"
+      printf 'OMP: %s\nPlugin: %s\nPlannotator: %s\nPlannotator executable: %s\n%s\n' "$omp_version" "$plugin_dir" "$plannotator_version" "$plannotator_bin" "$omp_status"
     '';
   };
 
   wrapper = pkgs.writeShellApplication {
     name = "omp";
-    runtimeInputs = languageServers;
+    runtimeInputs = languageServers ++ [ plannotator ];
     text = ''
       if [ "''${1-}" = update ]; then
         printf 'Use omp-dev-update to update the patched OMP source generation.\n' >&2
@@ -108,7 +112,7 @@ let
       ${resolveGeneration}
 
       # Each flag is aimed at what only it provides. --extension loads the
-      # personal_commit extension, the skills, the rules, and the OpenSpec
+      # personal extensions, the skills, the rules, and the OpenSpec
       # workflow commands. --plugin-dir loads the LSP overrides, and points at
       # the scoped lsp/ root: aiming it at the package root would rescan
       # commands/ and register every workflow command a second time under a
@@ -122,6 +126,7 @@ wrapper.overrideAttrs (old: {
     inherit
       devUpdate
       languageServers
+      plannotator
       plugin
       reconcileHerdrOmp
       verifyPersonalOmp

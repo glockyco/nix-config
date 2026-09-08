@@ -192,7 +192,7 @@
                 markdownOxide
                 roslynLanguageServer
                 ;
-              inherit (llmAgents) herdr;
+              inherit (llmAgents) herdr plannotator;
               plugin = inputs.personal-omp-plugin.packages.${system}.default;
             };
             moduleImportsCheck = pkgs.callPackage ./packages/module-imports-check.nix { };
@@ -454,7 +454,7 @@
                     test -x ${personalOmp.devUpdate}/bin/omp-dev-update
                     test -x ${personalOmp.verifyPersonalOmp}/bin/verify-personal-omp
 
-                    test "$(jq -r '.omp.extensions | length' ${personalOmp.plugin}/package.json)" = 1
+                    jq -e '.omp.extensions | index("./extensions/personal-commit.ts") != null' ${personalOmp.plugin}/package.json
                     test "$(jq -r '.servers | keys | sort | join(",")' ${personalOmp.plugin}/lsp/lsp.json)" = markdown-oxide,marksman,roslyn-language-server,svelte
                     test "$(jq -r '.servers.marksman.disabled' ${personalOmp.plugin}/lsp/lsp.json)" = true
 
@@ -480,7 +480,7 @@
                   probe = pkgs.writeScript "omp-generation-probe" ''
                     #!${pkgs.python3}/bin/python3
                     import json, os, shutil, sys
-                    print(json.dumps({"args": sys.argv[1:], "cwd": os.getcwd(), "omp": shutil.which("omp"), "launcher": sys.argv[0], "nixd": shutil.which("nixd")}))
+                    print(json.dumps({"args": sys.argv[1:], "cwd": os.getcwd(), "omp": shutil.which("omp"), "launcher": sys.argv[0], "nixd": shutil.which("nixd"), "plannotator": shutil.which("plannotator")}))
                     sys.exit(int(os.environ.get("PROBE_STATUS", "0")))
                   '';
                 in
@@ -514,7 +514,12 @@
                   work = home / "project with spaces"
                   work.mkdir()
                   plugin_args = ["--extension", "${personalOmp.plugin}", "--plugin-dir", "${personalOmp.plugin}/lsp"]
-                  env = dict(os.environ, PATH=str(pathlib.Path(wrapper).parent) + ":" + os.environ["PATH"])
+                  conflicting = home / "caller bin"
+                  conflicting.mkdir()
+                  (conflicting / "plannotator").write_text("#!/bin/sh\nexit 99\n")
+                  (conflicting / "plannotator").chmod(0o755)
+                  caller_path = str(conflicting) + ":" + str(pathlib.Path(wrapper).parent) + ":" + os.environ["PATH"]
+                  env = dict(os.environ, PATH=caller_path)
 
                   def snapshot():
                       return {
@@ -540,6 +545,7 @@
                           "omp": wrapper,
                           "launcher": str(launcher.resolve()),
                           "nixd": "${pkgs.nixd}/bin/nixd",
+                          "plannotator": "${lib.getExe personalOmp.plannotator}",
                       }, result
 
                   result = run(["update", "--check", "argument with spaces"])
@@ -616,7 +622,7 @@
 
                   result = run()
                   assert result.returncode == 0, result
-                  for value in (*metadata.values(), "18.1.12-patched", "${personalOmp.plugin}", "omp: current (v8)"):
+                  for value in (*metadata.values(), "18.1.12-patched", "${personalOmp.plugin}", "plannotator ${personalOmp.plannotator.version}", "${lib.getExe personalOmp.plannotator}", "omp: current (v8)"):
                       assert value in result.stdout, (value, result)
                   for overrides in ({"STATUS": "omp: outdated (v7)"}, {"PROBE_VERSION": ""}, {"PROBE_STATUS": "23"}):
                       result = run(**overrides)

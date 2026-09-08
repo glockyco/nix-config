@@ -70,7 +70,7 @@ Resolve ordinary paths against `ctx.cwd`. Resolve `local://` through the host's 
 
 Keep the original target or response identity, snapshot bytes, and a content hash for the review lifetime. The feedback envelope includes the source identity and snapshot hash, and preserves the annotation excerpts. For document inputs, compare current content before delivery and warn if it changed or disappeared. Never overwrite the source from browser suggestions.
 
-Deliver feedback with `sendUserMessage` and `deliverAs: "followUp"`. This resumes normal conversation handling rather than forcing edits or a planning transition. Session switches and branch navigation cancel the review before any late result can be delivered. A one-time settlement guard prevents duplicate delivery.
+Deliver a visible, user-attributed `plannotator-feedback` message with `sendMessage`, `deliverAs: "followUp"`, and `triggerTurn: true`. The host queues it during active work and starts a turn when idle. Explicit `sendUserMessage` follow-up delivery alone does not start an idle turn. This resumes conversation handling without forcing edits or a planning transition. Session switches and branch navigation cancel the review before any late result can be delivered. A one-time settlement guard prevents duplicate delivery.
 
 ### Own the complete review lifetime
 
