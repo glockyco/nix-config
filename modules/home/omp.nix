@@ -15,7 +15,10 @@ let
       markdownOxide
       roslynLanguageServer
       ;
-    inherit (llmAgents) herdr plannotator;
+    inherit (llmAgents) herdr;
+    plannotator = pkgs.callPackage ../../packages/plannotator.nix {
+      inherit (llmAgents) plannotator;
+    };
     plugin = inputs.personal-omp-plugin.packages.${system}.default;
   };
 in

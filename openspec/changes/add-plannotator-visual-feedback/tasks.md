@@ -6,8 +6,8 @@ This revision changes planning artifacts only. The next apply step implements th
 
 - [x] 1.1 Deliver a separately authorized companion OpenSpec change in `omp-agent-setup` for the adapter contract in this change; verify its proposal, specs, design, and tasks pass strict validation and link its identity here.
 - [x] 1.2 Obtain a reviewed local annotation-only client-lease fix without `--gate`; verify in the actual browser that closing a local `annotate --json` tab returns `dismissed` after a finite documented grace period, while a brief reconnect does not cancel it.
-- [ ] 1.3 Check in the reviewed client-lease patch with its upstream base and originating commit; append it through `overrideAttrs` to the existing pinned `llm-agents.nix` package while preserving existing patches, dependencies, and build phases. Build it for `aarch64-darwin` and `x86_64-linux`, and record source, patch, version, and output identities without requiring upstream publication.
-- [ ] 1.4 Verify the final patched package retains annotation-only dismissal and reconnect behavior; retain the lifecycle regressions and document patch review on dependency updates. Remove the patch only when the selected package independently passes equivalent native behavior checks; upstream rejection or non-submission must not block downstream delivery.
+- [x] 1.3 Check in the reviewed client-lease patch with its upstream base and originating commit; append it through `overrideAttrs` to the existing pinned `llm-agents.nix` package while preserving existing patches, dependencies, and build phases. Build it for `aarch64-darwin` and `x86_64-linux`, and record source, patch, version, and output identities without requiring upstream publication.
+- [x] 1.4 Verify the final patched package retains annotation-only dismissal and reconnect behavior; retain the lifecycle regressions and document patch review on dependency updates. Remove the patch only when the selected package independently passes equivalent native behavior checks; upstream rejection or non-submission must not block downstream delivery.
 
 ## 2. Companion plugin delivery
 
@@ -23,7 +23,7 @@ This revision changes planning artifacts only. The next apply step implements th
 
 ## 3. Workstation composition
 
-- [ ] 3.1 Pass the compatible Plannotator package through every `packages/personal-omp.nix` call site and add it to wrapper-local runtime inputs, separately from language servers; verify both host evaluations and inspect their build plans without adding another packaging route.
+- [x] 3.1 Pass the compatible Plannotator package through every `packages/personal-omp.nix` call site and add it to wrapper-local runtime inputs, separately from language servers; verify both host evaluations and inspect their build plans without adding another packaging route.
 - [ ] 3.2 Select the reviewed companion `personal-omp-plugin` revision and the downstream-patched executable; retain the existing `llm-agents` pin unless verified build requirements need an update. Verify the locked source and checked-in patch identities match the delivery evidence. Do not publish to upstream or update unrelated inputs.
 - [x] 3.3 Extend `verify-personal-omp` to report the selected Plannotator path and version without starting a browser; verify it still reports the source-generation identity, immutable plugin, and current Herdr integration.
 - [x] 3.4 Update affected wrapper and plugin-discovery checks in `flake.nix`; verify pinned Plannotator takes precedence over a conflicting caller executable while argument forwarding, working directory, nested OMP resolution, and parent-shell isolation remain unchanged.

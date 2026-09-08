@@ -1,0 +1,492 @@
+From 420ee6c0bca735eece1d623aa7bfe25445c82771 Mon Sep 17 00:00:00 2001
+From: Johann Glock <johann.glock@scch.at>
+Date: Tue, 8 Sep 2026 10:38:12 +0200
+Subject: [PATCH] fix(annotate): settle abandoned JSON sessions without gate
+ mode
+
+Annotation-only CLI callers remained blocked after the review tab closed
+because client leases required approval mode. Enable the existing
+disconnect lease for local direct JSON annotation while preserving hook,
+plaintext, remote, and sharing exclusions.
+
+The focused 94-test run passes. A built CLI and real browser preserve a
+brief reconnect, then emit dismissed and release the listener after the
+final tab closes.
+---
+ AGENTS.md                                     |  6 +-
+ .../server/annotate-client-lease-cli.test.ts  | 81 +++++++++++++++++++
+ apps/hook/server/annotate-output.test.ts      | 73 ++---------------
+ apps/hook/server/annotate-output.ts           | 12 ++-
+ apps/hook/server/index.ts                     | 15 +---
+ .../src/content/docs/commands/annotate.md     |  4 +
+ .../annotate-gates-and-json-responses.md      |  2 +-
+ packages/editor/App.tsx                       | 13 ++-
+ packages/editor/annotateClientLease.ts        |  6 +-
+ packages/server/annotate.test.ts              | 20 +++--
+ packages/server/annotate.ts                   |  8 +-
+ packages/shared/annotate-client-lease.ts      |  7 +-
+ 12 files changed, 131 insertions(+), 116 deletions(-)
+ create mode 100644 apps/hook/server/annotate-client-lease-cli.test.ts
+
+diff --git a/AGENTS.md b/AGENTS.md
+index db37464..790fc31 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -418,9 +418,9 @@ Direct `plannotator annotate` invocations may add `--require-approval` and/or `-
+ 
+ Strict decisions use one newline-terminated JSON record on stdout and, when requested, identical bytes in the result file. Exit codes follow the grep convention: approval exits `0`; with `--require-approval`, annotated and dismissed decisions are published before exiting `1` (negative human outcome); usage/startup/validation failures — bad flag combinations, strict flags outside `annotate --gate --json`, a missing `--result-file` parent, a pre-existing or dangling-symlink destination, and every annotate startup failure (missing path, unreachable URL, empty folder, ambiguous name, missing file, oversized file) — exit `2` (the gate itself was misconfigured or could not start). Those startup sites exit `1` as before for non-strict invocations, with one deliberate exception: the multi-token zero-resolve handoff is not a startup failure, so in plain non-strict mode it prints on stdout and exits `0` (under `--json`/`--hook` it stays stderr + exit `1`). Under a strict flag `1` is reserved for "the reviewer did not approve", so a typo'd path must never masquerade as a rejection. Post-decision publication failures (destination appears between validation and publish, hard links unavailable) also exit `2`: the result *file* was not published, so they present as environment errors — "the gate could not publish its result" — never as a reviewer outcome, and never as approval (still fail-closed, since only `0` means approved). The stdout decision record is written **before** result-file publication and is still emitted whenever the decision itself completed; only a stdout write failure leaves no record anywhere. Signal deaths keep `128+n`. Result paths resolve from the invocation working directory, require an existing parent and absent destination, and publish via a flushed/closed `0600` same-directory temporary file plus an atomic no-clobber hard link—never copy or overwrite fallback (the `0600` mode is a no-op on Windows, and the atomic link/rename is not followed by a parent-directory fsync, so publication is atomic but not crash-durable). Keep reviewed sources at stable project paths; unique result and diagnostic log files may use a narrow temporary directory. Explicit Close emits `dismissed`; missing results or process/browser failures are recovery cases, never approval.
+ 
+-### Abandoned strict gate sessions
++### Abandoned direct annotation sessions
+ 
+-Local direct structured gates (`--gate --json`, not `--hook`, not remote) advertise a client lease in `/api/plan` and serve `/api/annotate/client-lease` (SSE, `ANNOTATE_CLIENT_LEASE_STREAM_PATH`). Each open stream is one connected review surface; the server heartbeats every 5s and, once at least one client has connected, starts a 30s reconnect grace when the last one disconnects. A reconnect inside the grace continues the same review; expiry resolves the gate as the same `dismissed` decision an explicit Close produces, except that it keeps the saved annotation draft so an abandoned review can still be recovered. Approve, feedback, explicit exit, and server stop all cancel a pending expiry. Whichever producer settles the session first wins: every one of them (each connected surface and the expiry itself) goes through a single one-shot settlement, so a decision arriving after the session already resolved is rejected with `409` rather than deleting the draft and reporting success for an outcome the caller never received. Page lifecycle events are deliberately not used: `pagehide`/`beforeunload` also fire on reload and navigation, so they cannot distinguish abandonment from a reconnect. A session that never receives its first client never auto-dismisses, so browser-launch failures still need a caller-side timeout, and remote/shared sessions keep the capability off because tunnel disconnects would read as abandonment — as do `--tailscale`-published sessions, which force local mode but are reached through the serve proxy, whose disconnects would read the same way.
++Local direct JSON annotation sessions (`--json`, with or without `--gate`, not `--hook`, not remote) advertise a client lease in `/api/plan`. They serve `/api/annotate/client-lease` (SSE, `ANNOTATE_CLIENT_LEASE_STREAM_PATH`). Each open stream is one connected review surface; the server heartbeats every 5s and, once at least one client has connected, starts a 30s reconnect grace when the last one disconnects. A reconnect inside the grace continues the same review; expiry resolves the session as the same `dismissed` decision an explicit Close produces, except that it keeps the saved annotation draft so an abandoned review can still be recovered. Approve, feedback, explicit exit, and server stop all cancel a pending expiry. Whichever producer settles the session first wins: every one of them (each connected surface and the expiry itself) goes through a single one-shot settlement, so a decision arriving after the session already resolved is rejected with `409` rather than deleting the draft and reporting success for an outcome the caller never received. Page lifecycle events are deliberately not used: `pagehide`/`beforeunload` also fire on reload and navigation, so they cannot distinguish abandonment from a reconnect. A session that never receives its first client never auto-dismisses, so browser-launch failures still need a caller-side timeout, and remote/shared sessions keep the capability off because tunnel disconnects would read as abandonment — as do `--tailscale`-published sessions, which force local mode but are reached through the serve proxy, whose disconnects would read the same way.
+ 
+ ### Live app annotation (annotate-app)
+ 
+@@ -576,7 +576,7 @@ During normal plan review, an Archive sidebar tab provides the same browsing via
+ | `/api/skills`         | GET    | List global agent skills for comment skill references (`{ skills: [{ name, root, description?, humanOnly, dir }] }`) |
+ | `/api/skills/content` | GET    | SKILL.md contents of one discovered skill for human-only feedback injection (`?name=<skill>`) returns `{ skill: { name, dir, path, content, truncated, humanOnly } }`; the name is matched against discovery only, never used as a path |
+ | `/api/draft`          | GET/POST/DELETE | Auto-save annotation drafts to survive server crashes |
+-| `/api/annotate/client-lease` | GET (SSE) | Client lease for local direct structured gates: each open stream is one connected review surface. 404 when the capability is not advertised. |
++| `/api/annotate/client-lease` | GET (SSE) | Client lease for local direct JSON annotation sessions, with or without `--gate`: each open stream is one connected review surface. 404 when the capability is not advertised. |
+ | `/api/agent-terminal/pty/<token>` | WebSocket | Tokenized PTY bridge for the optional annotate-mode agent terminal |
+ | `/api/ai/capabilities` | GET | Check if AI features are available |
+ | `/api/ai/session` | POST | Create or fork an AI session |
+diff --git a/apps/hook/server/annotate-client-lease-cli.test.ts b/apps/hook/server/annotate-client-lease-cli.test.ts
+new file mode 100644
+index 0000000..f208451
+--- /dev/null
++++ b/apps/hook/server/annotate-client-lease-cli.test.ts
+@@ -0,0 +1,81 @@
++import { expect, test } from "bun:test";
++import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join, resolve } from "node:path";
++
++const root = resolve(import.meta.dir, "../../..");
++const assetsBuilt = ["index.html", "review.html"].every((name) =>
++  existsSync(join(root, "apps/hook/dist", name)),
++);
++
++// The CLI imports built HTML. Run this regression after build:review and build:hook.
++// It catches gate-dependent capability wiring in the real dispatcher, not just the helper.
++// The child owns its clock, so parent fake timers cannot drive its production disconnect grace.
++test.skipIf(!assetsBuilt)("annotate --json without --gate exits dismissed after its browser disconnects", async () => {
++  const sandbox = mkdtempSync(join(tmpdir(), "plannotator-cli-lease-"));
++  const document = join(sandbox, "review snapshot.md");
++  const readyFile = join(sandbox, "ready.jsonl");
++  writeFileSync(document, "# Annotation-only review\n\nKeep this document unchanged.\n");
++
++  const child = Bun.spawn([process.execPath, join(root, "apps/hook/server/index.ts"), "annotate", document, "--json"], {
++    cwd: sandbox,
++    env: {
++      ...process.env,
++      HOME: sandbox,
++      PLANNOTATOR_DATA_DIR: join(sandbox, "data"),
++      PLANNOTATOR_CWD: sandbox,
++      PLANNOTATOR_REMOTE: "0",
++      PLANNOTATOR_PORT: "",
++      PLANNOTATOR_READY_FILE: readyFile,
++      PLANNOTATOR_SKIP_BROWSER_OPEN: "1",
++      PLANNOTATOR_AI: "disabled",
++      PLANNOTATOR_SHARE: "disabled",
++      PLANNOTATOR_ANNOTATE_HISTORY: "0",
++      PLANNOTATOR_FEEDBACK_HISTORY: "0",
++    },
++    stdin: "ignore",
++    stdout: "pipe",
++    stderr: "pipe",
++  });
++  const stdout = new Response(child.stdout).text();
++  const stderr = new Response(child.stderr).text();
++  const watchdog = setTimeout(() => child.kill(), 45_000);
++  const connection = new AbortController();
++
++  try {
++    const deadline = Date.now() + 15_000;
++    let readyRecord = "";
++    while (!readyRecord.endsWith("\n")) {
++      if (child.exitCode !== null) throw new Error(`CLI exited before readiness: ${await stderr}`);
++      if (Date.now() >= deadline) throw new Error("CLI did not become ready");
++      if (existsSync(readyFile)) readyRecord = readFileSync(readyFile, "utf8");
++      if (!readyRecord.endsWith("\n")) await Bun.sleep(20);
++    }
++    const ready = JSON.parse(readyRecord) as { url: string; isRemote: boolean };
++    expect(ready.isRemote).toBe(false);
++    const plan = await fetch(`${ready.url}/api/plan`).then((response) => response.json());
++    expect(plan.mode).toBe("annotate");
++    expect(plan.gate).toBe(false);
++    expect(plan.approvalNotesSupported).toBe(false);
++    expect(plan.clientLease).toEqual({ enabled: true, reconnectGraceMs: 30_000 });
++
++    const stream = await fetch(`${ready.url}/api/annotate/client-lease`, { signal: connection.signal });
++    expect(stream.status).toBe(200);
++    const reader = stream.body!.getReader();
++    expect((await reader.read()).done).toBe(false);
++    connection.abort();
++    await reader.cancel().catch(() => {});
++
++    expect(await child.exited).toBe(0);
++    const records = (await stdout).trim().split("\n").map((line) => JSON.parse(line));
++    expect(records).toEqual([{ decision: "dismissed" }]);
++    await expect(fetch(`${ready.url}/api/plan`)).rejects.toThrow();
++  } finally {
++    clearTimeout(watchdog);
++    connection.abort();
++    if (child.exitCode === null) child.kill();
++    await child.exited;
++    await Promise.all([stdout, stderr]);
++    rmSync(sandbox, { recursive: true, force: true });
++  }
++}, 50_000);
+diff --git a/apps/hook/server/annotate-output.test.ts b/apps/hook/server/annotate-output.test.ts
+index 83a5654..4d523af 100644
+--- a/apps/hook/server/annotate-output.test.ts
++++ b/apps/hook/server/annotate-output.test.ts
+@@ -1,6 +1,4 @@
+ import { describe, expect, test } from "bun:test";
+-import { readFileSync } from "node:fs";
+-import { join } from "node:path";
+ import {
+   formatAnnotateOutcome,
+   supportsAnnotateApprovalNotes,
+@@ -52,71 +50,10 @@ describe("annotate stdout", () => {
+     expect(supportsAnnotateApprovalNotes({ gate: true, json: true, hook: true })).toBe(false);
+   });
+ 
+-  test("advertises client-lease only for gated direct JSON, local sessions", () => {
+-    expect(supportsAnnotateClientLease({ gate: true, json: true, hook: false, isRemote: false })).toBe(true);
+-    expect(supportsAnnotateClientLease({ gate: false, json: true, hook: false, isRemote: false })).toBe(false);
+-    expect(supportsAnnotateClientLease({ gate: true, json: false, hook: false, isRemote: false })).toBe(false);
+-    expect(supportsAnnotateClientLease({ gate: true, json: true, hook: true, isRemote: false })).toBe(false);
+-    expect(supportsAnnotateClientLease({ gate: true, json: true, hook: false, isRemote: true })).toBe(false);
+-  });
+-});
+-
+-/**
+- * index.ts is a top-level CLI dispatcher, not an importable module, so the
+- * repo's precedent for pinning a call-site invariant in it is a source scan
+- * (see strict-annotate-result.test.ts, "routes every annotate startup failure
+- * through the shared helper").
+- *
+- * The invariant is deliberately "EVERY call site", not "the four that exist
+- * today": the OpenCode bridge site shipped without the lease precisely because
+- * a per-site check would have missed it, leaving `/plannotator-last --gate`
+- * hanging on waitForDecision() forever once its tab was abandoned.
+- */
+-describe("annotate client-lease call sites", () => {
+-  /** Slice out the option object literal of every startAnnotateServer( call. */
+-  function annotateServerCallSites(source: string): string[] {
+-    const sites: string[] = [];
+-    const call = "startAnnotateServer({";
+-    for (
+-      let at = source.indexOf(call);
+-      at !== -1;
+-      at = source.indexOf(call, at + call.length)
+-    ) {
+-      let depth = 0;
+-      const open = at + call.length - 1;
+-      for (let i = open; i < source.length; i += 1) {
+-        if (source[i] === "{") depth += 1;
+-        else if (source[i] === "}") {
+-          depth -= 1;
+-          if (depth === 0) {
+-            sites.push(source.slice(open, i + 1));
+-            break;
+-          }
+-        }
+-      }
+-    }
+-    return sites;
+-  }
+-
+-  test("every startAnnotateServer call site advertises the lease via the shared predicate", () => {
+-    const source = readFileSync(join(import.meta.dir, "index.ts"), "utf8");
+-    const sites = annotateServerCallSites(source);
+-
+-    // Sanity: the scan found the call sites at all (import-only sites like the
+-    // `startAnnotateServer,` import line are not `startAnnotateServer({`).
+-    expect(sites.length).toBeGreaterThanOrEqual(4);
+-
+-    for (const site of sites) {
+-      // Every transport that blocks on waitForDecision() must decide the lease
+-      // through supportsAnnotateClientLease rather than hardcoding a boolean —
+-      // that is what keeps hook/plaintext/remote transports opted out.
+-      expect(site).toContain("clientLeaseSupported: supportsAnnotateClientLease({");
+-      expect(site).toContain("isRemote: isRemoteSession()");
+-    }
+-
+-    // Cross-check the brace scan against a plain occurrence count, so a call
+-    // site the scanner failed to slice cannot pass by being invisible.
+-    const predicateUses = source.split("clientLeaseSupported: supportsAnnotateClientLease({").length - 1;
+-    expect(predicateUses).toBe(sites.length);
++  test("advertises client lease for local direct JSON, without requiring approval mode", () => {
++    expect(supportsAnnotateClientLease({ json: true, hook: false, isRemote: false })).toBe(true);
++    expect(supportsAnnotateClientLease({ json: false, hook: false, isRemote: false })).toBe(false);
++    expect(supportsAnnotateClientLease({ json: true, hook: true, isRemote: false })).toBe(false);
++    expect(supportsAnnotateClientLease({ json: true, hook: false, isRemote: true })).toBe(false);
+   });
+ });
+diff --git a/apps/hook/server/annotate-output.ts b/apps/hook/server/annotate-output.ts
+index 41d44d6..bfb8e68 100644
+--- a/apps/hook/server/annotate-output.ts
++++ b/apps/hook/server/annotate-output.ts
+@@ -11,7 +11,7 @@ export interface AnnotateApprovalCapabilityOptions extends AnnotateOutputOptions
+   gate: boolean;
+ }
+ 
+-export interface AnnotateClientLeaseCapabilityOptions extends AnnotateApprovalCapabilityOptions {
++export interface AnnotateClientLeaseCapabilityOptions extends AnnotateOutputOptions {
+   /** True for remote/shared sessions, where a lost tab connection is expected and not abandonment. */
+   isRemote: boolean;
+ }
+@@ -25,16 +25,14 @@ export function supportsAnnotateApprovalNotes(
+ }
+ 
+ /**
+- * Local direct structured annotate gates (`--gate --json`, not `--hook`, not
+- * a remote/shared session) are the only transport where a tab's abandonment
+- * can be safely resolved automatically — the caller is already blocked on a
+- * structured decision and no other protocol (hook JSON, plaintext) depends on
+- * the exact timing of the response.
++ * Local direct JSON annotation sessions can resolve tab abandonment automatically,
++ * with or without `--gate`. Hook, plaintext, and remote sessions keep their
++ * existing response timing.
+  */
+ export function supportsAnnotateClientLease(
+   options: AnnotateClientLeaseCapabilityOptions,
+ ): boolean {
+-  return options.gate && options.json && !options.hook && !options.isRemote;
++  return options.json && !options.hook && !options.isRemote;
+ }
+ 
+ export function formatAnnotateOutcome(
+diff --git a/apps/hook/server/index.ts b/apps/hook/server/index.ts
+index aa3bfa2..c2d12fb 100644
+--- a/apps/hook/server/index.ts
++++ b/apps/hook/server/index.ts
+@@ -1303,7 +1303,6 @@ if (args[0] === "sessions") {
+       hook: hookFlag,
+     }),
+     clientLeaseSupported: supportsAnnotateClientLease({
+-      gate: gateFlag,
+       json: jsonFlag,
+       hook: hookFlag,
+       isRemote: isRemoteSession(),
+@@ -1550,7 +1549,6 @@ if (args[0] === "sessions") {
+       hook: hookFlag,
+     }),
+     clientLeaseSupported: supportsAnnotateClientLease({
+-      gate: gateFlag,
+       json: jsonFlag,
+       hook: hookFlag,
+       isRemote: isRemoteSession(),
+@@ -1927,17 +1925,9 @@ if (args[0] === "sessions") {
+     pasteApiUrl: bridgePasteApiUrl,
+     gate: input.gate === true,
+     approvalNotesSupported: input.gate === true,
+-    // Same predicate as the CLI-flag branches, with this transport's inputs
+-    // mapped onto it: `gate` arrives on stdin JSON (cli-bridge.ts forwards
+-    // parseAnnotateArgs' `gate`); `json` is unconditionally true because
+-    // emitOpenCodeAnnotateOutcome is this branch's only output path and always
+-    // writes a structured decision record the bridge parses back; `hook` is
+-    // false because no flags are parsed here and no hook decision protocol is
+-    // emitted. Without this, `/plannotator-last --gate` under OpenCode hangs on
+-    // waitForDecision() forever once every review tab is abandoned — the exact
+-    // hang #1143 closed for the other three call sites.
++    // The bridge always emits direct JSON, not hook JSON. Use the same lease
++    // eligibility as the CLI branches, independently of approval controls.
+     clientLeaseSupported: supportsAnnotateClientLease({
+-      gate: input.gate === true,
+       json: true,
+       hook: false,
+       isRemote: isRemoteSession(),
+@@ -2106,7 +2096,6 @@ if (args[0] === "sessions") {
+       hook: hookFlag,
+     }),
+     clientLeaseSupported: supportsAnnotateClientLease({
+-      gate: gateFlag,
+       json: jsonFlag,
+       hook: hookFlag,
+       isRemote: isRemoteSession(),
+diff --git a/apps/marketing/src/content/docs/commands/annotate.md b/apps/marketing/src/content/docs/commands/annotate.md
+index 42ae02b..8eea3a9 100644
+--- a/apps/marketing/src/content/docs/commands/annotate.md
++++ b/apps/marketing/src/content/docs/commands/annotate.md
+@@ -192,6 +192,10 @@ Switches stdout to a structured decision object so hooks can route programmatica
+ 
+ `feedback` is present for `annotated` decisions, and for `approved` decisions when the reviewer approved with notes (`--gate --json` only). Approval notes are non-blocking guidance — they are not a request for another revision.
+ 
++Local direct `--json` sessions detect tab closure without `--gate` or approval controls. After the last connected tab disconnects, a 30-second grace period permits reconnection. If no tab reconnects, the session returns `{"decision":"dismissed"}`. The CLI then waits 1.5 seconds before it stops the server and emits the result.
++
++This behavior excludes plaintext, hook, remote, shared, and tailnet-published sessions. A browser that never connects still requires caller-side cancellation. The grace period starts when the server detects disconnection, so half-open network failures can take longer.
++
+ ### `--hook`
+ 
+ Emits hook-native JSON that works directly with Claude Code and Codex PostToolUse/Stop hook protocols. Implies `--gate` (always three-button UX). Approve and Close emit empty stdout (hook passes), Send Annotations emits `{"decision":"block","reason":"<feedback>"}` (hook blocks with feedback).
+diff --git a/apps/marketing/src/content/docs/guides/annotate-gates-and-json-responses.md b/apps/marketing/src/content/docs/guides/annotate-gates-and-json-responses.md
+index c405147..4f5d7f8 100644
+--- a/apps/marketing/src/content/docs/guides/annotate-gates-and-json-responses.md
++++ b/apps/marketing/src/content/docs/guides/annotate-gates-and-json-responses.md
+@@ -135,7 +135,7 @@ Keep the reviewed source at a stable project path so revisions and version histo
+ 
+ Clicking Close publishes `{"decision":"dismissed"}`.
+ 
+-Abandoning the review publishes the same `dismissed` decision. A local direct structured gate tracks its connected review surfaces: once at least one has connected, losing the last one starts a 30-second reconnect grace period, and expiry resolves the gate as `dismissed`. Reloading the page, navigating away and back, or closing one of several tabs all reconnect or leave another surface connected, so none of them dismiss the review. Approve, Send Annotations, and Close still win over a pending expiry.
++Abandoning the review publishes the same `dismissed` decision. This also applies to local direct `--json` annotation without `--gate`, with no approval controls. Once a tab has connected, losing the last connected tab starts a 30-second reconnect grace period. If no tab reconnects, the session resolves as `dismissed`. The CLI waits another 1.5 seconds before it stops the server and emits the result. A reconnect within the grace period, or another connected tab, keeps the review open. Approve, Send Annotations, and Close still win over a pending expiry.
+ 
+ An abandoned review keeps its saved annotation draft, so nothing you wrote is lost. If a stale tab comes back after the gate already resolved, its Approve, Send Annotations, or Close reports an error instead of pretending to apply: the decision the caller received is the one that counts.
+ 
+diff --git a/packages/editor/App.tsx b/packages/editor/App.tsx
+index c6c8fbc..f58d06b 100644
+--- a/packages/editor/App.tsx
++++ b/packages/editor/App.tsx
+@@ -3244,13 +3244,12 @@ const App: React.FC = () => {
+       .finally(() => setIsLoading(false));
+   }, [isLoadingShared, isSharedSession]);
+ 
+-  // Client-lease: while a local direct structured annotate gate is open, keep
+-  // exactly one EventSource open so the server can detect this tab going away
+-  // and auto-dismiss the gate after its grace period instead of hanging the
+-  // CLI/hook caller forever. Grace only starts once the transport reports a
+-  // disconnect; abrupt/half-open connection loss is best-effort and not
+-  // bounded by the grace period. Only ever a presence signal — no message
+-  // payload is read from the stream.
++  // Client lease: keep one EventSource open for a local direct JSON annotation
++  // session, with or without approval controls. The server dismisses the
++  // session after its disconnect grace period instead of blocking the caller.
++  // Grace starts once the transport reports a disconnect. Detection of abrupt
++  // or half-open connection loss is best-effort, not bounded by the grace period.
++  // The stream is only a presence signal. No message payload is read.
+   useEffect(() => {
+     if (typeof EventSource === 'undefined') return;
+     if (!shouldConnectAnnotateClientLease({ annotateMode, isSharedSession, submitted, clientLease })) return;
+diff --git a/packages/editor/annotateClientLease.ts b/packages/editor/annotateClientLease.ts
+index cc313fd..a9de1bb 100644
+--- a/packages/editor/annotateClientLease.ts
++++ b/packages/editor/annotateClientLease.ts
+@@ -3,9 +3,9 @@
+  *
+  * The annotate server advertises a last-client abandonment lease (see
+  * packages/shared/annotate-client-lease.ts) via `/api/plan`'s `clientLease`
+- * field for local direct structured annotate gates. When enabled, this tab
+- * opens a single EventSource against the shared stream path so the server
+- * can detect the tab going away and dismiss the pending gate after a grace
++ * field for local direct JSON annotation sessions, with or without `--gate`.
++ * When enabled, this tab opens one EventSource against the shared stream path.
++ * The server detects tab closure and dismisses the pending session after a grace
+  * period — no pagehide/beforeunload/sendBeacon involved; presence is
+  * inferred purely from the open connection.
+  */
+diff --git a/packages/server/annotate.test.ts b/packages/server/annotate.test.ts
+index 5992649..6f825cc 100644
+--- a/packages/server/annotate.test.ts
++++ b/packages/server/annotate.test.ts
+@@ -1468,10 +1468,15 @@ describe("annotate server: approval notes", () => {
+ describe("annotate server: client lease", () => {
+   let savedPort: string | undefined;
+   let savedRemote: string | undefined;
++  let savedDataDir: string | undefined;
++  let dataDir: string;
+ 
+   beforeEach(() => {
+     savedPort = process.env.PLANNOTATOR_PORT;
+     savedRemote = process.env.PLANNOTATOR_REMOTE;
++    savedDataDir = process.env.PLANNOTATOR_DATA_DIR;
++    dataDir = mkdtempSync(join(tmpdir(), "plannotator-client-lease-"));
++    process.env.PLANNOTATOR_DATA_DIR = dataDir;
+     delete process.env.PLANNOTATOR_PORT;
+     process.env.PLANNOTATOR_REMOTE = "0";
+   });
+@@ -1481,6 +1486,9 @@ describe("annotate server: client lease", () => {
+     else process.env.PLANNOTATOR_PORT = savedPort;
+     if (savedRemote === undefined) delete process.env.PLANNOTATOR_REMOTE;
+     else process.env.PLANNOTATOR_REMOTE = savedRemote;
++    if (savedDataDir === undefined) delete process.env.PLANNOTATOR_DATA_DIR;
++    else process.env.PLANNOTATOR_DATA_DIR = savedDataDir;
++    rmSync(dataDir, { recursive: true, force: true });
+   });
+ 
+   /**
+@@ -1598,13 +1606,13 @@ describe("annotate server: client lease", () => {
+     }
+   });
+ 
+-  test("resolves the decision as dismissed after the last client disconnects and the grace period elapses", async () => {
++  test.each([false, true])("dismisses after the last client disconnects with gate=%s", async (gate) => {
+     const server = await startAnnotateServer({
+       markdown: "# Test",
+       filePath: join(tmpdir(), "client-lease-expiry.md"),
+       htmlContent: MINIMAL_HTML,
+-      gate: true,
+-      approvalNotesSupported: true,
++      gate,
++      approvalNotesSupported: gate,
+       clientLeaseSupported: true,
+       clientLeaseTestOverrides: { graceMs: 50 },
+     });
+@@ -1626,13 +1634,13 @@ describe("annotate server: client lease", () => {
+     }
+   });
+ 
+-  test("a reconnect before the grace deadline cancels the pending expiry", async () => {
++  test.each([false, true])("reconnect cancels pending expiry with gate=%s", async (gate) => {
+     const server = await startAnnotateServer({
+       markdown: "# Test",
+       filePath: join(tmpdir(), "client-lease-reconnect.md"),
+       htmlContent: MINIMAL_HTML,
+-      gate: true,
+-      approvalNotesSupported: true,
++      gate,
++      approvalNotesSupported: gate,
+       clientLeaseSupported: true,
+       clientLeaseTestOverrides: { graceMs: 80 },
+     });
+diff --git a/packages/server/annotate.ts b/packages/server/annotate.ts
+index a75a595..e3909b7 100644
+--- a/packages/server/annotate.ts
++++ b/packages/server/annotate.ts
+@@ -122,9 +122,9 @@ export interface AnnotateServerOptions {
+   /** Whether this transport can deliver feedback attached to an approval. */
+   approvalNotesSupported?: boolean;
+   /**
+-   * Whether this transport can safely resolve an abandoned gate automatically.
+-   * Only local direct structured annotate gates (`--gate --json`, not `--hook`,
+-   * not remote/shared) qualify — see supportsAnnotateClientLease in
++   * Whether this transport can safely resolve an abandoned annotation session.
++   * Local direct JSON sessions qualify, with or without `--gate`, but not
++   * hook or remote/shared sessions. See supportsAnnotateClientLease in
+    * apps/hook/server/annotate-output.ts. The server additionally forces this
+    * off while `tailnetPublished` is set: `--tailscale` counts as local to the
+    * CLI predicate, but the session is reached through the serve proxy, whose
+@@ -1078,7 +1078,7 @@ export async function startAnnotateServer(
+           }
+ 
+           // API: Client-lease SSE — see packages/shared/annotate-client-lease.ts.
+-          // Only local direct structured annotate gates (--gate --json) advertise
++          // Only local direct JSON annotation sessions advertise
+           // and serve this; other transports get a 404 (idleTimeout is already 0
+           // for the whole server above, so no per-connection opt-out is needed).
+           if (url.pathname === ANNOTATE_CLIENT_LEASE_STREAM_PATH && req.method === "GET") {
+diff --git a/packages/shared/annotate-client-lease.ts b/packages/shared/annotate-client-lease.ts
+index 49c4083..5b25168 100644
+--- a/packages/shared/annotate-client-lease.ts
++++ b/packages/shared/annotate-client-lease.ts
+@@ -1,10 +1,9 @@
+ /**
+  * Annotate client-lease tracker — pure last-client abandonment detector.
+  *
+- * Local direct structured annotate gates (`plannotator annotate --gate --json`)
+- * block a CLI/hook caller on `waitForDecision()`. If the browser tab that owns
+- * the decision goes away without ever sending `/api/exit`/`/api/approve`
+- * (closed tab, killed terminal) the gate would otherwise hang forever.
++ * Local direct JSON annotation sessions (`plannotator annotate --json`) block
++ * the caller on `waitForDecision()`, with or without `--gate`. Without a lease,
++ * closing the last tab without a decision would leave the caller blocked.
+  *
+  * This tracker gives the server a safe, connection-based signal instead: it
+  * counts concurrently connected SSE clients (normally exactly one — the tab's
+-- 
+2.55.0
+
