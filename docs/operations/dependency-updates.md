@@ -22,19 +22,35 @@ Do not publish a plugin that selects an unavailable server or retain the previou
 
 ## Plannotator downstream patch
 
+Plannotator advances only on request. Both hosts select the commit-qualified `plannotator-packages` input in [flake.nix](../../flake.nix). Its vendor recipe and transitive inputs stay pinned. Routine complete lock updates can advance other tools, but cannot advance this declared commit. Keep the vendor's own Nixpkgs selection; do not add a workstation `nixpkgs` follow.
+
 [The package override](../../packages/plannotator.nix) appends the checked-in [client-lease patch](../../packages/plannotator-client-lease.patch) to the existing `llm-agents.nix` recipe. The patch records its source commit; the override records the upstream base. No upstream submission, merge, release, or package publication is required. Upstream contribution remains deferred until downstream acceptance is complete and optional afterward.
 
 For a Plannotator dependency update:
 
 1. Review the selected upstream source, existing packaging patches, and downstream patch together. Preserve the recipe and locked dependency handling.
+
+1. Change the full commit in `inputs.plannotator-packages.url` in `flake.nix` to the reviewed vendor revision.
+
+1. Update only its lock selection:
+
+   ```sh
+   nix flake update plannotator-packages
+   ```
+
+1. Inspect the declared URL and lock diff together. Do not advance `llm-agents` as a substitute for this explicit selection.
+
 1. Build the selected package on both supported systems. Record its upstream version, patch identity, and Nix output paths with the change. The version alone does not identify downstream modifications.
+
 1. Run the retained annotation lifecycle regressions and exercise the final Nix-built executable in the browser without `--gate`.
+
 1. Verify that a brief reconnect preserves the review, while final tab closure returns `dismissed` and releases its listener. Confirm that no approval controls or sharing are enabled.
+
 1. Complete the existing host release and rollback gates before replacing the working generation.
 
 Patch conflicts require review, not omission or a gate-mode workaround. Keep the patch if upstream declines it or no submission occurs. Remove it only when the selected package independently provides equivalent behavior and passes the applicable native checks.
 
-The patched derivation can require an uncached build on each architecture. Nix reuses completed store outputs while their inputs remain unchanged. Neither startup nor activation builds or patches a mutable Plannotator installation.
+The patched derivation can require an uncached build on each architecture. An explicit vendor revision, dependency, toolchain, or patch change can require a rebuild even if the application version stays unchanged. Nix reuses completed store outputs while their inputs remain unchanged. Neither startup nor activation builds or patches a mutable Plannotator installation.
 
 ## Agent-led OMP updates
 
