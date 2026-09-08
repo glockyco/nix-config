@@ -7,8 +7,12 @@ Historical tasks 1.2–1.4 completed the local lease fix, downstream packaging, 
 ## 1. Stock-package delivery prerequisites
 
 - [x] 1.1 Deliver a separately authorized companion OpenSpec change in `omp-agent-setup` for the adapter contract in this change; verify its proposal, specs, design, and tasks pass strict validation and link its identity here.
+
 - [x] 1.2 Remove the downstream client-lease patch and package override. Verify both hosts select the unmodified vendor package from the on-demand commit-pinned input. Record source, version, derivation, and output identities.
+
 - [x] 1.3 Reconcile the companion contract and user instructions with explicit cancellation after tab closure. Verify the adapter retains cancellation on session navigation and shutdown, without a new timeout, approval mode, or fallback.
+
+- [ ] 1.4 Enable the supported NixOS-WSL interoperability registration. Verify the evaluated handler and service, then confirm Windows command and browser launch after authorized activation without an OMP fallback.
 
 ## 2. Companion plugin delivery
 

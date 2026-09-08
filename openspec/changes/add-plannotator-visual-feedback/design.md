@@ -90,6 +90,10 @@ Closing the browser tab can leave the review pending with its owned process, lis
 
 The approved contract does not require a client lease, automatic tab-close settlement, or reconnect grace measurement. Do not substitute gate mode, a private browser script, a new timeout, or a fallback. Verify explicit cancellation after tab closure and when no browser connects, using the final unmodified vendor package.
 
+### Restore the supported WSL browser-launch prerequisite
+
+First-use verification found no Windows executable handler in `binfmt_misc`, so Windows browser launch failed before any browser connection. The pinned NixOS-WSL module defaults to reusing an existing registration. Set `wsl.interop.register = true` in the existing WSL module so NixOS owns the standard `/init` handler. This uses upstream module support, not a manual kernel-entry script or an OMP fallback. Registration does not launch a Windows application during activation. Verify a harmless Windows command and a native browser round trip after activation.
+
 ### Preserve the network and runtime boundaries
 
 Require local interactive invocation. Do not provide remote mode or Tailscale Serve arguments. Confirm that the actual child binds only to loopback and that the local Windows browser reaches WSL without a firewall change. If that path fails, the release remains blocked; do not widen the listener.

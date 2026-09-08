@@ -61,3 +61,16 @@ The WSL host SHALL expose no network service reachable from another host and SHA
 - **AND** the local Windows browser can reach it without tailnet publication or a firewall change
 - **AND** a terminal result, explicit cancellation, session navigation, or shutdown removes the owned listener
 - **AND** tab closure alone can leave the review pending until `/plannotator-cancel` or another cancellation event
+
+## ADDED Requirements
+
+### Requirement: Declarative WSL Windows interoperability
+
+The WSL host SHALL register Windows executable interoperability through the supported NixOS-WSL module. User-initiated browser launch SHALL work without an OMP fallback or a manual kernel-entry script. Activation SHALL register the handler without launching a Windows application.
+
+#### Scenario: Restore a missing Windows executable handler
+
+- **WHEN** the host activates its declared configuration with no existing Windows executable handler
+- **THEN** the standard `/init` interoperability handler is registered
+- **AND** subsequent user-initiated Windows commands and local browser launch work
+- **AND** activation itself launches no Windows application
