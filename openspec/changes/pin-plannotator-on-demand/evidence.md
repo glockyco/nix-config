@@ -50,7 +50,7 @@ This artifact revision ran no validation, build, browser, or activation command.
 
 ## Final stock-package verification (2026-09-08)
 
-Both host compositions were evaluated and asserted equal to their unmodified vendor package and flake package output. Linux selects `/nix/store/lg5dqz4gcm3wxvmqjc2zgya34bysmb3r-plannotator-0.27.12`; Darwin selects `/nix/store/znni5qin7vc6b2krrsmnpgn6ckwgh06v-plannotator-0.27.12`. The version remains `0.27.12`. The local patch and override are deleted. The original CI workflow is restored without custom cache steps.
+Both host compositions were evaluated and asserted equal to their unmodified vendor package and flake package output. Linux selects `/nix/store/lg5dqz4gcm3wxvmqjc2zgya34bysmb3r-plannotator-0.27.12`; Darwin selects `/nix/store/znni5qin7vc6b2krrsmnpgn6ckwgh06v-plannotator-0.27.12`. The version remains `0.27.12`. Vendor revision is `b1c9a31450a814e50cddc3ab683b05c1dff7bb01`. Stock derivations are `/nix/store/6fxb8mvxmhlp6x14ppyfnds0gjk4c9y2-plannotator-0.27.12.drv` on Linux and `/nix/store/9sxiw138yl1hsmkgq3vyyrqjy6bqdawn-plannotator-0.27.12.drv` on Darwin. The local patch and override are deleted. The original CI workflow is restored without custom cache steps.
 
 A disposable checkout of staged tree `09d4371e6ac5655b3cafc87a841d2af7ab127651` ran `nix flake update` and `nix flake update plannotator-packages`. Six unrelated root inputs advanced. The normalized locked vendor graph, declared revision, version, and stock Linux output stayed unchanged. The disposable checkout was removed.
 
@@ -59,3 +59,7 @@ The stock Linux executable and wrapper built successfully. `verify-personal-omp`
 A third review was opened and its browser tab closed. `/plannotator-cancel` reported cancellation and removed its loopback listener. The document remained byte-for-byte unchanged. The owned pane, browser tabs, fixture data, and screenshot were removed. No adapter code, source generation, or active host configuration changed. These checks do not claim Windows-browser or Mac-native acceptance.
 
 Obsolete cache runs were cancelled, PRs #30 and #31 were closed without merge, and their task-owned remote branches were removed. The patched PR #29 run was cancelled because its candidate is superseded; the simplified candidate will use the same release PR.
+
+Ordered formatting and all applicable flake checks passed on both native systems for the stock selection. Linux also completed the Korolev system build. Mac verification used staged tree `d19f4130f8bce9d7ee7eee41f5eceed934566410`. Its initial SSH transport became stale after flake checks passed; a fresh connection completed the remaining commands. The Darwin guard inspected 37 outputs with no forbidden source build. The explicit system build returned `/nix/store/gjpc0anw6dr2szcy51mg72mcrshqfw24-darwin-system-26.05.c3e90c8`, and the stock executable reported `plannotator 0.27.12` on the Mac. The owned remote snapshot was removed.
+
+Strict validation passed for both workstation changes and the companion contract. Companion documentation was published as `ee7cf80`; its executable payload and the workstation plugin pin did not change. The simplified workstation candidate was committed as `eea0044` and published to PR #29. Protected CI, activation, Windows/macOS native browser acceptance, and rollback remain separate release gates. No host was activated.
