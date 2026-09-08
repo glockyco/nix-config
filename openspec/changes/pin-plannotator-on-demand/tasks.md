@@ -1,19 +1,21 @@
-## 1. Explicit package selection
+## Approved scope and historical work
 
-- [x] 1.1 Add the commit-qualified `plannotator-packages` input at the currently verified vendor revision; verify its source identity and initial Plannotator version match existing delivery evidence.
-- [x] 1.2 Migrate both wrapper compositions to that input through the existing downstream override; evaluate both hosts and verify source, patch, and executable identities without changing other tool selections.
-- [x] 1.3 Run the central complete-lock-update command in a disposable checkout; prove that Plannotator's source revision and version remain fixed while eligible unrelated inputs can advance. Remove the disposable checkout afterward.
+On 2026-09-08, the user approved the unmodified vendor package and explicit cancellation instead of the downstream client-lease patch. The user also cancelled custom CI caching and its cold/warm acceptance requirements. The on-demand source pin remains required.
 
-## 2. Native CI cache
+Historical completed tasks 1.2 and 1.3 verified the independent input through the patched package. Historical tasks 2.1 and 2.3 verified cache configuration. Historical task 3.4 verified the earlier update procedure and documentation. Their results remain in `evidence.md`; they do not verify the final stock selection or require the removed cache. The former cache tasks 2.2, 3.2, and 3.3 are cancelled, not passed.
 
-- [x] 2.1 Pin a reviewed compatible `cache-nix-action` revision and add native-system plus evaluated-derivation cache keys; verify unrelated changes preserve the key while a changed package input invalidates it.
-- [ ] 2.2 Add restore, the existing Darwin guard, a job-local package output root, unchanged native checks, and successful-run save in that order; verify cache misses still execute the original build path and failed checks do not save verified results.
-- [x] 2.3 Configure bounded CI-only retention and preserve GitHub ref isolation; inspect effective permissions and saved paths to verify no credentials, external cache service, host trust change, or competing scheduler is introduced.
+## 1. Explicit stock-package selection
+
+- [x] 1.1 Add the commit-qualified `plannotator-packages` input at the verified vendor revision. Verify its source identity and initial Plannotator version against existing evidence.
+- [x] 1.2 Select the unmodified vendor package directly in both wrapper compositions. Verify each host matches its vendor package, with no local override and no unrelated tool changes.
+- [x] 1.3 Run `nix flake update` in a disposable checkout of the final stock selection. Verify Plannotator's declared revision, locked vendor graph, version, and package identity remain unchanged while eligible unrelated inputs can advance. Remove the disposable checkout.
+
+## 2. Remove superseded mechanisms
+
+- [x] 2.1 Remove the local client-lease patch and package override. Remove custom CI cache actions, keys, output roots, and retention logic. Preserve the original native checks and Darwin guard.
 
 ## 3. Verification and documentation
 
-- [ ] 3.1 Run ordered repository checks on both native systems and the Darwin build-plan and system-build gates; verify the new package selection preserves the existing wrapper and annotation contracts.
-- [ ] 3.2 Exercise cold and warm GitHub CI runs on both architectures; record derivation identity, cache scope, restore result, cache size, timings, and proof that warm runs avoid the Plannotator source build while all checks still execute.
-- [ ] 3.3 Verify an unavailable cache leaves the uncached build path available and a changed derivation cannot reuse an older output as the selected package; record actual results without suppressing build failures.
-- [x] 3.4 Update the existing dependency runbook with explicit revision-and-lock update commands, patch review, cache scope, eviction, and toolchain rebuild caveats; verify the documented commands against a disposable checkout and remove owned temporary data.
-- [ ] 3.5 Record verification evidence, validate this change strictly, and archive only after every task passes; preserve the separate visual-feedback change's outstanding native acceptance gates.
+- [ ] 3.1 Run ordered repository checks on both native systems against the final stock selection. Run the Darwin build-plan and system-build gates. Verify the existing wrapper and annotation contracts remain intact.
+- [x] 3.2 Update the existing dependency runbook for explicit revision-and-lock updates and stock-package selection. Remove patch maintenance and custom cache instructions. Document build caveats and explicit cancellation after tab closure. Verify the update commands in a disposable checkout, then remove it.
+- [ ] 3.3 Record final stock-package evidence and run strict validation of this change. Archive only after all active tasks pass. Preserve the separate visual-feedback change's unverified native acceptance gates.

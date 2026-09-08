@@ -16,9 +16,7 @@ let
       roslynLanguageServer
       ;
     inherit (llmAgents) herdr;
-    plannotator = pkgs.callPackage ../../packages/plannotator.nix {
-      plannotator = inputs.plannotator-packages.packages.${system}.plannotator;
-    };
+    plannotator = inputs.plannotator-packages.packages.${system}.plannotator;
     plugin = inputs.personal-omp-plugin.packages.${system}.default;
   };
 in

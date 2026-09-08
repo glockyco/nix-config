@@ -20,17 +20,15 @@ Never accept changed bytes under an existing hash.
 If the plugin selects a different server, publish its verified revision and change the wrapper package selection together.
 Do not publish a plugin that selects an unavailable server or retain the previous server as a fallback.
 
-## Plannotator downstream patch
+## Plannotator updates
 
-Plannotator advances only on request. Both hosts select the commit-qualified `plannotator-packages` input in [flake.nix](../../flake.nix). Its vendor recipe and transitive inputs stay pinned. Routine complete lock updates can advance other tools, but cannot advance this declared commit. Keep the vendor's own Nixpkgs selection; do not add a workstation `nixpkgs` follow.
+The OMP wrapper uses the unmodified vendor package from the commit-qualified `plannotator-packages` input in [flake.nix](../../flake.nix). Plannotator advances only on request. Its vendor recipe and transitive inputs stay pinned while routine lock updates can advance other tools. Keep the vendor's own Nixpkgs selection; do not add a workstation `nixpkgs` follow.
 
-[The package override](../../packages/plannotator.nix) appends the checked-in [client-lease patch](../../packages/plannotator-client-lease.patch) to the existing `llm-agents.nix` recipe. The patch records its source commit; the override records the upstream base. No upstream submission, merge, release, or package publication is required. Upstream contribution remains deferred until downstream acceptance is complete and optional afterward.
+For an explicit Plannotator update:
 
-For a Plannotator dependency update:
+1. Review the selected vendor revision and its Plannotator version.
 
-1. Review the selected upstream source, existing packaging patches, and downstream patch together. Preserve the recipe and locked dependency handling.
-
-1. Change the full commit in `inputs.plannotator-packages.url` in `flake.nix` to the reviewed vendor revision.
+1. Change the full commit in `inputs.plannotator-packages.url` in `flake.nix`.
 
 1. Update only its lock selection:
 
@@ -38,29 +36,21 @@ For a Plannotator dependency update:
    nix flake update plannotator-packages
    ```
 
-1. Inspect the declared URL and lock diff together. Do not advance `llm-agents` as a substitute for this explicit selection.
+1. Review the declared URL and lock diff together.
 
-1. Build the selected package on both supported systems. Record its upstream version, patch identity, and Nix output paths with the change. The version alone does not identify downstream modifications.
+1. Build the selected package on both supported systems and record its version and Nix output paths with the change.
 
-1. Run the retained annotation lifecycle regressions and exercise the final Nix-built executable in the browser without `--gate`.
+1. Verify document and last-response feedback in the wrapped OMP session, without approval controls or source edits.
 
-1. Verify that a brief reconnect preserves the review, while final tab closure returns `dismissed` and releases its listener. Confirm that no approval controls or sharing are enabled.
+1. Verify explicit cancellation, then complete the existing host release and rollback gates before replacing the working generation.
 
-1. Complete the existing host release and rollback gates before replacing the working generation.
+There is no downstream Plannotator patch or custom CI cache. The configured vendor substituter and local Nix stores provide ordinary output reuse. Cache availability is not guaranteed. A changed package derivation can require a build even when the application version stays unchanged. Startup and activation do not prepare mutable Plannotator installations.
 
-Patch conflicts require review, not omission or a gate-mode workaround. Keep the patch if upstream declines it or no submission occurs. Remove it only when the selected package independently provides equivalent behavior and passes the applicable native checks.
+### Cancelling an annotation review
 
-The patched derivation can require an uncached build on each architecture. An explicit vendor revision, dependency, toolchain, or patch change can require a rebuild even if the application version stays unchanged. Nix reuses completed store outputs while their inputs remain unchanged. Neither startup nor activation builds or patches a mutable Plannotator installation.
+Closing the browser tab does not guarantee cancellation in the stock annotation-only CLI. A pending review can keep its local process running and prevent another review in that session. Other OMP work can continue.
 
-### Native CI cache
-
-The [check workflow](../../.github/workflows/check.yml) uses GitHub Actions cache for Nix store outputs and their database. It excludes installer metadata and credentials. The key combines the native system, cache-layout version, and evaluated patched Plannotator derivation. An unrelated lock change does not invalidate an unchanged derivation.
-
-Restore precedes the Darwin build-plan guard and package build. A job-local output link retains the package during cache garbage collection. Every required check still runs on a hit. Only successful checks permit a new cache save. The 2 GiB collection target applies only to CI; live roots can exceed it.
-
-GitHub controls cache quota, eviction, and ref visibility. A PR cache remains PR-scoped. A successful main-branch run must populate a base cache before other PRs can reuse it. Initial runs and changed derivations need cold builds. This cache is not a workstation binary substituter and adds no host trusted key.
-
-For a cache miss or service failure, retain the ordinary build and required checks. Inspect restore and save logs separately from build failures. Confirm a later restore before reporting cache reuse. Do not bypass checks, copy caches across refs, or change workstation trust to repair CI caching. If the cache layout changes, advance its key version so incompatible archives are not selected.
+Use `/plannotator-cancel` to cancel the pending review before starting another. The adapter also cancels reviews on session navigation and shutdown. Browser annotations provide feedback only; they do not edit the source or approve implementation.
 
 ## Agent-led OMP updates
 

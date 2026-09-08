@@ -1,5 +1,7 @@
 # Implementation evidence
 
+The entries before the final supersession section describe earlier revisions. The final section records the current user-approved stock-package contract and remaining acceptance boundaries.
+
 ## Scope and release boundary
 
 The user authorized local implementation in `nix-config`, the companion `omp-agent-setup` repository, and a local upstream Plannotator checkout. Nothing has been published, merged, or activated. External release and native-host acceptance tasks remain incomplete until their stated gates pass.
@@ -163,3 +165,25 @@ A native document review started a Plannotator listener at `127.0.0.1:41615`. Th
 The Mac was initially offline, then became reachable again. Its clean workstation checkout was `7570fa58c40100750b8f680aeec59da380934138`, with source generation `generations/v18.1.13-tqkiqh1m`. `sudo -n true` reported that a password was required. Native activation therefore still needs an authorized local administrator session. No credential was requested, copied, or stored.
 
 Korolev's retained active profile was `system-22-link`, pointing to `/nix/store/q8y9lg7afq975iz3gzs5iq8jsx89iw7h-nixos-system-korolev-26.05.20260903.a5cc6f2`. Its source generation remained `generations/v18.1.14-q428ax3t`. Neither host was activated or rolled back during this attempt. Tasks 4.3 through 4.8 remain incomplete. The separately approved on-demand update and CI-cache policy is planned in `pin-plannotator-on-demand`; it has not changed this release candidate.
+
+## User-approved stock-package supersession (2026-09-08)
+
+The user subsequently approved removal of the downstream client-lease patch and custom CI caching as disproportionate. This decision supersedes earlier patch-maintenance, automatic tab-close settlement, and cold/warm cache acceptance requirements. The OMP annotation adapter and on-demand commit-pinned vendor input remain required.
+
+The final contract uses the unmodified vendor package, including its vendor packaging patches and locked dependencies. Closing the browser tab can leave an owned review pending. `/plannotator-cancel` is the supported recovery. The adapter also cancels on session navigation and shutdown. No approval mode, new timeout, browser script, or fallback replaces the removed client lease.
+
+All preceding patch, package, browser, publication, and CI observations remain historical facts for their recorded revisions. They do not prove the final stock-package selection. Historical completed tasks 1.2–1.4 covered the removed patch. Historical tasks 3.2, 4.1, and 4.2 covered the patched release candidate. Their replacement stock-selection and native build gates are open in `tasks.md` until actual verification.
+
+Native browser feedback, explicit cancellation, session isolation, loopback boundaries, authorized activation, rollback, and specification integration remain release requirements. Automatic abandoned-tab cleanup and custom cache acceptance are cancelled, not passed. This artifact revision ran no validation, build, browser, or activation command and claims no new runtime evidence.
+
+## Final stock-package verification (2026-09-08)
+
+Both host compositions were evaluated and asserted equal to their unmodified vendor package and flake package output. Linux selects `/nix/store/lg5dqz4gcm3wxvmqjc2zgya34bysmb3r-plannotator-0.27.12`; Darwin selects `/nix/store/znni5qin7vc6b2krrsmnpgn6ckwgh06v-plannotator-0.27.12`. The version remains `0.27.12`. The local patch and override are deleted. The original CI workflow is restored without custom cache steps.
+
+A disposable checkout of staged tree `09d4371e6ac5655b3cafc87a841d2af7ab127651` ran `nix flake update` and `nix flake update plannotator-packages`. Six unrelated root inputs advanced. The normalized locked vendor graph, declared revision, version, and stock Linux output stayed unchanged. The disposable checkout was removed.
+
+The stock Linux executable and wrapper built successfully. `verify-personal-omp` reported OMP 18.1.14, the existing immutable plugin, the stock executable above, and current Herdr integration v8. A fresh candidate-wrapper session in an owned Herdr pane completed document and last-response feedback through managed Linux Chromium. The model replied `Stock feedback received.` and `Last-response feedback received.` respectively. The UI exposed feedback rather than approval controls.
+
+A third review was opened and its browser tab closed. `/plannotator-cancel` reported cancellation and removed its loopback listener. The document remained byte-for-byte unchanged. The owned pane, browser tabs, fixture data, and screenshot were removed. No adapter code, source generation, or active host configuration changed. These checks do not claim Windows-browser or Mac-native acceptance.
+
+Obsolete cache runs were cancelled, PRs #30 and #31 were closed without merge, and their task-owned remote branches were removed. The patched PR #29 run was cancelled because its candidate is superseded; the simplified candidate will use the same release PR.
