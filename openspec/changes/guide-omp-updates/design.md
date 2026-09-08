@@ -26,6 +26,12 @@ A global plugin skill would require a separate release and could trigger in unre
 
 Keep metadata and the main workflow concise. Reference the detailed repository procedure only when needed. Resolve README and operation-document paths against the checkout root, not the skill asset directory. Do not use `skill://` parent traversal; that protocol prohibits escaping the skill directory. Do not copy the manual into skill assets.
 
+### Preserve discovery metadata during formatting
+
+The first release-gate run exposed a formatter integration defect: plain CommonMark plus GFM rewrote YAML frontmatter as ordinary Markdown. Enable `ps.mdformat-frontmatter` alongside `ps.mdformat-gfm` in `treefmt.nix`. The locked nixpkgs input already supplies it; no lock update or global tool installation is needed.
+
+This extension preserves structured metadata through the existing formatter rather than excluding skill files or introducing a second formatting command. Verify the formatted skill's metadata, repeat formatting to prove idempotence, and repeat fresh wrapped-session discovery on both hosts after formatting. Keep the initial failure in the change evidence.
+
 ### Keep existing command and procedure ownership
 
 Add the detailed procedure to the existing dependency operations document. Extend the README update entry with a short skill-discovery link; retain its existing activation and release-gate commands as the authoritative command reference.

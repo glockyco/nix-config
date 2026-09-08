@@ -14,6 +14,13 @@ A fresh wrapped OMP session in this repository SHALL discover the `omp-update` s
 - **THEN** the agent can discover and read `omp-update` and its supporting procedures
 - **AND** those procedures are sufficient to determine the next action without a previous session transcript
 
+#### Scenario: Format an authored skill
+
+- **WHEN** the repository formatter processes the authored skill
+- **THEN** its discovery name and description remain valid metadata
+- **AND** a fresh wrapped session can still discover and invoke it
+- **AND** a second formatting pass makes no further changes
+
 ### Requirement: Current host and input discovery
 
 The guidance SHALL determine the target host, installed command ownership, selected generation, declared patch inputs, and requested operation scope before mutation. It SHALL default to the current supported host. It SHALL distinguish installed updater inputs from repository pins and SHALL NOT treat historical versions or another host's evidence as current local facts.
