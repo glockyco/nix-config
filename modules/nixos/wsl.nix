@@ -18,6 +18,9 @@ in
     # manager, so the value here is what `wsl.exe` attaches to.
     defaultUser = username;
 
+    # Restore Windows execution even when WSL's startup registration is absent.
+    interop.register = true;
+
     # systemd-resolved owns the file so Tailscale can install its split DNS
     # domain without WSL replacing the file at the next start.
     wslConf.network.generateResolvConf = false;

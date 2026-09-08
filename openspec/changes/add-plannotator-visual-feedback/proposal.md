@@ -8,6 +8,7 @@ The managed OMP setup lacks a visual way to comment on documents and assistant r
 - Retain on-demand package advancement through `pin-plannotator-on-demand`, without a downstream client-lease patch or custom CI caching.
 - Consume a reviewed `omp-agent-setup` plugin revision that provides `/plannotator-annotate <document>` and `/plannotator-last`.
 - Open document or response snapshots in the browser and return submitted feedback once to the originating OMP conversation.
+- Register Windows executable interoperability through the supported NixOS-WSL module so local browser launch does not depend on a missing startup registration.
 - Treat dismissal and cancellation as cancellation, never as approval or an instruction to implement.
 - Support `/plannotator-cancel` when tab closure leaves a review pending. Cancel reviews on session navigation and shutdown.
 - Keep adapter behavior in `omp-agent-setup`, executable selection in `nix-config`, and preferences, history, and temporary files in writable runtime storage.
