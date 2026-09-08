@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [macos-15, ubuntu-latest]
+        runner: [ubuntu-latest]
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -44,13 +44,16 @@ jobs:
           printf '%s\n' \
             "installable=$installable" \
             "derivation=$derivation" \
-            "key=plannotator-v1-${system}-${derivation##*/}" | tee -a "$GITHUB_OUTPUT"
+            "key=plannotator-failure-probe-v1-${system}-${derivation##*/}" | tee -a "$GITHUB_OUTPUT"
 
       # v7 supports Determinate Nix; it requires Nix >= 2.24 and SQLite >= 3.37.
       # Cache only store paths and their database, not installer metadata or tokens.
       # Exact keys retain GitHub's normal branch and pull-request visibility.
       - name: Restore Plannotator store cache
         id: plannotator-cache-restore
+        env:
+          CUSTOM_ACTIONS_CACHE_URL: http://127.0.0.1:9/
+          CUSTOM_ACTIONS_RESULTS_URL: http://127.0.0.1:9/
         continue-on-error: true
         uses: nix-community/cache-nix-action/restore@7df957e333c1e5da7721f60227dbba6d06080569 # v7
         with:
@@ -90,6 +93,8 @@ jobs:
           "$RUNNER_TEMP/host-nix/bin/nix" \
             --extra-experimental-features 'nix-command flakes' \
             flake check --print-build-logs
+          echo 'Intentional verification failure: cache save must stay skipped.'
+          exit 1
 
       # No post-job save: a failed guard, build, or check must not publish a cache.
       # The 2 GiB target applies only here; live roots can exceed it.
