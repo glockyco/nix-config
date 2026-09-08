@@ -41,6 +41,16 @@ The Mac independently selected `generations/v18.1.13-tqkiqh1m` at the canonical 
 
 A private Git bundle transferred the committed implementation to the Mac without pushing `nix-config` or changing its existing checkout. A complete native `nix flake check` passed from that review checkout, including the Darwin system build.
 
+## Patch refresh for v18.1.14
+
+The local OMP branch `fix/wsl-terminal-hyperlinks-v18.1.14` retains the five fixes on upstream base `daf07999c2fee9b22edc7bf8fea1fb6272e0df5e`. Its tip is `16a6bd10e859ca26a0011ed5ba26d4c260e2b754`.
+
+The refresh resolved the Markdown test import overlap by retaining both required helpers. The other patches applied cleanly. A separate documentation commit moved personal changelog entries back to `Unreleased`, preserving published upstream entries exactly. Excluding changelogs, range comparison showed only the import adjustment relative to the original five patches.
+
+Korolev verification passed: frozen dependency installation, a fresh native build, all three package checks, and 364 regressions across ten files. Native loading and immutable `personal_commit` registration passed. The source launcher reported `18.1.14` outside the checkout with isolated application state. The upstream Nix flake and lockfile were unchanged, so verification used the existing locked development profile.
+
+The refreshed branch is not published. The updater pins and selected runtime remain unchanged pending publication approval.
+
 ## Remaining operator gate
 
 The Mac's installed Nix is Determinate Nix 3.21.9 / Nix 2.34.8. Remote `sudo -n true` requires a password. No privilege or authentication configuration was changed. From a Mac terminal, activate the retained review checkout:
