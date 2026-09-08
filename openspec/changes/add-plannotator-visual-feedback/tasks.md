@@ -12,7 +12,7 @@ Historical tasks 1.2–1.4 completed the local lease fix, downstream packaging, 
 
 - [x] 1.3 Reconcile the companion contract and user instructions with explicit cancellation after tab closure. Verify the adapter retains cancellation on session navigation and shutdown, without a new timeout, approval mode, or fallback.
 
-- [ ] 1.4 Enable the supported NixOS-WSL interoperability registration. Verify the evaluated handler and service, then confirm Windows command and browser launch after authorized activation without an OMP fallback.
+- [x] 1.4 Enable the supported NixOS-WSL interoperability registration. Verify the evaluated handler and service, then confirm Windows command and browser launch after authorized activation without an OMP fallback.
 
 ## 2. Companion plugin delivery
 
