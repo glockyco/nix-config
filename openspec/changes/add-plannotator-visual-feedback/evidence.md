@@ -128,4 +128,22 @@ Ordered Linux formatting and all 27 applicable flake checks passed with the patc
 
 The Mac then checked staged tree `f0a1dc82db19e162a1953073f35013152733713f` in the same temporary directory. Ordered formatting and all eight applicable native flake checks passed. `check-darwin-build-plans` inspected 37 outputs and found no forbidden source build. The subsequent Darwin system build passed and produced `/nix/store/871jzk0rlar4x9mkqbzafdb0mfjpyzhh-darwin-system-26.05.c3e90c8`. These are package-integration checks with the unchanged companion lock, not acceptance of the final adapter selection. Tasks 4.1 and 4.2 remain unchecked for that final selection. No activation occurred. The task-owned Mac snapshot was removed after the commands completed; no store outputs or previous generations were deleted.
 
-The companion remote `main` still names `4707024f3c20031a3650dc98db74940f0ae9a648`, not the reviewed adapter commits. Production companion selection therefore still requires separately authorized publication. Upstream contribution remains deferred and optional.
+At this package checkpoint, companion `main` still named `4707024f3c20031a3650dc98db74940f0ae9a648`. Publication and final selection were not yet authorized. The following verification supersedes that blocker.
+
+## Published companion and final pin verification
+
+The user authorized publication of the reviewed companion commits and selection of that revision, without host activation or Plannotator upstream submission.
+
+- Published `0e39f18` and `e6f340d` to `glockyco/omp-agent-setup` main. [Companion CI passed](https://github.com/glockyco/omp-agent-setup/actions/runs/34222449063).
+- Selected revision: `e6f340d7ba02aeee91d36204913e20e2245985a0`.
+- Selected source hash: `sha256-UEc9YGKOzpwvkSr9keStn7sUEsv/yus/UsTHDmerkzA=`.
+- Comparing parsed lock nodes before and after the update found only `personal-omp-plugin` changed. The `llm-agents` input remained unchanged.
+- The downstream patch SHA-256 remained `c1773bb47f9f84f40cc3bfcdc1356661b8469977a3d5df3201da39285afbc892`.
+- Final Linux plugin: `/nix/store/i8wicgnzcnd3afxkvl3v4wc87sndgbvv-personal-omp-plugin-0.1.0`.
+- Final Linux wrapper: `/nix/store/z1pa0mzl20j3iskghnfgj88lqhh8yi8v-omp`.
+
+Ordered formatting and all 27 applicable Linux flake checks passed with the final pin, including the Korolev system build. The Mac checked staged tree `8bb5f6ca2a69cd1d2d37fafb7e17701af090eba6`. Ordered formatting and all eight applicable Darwin flake checks passed. The subsequent build-plan guard inspected 37 outputs without a forbidden source build. The final Darwin system build produced `/nix/store/zcpavv0mp30h3lrg6lc72ncdsgg9hpsd-darwin-system-26.05.c3e90c8`. These checks complete tasks 4.1 and 4.2 for the final selection.
+
+The candidate Linux `verify-personal-omp` passed against the existing selected source generation. It reported OMP 18.1.14, commit `16a6bd10e859ca26a0011ed5ba26d4c260e2b754`, the final plugin above, patched Plannotator 0.27.12, and current Herdr integration v8. A real candidate-wrapper TUI session recognized `/plannotator-cancel` and reported no pending review. `/plannotator-last` correctly rejected its empty conversation. This startup and command smoke does not replace the native browser feedback matrix.
+
+The smoke process stopped and the task-owned Mac snapshot was removed. No activation, source-generation update, upstream submission, or Nix store deletion occurred. The workstation commit remains local. Native browser, network, rollback, and specification integration gates remain open.
