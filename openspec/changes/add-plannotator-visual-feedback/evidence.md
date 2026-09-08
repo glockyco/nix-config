@@ -88,7 +88,7 @@ The evaluated OMP activation entry on both hosts invokes only the existing `reco
 
 The compatible upstream and companion plugin pins have not been published or selected. These checks prove the wrapper changes, not the complete visual-feedback installation.
 
-## Pending release evidence
+## Initial release blockers (superseded by downstream-first delivery)
 
 The local upstream commit has no published package revision yet. A local checkout path is not a substitute for a reviewed cross-host package pin. The production locks therefore remain unchanged.
 
@@ -100,3 +100,32 @@ Release remains blocked on:
 - Completion and synchronization of `maintain-patched-omp`, whose Mac acceptance and final routing tasks remain unchecked.
 
 The workstation current-state manuals and accepted specs remain unchanged. Their update and archive tasks require the pending native acceptance. Task-owned smoke processes, scripts, and temporary data are removed after verification; the upstream source checkout and its committed fix are retained.
+
+## Downstream-first package delivery
+
+The revised contract supersedes the initial upstream-publication blockers above. No upstream branch or PR is required or submitted. The existing `llm-agents` and companion input locks remain unchanged during this package work.
+
+`packages/plannotator.nix` appends `packages/plannotator-client-lease.patch` through `overrideAttrs`. Both wrapper compositions use this shared override. The existing recipe, packaging patches, upstream source, and dependency handling are retained. The checked-in patch includes the reviewed lifecycle regressions.
+
+- Base: `v0.27.12`, commit `96313ab228ede843203d38d9d2a86e1c87e18c81`.
+- Originating fix: `420ee6c0bca735eece1d623aa7bfe25445c82771`.
+- Patch SHA-256: `c1773bb47f9f84f40cc3bfcdc1356661b8469977a3d5df3201da39285afbc892`.
+- Linux output: `/nix/store/a7vjjwsnwwmqjy4zl2rj5a7vlwl63czl-plannotator-0.27.12`.
+- Darwin output: `/nix/store/7li8lm8h96v92h17iygzn09yknpixn2a-plannotator-0.27.12`.
+- Darwin derivation: `/nix/store/cmhw2xbsfg8k8jp6h8hwpmn9blp3j9n9-plannotator-0.27.12.drv`.
+
+The Linux build initially planned 2,245 derivations. Its 20-minute command deadline expired during dependency preparation, not a reported compiler failure. Resuming with completed store outputs finished in 138.40 seconds. The executable reports `plannotator 0.27.12`; the patch and output identity distinguish this downstream build.
+
+The distributed Darwin attempt was cancelled during slow SSH input transfer. The same staged repository tree (`c0bd4947ecc387b1e63a2faecf6b28e932061022`) was then copied to a temporary Mac directory. A Mac-local `nix build` succeeded in 11 minutes 51 seconds using the installed Determinate Nix. It produced the same Darwin derivation identity that the local evaluation selected. No package recipe, input pin, credential, service, or activation policy changed to perform this build.
+
+The final Linux package passed an actual managed-Chromium check: `gate=false`, `sharingEnabled=false`, and client lease grace `30000` ms. A two-second disconnect followed by reconnection kept the review available beyond the original disconnect deadline. Closing the final tab produced exactly `{"decision":"dismissed"}` with exit code 0. The listener became unreachable and the source document remained unchanged. This proves the Nix-built Linux lifecycle, not the pending native Windows/Herdr or macOS browser gates.
+
+The dependency operations runbook now documents patch review, both-platform builds, lifecycle verification, and removal only after equivalent native behavior passes. The package smoke process exited and its temporary local data was removed.
+
+The configured Home Manager package on each host was evaluated and asserted equal to its flake package’s Plannotator selection. Korolev selected wrapper `/nix/store/j8cjbvvabspqjkvvvac5lc14x0m07nk9-omp`; macbook-pro selected `/nix/store/rxxan032px9vv2z3qkshas0z4bn5hkhp-omp`. Both selected the patched output listed above. The two wrapper dry-run plans evaluated successfully. The Linux store does not contain the Mac-local outputs, so its Darwin dry-run still listed those derivations; this is not evidence that the Mac must rebuild them.
+
+Ordered Linux formatting and all 27 applicable flake checks passed with the patched package, including the Korolev system and Home Manager closures. The command explicitly omitted Darwin. Final both-host release acceptance remains incomplete until the companion selection and native browser gates pass.
+
+The Mac then checked staged tree `f0a1dc82db19e162a1953073f35013152733713f` in the same temporary directory. Ordered formatting and all eight applicable native flake checks passed. `check-darwin-build-plans` inspected 37 outputs and found no forbidden source build. The subsequent Darwin system build passed and produced `/nix/store/871jzk0rlar4x9mkqbzafdb0mfjpyzhh-darwin-system-26.05.c3e90c8`. These are package-integration checks with the unchanged companion lock, not acceptance of the final adapter selection. Tasks 4.1 and 4.2 remain unchecked for that final selection. No activation occurred. The task-owned Mac snapshot was removed after the commands completed; no store outputs or previous generations were deleted.
+
+The companion remote `main` still names `4707024f3c20031a3650dc98db74940f0ae9a648`, not the reviewed adapter commits. Production companion selection therefore still requires separately authorized publication. Upstream contribution remains deferred and optional.
