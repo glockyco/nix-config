@@ -10,7 +10,7 @@ The default `omp` command SHALL invoke the selected source generation with the i
 - **THEN** the resolved executable is the Nix-managed workstation wrapper
 - **AND** the wrapper invokes the selected verified source generation
 - **AND** OMP discovers the packaged personal extensions, skills, rule, and LSP overrides
-- **AND** annotation commands resolve the pinned Plannotator executable
+- **AND** annotation commands resolve the declared downstream-patched Plannotator executable without requiring upstream publication
 
 #### Scenario: Start OMP from Windows Zed
 
