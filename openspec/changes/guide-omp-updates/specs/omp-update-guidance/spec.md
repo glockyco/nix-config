@@ -98,6 +98,23 @@ An updated result SHALL identify the host, selected stable release, upstream com
 - **THEN** the agent reports the selected identities, immutable plugin, current Herdr integration, exercised checks, and recovery generation availability
 - **AND** publication of patches or a successful version command alone is not presented as complete acceptance
 
+### Requirement: Herdr prerequisites use the command environment
+
+The guidance SHALL check `HERDR_ENV` through the Bash tool that will execute Herdr. It SHALL NOT infer a Herdr blocker solely from Eval's environment. It SHALL preserve the installed Herdr control policy and SHALL NOT fabricate the marker or control unrelated sessions. Missing Herdr access SHALL NOT prevent independent verification where available.
+
+#### Scenario: Eval lacks a managed-pane marker
+
+- **WHEN** Eval lacks `HERDR_ENV` but Bash reports `1`
+- **THEN** the agent follows `herdr --skill` for the fresh wrapped-session smoke
+- **AND** it does not report Herdr unavailable solely because Eval lacks the marker
+
+#### Scenario: Bash lacks a managed-pane marker
+
+- **WHEN** Bash reports an absent `HERDR_ENV` or a value other than `1`
+- **THEN** the agent does not control the user's Herdr session or set the marker to bypass the boundary
+- **AND** it completes independent checks, including managed-browser verification when available
+- **AND** it reports the remaining Herdr-session checks as blocked with the operator handoff
+
 ### Requirement: Failed acceptance preserves recovery boundaries
 
 The guidance SHALL distinguish preparation failure from rejection after promotion. It SHALL use `omp-dev-update --rollback` for authorized source-version recovery when a previous verified generation exists. It SHALL retain generations and mutable application state and SHALL NOT use Nix rollback or official installers as substitutes for OMP source recovery.

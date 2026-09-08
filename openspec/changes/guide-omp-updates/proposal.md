@@ -10,6 +10,7 @@ A fresh agent session cannot reliably complete an OMP update from the short comm
 - Guide routine updates, unchanged releases, patch conflicts, other preparation failures, stale installed pins, and post-update recovery through the existing updater and verifier.
 - Separate authorization for patch publication, configuration publication, host activation, and runtime selection. Default to the current supported host, not a fleet update.
 - Require a fresh wrapped-session verification and the applicable release smoke before reporting success. Report unavailable credentials or approvals as blockers, not completed updates.
+- Check Herdr prerequisites in the Bash command environment, preserve its control boundary, and complete independent checks when Herdr is unavailable.
 - Verify real skill discovery and model use in fresh wrapped sessions, plus bounded rehearsals of the decision paths without publishing or activating production systems.
 
 ## Capabilities

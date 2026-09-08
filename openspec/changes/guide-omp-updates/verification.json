@@ -329,5 +329,34 @@
     "partial_remaining": 1,
     "empty_remaining": 0,
     "actual_updater_empty_rejection": "The pinned patch range is empty"
+  },
+  "herdr_prerequisite": {
+    "date": "2026-09-08",
+    "scope": "Guidance-only clarification; bounded tool-disabled decisions, not production runtime acceptance.",
+    "observed_environment": {
+      "bash": {
+        "HERDR_ENV": "1",
+        "HERDR_PANE_ID": "w1:p2"
+      },
+      "python_eval": {
+        "HERDR_ENV": null,
+        "HERDR_PANE_ID": null
+      }
+    },
+    "procedure": "\nBefore controlling panes, check `HERDR_ENV` with `printenv HERDR_ENV` through the Bash tool that will execute Herdr.\nEval's environment can differ from the command environment; a missing Eval value alone does not establish a Herdr blocker.\n\n- If Bash reports `1`, read `herdr --skill` and follow its control policy for the fresh wrapped-session smoke.\n- If the marker is absent or not `1`, do not control the user's Herdr session or set the marker yourself. Complete independent checks, including the managed-browser smoke when available. Report the fresh Herdr-session checks as blocked and request that the operator resume them from a Herdr-managed OMP session.\n- If the command check fails for another reason, report that error rather than interpreting it as an absent marker.\n\nHerdr availability does not establish permission to control unrelated panes. A missing marker does not establish that OMP's managed browser is unavailable.\n\n",
+    "cases": {
+      "managed": {
+        "input": "The updater reports unchanged inputs and the verifier passed. Eval returns None for HERDR_ENV. Bash printenv HERDR_ENV returns 1. What should you do next?",
+        "response": "Because the Bash check returned `1`, proceed with the Herdr path:\n\n1. Read `herdr --skill` using the Bash environment that will execute Herdr.\n2. Follow its control policy for the fresh wrapped-session smoke.\n3. Do not treat Eval\u2019s `None` as a blocker; its environment may differ.\n4. Confirm the unchanged-inputs report and verifier result as inputs to the acceptance, but do not claim any additional checks have run.\n5. Respect Herdr\u2019s pane-control boundaries and do not control unrelated panes."
+      },
+      "unavailable": {
+        "input": "The updater reports unchanged inputs and the verifier passed. Bash printenv HERDR_ENV has no output and exit status 1. The managed browser is available. What checks can continue and what is blocked?",
+        "response": "Because `printenv HERDR_ENV` returned no output with exit status 1:\n\n- **Can continue:**\n  - Independent repository checks.\n  - The managed-browser smoke, since the managed browser is available.\n  - Review/report the updater\u2019s unchanged-input result and the verifier\u2019s passed result as supplied evidence.\n\n- **Blocked:**\n  - The fresh Herdr-wrapped-session smoke and any control of the user\u2019s Herdr panes. Do not set `HERDR_ENV` yourself or control those panes.\n  - Request that the operator resume those checks from a Herdr-managed OMP session.\n\nThe missing `HERDR_ENV` marker alone does not imply that the managed browser is unavailable. No additional checks are claimed to have run here."
+      },
+      "command_error": {
+        "input": "The Bash tool failed to start the command to check HERDR_ENV. No process environment result was obtained. What can you conclude and what should you do next?",
+        "response": "You can conclude only that the environment check did not execute successfully. You **cannot** conclude that `HERDR_ENV` is absent, unset, or not `1`.\n\nNext actions:\n\n1. Retry `printenv HERDR_ENV` using the Bash tool that would execute Herdr.\n2. If it reports `1`, read `herdr --skill` and follow the fresh wrapped-session control policy.\n3. If it reports a value other than `1` or no value, do not control the user\u2019s Herdr session and do not set the marker. Perform independent checks, including the managed-browser smoke if available, and report fresh Herdr-session checks as blocked.\n4. If Bash fails again for another reason, report that exact error rather than treating it as a missing marker.\n5. Until the check succeeds, do not control unrelated panes or claim that any checks have run."
+      }
+    }
   }
 }
