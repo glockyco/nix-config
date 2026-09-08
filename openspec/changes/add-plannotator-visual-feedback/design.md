@@ -2,7 +2,7 @@
 
 See `proposal.md` for motivation and the delta specifications for behavior. This is a cross-repository integration with a process-lifecycle and network boundary, so a design artifact is required.
 
-Observed during investigation:
+Observed during the initial investigation (implementation evidence is recorded separately in `evidence.md`):
 
 - `packages/personal-omp.nix` loads an immutable plugin and supplies language servers through its wrapper-local `PATH`. It selects a host-local OMP source generation.
 - The locked `llm-agents.nix` revision `b1c9a31450a814e50cddc3ab683b05c1dff7bb01` packages upstream Plannotator 0.27.12 for both host systems. The package builds the browser assets into the executable.
@@ -44,13 +44,19 @@ The external deliverable includes `plugin/extensions/plannotator.ts`, its manife
 
 Alternative: put the adapter in `nix-config`. Rejected because it would split personal agent behavior between repositories. A third repository adds an unnecessary release boundary.
 
-### Reuse the existing packaged executable
+### Extend the existing packaged executable downstream
 
-Pass the selected `llmAgents.plannotator` package into `packages/personal-omp.nix` in both host compositions. Add it to wrapper runtime inputs without classifying it as a language server. The adapter invokes the command name; it contains no Nix paths or installation code.
+The default delivery path does not depend on an upstream contribution. Keep the reviewed annotation-only client-lease patch in `nix-config`, recording its upstream base and originating local commit `420ee6c`. Extend `llmAgents.plannotator` with `overrideAttrs` and append the patch to its existing patches. Preserve the source pin, dependency lock, offline dependency handling, and upstream build recipe. Do not copy the recipe or fetch a patch from a mutable branch or PR URL at build time.
+
+Define the patched package once and pass it into `packages/personal-omp.nix` in both host compositions. Add it to wrapper runtime inputs without classifying it as a language server. The adapter invokes the command name; it contains no Nix paths or installation code.
 
 Extend explicit verification to report the selected Plannotator version and path. Replace incidental exact-one-extension assertions in both repositories with discovery checks for the required capabilities. Preserve existing `personal_commit`, LSP, and generated OpenSpec behavior.
 
-Use the existing dependency-update review process. Do not run upstream's installer or change `omp-dev-update`, activation ownership, Herdr's generated extension, or mutable OMP configuration.
+Use the existing dependency-update review process. Each package update must verify patch applicability and annotation-only behavior. A rejected or unsubmitted upstream contribution does not block release; retain and maintain the downstream patch. Remove it only when the selected package provides equivalent behavior and the applicable native checks pass.
+
+Upstream submission is deferred until downstream delivery and acceptance are complete, and remains optional afterward. Do not publish a branch, open a PR, or work on upstream submission as a prerequisite. Companion plugin publication is a separate workstation dependency operation, not an upstream contribution; existing explicit publication and activation authorization boundaries remain in force.
+
+Do not run upstream's installer or change `omp-dev-update`, activation ownership, Herdr's generated extension, or mutable OMP configuration.
 
 ### Use one annotation-only subprocess path
 
@@ -78,9 +84,9 @@ One session may hold one active review. A second request reports the existing re
 
 Register `/plannotator-cancel` and expose pending review status. Command handlers must not hold the command interface until the browser closes; the user must remain able to cancel. Cancel on session shutdown or navigation. Terminate only the owned process and its descendants, then remove owned temporary files. Do not delete Plannotator history or preferences.
 
-The upstream annotation-only client-lease gap is a release prerequisite, not an excuse to enable `--gate`. Obtain a focused upstream fix that enables abandonment detection for local JSON annotation without approval controls, and consume its reviewed package revision. The fix must distinguish tab closure from brief reconnects and produce `dismissed` after a finite grace period. Verify that grace period in the real browser and document it.
+The selected package must provide annotation-only client leases without enabling `--gate`. Deliver the verified local fix through the checked-in downstream patch. It must distinguish tab closure from brief reconnects and produce `dismissed` after a finite grace period. Verify that grace period with the final Nix-built package in the real browser and document it.
 
-Until an upstream package satisfies this behavior, the adapter can be developed and checked separately, but this integration cannot pass acceptance. Do not ship a gate-mode workaround, inject a private browser script, or silently weaken the cancellation requirement. Explicit cancellation remains necessary for browser-launch failure and other cases where no client ever connects.
+Acceptance depends on verified package behavior, not upstream submission or acceptance. Do not ship a gate-mode workaround, inject a private browser script, or silently weaken the cancellation requirement. Explicit cancellation remains necessary for browser-launch failure and other cases where no client ever connects.
 
 ### Preserve the network and runtime boundaries
 
@@ -98,19 +104,19 @@ Synchronize this delta only after `maintain-patched-omp` has passed its own acce
 
 ## Risks / Trade-offs
 
-- **Upstream lifecycle support is incomplete:** Treat annotation-only tab-close settlement as an explicit upstream/package prerequisite. No browser-close smoke has passed yet.
+- **Downstream patch maintenance:** The local fix passed focused tests and managed-browser smoke, but the final Nix-built package still needs native acceptance. Review conflicts and behavior on every dependency update. Upstream rejection does not remove the patch or weaken the contract.
 - **Personal plugin API types can drift:** Extend only used host declarations and verify through the real wrapped OMP runtime, not registration doubles alone.
 - **Feedback can arrive after navigation:** Cancel on navigation and verify captured ownership again before delivery.
 - **The source can change during review:** Keep an immutable snapshot and identify stale feedback rather than attributing it to newer content.
 - **WSL browser launch can fail silently upstream:** Keep explicit cancellation available and require a Windows-browser round trip before acceptance.
-- **The package may require an uncached build:** Inspect both host build plans and retain the existing Darwin build-plan gate. Do not add a second packaging route without evidence.
+- **The patch changes the package derivation:** Expect new builds on both architectures rather than cache hits for the unmodified package. Inspect both build plans and retain the Darwin build-plan gate. Reuse the existing recipe instead of introducing a second packaging route.
 - **Other unmanaged plugin consumers may lack the executable:** Report an actionable missing-command error on invocation without preventing normal OMP startup. Never install it automatically.
 
 ## Migration Plan
 
-1. Obtain and verify upstream annotation-only client-lease support through a reviewed package revision.
+1. Package the reviewed local client-lease fix as a checked-in patch on the existing pinned `llm-agents.nix` derivation. Build and verify it on both supported systems without upstream publication.
 1. Deliver the separately authorized plugin change and run its existing CI, flake checks, and real OMP command smoke. Record the reviewed revision; publication remains an explicit authorized operation.
-1. Select the compatible executable and plugin together in `nix-config`. Do not advance unrelated inputs.
+1. Select the patched executable and reviewed companion plugin together in `nix-config`. Retain the existing executable-package input unless a verified build requirement needs an update. Do not advance unrelated inputs.
 1. Run the existing repository release gates in their documented order. Run the extra Darwin build-plan and system-build gates on macbook-pro.
 1. After review and merge, activate each host, inspect activation output, run `verify-personal-omp`, and perform the real wrapped-session annotation matrix. Keep evidence with this change.
 1. Update existing usage and release documentation after the smoke proves the behavior. Remove throwaway verification data, not user history.

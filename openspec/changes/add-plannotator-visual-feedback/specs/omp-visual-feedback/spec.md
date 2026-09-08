@@ -6,13 +6,29 @@ Provide browser-based visual feedback on documents and assistant responses in a 
 
 ### Requirement: Declarative executable and adapter ownership
 
-The workstation SHALL supply a pinned upstream Plannotator executable on macbook-pro and korolev. The OMP adapter SHALL belong to the immutable personal plugin in `omp-agent-setup`. The adapter SHALL invoke the supplied executable without installing software, selecting versions, or loading the Plannotator Pi extension. Preferences, review history, and temporary data SHALL remain outside the Nix store and tracked source files.
+The workstation SHALL supply a pinned Plannotator executable on macbook-pro and korolev through the existing `llm-agents.nix` package with a reviewed, checked-in downstream patch. The OMP adapter SHALL belong to the immutable personal plugin in `omp-agent-setup`. The adapter SHALL invoke the supplied executable without installing software, selecting versions, or loading the Plannotator Pi extension. Preferences, review history, and temporary data SHALL remain outside the Nix store and tracked source files.
 
 #### Scenario: Launch from a clean managed session
 
 - **WHEN** the user starts the default wrapped OMP command after the reviewed configuration is activated
 - **THEN** visual annotation commands and the pinned Plannotator executable are available without a mutable plugin checkout or installer
 - **AND** activation has not opened a browser or rewritten OMP configuration
+
+### Requirement: Downstream-first package delivery
+
+The workstation SHALL maintain the annotation-only client-lease fix as a checked-in patch appended to the existing package derivation. It SHALL preserve existing packaging patches, locked dependencies, and the build recipe. Both hosts SHALL use the same patch source. Package updates SHALL verify patch applicability and required behavior. Delivery and acceptance SHALL NOT depend on upstream submission, acceptance, release, or package publication. Upstream submission SHALL remain deferred until downstream acceptance is complete and SHALL remain optional afterward.
+
+#### Scenario: Upstream contribution is absent, pending, or rejected
+
+- **WHEN** no accepted upstream release contains the fix
+- **THEN** both hosts can build and use the reviewed downstream-patched package without an upstream contribution
+- **AND** all browser, network, lifecycle, and rollback acceptance gates still apply
+
+#### Scenario: Update or retire the downstream patch
+
+- **WHEN** the selected package version changes
+- **THEN** review verifies patch applicability and the annotation-only lifecycle behavior before release
+- **AND** the patch is removed only after the selected package provides equivalent behavior and passes applicable native checks
 
 ### Requirement: Annotate a document snapshot
 
