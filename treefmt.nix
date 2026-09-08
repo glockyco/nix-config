@@ -24,9 +24,13 @@ _:
     # Plain mdformat only speaks CommonMark, which has no tables: it collapses
     # the cells and leaves the delimiter row ragged. The GFM plugin adds
     # tables, strikethrough and task lists, and aligns table columns.
+    # Frontmatter support preserves discovery metadata in authored skills.
     mdformat = {
       enable = true;
-      plugins = ps: [ ps.mdformat-gfm ];
+      plugins = ps: [
+        ps.mdformat-gfm
+        ps.mdformat-frontmatter
+      ];
     };
 
     jsonfmt.enable = true;

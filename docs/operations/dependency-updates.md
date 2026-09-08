@@ -20,6 +20,87 @@ Never accept changed bytes under an existing hash.
 If the plugin selects a different server, publish its verified revision and change the wrapper package selection together.
 Do not publish a plugin that selects an unavailable server or retain the previous server as a fallback.
 
+## Agent-led OMP updates
+
+The repository-local [omp-update skill](../../.agents/skills/omp-update/SKILL.md) guides an agent through this procedure.
+Start a fresh wrapped OMP session in this checkout and request an update, or invoke `/skill:omp-update`.
+The result is a verified selected runtime, not only a repaired patch series or instructions for unfinished work.
+
+### Preflight and authorization
+
+1. Identify the current host and system from the environment and repository declarations. Default to that supported host unless the user names another.
+1. Resolve `omp`, `omp-dev-update`, and `verify-personal-omp` from the caller's command environment. Inspect their resolved launchers for ownership; do not select a convenient developer executable.
+1. Read [the declared inputs](../../packages/omp-dev-update.nix). Resolve the installed updater script and read the immutable JSON path passed to its `--config` argument. Compare its upstream URL, fork URL, patch base, patch tip, and system with the reviewed repository declaration. Do not execute file contents to extract these fields.
+1. Run `omp-dev-update --status` to record the selected release, upstream, patch range, resulting commit, and system. Inspect the declared state root's `current` and `previous` targets and their generation metadata. A first installation can have neither target. Status metadata describes the selected generation, not necessarily the installed updater's current pins.
+1. Inspect repository changes and granted scope. Preserve unrelated work. A normal update request authorizes the existing updater's selection on the current host, unless restricted. Obtain missing authorization before patch publication, configuration publication, host activation, or recovery outside the granted scope. Never infer fleet permission from access to a remote builder.
+
+If installed pins differ from the reviewed repository pins, establish which revision is intended before preparation.
+If the intended pin change is already reviewed and committed, reuse that commit; do not edit or recommit identical pins.
+A reviewed local commit can be activated without a nix-config push. Request configuration publication only when that operation is required by the user's scope.
+Run the applicable [release gates](../../README.md#develop), review and commit the intended configuration, then perform authorized [activation](../../README.md#activate).
+Do not activate unrelated or unreviewed changes. Read activation output and resolve the installed updater again before retrying.
+Building a package does not install its pins. Publishing a fork branch does not activate either host.
+
+If administrator interaction is unavailable, report the exact host command from the README and the current selection.
+Do not ask for passwords or private-key contents. Resume after the operator provides the activation result.
+If the host or command ownership is unsupported, report that prerequisite instead of installing another OMP distribution.
+
+### Prepare and accept the runtime
+
+1. If a failure was already reported, inspect its phase and candidate before another attempt. Do not rerun a known failure merely to confirm it.
+1. Otherwise, run `omp-dev-update` through the installed command. It selects the latest stable upstream release using the installed pins.
+1. If preparation succeeds, run `verify-personal-omp` and complete [Release smoke](#release-smoke) in a fresh wrapped session through Herdr. Include the WSL browser check when applicable.
+1. If inputs are unchanged, verify the selected runtime and report **already current**. Do not manufacture a patch refresh, pin edit, or new generation.
+1. If preparation fails, use the reported phase and candidate location to select the repair path below. A failed candidate need not have `generation.json`; that file is written after successful preparation.
+1. If smoke fails after selection, report failed acceptance and follow authorized [OMP version recovery](#omp-version-recovery). Repeat verification after recovery. Do not report the recovered older release as a successful upgrade.
+
+The updater owns its process lock, candidate worktree, retained development environment, verification phases, and atomic promotion.
+Do not edit `current` or `previous`, remove a process-held lock, manually promote a candidate, or invent prepare-only or resume flags.
+An interrupted or rejected preparation leaves the previous selection available; inspect the selection before reporting its state.
+Retain previous generations while any session uses them.
+
+### Repair a non-conflict failure
+
+Read the reported command, exit status, phase, and relevant source before choosing a repair.
+Use [the updater implementation](../../packages/omp-dev-update.py) as the current phase and command reference.
+
+- **Fetch or input validation:** check declared URLs, release/tag identity, exact commit availability, ancestry, and existing credential access. Do not print tokens, change credential ownership, or accept a moving branch as a pin.
+- **Environment or dependencies:** inspect the resolved release's Nix shell and lockfiles, available disk space, and the actual dependency error. Preserve frozen dependency installation; do not update locks merely to make installation pass.
+- **Native build:** use the target host's development environment and native output. Do not copy another host's native artifacts or bypass the build with an executable fallback.
+- **Package checks or regressions:** investigate the failing behavior. Keep failures visible and verify the source repair before retrying production preparation.
+- **Native loading or CLI smoke:** inspect the native error, source launcher, immutable plugin input, and caller environment. Do not rewrite mutable OMP configuration or add a launcher fallback.
+- **Lock or promotion:** inspect the owning operation and recorded state. Wait for legitimate work or report the failure; do not delete state to force another updater through.
+
+Use a separate worktree for source repairs. Follow the same verification and publication boundaries as a patch refresh.
+If a repair requires an updater contract change, use a separately reviewed OpenSpec change rather than silently expanding the current update.
+Retry only after a diagnosed cause or prerequisite has changed. State any remaining blocker and preserve the failed candidate for inspection.
+
+### Refresh the maintained patches
+
+1. Record the failing range and resolved stable upstream commit from installed inputs, updater output, and Git state. Inspect the candidate read-only, including its conflict blocks and relevant upstream changes. Do not repair the failed candidate in place.
+1. Use a separate maintained Git repository or worktree outside the updater's active generations. If none exists, create an owned temporary clone from the declared sources. Fetch the exact old base and tip plus the resolved stable release; verify commit identities, ancestry, and the release tag as the updater does.
+1. Create a new versioned maintenance branch at the old patch tip. Rebase that range onto the resolved upstream commit using `git rebase --onto <upstream-commit> <old-base>`. Resolve each overlap by understanding both behaviors, not with a blanket ours/theirs strategy. Preserve the original branch.
+1. Review `git range-diff <old-base>..<old-tip> <new-base>..<new-tip>` and the complete diff from the new upstream base. Check every intended fix, unintended changes, and release notes. Move personal notes to the appropriate unreleased section without rewriting published upstream entries.
+1. If upstream now supplies a fix, verify its behavior before retiring the redundant patch. Do not silently preserve or discard a patch based only on whether Git applies it. The updater rejects an empty or merged patch range; if no patches remain, report the need for a reviewed updater contract change. Do not create a dummy patch to pass validation.
+1. Verify the refreshed source before publication. Read the current `PHASES`, `REGRESSIONS`, and `prepare` implementation in the updater, then execute the corresponding checks in the resolved upstream development environment. Preserve its frozen dependency installation, host-native build, package checks, behavior regressions, native loading, and immutable-plugin launcher checks. Check the relevant upstream scripts if their interfaces changed.
+1. Use isolated application state for verification: separate HOME, XDG directories, OMP/PI agent paths, and an outside-checkout launch directory. Remove inherited runtime overrides as the updater does. Keep the personal plugin at its declared immutable path. Do not copy authentication databases or run aggregate setup commands that install global links.
+1. Request any missing permission to publish the concrete new branch to the declared fork. Publish only the verified commits, without force-pushing or rewriting the original branch. Verify the exact base and tip can be fetched and their ancestry checked independently on both supported hosts. Missing host access is a verification blocker, not permission to copy a checkout or claim that check passed.
+1. Update the exact `patchBase` and `patchTip` in the repository declaration. Record verification with the relevant change and use the personal commit policy for task-owned changes. A patch-fork push does not authorize a nix-config push. Keep semantic updater changes in their own reviewed change.
+1. Complete the applicable README gates, review and merge the intended configuration, and perform authorized activation on the requested host. Inspect activation output and confirm the installed inputs. Then rerun `omp-dev-update` and complete runtime acceptance; do not stop at publication or pin integration.
+
+A newer stable release can appear during maintenance. Record the release actually selected on retry and verify that result.
+If replay fails against that newer release, inspect the new failure; do not claim that earlier verification covered it.
+Only the updater prepares and selects the production generation. Verification worktrees are not alternate runtime installations.
+
+### Completion and handoff
+
+Report **updated**, **already current**, **recovered**, or **blocked**, with the observed host and selected identities.
+Include the verifier result, fresh-session smoke, immutable plugin path, Herdr status, and previous-generation availability.
+Name the commits, publications, and activations actually performed, and distinguish any existing session still using an older generation.
+If no previous generation exists, report that limitation; never invent a successful rollback.
+For blockers, name the failed phase, candidate if present, current selection, missing prerequisite, and exact next operator action.
+Keep evidence with the change or session, not as historical release facts in this manual or skill.
+
 ## Release smoke
 
 After activation or an OMP executable change, run `verify-personal-omp`.

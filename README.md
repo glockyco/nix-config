@@ -94,6 +94,8 @@ nix flake update                       # all inputs
 nix flake update personal-omp-plugin   # plugin only
 ```
 
+For an agent-led update, open this repository in a fresh OMP session and request an update or invoke `/skill:omp-update`. The [repository skill](.agents/skills/omp-update/SKILL.md) follows the [complete update procedure](docs/operations/dependency-updates.md#agent-led-omp-updates), including patch repair and runtime verification.
+
 On macbook-pro and korolev, initialize or update the patched OMP runtime explicitly:
 
 ```sh
