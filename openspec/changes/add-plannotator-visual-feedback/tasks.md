@@ -32,8 +32,8 @@ Historical tasks 1.2–1.4 completed the local lease fix, downstream packaging, 
 
 ## 4. Release and native acceptance
 
-- [ ] 4.1 Run `nix fmt -- --fail-on-change` and then `nix flake check --print-build-logs` against the final stock-package selection. Verify applicable checks on both native systems. Record results with this change.
-- [ ] 4.2 On macbook-pro, run `nix run .#check-darwin-build-plans` and then `nix build .#darwinConfigurations.macbook-pro.system`. Verify both gates pass for the final stock-package selection without depending on the borrowed Air.
+- [x] 4.1 Run `nix fmt -- --fail-on-change` and then `nix flake check --print-build-logs` against the final stock-package selection. Verify applicable checks on both native systems. Record results with this change.
+- [x] 4.2 On macbook-pro, run `nix run .#check-darwin-build-plans` and then `nix build .#darwinConfigurations.macbook-pro.system`. Verify both gates pass for the final stock-package selection without depending on the borrowed Air.
 - [ ] 4.3 After review and merge, activate each host, inspect activation output, and run `verify-personal-omp` plus the existing real wrapped-session release smoke; record both immutable package paths and confirm normal personal plugin behavior remains available.
 - [ ] 4.4 In a real local OMP session through Herdr on korolev, annotate a document and the last response in the Windows browser; submit highlighted comments and replacement suggestions, and verify correct source attribution, one feedback delivery, no source edits, and no approval controls.
 - [ ] 4.5 Repeat the document and last-response feedback round trips in a real wrapped OMP session and local browser on macbook-pro; record the observed browser surface and feedback in that session.

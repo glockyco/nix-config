@@ -16,6 +16,6 @@ Historical completed tasks 1.2 and 1.3 verified the independent input through th
 
 ## 3. Verification and documentation
 
-- [ ] 3.1 Run ordered repository checks on both native systems against the final stock selection. Run the Darwin build-plan and system-build gates. Verify the existing wrapper and annotation contracts remain intact.
+- [x] 3.1 Run ordered repository checks on both native systems against the final stock selection. Run the Darwin build-plan and system-build gates. Verify the existing wrapper and annotation contracts remain intact.
 - [x] 3.2 Update the existing dependency runbook for explicit revision-and-lock updates and stock-package selection. Remove patch maintenance and custom cache instructions. Document build caveats and explicit cancellation after tab closure. Verify the update commands in a disposable checkout, then remove it.
-- [ ] 3.3 Record final stock-package evidence and run strict validation of this change. Archive only after all active tasks pass. Preserve the separate visual-feedback change's unverified native acceptance gates.
+- [x] 3.3 Record final stock-package evidence and run strict validation of this change. Archive only after all active tasks pass. Preserve the separate visual-feedback change's unverified native acceptance gates.
