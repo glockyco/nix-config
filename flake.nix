@@ -68,6 +68,9 @@
     # Overriding it breaks cache hits and is unsupported on this stable release branch.
     llm-agents.url = "github:numtide/llm-agents.nix";
 
+    # Pin Plannotator releases independently; retain the vendor's own transitive inputs.
+    plannotator-packages.url = "github:numtide/llm-agents.nix/b1c9a31450a814e50cddc3ab683b05c1dff7bb01";
+
     # Personal OMP behavior has its own release cadence and immutable plugin output.
     personal-omp-plugin = {
       url = "github:glockyco/omp-agent-setup";
@@ -194,7 +197,7 @@
                 ;
               inherit (llmAgents) herdr;
               plannotator = pkgs.callPackage ./packages/plannotator.nix {
-                inherit (llmAgents) plannotator;
+                plannotator = inputs.plannotator-packages.packages.${system}.plannotator;
               };
               plugin = inputs.personal-omp-plugin.packages.${system}.default;
             };

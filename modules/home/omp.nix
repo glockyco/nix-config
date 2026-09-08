@@ -17,7 +17,7 @@ let
       ;
     inherit (llmAgents) herdr;
     plannotator = pkgs.callPackage ../../packages/plannotator.nix {
-      inherit (llmAgents) plannotator;
+      plannotator = inputs.plannotator-packages.packages.${system}.plannotator;
     };
     plugin = inputs.personal-omp-plugin.packages.${system}.default;
   };

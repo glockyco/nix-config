@@ -85,7 +85,7 @@ For local containers on the Mac, use the [container lifecycle and recovery proce
 
 ## Update
 
-The central [dependency automation](https://github.com/glockyco/dependency-automation) opens review-only Nix-input PRs every Saturday. Renovate updates GitHub Actions. Neither merges or activates hosts. [Dependency operations](docs/operations/dependency-updates.md) covers external authorization and release recovery.
+The central [dependency automation](https://github.com/glockyco/dependency-automation) opens review-only Nix-input PRs every Saturday. Renovate updates GitHub Actions. Neither merges or activates hosts. Plannotator stays at an explicitly selected vendor revision. [Dependency operations](docs/operations/dependency-updates.md) covers on-demand Plannotator updates, external authorization, and release recovery.
 
 For a manual Nix update, choose one command, review the diff, then run the gates above:
 
