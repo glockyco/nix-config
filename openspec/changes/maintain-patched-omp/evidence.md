@@ -49,7 +49,7 @@ The refresh resolved the Markdown test import overlap by retaining both required
 
 Korolev verification passed: frozen dependency installation, a fresh native build, all three package checks, and 364 regressions across ten files. Native loading and immutable `personal_commit` registration passed. The source launcher reported `18.1.14` outside the checkout with isolated application state. The upstream Nix flake and lockfile were unchanged, so verification used the existing locked development profile.
 
-The refreshed branch is not published. The updater pins and selected runtime remain unchanged pending publication approval.
+After explicit approval, the refreshed branch was published to `glockyco/oh-my-pi` without rewriting the original branch. The repository updater pins now reference the verified base and tip above. Both hosts independently fetched that exact range into temporary bare repositories and verified its ancestry: five fix commits plus the changelog correction. Formatting, strict OpenSpec validation, the flake checks, the Darwin OMP checks, and the Darwin system build passed. This pin update does not activate host configuration or change the selected runtime.
 
 ## Remaining operator gate
 
