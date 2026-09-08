@@ -24,15 +24,15 @@ This revision changes planning artifacts only. The next apply step implements th
 ## 3. Workstation composition
 
 - [x] 3.1 Pass the compatible Plannotator package through every `packages/personal-omp.nix` call site and add it to wrapper-local runtime inputs, separately from language servers; verify both host evaluations and inspect their build plans without adding another packaging route.
-- [ ] 3.2 Select the reviewed companion `personal-omp-plugin` revision and the downstream-patched executable; retain the existing `llm-agents` pin unless verified build requirements need an update. Verify the locked source and checked-in patch identities match the delivery evidence. Do not publish to upstream or update unrelated inputs.
+- [x] 3.2 Select the reviewed companion `personal-omp-plugin` revision and the downstream-patched executable; retain the existing `llm-agents` pin unless verified build requirements need an update. Verify the locked source and checked-in patch identities match the delivery evidence. Do not publish to upstream or update unrelated inputs.
 - [x] 3.3 Extend `verify-personal-omp` to report the selected Plannotator path and version without starting a browser; verify it still reports the source-generation identity, immutable plugin, and current Herdr integration.
 - [x] 3.4 Update affected wrapper and plugin-discovery checks in `flake.nix`; verify pinned Plannotator takes precedence over a conflicting caller executable while argument forwarding, working directory, nested OMP resolution, and parent-shell isolation remain unchanged.
 - [x] 3.5 Verify evaluated activation declarations contain no Plannotator invocation, installer, generated extension copy, mutable OMP configuration rewrite, firewall opening, or tailnet publication; preserve the existing source-update and Herdr ownership contracts.
 
 ## 4. Release and native acceptance
 
-- [ ] 4.1 Run `nix fmt -- --fail-on-change` and then `nix flake check --print-build-logs` in the documented order; verify applicable checks on both native systems and record results with this change.
-- [ ] 4.2 On macbook-pro, run `nix run .#check-darwin-build-plans` and then `nix build .#darwinConfigurations.macbook-pro.system`; verify both gates pass without depending on the borrowed Air.
+- [x] 4.1 Run `nix fmt -- --fail-on-change` and then `nix flake check --print-build-logs` in the documented order; verify applicable checks on both native systems and record results with this change.
+- [x] 4.2 On macbook-pro, run `nix run .#check-darwin-build-plans` and then `nix build .#darwinConfigurations.macbook-pro.system`; verify both gates pass without depending on the borrowed Air.
 - [ ] 4.3 After review and merge, activate each host, inspect activation output, and run `verify-personal-omp` plus the existing real wrapped-session release smoke; record both immutable package paths and confirm normal personal plugin behavior remains available.
 - [ ] 4.4 In a real local OMP session through Herdr on korolev, annotate a document and the last response in the Windows browser; submit highlighted comments and replacement suggestions, and verify correct source attribution, one feedback delivery, no source edits, and no approval controls.
 - [ ] 4.5 Repeat the document and last-response feedback round trips in a real wrapped OMP session and local browser on macbook-pro; record the observed browser surface and feedback in that session.
