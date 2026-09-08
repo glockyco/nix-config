@@ -165,6 +165,8 @@ The plugin path must be under `/nix/store`, the policy must apply, and preview m
 A workflow-only or documentation-only change needs no model-backed smoke. It still needs every [release gate](../../README.md#develop).
 On WSL, repeat the [managed-browser smoke](wsl-omp-bootstrap.md#managed-browser-smoke) after OMP updates, recovery, or browser ABI changes.
 
+For Plannotator changes, run `/plannotator-annotate <path>` and `/plannotator-last` in the fresh local session. Submit feedback from the native browser and confirm source attribution without source edits or approval. Exercise `/plannotator-cancel` and confirm that the owned listener disappears. Closing a tab alone is not a cancellation guarantee.
+
 For language-server changes, use fresh wrapped sessions at fixed representative project roots on both supported systems.
 OMP discovers root markers in its working directory, not child directories.
 Supply project SDKs through each project's development environment. A server runtime does not supply the C# SDK.
