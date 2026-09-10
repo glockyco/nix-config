@@ -25,14 +25,15 @@ The workstation SHALL resolve the personal plugin from an independently locked f
 
 ### Requirement: Default wrapped command
 
-The default `omp` command SHALL invoke the selected source generation with the immutable personal plugin and curated language tools. Both supported hosts SHALL use the same home-relative selection convention. The wrapper SHALL preserve the caller's working directory and arguments. It SHALL reject the leading executable-update subcommand with instructions to use `omp-dev-update` and SHALL NOT install an official release or invoke a fallback.
+The default `omp` command SHALL invoke the selected source generation with the immutable personal plugin, curated language tools, and pinned Plannotator executable. Both supported hosts SHALL use the same home-relative selection convention. The wrapper SHALL preserve the caller's working directory and arguments. It SHALL reject the leading executable-update subcommand with instructions to use `omp-dev-update` and SHALL NOT install an official release or invoke a fallback. Plannotator SHALL resolve from the declared package before user-provided alternatives, without changing the parent shell's environment.
 
 #### Scenario: Resolve the default command
 
 - **WHEN** a user resolves `omp` from a fresh login shell on a supported host
 - **THEN** the resolved executable is the Nix-managed workstation wrapper
 - **AND** the wrapper invokes the selected verified source generation
-- **AND** OMP discovers the packaged personal extension, skills, rule, and LSP overrides
+- **AND** OMP discovers the packaged personal extensions, skills, rule, and LSP overrides
+- **AND** annotation commands resolve the unmodified vendor Plannotator executable from the declared commit-pinned input
 
 #### Scenario: Start OMP from Windows Zed
 
@@ -49,8 +50,9 @@ The default `omp` command SHALL invoke the selected source generation with the i
 #### Scenario: Preserve normal command resolution
 
 - **WHEN** the user starts a normal session or passes `update` outside the leading subcommand
-- **THEN** the wrapper preserves the arguments and enables the immutable plugin and language tools
+- **THEN** the wrapper preserves the arguments and enables the immutable plugin, language tools, and Plannotator
 - **AND** nested `omp` commands continue to resolve to the Nix wrapper
+- **AND** the caller's shell environment is unchanged
 
 ### Requirement: Mutable runtime state boundary
 
@@ -348,12 +350,12 @@ Both supported hosts SHALL consume one portable user-scope module set for the sh
 
 ### Requirement: WSL host network isolation
 
-The WSL host SHALL expose no listening network service and SHALL be unreachable from every other tailnet node by policy and by its own shields-up setting. It SHALL hold its tailnet device identity and one root-owned SSH client key dedicated to the Darwin builder. The private key SHALL remain outside the repository and Nix store. It MAY act as a client of the Darwin host for remote builds and SSH. No other host SHALL drive it.
+The WSL host SHALL expose no network service reachable from another host and SHALL remain unreachable from every other tailnet node by policy and by its own shields-up setting. Temporary annotation servers SHALL bind only to loopback and SHALL be reachable by the local Windows browser through WSL local connectivity. They SHALL NOT publish through Tailscale or require firewall openings. The host SHALL hold its tailnet device identity and one root-owned SSH client key dedicated to the Darwin builder. The private key SHALL remain outside the repository and Nix store. Its existing client access to the Darwin host for remote builds and SSH SHALL remain available. No other host SHALL drive it.
 
 #### Scenario: Inspect the running host
 
 - **WHEN** the WSL host is running
-- **THEN** it runs no SSH server, no tailnet SSH server, and no other inbound service
+- **THEN** it runs no SSH server, no tailnet SSH server, and no other externally reachable inbound service
 - **AND** its firewall declares no open TCP or UDP port
 - **AND** the configuration declares no secret and no age recipient for this host
 
@@ -368,6 +370,14 @@ The WSL host SHALL expose no listening network service and SHALL be unreachable 
 - **WHEN** the WSL host opens a remote build session to the Darwin host
 - **THEN** tailnet policy permits the network connection and OpenSSH authenticates the dedicated builder key
 - **AND** the client key is readable only by root, and only its public key and private-key path enter the configuration
+
+#### Scenario: Open and end a local annotation review
+
+- **WHEN** a local OMP session on WSL opens a visual annotation review
+- **THEN** only a temporary loopback listener is created
+- **AND** the local Windows browser can reach it without tailnet publication or a firewall change
+- **AND** a terminal result, explicit cancellation, session navigation, or shutdown removes the owned listener
+- **AND** tab closure alone can leave the review pending until `/plannotator-cancel` or another cancellation event
 
 ### Requirement: Container runtime on the WSL host
 
@@ -554,3 +564,14 @@ The workstation SHALL provide an on-demand path from OMP in WSL to a dedicated C
 - **WHEN** the operator applies the NixOS or Windows declaration
 - **THEN** activation does not load an unpacked extension into a browser profile
 - **AND** activation does not write OMP browser configuration or browser runtime state
+
+### Requirement: Declarative WSL Windows interoperability
+
+The WSL host SHALL register Windows executable interoperability through the supported NixOS-WSL module. User-initiated browser launch SHALL work without an OMP fallback or a manual kernel-entry script. Activation SHALL register the handler without launching a Windows application.
+
+#### Scenario: Restore a missing Windows executable handler
+
+- **WHEN** the host activates its declared configuration with no existing Windows executable handler
+- **THEN** the standard `/init` interoperability handler is registered
+- **AND** subsequent user-initiated Windows commands and local browser launch work
+- **AND** activation itself launches no Windows application
