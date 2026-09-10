@@ -141,3 +141,49 @@ Korolev also has not yet run the reviewed updater, so the `linux-x64` published
 addon path is unproven. Its leaf package must contain the baseline or modern
 addon that the host selects. If it does not, the phase reports the absent
 artifact and compiles instead.
+
+## Korolev acceptance — 2026-09-10
+
+The Linux gates passed for the reviewed implementation: `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs` with 25 checks and 23
+updater tests, and the explicit `korolev` system build. `sudo nixos-rebuild switch --flake .#korolev` activated system generation 24 at
+`/nix/store/pw0gjlix5g939c8vbcm1yw6d08i6mh1w-nixos-system-korolev-26.05.20260903.a5cc6f2`.
+Generation 23 remains available. The activated updater is
+`/nix/store/np7j7g0shmdk651mhj27i3d0izpvkd2n-omp-dev-update`, and its immutable
+configuration declares the reviewed upstream, fork, patch base, patch tip, and
+system.
+
+The first `omp-dev-update` reported `unchanged` in 2.9 seconds. A rollback then
+selected the previous generation `v18.1.14-q428ax3t`, which supplied a changed
+input for a complete preparation with the installed command and its immutable
+pins.
+
+That preparation proved the published `linux-x64` path on this host. The native
+phase reported `installing verified @oh-my-pi/pi-natives-linux-x64@18.1.16` and
+installed `pi_natives.linux-x64-modern.node`, the AVX2 variant for this
+processor, at 180 576 496 bytes. The candidate contains no `target` directory.
+The complete update took 1 minute 18 seconds, against about eight minutes for
+the earlier compiling updater. Package checks, 368 regressions across ten files,
+native loading, and the plugin launch check passed. The selected generation is
+`v18.1.16-y5g4jb1c` at commit `cf6a24bd32a8cdc050586123d459f685596fde92` on
+upstream `61b1b8aef634334eaf1412afd003a763e1d1b9c1`. The persistent package cache
+holds 1.5 GB at `~/.local/share/omp-dev/cache`.
+
+`verify-personal-omp` reported release `v18.1.16`, OMP `18.1.16`, plugin
+`/nix/store/i8wicgnzcnd3afxkvl3v4wc87sndgbvv-personal-omp-plugin-0.1.0`,
+Plannotator `0.27.12` at
+`/nix/store/lg5dqz4gcm3wxvmqjc2zgya34bysmb3r-plannotator-0.27.12`, and `omp: current (v8)`.
+
+Task 4.4 is complete. The temporary launcher `~/.local/lib/oh-my-pi/omp-dev` and
+the obsolete `omp` symlink beside it were removed. The installer-owned
+`omp-release-18.1.13` executable and the developer checkout at
+`~/src/github.com/can1357/oh-my-pi` were not touched. A fresh login shell
+resolves `omp`, `omp-dev-update`, and `verify-personal-omp` through
+`/etc/profiles/per-user/user/bin`, resolves no `omp-dev`, and reports `18.1.16`.
+Two consecutive `--rollback` operations selected `v18.1.14-q428ax3t` and then
+`v18.1.16-y5g4jb1c` again, without a download or a build.
+
+One interrupted candidate, `v18.1.14-ivg91nfy`, was removed and its worktree
+registration was pruned. The selected generation, the retained previous
+generation, and the two verified `v18.1.13` generations remain. A separate
+six-hour-old session still runs from `v18.1.16-znf2c_9x`, so that generation was
+also retained.
