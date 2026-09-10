@@ -101,3 +101,26 @@ passed. The 23 updater tests pass in the `personalOmpUpdate` check.
 
 Host activation and the Herdr pane smoke remain operator gates. `HERDR_ENV` is
 absent in this session, so the fresh Herdr-managed session smoke was not run.
+
+## Mac acceptance — 2026-09-10
+
+`darwin-switch` activated `darwin-system-26.05.c3e90c8`
+(`3334ipi54hml7sn0qygpqzbf1pxhs92b` to
+`6kiqcnlfcb739l00113b82bq5zrl7cri`). The closure grew by one path,
+`nss-cacert 3.126`, which supplies the certificate bundle that the updater now
+pins. The previous system generation remains available. The profile command
+resolves to `/nix/store/j08m5f93biyzlmjnw0frkq1japwpmc9y-omp-dev-update`. A
+following `omp-dev-update` reported `unchanged` in 2.4 seconds and created no
+candidate.
+
+A fresh wrapped session started through Herdr as agent `smoke` in pane `wG:p2`,
+in a disposable repository. It reported OMP `18.1.16`, the plugin path
+`/nix/store/h2d0q2rh5i5c62jq7d25qf7win2x60zj-personal-omp-plugin-0.1.0`, and the
+first commit-policy rule verbatim. Its `personal_commit` preview returned the
+formatted message and left the repository at one commit with a clean status. The
+pane created for this check was closed afterward.
+
+Two obsolete generations were removed after the acceptance run:
+`v18.1.16-ntd7c1gw`, an interrupted candidate, and `v18.1.13-2_z6cmjt`, an
+unlinked older generation. Their worktree registrations were pruned. The
+selected generation and the retained previous generation were not changed.
