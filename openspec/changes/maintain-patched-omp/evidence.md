@@ -61,7 +61,7 @@ sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
 verify-personal-omp
 ```
 
-Task 4.3 still requires activation output review and the fresh wrapped-session smoke in Herdr. Task 4.4 remains blocked by that gate. The temporary Korolev launcher, developer checkout, previous Nix generations, and installer-owned files remain intact.
+This gate was superseded on 2026-09-10. The Mac acceptance section below records the completed activation, its output, and the Herdr session smoke. Task 4.4 is now blocked only by Korolev availability.
 
 ## Published native components — 2026-09-10
 
@@ -124,3 +124,19 @@ Two obsolete generations were removed after the acceptance run:
 `v18.1.16-ntd7c1gw`, an interrupted candidate, and `v18.1.13-2_z6cmjt`, an
 unlinked older generation. Their worktree registrations were pruned. The
 selected generation and the retained previous generation were not changed.
+
+## Korolev cleanup attempt — 2026-09-10
+
+Task 4.4 could not run. `tailscale status` reported korolev as `offline, last seen 4m ago`. Direct SSH to its hostname and to `100.117.31.61` both timed out.
+
+The repository side of the task needs no change. No Nix declaration under
+`hosts/korolev`, `modules/fleet`, or `modules/home/omp.nix` still defines a
+temporary launcher or an obsolete platform update route; task 3.2 removed those.
+The remaining work is host-local: remove Korolev's temporary `omp-dev` launcher
+artifact, confirm that a fresh login shell resolves only the wrapped `omp` and
+`omp-dev-update`, and confirm that its previous generations remain selectable.
+
+Korolev also has not yet run the reviewed updater, so the `linux-x64` published
+addon path is unproven. Its leaf package must contain the baseline or modern
+addon that the host selects. If it does not, the phase reports the absent
+artifact and compiles instead.
