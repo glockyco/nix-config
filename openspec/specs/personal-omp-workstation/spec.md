@@ -2,30 +2,36 @@
 
 ## Purpose
 
-This specification defines how the workstation wraps and verifies a platform-owned OMP executable with an immutable personal plugin while preserving mutable runtime state.
+This specification defines how the workstation wraps and verifies a host-local OMP source generation with an immutable personal plugin while preserving mutable runtime state.
 
 ## Requirements
 
 ### Requirement: Pinned executable and plugin inputs
 
-The workstation SHALL resolve the personal plugin from an independently locked flake input. The personal plugin input SHALL provide a valid OMP plugin directory and SHALL remain in the `omp-agent-setup` repository rather than being copied into `nix-config`. The OMP executable SHALL be mutable platform-owned state: the official Homebrew formula on Darwin and the official prebuilt user-local binary in NixOS/WSL. No supported host SHALL retain a Nix-packaged OMP executable or fallback.
+The workstation SHALL resolve the personal plugin from an independently locked flake input in `omp-agent-setup`. The OMP runtime SHALL be a mutable, host-local source generation prepared from a stable upstream release and a reviewed, pinned Git patch series. Nix SHALL supply the wrapper and updater, not an OMP executable fallback. The patch input SHALL be accessible independently from both supported hosts.
 
 #### Scenario: Build the workstation package
 
 - **WHEN** the workstation OMP wrapper is built for a supported host system
 - **THEN** its personal plugin directory comes from a locked Nix store path
-- **AND** the wrapper targets the platform-owned OMP executable
+- **AND** the wrapper targets the explicitly selected source generation
 - **AND** the wrapper closure contains no Nix-packaged OMP executable
+
+#### Scenario: Retrieve patches on another host
+
+- **WHEN** either host prepares OMP from the reviewed patch input
+- **THEN** it obtains the same pinned patch series without contacting the other workstation
+- **AND** an unavailable or invalid patch input fails preparation without changing the selected runtime
 
 ### Requirement: Default wrapped command
 
-Except for the explicit `update` subcommand, the default `omp` command SHALL invoke the platform-owned OMP executable with the immutable personal plugin enabled. On Darwin, the wrapper SHALL invoke the OMP executable from the stable Apple Silicon Homebrew prefix. In NixOS/WSL, the wrapper SHALL invoke the official prebuilt OMP executable from one fixed user-local path. For normal sessions, the wrapper SHALL add only the curated language-server executables required by the supported matrix to its `PATH`. The update invocation SHALL additionally prioritize the owning platform's executable directory without changing the caller's environment.
+The default `omp` command SHALL invoke the selected source generation with the immutable personal plugin and curated language tools. Both supported hosts SHALL use the same home-relative selection convention. The wrapper SHALL preserve the caller's working directory and arguments. It SHALL reject the leading executable-update subcommand with instructions to use `omp-dev-update` and SHALL NOT install an official release or invoke a fallback.
 
 #### Scenario: Resolve the default command
 
 - **WHEN** a user resolves `omp` from a fresh login shell on a supported host
 - **THEN** the resolved executable is the Nix-managed workstation wrapper
-- **AND** the wrapper invokes the host's platform-owned OMP executable
+- **AND** the wrapper invokes the selected verified source generation
 - **AND** OMP discovers the packaged personal extension, skills, rule, and LSP overrides
 
 #### Scenario: Start OMP from Windows Zed
@@ -33,6 +39,18 @@ Except for the explicit `update` subcommand, the default `omp` command SHALL inv
 - **WHEN** Windows Zed starts its configured OMP agent server for a NixOS/WSL workspace
 - **THEN** Zed's native WSL remote server invokes the wrapped `omp acp` command with an absolute Linux working directory
 - **AND** no explicit local `wsl.exe` bridge, native Windows OMP executable, or compatibility path is required
+
+#### Scenario: Reject an upstream executable update
+
+- **WHEN** the user runs `omp update`
+- **THEN** the wrapper exits unsuccessfully with the `omp-dev-update` instruction
+- **AND** neither the active source generation nor an official executable is modified
+
+#### Scenario: Preserve normal command resolution
+
+- **WHEN** the user starts a normal session or passes `update` outside the leading subcommand
+- **THEN** the wrapper preserves the arguments and enables the immutable plugin and language tools
+- **AND** nested `omp` commands continue to resolve to the Nix wrapper
 
 ### Requirement: Mutable runtime state boundary
 
@@ -85,84 +103,139 @@ The cutover SHALL be accepted only after a real OMP session is launched through 
 
 ### Requirement: Explicit platform verification
 
-The local verifier SHALL be an explicit command outside Nix activation. It SHALL exercise the platform-owned OMP executable through the immutable wrapper configuration and fail clearly when the expected executable is absent. Both platforms SHALL verify the immutable personal plugin and current Herdr integration.
+The local verifier SHALL remain an explicit command outside Nix activation. On both hosts it SHALL report the selected upstream release, patch identity, runtime version, immutable plugin path, and current Herdr integration. It SHALL fail when the selected generation is absent or unusable.
 
 #### Scenario: Verify a platform installation
 
-- **WHEN** the operator runs the verifier with the expected platform-owned OMP executable installed
-- **THEN** the verifier reports the executable version
+- **WHEN** the operator runs the verifier with a prepared source generation selected
+- **THEN** verification reports its release, patch identity, and runtime version
 - **AND** it reports the personal plugin path under `/nix/store`
 - **AND** Herdr reports its OMP integration as current
 
 #### Scenario: Reject a missing executable
 
-- **WHEN** the operator runs the verifier without the expected platform-owned OMP executable
-- **THEN** verification fails with an actionable error that names the expected path and installation command
+- **WHEN** the operator runs the verifier before the first successful source preparation
+- **THEN** verification fails with an actionable error naming the expected location and `omp-dev-update`
+- **AND** it does not use a different installation
 
-### Requirement: Explicit platform OMP updates
+### Requirement: Explicit personal OMP source updates
 
-OMP executable updates SHALL remain explicit operations outside Nix activation. Darwin SHALL support `omp update` through the default wrapper and delegate installation to the official Homebrew formula. The update SHALL NOT replace the Homebrew executable through standalone binary installation. NixOS/WSL SHALL support `omp update` through the default wrapper to update its fixed user-local executable with the upstream binary updater. Each update path SHALL install an official prebuilt release and SHALL NOT build OMP from source. The official WSL installer SHALL remain the bootstrap and pinned recovery path.
+`omp-dev-update` SHALL prepare the latest stable upstream release with the pinned patch series on both macbook-pro and korolev. It SHALL prepare matching dependencies, native components, and the development runtime for the local platform. Only a successfully checked candidate SHALL become the default. Updates SHALL remain explicit operations outside activation and SHALL NOT publish commits, create custom releases, schedule future updates, or create global package links.
 
-#### Scenario: Update OMP on Darwin
+#### Scenario: Initialize on either supported host
 
-- **WHEN** the operator runs `omp update` through the default Darwin wrapper
-- **THEN** the upstream updater selects Homebrew ownership rather than the Nix wrapper or standalone binary replacement
-- **AND** Homebrew performs the official formula upgrade without a repository change or Nix generation
-- **AND** the wrapper preserves update arguments and exit status without session plugin arguments
-- **AND** the Nix-managed wrapper invokes the Homebrew-owned executable afterward
+- **WHEN** the operator first runs `omp-dev-update` on macbook-pro or korolev
+- **THEN** the command prepares and verifies a complete host-native source generation
+- **AND** the next wrapped `omp` invocation uses that generation with the immutable plugin
+- **AND** no pre-existing developer checkout is required
 
-#### Scenario: Update OMP in WSL
+#### Scenario: Select a stable upstream release
 
-- **WHEN** the operator runs `omp update` through the default WSL wrapper
-- **THEN** the upstream updater targets the configured writable executable rather than the Nix wrapper
-- **AND** the update needs no repository change or Nix generation
-- **AND** the wrapper preserves the original update arguments and exit status without adding session plugin arguments
+- **WHEN** upstream also offers prereleases or newer development commits
+- **THEN** the updater selects a non-draft stable release rather than development HEAD
+- **AND** the resulting generation identifies the exact upstream and patch commits
 
-#### Scenario: Preserve normal command resolution
+#### Scenario: Preserve the active runtime during preparation
 
-- **WHEN** a normal OMP session on either supported platform starts after update routing is available
-- **THEN** the immutable personal plugin and language tools remain enabled
-- **AND** nested `omp` commands continue to resolve to the Nix wrapper
-- **AND** an argument containing `update` outside the leading subcommand does not select update routing
+- **WHEN** an update is preparing dependencies, native components, or checks
+- **THEN** new `omp` invocations continue to use the previous verified generation
+- **AND** existing sessions retain access to their original generation
 
-#### Scenario: Unavailable Homebrew formula
+#### Scenario: Reject a failed candidate
 
-- **WHEN** the Darwin update invocation cannot resolve the official Homebrew formula prefix
-- **THEN** it fails without modifying the executable
-- **AND** it does not fall back to standalone binary replacement
+- **WHEN** fetching, patch application, dependency preparation, native preparation, or verification fails
+- **THEN** the updater reports the failed phase and exits unsuccessfully
+- **AND** the active runtime and OMP-owned application state remain unchanged
+- **AND** patch conflicts are not resolved by discarding either side automatically
 
-#### Scenario: Missing WSL executable
+#### Scenario: Interrupt an update
 
-- **WHEN** the operator runs `omp update` without the configured standalone executable installed
-- **THEN** the wrapper reports the existing actionable installation error
-- **AND** it does not invoke a fallback executable or install OMP automatically
+- **WHEN** preparation is interrupted before promotion
+- **THEN** the next `omp` invocation still uses the previous verified generation
+- **AND** a subsequent updater invocation can proceed without a stale process lock
+
+#### Scenario: Serialize concurrent operations
+
+- **WHEN** another update or rollback already owns the local update lock
+- **THEN** a second operation cannot concurrently modify the active selection
+
+#### Scenario: Repeat an unchanged update
+
+- **WHEN** the selected stable release and patch input are unchanged
+- **THEN** the updater reports the current generation without rebuilding or creating another generation
+
+### Requirement: Verified native components without a local compile
+
+The updater SHALL prepare the host native addon for each candidate. It SHALL install the addon that upstream published for the candidate release and platform, and it SHALL verify the published integrity digest and provenance before installation. It SHALL compile the addon inside the candidate development environment only when the pinned patch range changes native sources, or when no verified published addon matches the candidate release and platform. A failed verification SHALL fail the update. The updater SHALL NOT install an unverified artifact and SHALL NOT substitute a release executable.
+
+#### Scenario: Install a published addon
+
+- **WHEN** the pinned patch range changes no native source and the published addon matches the candidate release and platform
+- **THEN** the updater installs that verified addon into the candidate
+- **AND** the candidate loads the addon and passes the existing native and launch checks
+- **AND** preparation runs no local compilation of native sources
+
+#### Scenario: Patch range changes native sources
+
+- **WHEN** the pinned patch range changes the Rust crates, the native package, or the workspace build files
+- **THEN** the updater compiles the addon in the candidate development environment instead of installing a published one
+- **AND** promotion still requires the existing native loading and launch verification
+
+#### Scenario: Reject an unverifiable addon
+
+- **WHEN** the published addon fails its integrity or provenance verification
+- **THEN** the updater reports the native phase and exits unsuccessfully
+- **AND** the selected generation and OMP-owned application state remain unchanged
+- **AND** the candidate does not receive the rejected artifact
+
+### Requirement: Shared package cache with isolated candidate state
+
+The updater SHALL keep one persistent package cache for downloaded dependencies under its state root. Candidate preparation and verification SHALL continue to use their own home, configuration, agent, and session directories, separate from operator state. The cache SHALL hold downloaded packages only. Removing the cache SHALL NOT change any prepared generation, recorded metadata, or current selection.
+
+#### Scenario: Repeat preparation after a completed update
+
+- **WHEN** a later update prepares a new candidate on the same host
+- **THEN** dependency installation reuses the previously downloaded packages
+- **AND** the new candidate still receives its own isolated home and agent state
+
+#### Scenario: Remove the cache
+
+- **WHEN** the operator deletes the package cache
+- **THEN** the selected generation continues to launch unchanged
+- **AND** the next update downloads the packages it needs again
 
 ### Requirement: Platform-owned OMP rollback
 
-A Nix generation rollback SHALL restore the prior wrapper, personal plugin, Herdr, OpenSpec, and language-server paths. It SHALL preserve the currently installed platform-owned OMP version. OMP version recovery SHALL use the owning platform installer rather than a Nix generation.
+A Nix generation rollback SHALL restore the prior wrapper, personal plugin, Herdr, OpenSpec, and language-server paths without changing the selected OMP source version or application state. `omp-dev-update --rollback` SHALL select the previous verified source generation without network access. Successful generations SHALL remain usable after Nix garbage collection while retained for launch or rollback.
 
 #### Scenario: Roll back a Nix generation
 
 - **WHEN** the operator restores a prior Nix generation on either supported host
 - **THEN** the prior immutable wrapper and plugin become active
-- **AND** the platform-owned OMP installation remains unchanged
-- **AND** OMP-owned mutable state remains unchanged
+- **AND** the source-generation selection and OMP-owned mutable state remain unchanged
 
 #### Scenario: Recover an OMP release
 
-- **WHEN** a platform-owned OMP update fails deterministic verification or the real-session smoke
-- **THEN** the recovery procedure uses Homebrew on Darwin or the official binary installer with an explicit release on WSL
-- **AND** it does not present Nix generation rollback as an OMP version rollback
+- **WHEN** the operator runs `omp-dev-update --rollback` after a successful update
+- **THEN** the previous verified source generation becomes active without a download or rebuild
+- **AND** application state remains unchanged
+- **AND** the displaced generation remains available
+
+#### Scenario: No previous generation exists
+
+- **WHEN** rollback is requested before a previous verified generation exists
+- **THEN** the command fails clearly without changing the active selection
 
 ### Requirement: Bootstrap-era deployment removal
 
-After activation proof passes, the workstation repository SHALL remove the global mutable bootstrap, managed symlink deployment, source patching, executable repointing, global installers, fleet scanner, and obsolete `omp-skill` and `omp-plans` command paths. No alias or compatibility shim SHALL preserve those paths.
+The explicit source-generation updater SHALL be the sole owner of personal OMP runtime preparation. The workstation SHALL NOT restore bootstrap activation, global installers, fleet scanners, obsolete command shims, or automatic executable fallbacks. After migration acceptance, the temporary local launcher and obsolete platform update routing SHALL no longer select the default runtime.
 
 #### Scenario: Inspect the final workstation closure
 
 - **WHEN** the final Home Manager configuration is evaluated
-- **THEN** it contains no bootstrap activation, mutable OMP source checkout, global tool installer, or obsolete command shim
-- **AND** the default wrapped OMP command remains functional
+- **THEN** it exposes the shared wrapper, updater, and verifier on both hosts
+- **AND** activation contains no mutable checkout preparation, OMP build, global link installation, or OMP invocation
+- **AND** the default wrapped command uses only the selected source generation
 
 ### Requirement: OpenSpec package consistency
 
@@ -200,6 +273,17 @@ Dependency automation SHALL retain wrapper-shape checks, Herdr reconciliation te
 - **WHEN** repository automation changes without changing OMP runtime behavior
 - **THEN** deterministic checks pass without a model call and the existing runtime acceptance path remains available
 
+### Requirement: Independent cross-platform source acceptance
+
+Acceptance SHALL require real host-local verification on macbook-pro and korolev, not cross-platform evaluation alone. Neither host SHALL depend on the borrowed Air, another workstation's checkout, or another workstation's native build output.
+
+#### Scenario: Verify each supported host
+
+- **WHEN** the source-update workflow is accepted
+- **THEN** both hosts have independently prepared, launched, updated, and rolled back a patched generation
+- **AND** the existing real wrapped-session plugin smoke passes on both hosts
+- **AND** runtime evidence is recorded with this change rather than in current-state manuals
+
 ### Requirement: Declarative WSL host configuration
 
 The repository SHALL define the WSL host as one NixOS configuration for `x86_64-linux`. That configuration SHALL own the Linux system scope, including `/etc/wsl.conf`, the default user, systemd, the Nix settings, and the system package set. The host SHALL NOT require a distribution package manager, a separate Nix installer, or an imperative user-profile entry.
@@ -226,27 +310,26 @@ The repository SHALL define the WSL host as one NixOS configuration for `x86_64-
 
 ### Requirement: WSL host activation and rollback
 
-The WSL host SHALL activate a new generation with the supported NixOS command. Activation SHALL reconcile Herdr through its supported integration interface and SHALL remain independent of the platform-owned OMP executable's presence or version. A failed Nix activation SHALL leave the previous generation available for selection. Activation and Nix generation rollback SHALL preserve the platform-owned OMP executable.
+The WSL host SHALL activate a new generation with the supported NixOS command. Activation SHALL reconcile Herdr through its supported integration interface and SHALL remain independent of source-generation presence or version. A failed Nix activation SHALL leave the previous generation available for selection. Activation and Nix rollback SHALL preserve source-generation selection and application state.
 
 #### Scenario: Activate a reviewed revision
 
-- **WHEN** the operator activates the WSL host from a reviewed repository revision
-- **THEN** the host selects the wrapper, plugin, Herdr, OpenSpec, and language-server closures from the current lock
+- **WHEN** the WSL host is activated from a reviewed repository revision
+- **THEN** it selects the declared wrapper, updater, plugin, Herdr, OpenSpec, and language-server closures
 - **AND** Herdr reconciliation completes
-- **AND** activation does not install, update, or invoke the user-local OMP executable
+- **AND** activation neither prepares nor invokes OMP
 
 #### Scenario: Re-activate the same revision
 
-- **WHEN** the operator activates the same revision again
-- **THEN** the selected Nix closure, user-local OMP executable, and Herdr integration remain current
-- **AND** activation creates no duplicate entry in any profile
+- **WHEN** the WSL host activates the same revision again
+- **THEN** the selected Nix closure, source-generation selection, and Herdr integration remain current
+- **AND** activation creates no duplicate profile entry
 
 #### Scenario: Roll back a rejected generation
 
-- **WHEN** a generation fails local verification
+- **WHEN** a Nix generation fails verification
 - **THEN** the previous generation remains selectable
-- **AND** selecting it restores the previous wrapper, plugin, Herdr, OpenSpec, and language-server paths
-- **AND** the rollback changes neither the user-local OMP executable nor OMP-owned mutable state
+- **AND** selecting it restores the prior immutable integration without changing OMP source selection or application state
 
 ### Requirement: Shared user-scope module set
 
