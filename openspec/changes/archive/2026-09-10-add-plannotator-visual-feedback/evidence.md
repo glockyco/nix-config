@@ -207,3 +207,71 @@ An immediate `/plannotator-cancel` completed successfully and left no Plannotato
 Rollback restored generation 22 at `/nix/store/q8y9lg7afq975iz3gzs5iq8jsx89iw7h-nixos-system-korolev-26.05.20260903.a5cc6f2`, wrapper `/nix/store/i9vvd6zhgsd6gs3s3bwh08vnixaa4wfx-omp/bin/omp`, and prior plugin `/nix/store/x2bq1ds306bni8y869w5gdcfk2g0zj19-personal-omp-plugin-0.1.0`, without the added Plannotator verifier fields. The initial invocation omitted the documented `--no-reexec` option and failed before activation; the explicit `--flake .#korolev` form succeeded. An initial mutable-configuration comparison used a baseline from before the live OMP smoke. Its file timestamp preceded rollback. An isolated repeat with a fresh baseline verified unchanged OMP configuration bytes and unchanged `current` and `previous` source selections.
 
 The new generation was restored afterward. Final verification again reported the stock Plannotator wrapper, Windows execution, active services, and preserved mutable OMP configuration. Generation 22 remains available. Mac activation still requires its authorized local administrator session; Mac native browser acceptance, the remaining full lifecycle/network matrix, and specification integration remain open. The change is not archived.
+
+## Korolev native acceptance — 2026-09-10
+
+System generation 24 was activated from the reviewed local commits, after the
+Linux gates passed. `verify-personal-omp` reported OMP `18.1.16`, source
+generation commit `cf6a24bd32a8cdc050586123d459f685596fde92`, plugin
+`/nix/store/i8wicgnzcnd3afxkvl3v4wc87sndgbvv-personal-omp-plugin-0.1.0`, stock
+Plannotator `0.27.12` at
+`/nix/store/lg5dqz4gcm3wxvmqjc2zgya34bysmb3r-plannotator-0.27.12`, and current
+Herdr integration v8.
+
+A fresh wrapped session ran as agent `plansmoke` in an owned Herdr pane, in a
+disposable repository with the fixture `release plan.md`. The review opened in
+the user's default Windows browser, Zen, not in a Linux browser. The surface
+showed the annotation controls and a `Done` action, with no approval or
+implementation control.
+
+Three round trips completed in that session:
+
+- An empty review returned the no-feedback result for the captured snapshot.
+- An annotated review returned one highlighted comment on line 16 and one
+  replacement suggestion for a span on line 10.
+- `/plannotator-last` returned a labeled annotation against the captured
+  assistant response, not the file.
+
+Every delivery named the session, the branch anchor, the document path
+`/tmp/plannotator-smoke-VQ93/release plan.md`, and snapshot SHA-256
+`23497fb75ecd376d9a939897bb84f89e5edec6f4f04c9c193158373c4e1cf977`. Each review
+delivered its feedback once. The fixture kept that hash and a clean Git status
+after all three round trips, so no review edited its source.
+
+Cancellation and isolation results on this host:
+
+- Explicit `/plannotator-cancel` before any browser connected released the
+  listener, the child process, and the temporary snapshot directory.
+- A tab closed with Ctrl+W left the review pending, as designed. The explicit
+  cancel then released all owned resources.
+- Session navigation with `/new` cancelled the pending review.
+- Session shutdown cancelled the pending review and left no listener, process,
+  or snapshot directory.
+- Two simultaneous sessions held independent reviews on ports 44541 and 35869,
+  with separate snapshots. Feedback submitted in the second session reached only
+  that session.
+
+Network results: each live listener bound `127.0.0.1` only. While a review was
+live, macbook-pro could not reach `http://100.117.31.61:<port>/` over the
+tailnet; `curl` timed out after six seconds. No firewall or tailnet policy
+changed, and the local Windows browser continued to work.
+
+The owned panes, both fixture repositories, and all snapshot directories were
+removed afterward.
+
+## Accepted scope reduction — 2026-09-10
+
+The user judged the remaining acceptance matrix disproportionate for a personal
+single-user tool and closed it. Tasks 4.5 and 4.8 are dropped, and task 4.6 is
+reduced.
+
+The dismissal and no-browser cases share the settled-outcome path that the
+empty-feedback round trip above already exercised, and the plugin regressions
+cover the same branch. The Mac round trip repeats a host-independent path with a
+different default browser; normal use on that host is the remaining signal. Nix
+rollback preservation was already proven on korolev on 2026-09-08, and the
+accepted workstation spec keeps that contract. Previous Nix and source
+generations remain available.
+
+These items are cancelled, not passed. No claim of Mac browser acceptance is
+made.
