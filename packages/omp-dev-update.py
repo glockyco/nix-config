@@ -2,17 +2,23 @@
 """Prepare and select verified, host-local OMP source generations."""
 
 import argparse
+import base64
 from contextlib import contextmanager
 import fcntl
+import hashlib
+import hmac
 import json
 import os
 from pathlib import Path
 import re
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
+import tarfile
 import tempfile
+import urllib.request
 import uuid
 from urllib.parse import quote
 
@@ -43,8 +49,81 @@ REGRESSIONS = (
 )
 
 
+NATIVE_SOURCES = (
+    "crates/",
+    "packages/natives/",
+    "bazel/",
+    ".bazelrc",
+    "BUILD.bazel",
+    "MODULE.bazel",
+    "MODULE.bazel.lock",
+    "Cargo.toml",
+    "Cargo.lock",
+    "rust-toolchain.toml",
+)
+NATIVE_REGISTRY = "https://registry.npmjs.org"
+NATIVE_PACKAGE = "@oh-my-pi/pi-natives"
+NATIVE_PREDICATE = "https://slsa.dev/provenance/v1"
+NATIVE_TIMEOUT = 300
+
+
 class UpdateError(Exception):
     pass
+
+
+def native_sources_changed(paths):
+    """Report whether a changed path set contains a native build input."""
+    for path in paths:
+        for source in NATIVE_SOURCES:
+            if path == source or (source.endswith("/") and path.startswith(source)):
+                return True
+    return False
+
+
+def host_avx2():
+    """Report AVX2 support for the x86-64 addon variant, as upstream detects it."""
+    try:
+        info = Path("/proc/cpuinfo").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return bool(re.search(r"\bavx2\b", info, re.IGNORECASE))
+
+
+def addon_identity(system):
+    """Resolve the upstream addon target, published platform package, and filename."""
+    if system == "aarch64-darwin":
+        target, leaf = "darwin-arm64", "darwin-arm64"
+    elif system == "x86_64-linux":
+        target = "linux-x64-modern" if host_avx2() else "linux-x64-baseline"
+        leaf = "linux-x64"
+    else:
+        raise UpdateError(f"No published addon target for {system}")
+    return target, f"{NATIVE_PACKAGE}-{leaf}", f"pi_natives.{target}.node"
+
+
+def fetch_json(url):
+    with urllib.request.urlopen(url, timeout=NATIVE_TIMEOUT) as response:
+        return json.load(response)
+
+
+def download(url, path):
+    """Store a registry artifact and return its Subresource Integrity digest."""
+    if not url.startswith(f"{NATIVE_REGISTRY}/"):
+        raise UpdateError(f"Published artifact is outside the registry: {url}")
+    digest = hashlib.sha512()
+    with urllib.request.urlopen(url, timeout=NATIVE_TIMEOUT) as response:
+        with path.open("wb") as artifact:
+            while chunk := response.read(1 << 20):
+                digest.update(chunk)
+                artifact.write(chunk)
+    return "sha512-" + base64.b64encode(digest.digest()).decode("ascii")
+
+
+def verify_integrity(observed, published):
+    if not isinstance(published, str) or not published.startswith("sha512-"):
+        raise UpdateError("The registry published no sha512 integrity digest")
+    if not hmac.compare_digest(observed, published):
+        raise UpdateError("The published addon does not match its integrity digest")
 
 
 def read_json(path):
@@ -387,6 +466,143 @@ class Updater:
         )
         launcher.chmod(0o755)
 
+    def package_cache(self):
+        """Create the persistent download cache shared by every candidate."""
+        cache = self.root / "cache"
+        entries = {
+            "BUN_INSTALL_CACHE_DIR": cache / "bun",
+            "CARGO_HOME": cache / "cargo",
+        }
+        for path in entries.values():
+            if path.is_symlink() or (path.exists() and not path.is_dir()):
+                raise UpdateError(f"Invalid package cache directory: {path}")
+            path.mkdir(parents=True, exist_ok=True, mode=0o700)
+        return {key: str(path) for key, path in entries.items()}
+
+    def native_component(self, generation, checkout, develop):
+        """Install the published host addon, or compile it when no artifact applies."""
+        changed = self.git(
+            "diff", "--name-only", self.config["patchBase"], self.config["patchTip"]
+        ).split("\n")
+        if native_sources_changed(changed):
+            print(
+                "omp-dev-update: the patch range changes native sources; compiling",
+                file=sys.stderr,
+                flush=True,
+            )
+            develop("bun", "run", "build:native")
+            return "compiled"
+        if self.install_addon(generation, checkout, develop):
+            return "installed"
+        develop("bun", "run", "build:native")
+        return "compiled"
+
+    def published_addon(self, checkout):
+        """Resolve the published distribution for the candidate release and host."""
+        manifest = read_json(checkout / "packages/natives/package.json")
+        version = manifest.get("version") if isinstance(manifest, dict) else None
+        if not isinstance(version, str) or not RELEASE.fullmatch(version):
+            raise UpdateError("The candidate declares an invalid native version")
+        target, package, filename = addon_identity(self.config["system"])
+        metadata = fetch_json(f"{NATIVE_REGISTRY}/{quote(package, safe='')}")
+        versions = metadata.get("versions") if isinstance(metadata, dict) else None
+        release = versions.get(version) if isinstance(versions, dict) else None
+        distribution = release.get("dist") if isinstance(release, dict) else None
+        if not isinstance(distribution, dict):
+            print(
+                f"omp-dev-update: no published {package}@{version}; compiling",
+                file=sys.stderr,
+                flush=True,
+            )
+            return None
+        return target, package, filename, version, distribution
+
+    def install_addon(self, generation, checkout, develop):
+        """Verify and install the published addon; report whether it applied."""
+        published = self.published_addon(checkout)
+        if published is None:
+            return False
+        target, package, filename, version, distribution = published
+        staging = Path(tempfile.mkdtemp(prefix=".native-", dir=generation))
+        try:
+            archive = staging / "addon.tgz"
+            observed = download(distribution.get("tarball", ""), archive)
+            verify_integrity(observed, distribution.get("integrity"))
+            self.verify_provenance(archive, staging, package, version)
+            source = staging / f"natives-{target}"
+            source.mkdir()
+            with tarfile.open(archive) as bundle:
+                try:
+                    member = bundle.getmember(f"package/{filename}")
+                except KeyError:
+                    print(
+                        f"omp-dev-update: {package}@{version} has no {filename}; compiling",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    return False
+                if not member.isfile():
+                    raise UpdateError(f"Published {filename} is not a regular file")
+                with bundle.extractfile(member) as content:
+                    with (source / filename).open("wb") as addon:
+                        shutil.copyfileobj(content, addon)
+            print(
+                f"omp-dev-update: installing verified {package}@{version}",
+                file=sys.stderr,
+                flush=True,
+            )
+            develop(
+                "bun",
+                "scripts/bazel-natives.ts",
+                "host",
+                "--dest",
+                "packages/natives/native",
+                "--source",
+                staging,
+            )
+            return True
+        finally:
+            shutil.rmtree(staging, ignore_errors=True)
+
+    def verify_provenance(self, archive, staging, package, version):
+        """Verify the published build provenance against the declared upstream."""
+        attestations = fetch_json(
+            f"{NATIVE_REGISTRY}/-/npm/v1/attestations/"
+            f"{quote(package, safe='')}@{quote(version, safe='')}"
+        )
+        entries = (
+            attestations.get("attestations") if isinstance(attestations, dict) else None
+        )
+        bundle = None
+        for entry in entries or ():
+            if (
+                isinstance(entry, dict)
+                and entry.get("predicateType") == NATIVE_PREDICATE
+            ):
+                bundle = entry.get("bundle")
+                break
+        if bundle is None:
+            raise UpdateError(f"{package}@{version} publishes no build provenance")
+        provenance = staging / "provenance.json"
+        self.atomic_json(provenance, bundle)
+        self.run(
+            [
+                self.config["gh"],
+                "attestation",
+                "verify",
+                archive,
+                "--bundle",
+                provenance,
+                "--repo",
+                self.config["githubRepo"],
+                "--predicate-type",
+                NATIVE_PREDICATE,
+                "--digest-alg",
+                "sha512",
+            ],
+            timeout=NATIVE_TIMEOUT,
+        )
+
     def prepare(self, phase, generation, env):
         checkout = generation / "checkout"
         nix = [
@@ -432,6 +648,8 @@ class Updater:
                 "PI_CODING_AGENT_DIR",
                 "OMP_AGENT_DIR",
                 "OMP_DEV_LAUNCH_DIR",
+                "BUN_INSTALL_CACHE_DIR",
+                "CARGO_HOME",
             )
         ]
 
@@ -453,7 +671,7 @@ class Updater:
         if phase == "dependencies":
             develop("bun", "install", "--frozen-lockfile")
         elif phase == "native-build":
-            develop("bun", "run", "build:native")
+            self.native_component(generation, checkout, develop)
         elif phase == "package-checks":
             for package in ("utils", "tui", "coding-agent"):
                 develop("bun", f"--cwd=packages/{package}", "run", "check")
@@ -636,6 +854,7 @@ class Updater:
                     "PI_CODING_AGENT_DIR": str(verification_home / ".omp/agent"),
                     "OMP_AGENT_DIR": str(verification_home / ".omp/agent"),
                     "OMP_DEV_LAUNCH_DIR": str(self.candidate / ".launch-cwd"),
+                    **self.package_cache(),
                 }
             )
             for phase in PHASES:

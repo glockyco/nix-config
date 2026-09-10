@@ -30,9 +30,23 @@ A Python command packaged by Nix can use standard-library filesystem locking and
 
 ### Prepare the real runtime, not only TypeScript
 
-Use the candidate's locked upstream Nix development shell, with a retained per-generation profile. Run dependency installation with the frozen Bun lockfile, then the upstream native-build command for the current host. Do not run setup's global linking steps. Use the upstream development launcher instead of introducing another Bun preload workaround.
+Use the candidate's locked upstream Nix development shell, with a retained per-generation profile. Run dependency installation with the frozen Bun lockfile, then prepare the host native addon. Do not run setup's global linking steps. Use the upstream development launcher instead of introducing another Bun preload workaround.
 
-Run the relevant package checks and patch regressions. Also start the candidate through the workstation plugin configuration and verify that the host native addon loads. Every failed command prevents promotion. The two hosts build their own native components; neither is a build dependency of the other.
+Run the relevant package checks and patch regressions. Also start the candidate through the workstation plugin configuration and verify that the host native addon loads. Every failed command prevents promotion. Each host prepares its own runtime. Neither host reads the other host's checkout or build output.
+
+### Install the published addon instead of a local compile
+
+The addon is the only compiled component of a generation. The maintained series patches TypeScript only, so the addon that upstream built for the candidate release matches the candidate sources. Install that published platform package with the upstream artifact install mode, which the upstream native command already supports. Only the addon binary is a build output; upstream tracks the remaining binding files in Git.
+
+Verify the published integrity digest and the published provenance attestation before installation. A failed verification fails the native phase and leaves the selection unchanged. Do not install an unverified file, and do not use a release executable instead.
+
+Compile the addon in the candidate development shell when the maintained range changes Rust crates, the native package, or the workspace build files. Compile it also when no published addon matches the candidate release and platform. The updater derives this condition from the pinned patch range, so a future native patch cannot silently receive a foreign binary.
+
+### Share downloaded packages between generations
+
+Keep one persistent package cache for the updater under the state root. Dependency installation and any addon compile read and write that cache. A cache holds verified downloads, not agent state, so sharing it preserves the isolation goal.
+
+Candidate verification keeps its own home, configuration, agent, and session directories. The cache is disposable: its removal changes no selected generation and no recorded metadata.
 
 ### Promote once, after verification
 
@@ -54,7 +68,9 @@ Activation installs the wrapper and updater, but performs no downloads, source p
 
 - Upstream changes can break a patch or build command. Fail without promotion; adjust the maintained series explicitly.
 - Source preparation is slower and uses more disk than an official binary. Retain working generations rather than trading recoverability for automatic cleanup.
-- New release code executes during installation and native builds. Use only the declared upstream and pinned patch source; never fetch patches from arbitrary model output.
+- A published addon is an additional supply-chain input. Accept it only for the exact candidate release, with a verified digest and provenance. Its publisher already owns the release sources that the generation runs.
+- A native patch would invalidate a published addon. Derive the compile condition from the pinned range, not from an operator decision.
+- New release code executes during installation and any native build. Use only the declared upstream and pinned patch source; never fetch patches from arbitrary model output.
 - Portable evaluation alone does not prove Darwin execution. Require actual macbook-pro and Korolev preparation, launch, update, and rollback evidence before acceptance.
 - This reverses existing no-source-update policy. Update its accepted requirements and guidance together, without relaxing unrelated activation or credential boundaries.
 

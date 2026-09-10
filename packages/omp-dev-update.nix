@@ -39,6 +39,8 @@ let
     ]
     ++ lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.nix;
     text = ''
+      export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+      export NIX_SSL_CERT_FILE="$SSL_CERT_FILE"
       exec ${pkgs.python3}/bin/python3 ${./omp-dev-update.py} --config ${config} "$@"
     '';
   };

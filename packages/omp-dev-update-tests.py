@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Exercise source selection with real Git repositories and isolated build phases."""
 
+import base64
+import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -9,6 +12,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
 
@@ -20,7 +24,9 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
-class SourceUpdateTests(unittest.TestCase):
+class Fixture(unittest.TestCase):
+    """Provide real Git inputs, isolated phases, and an updater under test."""
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
@@ -109,6 +115,11 @@ class SourceUpdateTests(unittest.TestCase):
         self.prepared.append((phase, candidate))
         self.assertEqual(env["HOME"], str(candidate / ".verification-home"))
         self.assertTrue(Path(env["PI_CODING_AGENT_DIR"]).is_relative_to(candidate))
+        for key in ("BUN_INSTALL_CACHE_DIR", "CARGO_HOME"):
+            cache = Path(env[key])
+            self.assertTrue(cache.is_dir())
+            self.assertTrue(cache.is_relative_to(self.updater.root / "cache"))
+            self.assertFalse(cache.is_relative_to(candidate))
         if phase == self.failure:
             raise module.UpdateError(f"Rejected {phase}")
         if phase == "environment":
@@ -131,6 +142,10 @@ class SourceUpdateTests(unittest.TestCase):
         )
         self.assertEqual(list((self.home / ".omp/agent").iterdir()), [self.protected])
         self.assertFalse((self.home / ".bun").exists())
+
+
+class SourceUpdateTests(Fixture):
+    """Cover selection, preservation, locking, and rollback behavior."""
 
     def test_first_install_replays_patch_and_records_exact_inputs(self):
         metadata = self.updater.update()
@@ -432,6 +447,203 @@ except InterruptedError:
         self.assertNotEqual(self.selected(), current)
         self.assertEqual(self.selected("previous"), current)
         self.assert_protected()
+
+
+class NativeComponentTests(Fixture):
+    """Cover addon acquisition, its verification, and the compile condition."""
+
+    def setUp(self):
+        super().setUp()
+        self.commands = []
+        self.installed = {}
+        self.registry = []
+        self.gh_log = self.directory / "gh.log"
+        original = (module.fetch_json, module.download)
+
+        def restore():
+            module.fetch_json, module.download = original
+
+        self.addCleanup(restore)
+
+    def develop(self, *args, capture=False):
+        arguments = [str(argument) for argument in args]
+        self.commands.append(arguments)
+        if "--source" in arguments:
+            source = Path(arguments[arguments.index("--source") + 1])
+            self.installed = {
+                str(path.relative_to(source)): path.read_bytes()
+                for path in source.glob("natives-*/*")
+                if path.is_file()
+            }
+
+    def candidate_checkout(self, version="1.0.0"):
+        self.updater.fetch_inputs()
+        generation = self.directory / "candidate"
+        checkout = generation / "checkout"
+        natives = checkout / "packages/natives"
+        natives.mkdir(parents=True)
+        (natives / "package.json").write_text(
+            json.dumps({"version": version}), encoding="utf-8"
+        )
+        return generation, checkout
+
+    def addon_archive(self, filename, payload=b"published addon"):
+        archive = self.directory / "addon.tgz"
+        with tarfile.open(archive, "w:gz") as bundle:
+            entry = tarfile.TarInfo(f"package/{filename}")
+            entry.size = len(payload)
+            bundle.addfile(entry, io.BytesIO(payload))
+        return archive
+
+    def stub_registry(self, archive, version="1.0.0", integrity=None, provenance=True):
+        payload = archive.read_bytes()
+        digest = "sha512-" + base64.b64encode(hashlib.sha512(payload).digest()).decode(
+            "ascii"
+        )
+
+        def fetch_json(url):
+            self.registry.append(url)
+            if "attestations" in url:
+                entries = (
+                    [{"predicateType": module.NATIVE_PREDICATE, "bundle": {"dsse": 1}}]
+                    if provenance
+                    else []
+                )
+                return {"attestations": entries}
+            if version is None:
+                return {"versions": {}}
+            return {
+                "versions": {
+                    version: {
+                        "dist": {
+                            "tarball": f"{module.NATIVE_REGISTRY}/addon.tgz",
+                            "integrity": integrity or digest,
+                        }
+                    }
+                }
+            }
+
+        def download(url, path):
+            self.registry.append(url)
+            shutil.copyfile(archive, path)
+            return digest
+
+        module.fetch_json = fetch_json
+        module.download = download
+
+    def stub_gh(self, status=0):
+        script = self.tools / "bin/gh"
+        script.write_text(
+            f'#!/bin/sh\nprintf "%s\\n" "$@" >> {self.gh_log}\nexit {status}\n',
+            encoding="utf-8",
+        )
+        script.chmod(0o755)
+        self.updater.config["gh"] = str(script)
+
+    def patch_native_source(self):
+        target = self.patch / "crates/pi-natives/src"
+        target.mkdir(parents=True)
+        (target / "lib.rs").write_text("// personal native fix\n", encoding="utf-8")
+        self.config["patchTip"] = self.commit(self.patch, "native fix")
+        self.updater = self.make_updater()
+
+    def test_native_phase_installs_the_verified_published_addon(self):
+        target, _, filename = module.addon_identity(self.config["system"])
+        self.stub_registry(self.addon_archive(filename))
+        self.stub_gh()
+        generation, checkout = self.candidate_checkout()
+        result = self.updater.native_component(generation, checkout, self.develop)
+        self.assertEqual(result, "installed")
+        self.assertEqual(
+            self.installed, {f"natives-{target}/{filename}": b"published addon"}
+        )
+        self.assertEqual(
+            self.commands,
+            [
+                [
+                    "bun",
+                    "scripts/bazel-natives.ts",
+                    "host",
+                    "--dest",
+                    "packages/natives/native",
+                    "--source",
+                    self.commands[0][-1],
+                ]
+            ],
+        )
+        arguments = self.gh_log.read_text(encoding="utf-8").split("\n")
+        self.assertIn("attestation", arguments)
+        self.assertIn(module.NATIVE_PREDICATE, arguments)
+        self.assertIn("sha512", arguments)
+        self.assertEqual(list(generation.iterdir()), [checkout])
+
+    def test_native_phase_compiles_when_the_patch_range_changes_native_sources(self):
+        self.patch_native_source()
+        self.stub_registry(self.addon_archive("unused.node"))
+        self.stub_gh()
+        generation, checkout = self.candidate_checkout()
+        result = self.updater.native_component(generation, checkout, self.develop)
+        self.assertEqual(result, "compiled")
+        self.assertEqual(self.commands, [["bun", "run", "build:native"]])
+        self.assertEqual(self.registry, [])
+        self.assertFalse(self.gh_log.exists())
+
+    def test_native_phase_compiles_when_no_published_addon_matches(self):
+        _, _, filename = module.addon_identity(self.config["system"])
+        self.stub_registry(self.addon_archive(filename), version=None)
+        self.stub_gh()
+        generation, checkout = self.candidate_checkout()
+        result = self.updater.native_component(generation, checkout, self.develop)
+        self.assertEqual(result, "compiled")
+        self.assertEqual(self.commands, [["bun", "run", "build:native"]])
+        self.assertFalse(self.gh_log.exists())
+
+    def test_native_phase_rejects_a_mismatched_integrity_digest(self):
+        _, _, filename = module.addon_identity(self.config["system"])
+        forged = "sha512-" + base64.b64encode(
+            hashlib.sha512(b"forged").digest()
+        ).decode("ascii")
+        self.stub_registry(self.addon_archive(filename), integrity=forged)
+        self.stub_gh()
+        generation, checkout = self.candidate_checkout()
+        with self.assertRaisesRegex(module.UpdateError, "integrity digest"):
+            self.updater.native_component(generation, checkout, self.develop)
+        self.assertEqual(self.commands, [])
+        self.assertFalse(self.gh_log.exists())
+        self.assertEqual(list(generation.iterdir()), [checkout])
+
+    def test_native_phase_rejects_unverifiable_provenance(self):
+        _, _, filename = module.addon_identity(self.config["system"])
+        self.stub_registry(self.addon_archive(filename))
+        self.stub_gh(status=1)
+        generation, checkout = self.candidate_checkout()
+        with self.assertRaisesRegex(module.UpdateError, "exited 1"):
+            self.updater.native_component(generation, checkout, self.develop)
+        self.assertEqual(self.commands, [])
+        self.assertEqual(list(generation.iterdir()), [checkout])
+
+    def test_native_phase_rejects_a_missing_provenance_statement(self):
+        _, _, filename = module.addon_identity(self.config["system"])
+        self.stub_registry(self.addon_archive(filename), provenance=False)
+        self.stub_gh()
+        generation, checkout = self.candidate_checkout()
+        with self.assertRaisesRegex(module.UpdateError, "provenance"):
+            self.updater.native_component(generation, checkout, self.develop)
+        self.assertEqual(self.commands, [])
+        self.assertEqual(list(generation.iterdir()), [checkout])
+
+    def test_package_cache_survives_updates_and_its_removal_keeps_the_selection(self):
+        self.updater.update()
+        cache = self.updater.root / "cache"
+        marker = cache / "bun/downloaded-package"
+        marker.write_text("cached\n", encoding="utf-8")
+        self.release_next()
+        self.updater.update()
+        selected = self.selected()
+        self.assertEqual(marker.read_text(encoding="utf-8"), "cached\n")
+        shutil.rmtree(cache)
+        self.assertEqual(self.updater.status()["release"], "v1.1.0")
+        self.assertEqual(self.selected(), selected)
 
 
 if __name__ == "__main__":

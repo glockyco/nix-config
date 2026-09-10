@@ -154,7 +154,7 @@ The WSL host SHALL activate a new generation with the supported NixOS command. A
 
 #### Scenario: Reject a failed candidate
 
-- **WHEN** fetching, patch application, dependency preparation, native compilation, or verification fails
+- **WHEN** fetching, patch application, dependency preparation, native preparation, or verification fails
 - **THEN** the updater reports the failed phase and exits unsuccessfully
 - **AND** the active runtime and OMP-owned application state remain unchanged
 - **AND** patch conflicts are not resolved by discarding either side automatically
@@ -174,6 +174,46 @@ The WSL host SHALL activate a new generation with the supported NixOS command. A
 
 - **WHEN** the selected stable release and patch input are unchanged
 - **THEN** the updater reports the current generation without rebuilding or creating another generation
+
+### Requirement: Verified native components without a local compile
+
+The updater SHALL prepare the host native addon for each candidate. It SHALL install the addon that upstream published for the candidate release and platform, and it SHALL verify the published integrity digest and provenance before installation. It SHALL compile the addon inside the candidate development environment only when the pinned patch range changes native sources, or when no verified published addon matches the candidate release and platform. A failed verification SHALL fail the update. The updater SHALL NOT install an unverified artifact and SHALL NOT substitute a release executable.
+
+#### Scenario: Install a published addon
+
+- **WHEN** the pinned patch range changes no native source and the published addon matches the candidate release and platform
+- **THEN** the updater installs that verified addon into the candidate
+- **AND** the candidate loads the addon and passes the existing native and launch checks
+- **AND** preparation runs no local compilation of native sources
+
+#### Scenario: Patch range changes native sources
+
+- **WHEN** the pinned patch range changes the Rust crates, the native package, or the workspace build files
+- **THEN** the updater compiles the addon in the candidate development environment instead of installing a published one
+- **AND** promotion still requires the existing native loading and launch verification
+
+#### Scenario: Reject an unverifiable addon
+
+- **WHEN** the published addon fails its integrity or provenance verification
+- **THEN** the updater reports the native phase and exits unsuccessfully
+- **AND** the selected generation and OMP-owned application state remain unchanged
+- **AND** the candidate does not receive the rejected artifact
+
+### Requirement: Shared package cache with isolated candidate state
+
+The updater SHALL keep one persistent package cache for downloaded dependencies under its state root. Candidate preparation and verification SHALL continue to use their own home, configuration, agent, and session directories, separate from operator state. The cache SHALL hold downloaded packages only. Removing the cache SHALL NOT change any prepared generation, recorded metadata, or current selection.
+
+#### Scenario: Repeat preparation after a completed update
+
+- **WHEN** a later update prepares a new candidate on the same host
+- **THEN** dependency installation reuses the previously downloaded packages
+- **AND** the new candidate still receives its own isolated home and agent state
+
+#### Scenario: Remove the cache
+
+- **WHEN** the operator deletes the package cache
+- **THEN** the selected generation continues to launch unchanged
+- **AND** the next update downloads the packages it needs again
 
 ### Requirement: Independent cross-platform source acceptance
 
