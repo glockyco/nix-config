@@ -19,5 +19,12 @@
 
 - [x] 4.1 Run strict OpenSpec validation and the README's applicable Nix gates for both configured systems; retain exact results with this change and leave unrelated scheduled changes untouched.
 - [x] 4.2 On korolev, prepare a real generation, activate the reviewed wrapper, and exercise launch, successful update, failed-update preservation, and offline rollback; verify native loading, `verify-personal-omp`, the real wrapped-session smoke, and `omp acp` startup.
-- [ ] 4.3 On macbook-pro, independently prepare a real generation and repeat activation, launch, update, failure preservation, rollback, native loading, and the wrapped-session smoke; verify operation in Herdr without relying on Korolev or the borrowed Air.
+- [ ] 4.3 On macbook-pro, using the updater that section 5 produces, independently prepare a real generation and repeat activation, launch, update, failure preservation, rollback, native loading, and the wrapped-session smoke; verify operation in Herdr without relying on Korolev or the borrowed Air.
 - [ ] 4.4 After both host acceptance gates pass, remove the temporary Korolev launcher and obsolete default routing without deleting developer checkout or installer-owned data; verify fresh shells resolve only the supported wrapper and retain the previous working generations.
+
+## 5. Published native components
+
+- [x] 5.1 Replace the candidate native build with verified installation of the published host addon: resolve the platform package for the candidate release, check its integrity digest and provenance, and install it through the upstream artifact install mode; verify that a mismatched digest fails the native phase and leaves the selection unchanged.
+- [x] 5.2 Derive the compile condition from the pinned patch range, covering Rust crates, the native package, and workspace build files; verify with behavioral tests that a native-touching range compiles and a TypeScript-only range does not.
+- [x] 5.3 Point dependency installation and any compile at one persistent package cache under the state root, while keeping candidate home, configuration, agent, and session directories isolated; verify reuse across two preparations and unchanged selection after cache removal.
+- [x] 5.4 Update `docs/operations/dependency-updates.md`, README recovery text, and the update skill guidance so the native rule matches installed-then-verified components; verify no remaining instruction requires a host compile for a TypeScript-only range.

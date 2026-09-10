@@ -103,7 +103,7 @@ omp-dev-update
 omp
 ```
 
-The updater checks a host-native source generation before selecting it. Failed updates leave the current generation unchanged. The [patch input](packages/omp-dev-update.nix) is pinned; changing the maintained patches requires a reviewed pin update. Normal sessions retain the immutable plugin and language tools. Use `omp-dev-update --rollback` for [OMP recovery](docs/operations/dependency-updates.md#omp-version-recovery), not `omp update` or Nix rollback.
+The updater checks a host-native source generation before selecting it. It installs the native addon that upstream published for that release, after an integrity and provenance check, and compiles the addon only when the pinned patches change native sources. Downloaded packages stay in one cache under `~/.local/share/omp-dev/cache`; removing that directory changes no generation. Failed updates leave the current generation unchanged. The [patch input](packages/omp-dev-update.nix) is pinned; changing the maintained patches requires a reviewed pin update. Normal sessions retain the immutable plugin and language tools. Use `omp-dev-update --rollback` for [OMP recovery](docs/operations/dependency-updates.md#omp-version-recovery), not `omp update` or Nix rollback.
 
 Run the verifier and applicable release smoke before accepting the update.
 

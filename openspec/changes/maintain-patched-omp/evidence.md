@@ -62,3 +62,42 @@ verify-personal-omp
 ```
 
 Task 4.3 still requires activation output review and the fresh wrapped-session smoke in Herdr. Task 4.4 remains blocked by that gate. The temporary Korolev launcher, developer checkout, previous Nix generations, and installer-owned files remain intact.
+
+## Published native components — 2026-09-10
+
+The Mac prepared release `v18.1.16` with the reviewed updater at
+`/nix/store/gifhmw4hlgac1vf05zr93yc3n65skjvs-omp-dev-update`. The native phase
+reported `installing verified @oh-my-pi/pi-natives-darwin-arm64@18.1.16`,
+installed a 164 682 896 byte addon, and created no `target` directory. The
+complete update took 2 minutes 9 seconds and passed package checks, ten
+regression files, native loading, and the plugin launch check. The selected
+generation is `v18.1.16-5krhiv_m` at commit
+`1f41d9b679f381837156aae86495fcc56fe7ea41` on upstream
+`61b1b8aef634334eaf1412afd003a763e1d1b9c1`.
+
+Verification uses the registry integrity digest and `gh attestation verify`
+against `can1357/oh-my-pi`, with predicate `https://slsa.dev/provenance/v1` and
+`--digest-alg sha512`. Manual confirmation before implementation showed that the
+published tarball digest matches both the packument integrity value and the
+provenance subject digest, and that the provenance names the upstream release
+workflow.
+
+The persistent cache holds 1.4 GB of Bun packages at
+`~/.local/share/omp-dev/cache`. Candidate homes, agent directories, and session
+state stayed inside their generations.
+
+Two consecutive `--rollback` operations selected `v18.1.13-tqkiqh1m` and then
+`v18.1.16-5krhiv_m` again, without a download or a build. `verify-personal-omp`
+reported the matching release, a `/nix/store` plugin path, and `omp: current` in
+both states. An earlier interrupted candidate, `v18.1.16-ntd7c1gw`, left the
+selection unchanged and retained its diagnostic files.
+
+A fresh wrapped session in a disposable repository loaded the plugin from
+`/nix/store/h2d0q2rh5i5c62jq7d25qf7win2x60zj-personal-omp-plugin-0.1.0`, quoted
+the commit policy, and returned a `personal_commit` preview that changed no
+repository state. `nix fmt -- --fail-on-change`, `nix flake check`,
+`check-darwin-build-plans` (37 outputs), and the `macbook-pro` system build all
+passed. The 23 updater tests pass in the `personalOmpUpdate` check.
+
+Host activation and the Herdr pane smoke remain operator gates. `HERDR_ENV` is
+absent in this session, so the fresh Herdr-managed session smoke was not run.
