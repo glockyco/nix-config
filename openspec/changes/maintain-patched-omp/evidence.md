@@ -127,14 +127,15 @@ selected generation and the retained previous generation were not changed.
 
 ## Korolev cleanup attempt — 2026-09-10
 
-Task 4.4 could not run. `tailscale status` reported korolev as `offline, last seen 4m ago`. Direct SSH to its hostname and to `100.117.31.61` both timed out.
+Task 4.4 cannot run from the Mac. The first attempt found korolev `offline, last seen 4m ago`, which suggested a temporary outage. A later check corrected that reading: with korolev active and `tailscale ping` answering in 17 ms over a direct path, SSH to port 22 still timed out. That refusal is the accepted WSL host network isolation contract, which states that the host exposes no inbound service and that no other host drives it. Availability is not the blocker, and no workaround is permitted.
 
 The repository side of the task needs no change. No Nix declaration under
 `hosts/korolev`, `modules/fleet`, or `modules/home/omp.nix` still defines a
 temporary launcher or an obsolete platform update route; task 3.2 removed those.
-The remaining work is host-local: remove Korolev's temporary `omp-dev` launcher
-artifact, confirm that a fresh login shell resolves only the wrapped `omp` and
-`omp-dev-update`, and confirm that its previous generations remain selectable.
+The remaining work runs in a session on korolev itself: remove its temporary
+`omp-dev` launcher artifact, confirm that a fresh login shell resolves only the
+wrapped `omp` and `omp-dev-update`, and confirm that its previous generations
+remain selectable.
 
 Korolev also has not yet run the reviewed updater, so the `linux-x64` published
 addon path is unproven. Its leaf package must contain the baseline or modern
