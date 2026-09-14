@@ -364,6 +364,17 @@ Require no process output. `pgrep` status `1` means the relay is off, even after
 
 In Zed, use `projects: open wsl`, select `NixOS`, and open `/home/user/src/github.com/glockyco/nix-config`.
 Do not open the UNC path as a local folder: that gives Linux ACP agents a Windows working directory.
+The Windows configuration owns `%APPDATA%\Zed\keymap.json` completely.
+Make keymap changes in the repository because the next apply replaces edits from Zed's keymap editor.
+
+Open a disposable text file in a full editor and verify the Windows-first control layer:
+
+1. In normal, visual, and insert modes, confirm `Ctrl+C`, `Ctrl+V`, `Ctrl+A`, `Ctrl+Z`, and `Ctrl+F` use their standard editor actions.
+1. Confirm `Ctrl+K Ctrl+S` opens the keymap editor and bare `Ctrl+K` does not start Vim digraph input.
+1. Open a second disposable file and confirm `Ctrl+W` closes its editor item without waiting for a Vim pane command.
+1. Use an unmodified Vim edit such as `dw`, then use `Escape` to return to normal mode.
+1. In Zed's integrated WSL terminal, run `sleep 30`, press `Ctrl+C`, and require an immediate shell prompt.
+
 Confirm these live boundaries after sign-in:
 
 - Zed starts `nixd` and wrapped `omp acp` inside NixOS without SSH. Fork uses the declared `wslgit` bridge.

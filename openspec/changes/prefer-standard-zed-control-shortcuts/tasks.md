@@ -1,16 +1,16 @@
 ## 1. Declare the Zed keymap
 
-- [ ] 1.1 Add the Windows-first control bindings and removed Vim-only controls to `modules/windows/files.nix`; render `zed-keymap.json` and inspect it as valid JSON with the intended `Editor && mode == full` contexts.
-- [ ] 1.2 Add a complete-file Zed keymap resource for `%APPDATA%\Zed\keymap.json`; render the WinGet document and confirm that the resource depends on the Zed package and replaces drift instead of merging it.
+- [x] 1.1 Add the Windows-first control bindings and removed Vim-only controls to `modules/windows/files.nix`; render `zed-keymap.json` and inspect it as valid JSON with the intended `Editor && mode == full` contexts.
+- [x] 1.2 Add a complete-file Zed keymap resource for `%APPDATA%\Zed\keymap.json`; render the WinGet document and confirm that the resource depends on the Zed package and replaces drift instead of merging it.
 
 ## 2. Extend repository verification
 
-- [ ] 2.1 Add `zed-keymap.json` to the Windows review-file contract and assert the exact key, action, context, and ownership policy in `packages/windows-configuration-check.py`; run the focused Windows configuration check.
-- [ ] 2.2 Update the Windows integration procedure with the managed-keymap boundary and the live shortcut checks; review the rendered procedure for account, WSL, and terminal-context accuracy.
+- [x] 2.1 Add `zed-keymap.json` to the Windows review-file contract and assert the exact key, action, context, and ownership policy in `packages/windows-configuration-check.py`; run the focused Windows configuration check.
+- [x] 2.2 Update the Windows integration procedure with the managed-keymap boundary and the live shortcut checks; review the rendered procedure for account, WSL, and terminal-context accuracy.
 
 ## 3. Validate and review
 
-- [ ] 3.1 Run `openspec validate prefer-standard-zed-control-shortcuts --strict`, `nix fmt -- --fail-on-change`, and the platform-applicable flake check; resolve every failure.
+- [x] 3.1 Run `openspec validate prefer-standard-zed-control-shortcuts --strict`, `nix fmt -- --fail-on-change`, and the platform-applicable flake check; resolve every failure.
 - [ ] 3.2 Inspect and commit only the change-owned implementation, specification, procedure, and verification files as one atomic configuration change with a causal commit body.
 
 ## 4. Apply and prove Windows behavior
