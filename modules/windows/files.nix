@@ -77,6 +77,56 @@ let
       };
     };
 
+  zedControlBindings = {
+    "ctrl-a" = "editor::SelectAll";
+    "ctrl-b" = "workspace::ToggleLeftDock";
+    "ctrl-c" = "editor::Copy";
+    "ctrl-d" = [
+      "editor::SelectNext"
+      { replace_newest = false; }
+    ];
+    "ctrl-e" = "file_finder::Toggle";
+    "ctrl-f" = "buffer_search::Deploy";
+    "ctrl-g" = "go_to_line::Toggle";
+    "ctrl-h" = "buffer_search::DeployReplace";
+    "ctrl-i" = "editor::ShowSignatureHelp";
+    "ctrl-j" = "workspace::ToggleBottomDock";
+    "ctrl-l" = "editor::SelectLine";
+    "ctrl-n" = "workspace::NewFile";
+    "ctrl-o" = "workspace::OpenFiles";
+    "ctrl-p" = "file_finder::Toggle";
+    "ctrl-q" = "zed::Quit";
+    "ctrl-r" = "projects::OpenRecent";
+    "ctrl-s" = "workspace::Save";
+    "ctrl-t" = "project_symbols::Toggle";
+    "ctrl-v" = "editor::Paste";
+    "ctrl-w" = [
+      "pane::CloseActiveItem"
+      { close_pinned = false; }
+    ];
+    "ctrl-x" = "editor::Cut";
+    "ctrl-y" = "editor::Redo";
+    "ctrl-z" = "editor::Undo";
+  };
+  zedKeymap = [
+    {
+      context = "Editor && mode == full";
+      bindings = builtins.mapAttrs (_: _: null) zedControlBindings // {
+        "ctrl-[" = null;
+        "ctrl-]" = null;
+        "ctrl-^" = null;
+        "ctrl-k" = null;
+        "ctrl-m" = null;
+        "ctrl-u" = null;
+      };
+    }
+    {
+      context = "Editor && mode == full";
+      bindings = zedControlBindings;
+    }
+  ];
+  zedKeymapJson = builtins.toJSON zedKeymap;
+
   powerToysSettings = {
     startup = true;
     run_elevated = false;
@@ -189,6 +239,7 @@ let
     "altsnap-settings.json" = builtins.toJSON altSnapSettings;
     "fork-wslgit.json" = wslGitJson;
     "zed-catppuccin-theme.json" = builtins.readFile zedThemeSource;
+    "zed-keymap.json" = zedKeymapJson;
     "power-toys-settings.json" = builtins.toJSON powerToysSettings;
     "reneo-settings.json" = builtins.toJSON reneoSettings;
     "start-reneo-elevated.ps1" = reneoElevationLauncher;
@@ -279,6 +330,27 @@ let
       };
       metadata = { inherit description; };
     };
+
+  zedKeymapResource = {
+    type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+    name = "zed-keymap";
+    dependsOn = [ "package-editor" ];
+    properties = {
+      testScript = ''
+        $path = Join-Path $env:APPDATA 'Zed\keymap.json'
+        if (-not (Test-Path -LiteralPath $path)) { return $false }
+        $bytes = [IO.File]::ReadAllBytes($path)
+        if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xef -and $bytes[1] -eq 0xbb -and $bytes[2] -eq 0xbf) { return $false }
+        return [IO.File]::ReadAllText($path) -ceq '${zedKeymapJson}'
+      '';
+      setScript = ''
+        $path = Join-Path $env:APPDATA 'Zed\keymap.json'
+        New-Item -ItemType Directory -Path (Split-Path -Parent $path) -Force | Out-Null
+        [IO.File]::WriteAllText($path, '${zedKeymapJson}', [Text.UTF8Encoding]::new($false))
+      '';
+    };
+    metadata.description = "Enforce the Windows-first Zed keymap";
+  };
 
   altSnapResource = {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
@@ -628,6 +700,7 @@ in
     zenThemeResource
     reneoElevationResource
     terminalResource
+    zedKeymapResource
     (mergeJsonScript {
       name = "zed-settings";
       description = "Converge Zed settings while preserving interface state";

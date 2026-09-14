@@ -107,6 +107,7 @@ EXPECTED_FILES = {
     "start-reneo-elevated.ps1",
     "terminal-settings.json",
     "zed-catppuccin-theme.json",
+    "zed-keymap.json",
     "zed-settings.json",
     "zen-catppuccin-logo.svg",
     "zen-catppuccin-userChrome.css",
@@ -114,6 +115,33 @@ EXPECTED_FILES = {
     "zen-catppuccin.json",
     "zen-policies.json",
 }
+ZED_EDITOR_CONTEXT = "Editor && mode == full"
+ZED_CONTROL_BINDINGS = {
+    "ctrl-a": "editor::SelectAll",
+    "ctrl-b": "workspace::ToggleLeftDock",
+    "ctrl-c": "editor::Copy",
+    "ctrl-d": ["editor::SelectNext", {"replace_newest": False}],
+    "ctrl-e": "file_finder::Toggle",
+    "ctrl-f": "buffer_search::Deploy",
+    "ctrl-g": "go_to_line::Toggle",
+    "ctrl-h": "buffer_search::DeployReplace",
+    "ctrl-i": "editor::ShowSignatureHelp",
+    "ctrl-j": "workspace::ToggleBottomDock",
+    "ctrl-l": "editor::SelectLine",
+    "ctrl-n": "workspace::NewFile",
+    "ctrl-o": "workspace::OpenFiles",
+    "ctrl-p": "file_finder::Toggle",
+    "ctrl-q": "zed::Quit",
+    "ctrl-r": "projects::OpenRecent",
+    "ctrl-s": "workspace::Save",
+    "ctrl-t": "project_symbols::Toggle",
+    "ctrl-v": "editor::Paste",
+    "ctrl-w": ["pane::CloseActiveItem", {"close_pinned": False}],
+    "ctrl-x": "editor::Cut",
+    "ctrl-y": "editor::Redo",
+    "ctrl-z": "editor::Undo",
+}
+ZED_DISABLED_CONTROLS = {"ctrl-[", "ctrl-]", "ctrl-^", "ctrl-k", "ctrl-m", "ctrl-u"}
 
 
 def schema_compatible_document(document: dict) -> dict:
@@ -773,6 +801,46 @@ def main() -> None:
     )
     if "native neo input method" not in reneo_resource.get("dependsOn", []):
         raise ValueError("ReNeo settings must wait for native Neo input selection")
+
+    zed_keymap = json.loads(
+        (package_root / "zed-keymap.json").read_text(encoding="utf-8")
+    )
+    neutral_bindings = {
+        key: None for key in set(ZED_CONTROL_BINDINGS) | ZED_DISABLED_CONTROLS
+    }
+    if zed_keymap != [
+        {"bindings": neutral_bindings, "context": ZED_EDITOR_CONTEXT},
+        {"bindings": ZED_CONTROL_BINDINGS, "context": ZED_EDITOR_CONTEXT},
+    ]:
+        raise ValueError("Zed keymap must replace Vim's Control layer in full editors")
+
+    zed_keymap_resource = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "zed keymap"
+    )
+    zed_keymap_properties = zed_keymap_resource.get("properties", {})
+    zed_keymap_test = zed_keymap_properties.get("testScript", "")
+    zed_keymap_set = zed_keymap_properties.get("setScript", "")
+    compact_zed_keymap = json.dumps(zed_keymap, separators=(",", ":"))
+    if (
+        zed_keymap_resource.get("type")
+        != "Microsoft.DSC.Transitional/WindowsPowerShellScript"
+        or zed_keymap_resource.get("dependsOn") != ["package editor"]
+        or any(
+            value not in zed_keymap_test
+            for value in ("Zed\\keymap.json", "-ceq", compact_zed_keymap)
+        )
+        or any(
+            value not in zed_keymap_set
+            for value in ("Zed\\keymap.json", "WriteAllText", compact_zed_keymap)
+        )
+        or any(
+            value in zed_keymap_test + zed_keymap_set
+            for value in ("Test-Subset", "Merge-Object")
+        )
+    ):
+        raise ValueError("Zed keymap resource must enforce the complete declared file")
 
     terminal = json.loads(
         (package_root / "terminal-settings.json").read_text(encoding="utf-8")
