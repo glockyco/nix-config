@@ -71,9 +71,12 @@ let
         "nixd"
         "!nil"
       ];
-      lsp.nixd.binary = {
-        path = "nixd";
-        ignore_system_version = false;
+      lsp = {
+        nixd.binary = {
+          path = "nixd";
+          ignore_system_version = false;
+        };
+        texlab.settings.texlab.build.onSave = true;
       };
     };
 
