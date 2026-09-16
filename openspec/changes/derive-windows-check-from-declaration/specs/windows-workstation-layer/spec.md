@@ -2,22 +2,29 @@
 
 ### Requirement: Check expectations derive from the declaration
 
-The Windows configuration output SHALL expose its declaration: the role set, the application list with every pin, the centrally managed application identifiers, and the review file names. The repository check SHALL read that declaration from the output and SHALL derive its expectations for pins, roles, elevation, and the file set from it. The check SHALL NOT carry a copy of a pin, a palette, a module list, a theme hash, or a file name. The check SHALL keep as literals only the rules that the declaration cannot express: the document schema, unique resource names, dependency existence, the elevation policy, and the Administrator-script boundary.
+The Windows configuration output SHALL expose its declaration: the role set, the application list with each version policy and selector, the centrally managed application identifiers, and the review file names. The repository check SHALL read that declaration from the output and SHALL derive its expectations for version policies, selectors, roles, elevation, and the file set from it. The check SHALL NOT carry a copy of an application policy, pin, palette, module list, theme hash, or file name. The check SHALL keep as literals only the rules that the declaration cannot express: the document schema, unique resource names, dependency existence, the elevation policy, and the Administrator-script boundary.
 
 #### Scenario: Change one pin
 
-- **WHEN** a maintainer changes the version or checksum of one application in the declaration and renders the output
+- **WHEN** a maintainer changes the version or checksum of one exact-pinned application in the declaration and renders the output
 - **THEN** the repository check passes with no edit to the check
 - **AND** the rendered document carries the new pin
 
+#### Scenario: Declare a self-updating application
+
+- **WHEN** the declaration selects the self-updating policy without a version
+- **THEN** the repository check expects `useLatest: true` and no rendered version
+- **AND** the check carries no application-specific exception
+
 #### Scenario: Declared application absent from the document
 
-- **WHEN** the declaration lists an application that the rendered document does not carry as exactly one resource with the same identifier, version, scope, and roles
+- **WHEN** the declaration lists an application that the rendered document does not carry as exactly one resource with the same identifier, version policy, policy-specific selector, scope, and roles
 - **THEN** the repository check fails and names the application
 
-#### Scenario: Rendered pin differs from the declaration
+#### Scenario: Rendered version policy differs from the declaration
 
-- **WHEN** a package resource in the rendered document carries a version that differs from the declared version, or permits the latest version
+- **WHEN** an exact resource carries a mismatched version or permits the latest version
+- **OR** a self-updating resource carries a version or does not require the latest version
 - **THEN** the repository check fails and names the resource
 
 #### Scenario: Review file set differs from the declaration
@@ -43,7 +50,7 @@ The repository check SHALL parse every script that the Windows layer ships: each
 
 ### Requirement: Rendered Windows configuration artifacts
 
-The repository SHALL render one Windows configuration document, one Administrator Zen policy script, and one Administrator native Neo driver script from the same Nix expressions. Together they SHALL be the single source for the Windows application set, the declared Windows settings, and the declared application configuration files. Each application SHALL have one declaration that carries its identifier, version, scope, source, and release data, and every resource that installs or configures that application SHALL derive its metadata from that declaration. Evaluation of the output SHALL read no derivation output and SHALL need no network. Nix activation on any host SHALL NOT write to a Windows path and SHALL NOT apply any artifact.
+The repository SHALL render one Windows configuration document, one Administrator Zen policy script, and one Administrator native Neo driver script from the same Nix expressions. Together they SHALL be the single source for the Windows application set, the declared Windows settings, and the declared application configuration files. Each application SHALL have one declaration that carries its identifier, version policy, policy-specific selector, scope, source, and release data, and every resource that installs or configures that application SHALL derive its metadata from that declaration. Evaluation of the output SHALL read no derivation output and SHALL need no network. Nix activation on any host SHALL NOT write to a Windows path and SHALL NOT apply any artifact.
 
 #### Scenario: Render the artifacts
 
@@ -98,8 +105,14 @@ The repository SHALL validate the rendered document and privilege boundary witho
 #### Scenario: Validate without Windows
 
 - **WHEN** the repository checks run on a supported build platform
-- **THEN** they validate the shipped document against the document contract, every script against the PowerShell parser, the narrow script boundary, the version pin of every application, and the absence of a centrally managed application
+- **THEN** they validate the shipped document against the document contract, every script against the PowerShell parser, the narrow script boundary, each application's version policy and selector, and the absence of a centrally managed application
 - **AND** they require no Windows machine and no network service
+
+#### Scenario: Preserve stable dark appearance acceptance
+
+- **WHEN** Windows records the declared dark modes, transparency, and wallpaper in `Custom.theme`
+- **THEN** the live test reports the dark-appearance resource in the desired state
+- **AND** the repository check requires no active theme-file path
 
 #### Scenario: Reject a dependency on an undeclared resource
 

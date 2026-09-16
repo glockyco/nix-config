@@ -46,9 +46,9 @@ Alternative rejected: leave the directory and document the exception. The audit 
 
 ### 2. `applications.nix` is the single application declaration
 
-Each entry keeps `name`, `role`, `id`, `version`, `source`, and `scope`. An entry whose source is not `winget` gains a `release` attribute with the data its script needs. AltSnap carries `url`, `archiveSha256`, `executableSha256`, and `hooksSha256`. The font carries `archiveSha256`, `legacyRegistryNames`, and `fonts`, and `font.nix` builds the URL from the version. `provides` leaves, because no entry uses it and `roles = [ role ]` renders the same bytes.
+Each entry keeps `name`, `role`, `id`, `versionPolicy`, `source`, and `scope`; an `exact` entry also keeps `version`, while a `self-updating` entry omits it. An entry whose source is not `winget` gains a `release` attribute with the data its script needs. AltSnap carries `url`, `archiveSha256`, `executableSha256`, and `hooksSha256`. The font carries `archiveSha256`, `legacyRegistryNames`, and `fonts`, and `font.nix` builds the URL from the version. `provides` leaves, because no entry uses it and `roles = [ role ]` renders the same bytes.
 
-`files.nix` and `font.nix` receive `applications` and select their entry by role with one `byRole` function in `default.nix`. Each resource builds `metadata.application` as `{ id; roles = [ role ]; source; version; scope; }` from that entry, which is the attribute set the output already renders. `altsnap-package.json` becomes `builtins.toJSON ({ inherit (entry) version; } // entry.release)`, whose sorted attributes equal the current literal.
+`files.nix` and `font.nix` receive `applications` and select their entry by role with one `byRole` function in `default.nix`. Each resource derives `metadata.application` from that entry with `id`, `roles`, `source`, `versionPolicy`, and `scope`, plus `version` only for `exact`. `altsnap-package.json` becomes `builtins.toJSON ({ inherit (entry) version; } // entry.release)`, whose sorted attributes equal the current literal.
 
 The ReNeo package directory `Microsoft\WinGet\Packages\<id>_Microsoft.Winget.Source_8wekyb3d8bbwe\ReNeo` is built once from the `keyboard-layout` entry. The launcher appends `reneo.exe` and the settings resource appends `config.json`.
 
@@ -59,7 +59,7 @@ Alternative rejected: keep `files.nix` data and delete the entries from `applica
 ```text
 declaration = {
   roles               = [ "browser" "editor" ... ];          # eight names
-  applications        = [ { name; role; id; version; source; scope; } ... ];
+  applications        = [ { name; role; id; versionPolicy; version ?; source; scope; } ... ];
   managedApplications = [ "7zip.7zip" ... ];
   reviewFiles         = [ "altsnap-package.json" ... ];      # fifteen names
 };
@@ -67,11 +67,11 @@ declaration = {
 
 `release` data stays out of the declaration, because the check does not verify archive checksums that Nix does not fetch. `passthru.document` and `passthru.renderedFiles` leave, because nothing reads them.
 
-`checks.nix` writes `builtins.toJSON pkgs.windows-configuration.declaration` to a store file and passes it to the check. The check derives from it: the expected set of application resources, each pin, each scope, each role, the elevation set, and the file set.
+`checks.nix` writes `builtins.toJSON pkgs.windows-configuration.declaration` to a store file and passes it to the check. The check derives from it: the expected application resources, version policies and selectors, scopes, roles, elevation set, and file set.
 
 ### 4. The check is the single policy owner
 
-The four `assert` expressions at `default.nix:212-221` leave. Each rule moves to the check with the same meaning: no application without a version, no application in the managed set, exactly one application per declared role and no application outside the role set, and no elevated resource except the machine-scope package resource of the `browser` role.
+The four policy `assert` expressions leave. Each rule moves to the check with the same meaning: every application has one valid version policy, no application is in the managed set, every declared role has exactly one application, no application is outside the role set, and no elevated resource exists except the machine-scope package resource of the `browser` role. The check accepts `exact` only with `version` and `useLatest: false`; it accepts `self-updating` only without `version` and with `useLatest: true`.
 
 An import-time `assert` fails every evaluation that reaches the output. After `key-fleet-by-host` the output is in the overlay, so `nix flake show` and `nix build .#windows-configuration` fail with the assertion text instead of a check report. A policy violation is a review finding. The operator needs the rendered output to inspect it, and `nix flake check` is the gate that names the resource.
 
@@ -109,7 +109,7 @@ Alternative rejected: patch the pinned `document.resource.json` in the check. A 
 
 `packages/windows-configuration-check/src/windows_configuration_check/parse.ps1` reads a JSON object of named scripts on standard input, calls `Parser::ParseInput` for each, and writes one JSON record per script: parse error messages, the `UserPath` of every `VariableExpressionAst`, the value of every `StringConstantExpressionAst` and `ExpandableStringExpressionAst`, and the value of every `keyPath` is not needed there because registry resources are data. The Python program runs one `pwsh -NoProfile -NonInteractive -File parse.ps1` for all scripts together.
 
-The check fails when any script reports a parse error, and names the script and the message. The Administrator-script boundary reads the parsed data: `apply-kbdneo.ps1` and `apply-zen-policies.ps1` reference no variable in `env:APPDATA`, `env:LOCALAPPDATA`, `env:USERPROFILE`, and no string value that starts with `HKCU:`. The excluded-surface rule reads the same data: no registry `keyPath` and no script string contains `CloudStore`. Every substring assertion on script source leaves, including the dark-appearance, animation, font, JSON-writer, Fork, and AltSnap checks.
+The check fails when any script reports a parse error, and names the script and the message. The Administrator-script boundary reads the parsed data: `apply-kbdneo.ps1` and `apply-zen-policies.ps1` reference no variable in `env:APPDATA`, `env:LOCALAPPDATA`, `env:USERPROFILE`, and no string value that starts with `HKCU:`. The excluded-surface rule reads the same data: no registry `keyPath` and no script string contains `CloudStore`. Every substring assertion on script source leaves, including the stable dark-mode, animation, font, JSON-writer, Fork, and AltSnap checks. The declaration records no active theme-file path because Windows owns its generated `Custom.theme`.
 
 `pwsh` parses with the PowerShell 7 grammar, and the scripts run under Windows PowerShell 5.1. The 7 grammar is a superset, so a 7-only construct passes the check and fails on Windows. The live test in the Windows apply section of the provisioning runbook runs every test script under 5.1 and is the proof for that gap.
 
@@ -129,7 +129,7 @@ windows-configuration-check --schemas <dsc-checkout> --declaration <declaration.
 
 The program exits 0 on success. It exits 1 with one line per finding that names the resource, script, application, or file.
 
-Each fixture is a small output directory and declaration that a test writes. One fixture is accepted. Each rejection fixture changes one fact: a missing version, a rendered version that differs from the declared one, `useLatest` true, a managed identifier, a role with two applications, a declared role with none, a `HKLM\` key path, an elevated user-scope package, an elevated registry resource, a Windows feature type, a machine-scope package without `securityContext`, a duplicate name, a `dependsOn` name that no resource declares, a `dependsOn` entry in `resourceId()` form, a `$schema` that names a revision, a declared application that the document omits, a review file that the declaration does not name, a script with a syntax error, an Administrator script that reads `$env:APPDATA`, and an Administrator script that names an `HKCU:` path. Each rejection test asserts the exit status and the named subject.
+Each fixture is a small output directory and declaration that a test writes. Accepted fixtures cover `exact` and `self-updating`. Each rejection fixture changes one fact: a missing or unknown policy, an `exact` entry without a version, a mismatched exact version, a self-updating entry with a version, a mismatched `useLatest` selector, a managed identifier, a role with two applications, a declared role with none, a `HKLM\` key path, an elevated user-scope package, an elevated registry resource, a Windows feature type, a machine-scope package without `securityContext`, a duplicate name, a `dependsOn` name that no resource declares, a `dependsOn` entry in `resourceId()` form, a `$schema` that names a revision, a declared application that the document omits, a review file that the declaration does not name, a script with a syntax error, an Administrator script that reads `$env:APPDATA`, and an Administrator script that names an `HKCU:` path. Each rejection test asserts the exit status and the named subject.
 
 `checks.windowsConfiguration` in `flake-modules/checks.nix` is one `runCommand` that runs the program against `pkgs.windows-configuration` with the declaration file from decision 3 and `passthru.dscSchemas`, then touches `$out`. `packages/windows-configuration-check.py` is deleted.
 
