@@ -51,27 +51,34 @@ Every document resource SHALL apply in the interactive user's own scope except t
 
 ### Requirement: Pinned application set
 
-The document SHALL declare an explicit version for every application it manages. The set SHALL cover the operator's confirmed roles: code editor, web browser, Git client, application launcher with window switching, mouse-driven window move and resize, Neo2 keyboard layout, terminal host, and the terminal font. The document SHALL NOT declare an application that the device management policy already manages.
+The document SHALL declare one explicit version policy for every application it manages. An exact-pinned application SHALL declare one reviewed version and SHALL install only that version. A self-updating application SHALL omit an exact version and SHALL require the latest version available from its WinGet source. Zed and Brave SHALL use the self-updating policy because their signed vendor channels own updates. The document SHALL accept an installed self-updating application when its version is equal to or newer than the latest version in the WinGet source, and SHALL NOT downgrade it. All other applications SHALL remain exact-pinned. The set SHALL cover the operator's confirmed roles: code editor, web browser, Git client, application launcher with window switching, mouse-driven window move and resize, Neo2 keyboard layout, terminal host, and the terminal font. The document SHALL NOT declare an application that the device management policy already manages.
 
 #### Scenario: Install the declared set
 
-- **WHEN** the operator applies the document on a machine without those applications
-- **THEN** each application installs at its declared version
-- **AND** each role above has exactly one declared application
+- **WHEN** the operator applies the document on a machine without the declared applications
+- **THEN** each exact-pinned application installs at its declared version
+- **AND** each self-updating application installs at the latest version available from WinGet
+- **AND** each required role has exactly one declared application
+
+#### Scenario: Accept a newer vendor update
+
+- **WHEN** Zed or Brave has a vendor-channel version newer than the latest version available from WinGet
+- **THEN** the document reports that application in the desired state
+- **AND** an apply operation does not downgrade or reinstall it
 
 #### Scenario: Detect an unpinned application
 
-- **WHEN** a declared application has no explicit version
-- **THEN** the repository validation fails
+- **WHEN** an application declares no version policy, more than one version policy, a version under the self-updating policy, or no version under the exact policy
+- **THEN** repository validation fails
 
 #### Scenario: Detect a managed-application conflict
 
 - **WHEN** a declared application appears in the recorded set of centrally managed applications
-- **THEN** the repository validation fails
+- **THEN** repository validation fails
 
 ### Requirement: Declared Windows settings
 
-The document SHALL declare Windows settings by explicit named keys. It SHALL keep the centrally managed Firefox package's interactive-user startup value absent. It SHALL put `en-GB` first in the user's preferred language list and set it as the Windows UI override while the English entry has no input method. It SHALL preserve the existing `de-DE` and `de-AT` entries and their input methods. The document SHALL disable Windows transparency and animation effects. For a bundled utility that provides several modules, the document SHALL declare the enabled modules and SHALL also declare every other module as disabled.
+The document SHALL declare Windows settings by explicit named keys. It SHALL keep the centrally managed Firefox package's interactive-user startup value absent. It SHALL put `en-GB` first in the user's preferred language list and set it as the Windows UI override while the English entry has no input method. It SHALL preserve the existing `de-DE` and `de-AT` entries and their input methods. The document SHALL disable Windows transparency and animation effects. It SHALL validate dark appearance from application mode, system mode, transparency, and wallpaper. It SHALL NOT depend on the active theme-file path because Windows can store the same declared appearance in `Custom.theme`. For a bundled utility that provides several modules, the document SHALL declare the enabled modules and SHALL also declare every other module as disabled.
 
 #### Scenario: Apply the declared settings
 
@@ -79,6 +86,12 @@ The document SHALL declare Windows settings by explicit named keys. It SHALL kee
 - **THEN** the declared keyboard, file-manager, regional, window-snapping, screenshot-location, and dark-appearance settings match the declaration
 - **AND** transparency and animation effects are disabled
 - **AND** the short date uses ISO 8601 `yyyy-MM-dd`
+
+#### Scenario: Retain a generated custom theme
+
+- **WHEN** the dark-mode flags, transparency, and wallpaper match the declaration and Windows records them in `Custom.theme`
+- **THEN** the dark-appearance resource reports the desired state
+- **AND** an apply operation does not rewrite the active theme-file path
 
 #### Scenario: Prevent Firefox from starting at sign-in
 
@@ -146,6 +159,47 @@ The document and companion scripts SHALL declare application configuration in tw
 - **THEN** the apply operation sets the declared values
 - **AND** the apply operation preserves the application's own values
 
+### Requirement: Windows-first Zed control shortcuts
+
+The rendered Windows configuration SHALL keep Zed Vim mode enabled and SHALL declare a user keymap for full editors. In every Vim mode, standard Windows and VS Code `Ctrl` shortcuts SHALL take precedence over Vim's `Ctrl` commands. The standard shortcuts SHALL include copy, cut, paste, select all, undo, redo, save, find, replace, quick open, command palette, new file, open file, recent projects, symbol search, go to line, select next occurrence, dock toggles, and close editor. `Ctrl+K` SHALL remain available as the base keymap's chord prefix. Vim-only single-key `Ctrl` commands that have no selected Windows action SHALL do nothing in a full editor.
+
+The override SHALL NOT change unmodified Vim keys, `Escape`, terminal input, menus, panels, or other non-editor surfaces. The Windows apply operation SHALL converge the declared keymap as complete configuration rather than preserve undeclared keymap entries.
+
+#### Scenario: Copy from normal mode
+
+- **WHEN** a full Zed editor is in Vim normal mode and the operator presses `Ctrl+C`
+- **THEN** Zed invokes its editor copy action
+- **AND** Zed does not invoke a Vim mode or operator action
+
+#### Scenario: Use standard shortcuts across Vim modes
+
+- **WHEN** a full Zed editor is in normal, visual, insert, replace, operator, or waiting mode
+- **THEN** each declared standard `Ctrl` shortcut invokes the same Zed action in every mode
+- **AND** `Escape` remains the way to cancel an operator or return to normal mode
+
+#### Scenario: Use Vim without its control layer
+
+- **WHEN** the operator uses an unmodified Vim motion, operator, text object, register, or command in a full editor
+- **THEN** Zed retains its Vim behavior
+- **AND** a Vim-only single-key `Ctrl` command selected for removal does not run
+
+#### Scenario: Use a base keymap chord
+
+- **WHEN** the operator starts a declared `Ctrl+K` chord in a full editor
+- **THEN** Zed waits for and runs the base keymap chord
+- **AND** it does not start Vim's digraph input
+
+#### Scenario: Use a terminal or non-editor surface
+
+- **WHEN** focus is in Zed's terminal, menu, panel, or another non-editor surface
+- **THEN** the surface retains its existing context-specific `Ctrl` behavior
+
+#### Scenario: Converge a changed keymap
+
+- **WHEN** the Windows Zed keymap contains an undeclared binding or differs from the rendered declaration
+- **THEN** the apply operation restores the complete declared keymap
+- **AND** the next test operation reports the resource in the desired state
+
 ### Requirement: Zed WSL LaTeX builds
 
 The rendered Windows Zed user settings SHALL enable TexLab builds when a LaTeX buffer is saved. The setting SHALL apply to LaTeX projects opened through Zed's native WSL workspace transport. Project repositories SHALL retain ownership of their build commands, root-document markers, and LaTeX tool configuration.
@@ -180,7 +234,7 @@ The repository SHALL validate the rendered document and privilege boundary witho
 #### Scenario: Validate without Windows
 
 - **WHEN** the repository checks run on a supported build platform
-- **THEN** they validate the document structure, the narrow script boundary, the version pin of every application, and the absence of a centrally managed application
+- **THEN** they validate the document structure, the narrow script boundary, each application's version policy, and the absence of a centrally managed application
 - **AND** they require no Windows machine and no network service
 
 #### Scenario: Preview and confirm on the machine
@@ -191,17 +245,17 @@ The repository SHALL validate the rendered document and privilege boundary witho
 
 ### Requirement: Dedicated browser-relay application
 
-The rendered Windows application set SHALL declare one pinned, user-scope Chromium-based browser for OMP browser relay use. The relay browser SHALL have a distinct application role, SHALL NOT replace Zen as the interactive browser, and SHALL NOT appear in the centrally managed application set. The Windows declaration SHALL configure no startup entry for the relay browser.
+The rendered Windows application set SHALL declare Brave as a self-updating, user-scope Chromium-based browser for OMP browser relay use. The relay browser SHALL have a distinct application role, SHALL NOT replace Zen as the interactive browser, and SHALL NOT appear in the centrally managed application set. The Windows declaration SHALL configure no startup entry for the relay browser.
 
 #### Scenario: Apply the Windows application declaration
 
-- **WHEN** the interactive user applies the rendered Windows configuration
-- **THEN** the pinned relay browser installs in that user's scope without elevation
+- **WHEN** the interactive user applies the rendered Windows configuration without Brave installed
+- **THEN** WinGet installs the latest available Brave version in that user's scope without elevation
 - **AND** Zen remains the declared interactive browser
 
 #### Scenario: Detect an invalid relay browser declaration
 
-- **WHEN** the relay browser is absent, unpinned, machine-scoped, assigned the interactive browser role, or listed as centrally managed
+- **WHEN** Brave is absent, uses a policy other than self-updating, is machine-scoped, is assigned the interactive browser role, or is listed as centrally managed
 - **THEN** repository validation fails
 
 #### Scenario: Sign in after a restart
