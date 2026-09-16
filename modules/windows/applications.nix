@@ -25,6 +25,14 @@
     scope = "user";
   }
   {
+    name = "Ferdium";
+    role = "communication-client";
+    id = "Ferdium.Ferdium";
+    versionPolicy = "self-updating";
+    source = "winget";
+    scope = "user";
+  }
+  {
     name = "Fork";
     role = "git-client";
     id = "Fork.Fork";

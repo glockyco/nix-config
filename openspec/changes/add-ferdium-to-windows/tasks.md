@@ -1,13 +1,13 @@
 ## 1. Declare the Native Windows Application
 
-- [ ] 1.1 Add the user-scoped, self-updating `Ferdium.Ferdium` entry with role `communication-client` to `modules/windows/applications.nix`; add that role to the renderer's required role set, build the Windows artifact, and confirm that its package resource has `useLatest: true`, no exact version, and no elevation metadata.
-- [ ] 1.2 Extend `packages/windows-configuration-check.py` so `communication-client` requires `Ferdium.Ferdium`, user scope, and the self-updating policy; add rejection coverage for a wrong identifier, exact version, elevation, duplicate role, and centrally managed collision, then run the focused packaged Windows configuration check.
-- [ ] 1.3 Update `docs/operations/wsl-omp-bootstrap.md` to list Ferdium with the self-updating applications and to state its application-owned settings boundary; compare the procedure with the rendered document and application declaration.
+- [x] 1.1 Add the user-scoped, self-updating `Ferdium.Ferdium` entry with role `communication-client` to `modules/windows/applications.nix`; add that role to the renderer's required role set, build the Windows artifact, and confirm that its package resource has `useLatest: true`, no exact version, and no elevation metadata.
+- [x] 1.2 Extend `packages/windows-configuration-check.py` so `communication-client` requires `Ferdium.Ferdium`, user scope, and the self-updating policy; add rejection coverage for a wrong identifier, exact version, elevation, duplicate role, and centrally managed collision, then run the focused packaged Windows configuration check.
+- [x] 1.3 Update `docs/operations/wsl-omp-bootstrap.md` to list Ferdium with the self-updating applications and to state its application-owned settings boundary; compare the procedure with the rendered document and application declaration.
 
 ## 2. Validate and Commit the Reviewed Change
 
-- [ ] 2.1 Run `openspec validate add-ferdium-to-windows --strict`, `nix fmt -- --fail-on-change`, and `nix flake check --print-build-logs`; resolve every failure and inspect the built review files for the declared Ferdium package and absence of Ferdium settings or startup resources.
-- [ ] 2.2 Review and commit only the Ferdium implementation, specification, procedure, and focused verification changes as one atomic change with a causal commit body.
+- [x] 2.1 Run `openspec validate add-ferdium-to-windows --strict`, `nix fmt -- --fail-on-change`, and `nix flake check --print-build-logs`; resolve every failure and inspect the built review files for the declared Ferdium package and absence of Ferdium settings or startup resources.
+- [x] 2.2 Review and commit only the Ferdium implementation, specification, procedure, and focused verification changes as one atomic change with a causal commit body.
 
 ## 3. Apply and Prove Native Windows Behavior
 

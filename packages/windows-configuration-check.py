@@ -18,10 +18,13 @@ FORBIDDEN_TYPES = {
 }
 RELAY_BROWSER_ID = "Brave.Brave"
 RELAY_BROWSER_ROLE = "browser-relay"
-SELF_UPDATING_ROLES = {"browser-relay", "editor"}
+COMMUNICATION_CLIENT_ID = "Ferdium.Ferdium"
+COMMUNICATION_CLIENT_ROLE = "communication-client"
+SELF_UPDATING_ROLES = {COMMUNICATION_CLIENT_ROLE, RELAY_BROWSER_ROLE, "editor"}
 EXPECTED_ROLES = {
     "browser",
     RELAY_BROWSER_ROLE,
+    COMMUNICATION_CLIENT_ROLE,
     "editor",
     "git-client",
     "keyboard-layout",
@@ -280,6 +283,32 @@ def validate_policy(document: dict, managed_ids: set[str]) -> None:
     if brave_resources != [relay_browser]:
         raise ValueError("Brave may appear only in its package resource")
 
+    communication_clients = [
+        resource
+        for resource in applications
+        if COMMUNICATION_CLIENT_ROLE
+        in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    ]
+    if len(communication_clients) != 1:
+        raise ValueError("exactly one communication-client package must be declared")
+    communication_client = communication_clients[0]
+    communication_application = communication_client["metadata"]["application"]
+    communication_properties = communication_client.get("properties", {})
+    if (
+        communication_client.get("name") != "package communication client"
+        or communication_application.get("id") != COMMUNICATION_CLIENT_ID
+        or communication_application.get("roles") != [COMMUNICATION_CLIENT_ROLE]
+        or communication_application.get("source") != "winget"
+        or communication_application.get("scope") != "user"
+        or communication_properties.get("id") != COMMUNICATION_CLIENT_ID
+    ):
+        raise ValueError("communication-client must be the user-scope Ferdium package")
+    ferdium_resources = [
+        resource for resource in resources if "ferdium" in json.dumps(resource).lower()
+    ]
+    if ferdium_resources != [communication_client]:
+        raise ValueError("Ferdium may appear only in its package resource")
+
     for resource in resources:
         properties = resource.get("properties", {})
         metadata = resource.get("metadata", {})
@@ -302,9 +331,10 @@ def validate_policy(document: dict, managed_ids: set[str]) -> None:
 
 def package_resource(role: str, package_id: str | None = None) -> dict:
     if package_id is None:
-        package_id = (
-            RELAY_BROWSER_ID if role == RELAY_BROWSER_ROLE else "Example.Package"
-        )
+        package_id = {
+            RELAY_BROWSER_ROLE: RELAY_BROWSER_ID,
+            COMMUNICATION_CLIENT_ROLE: COMMUNICATION_CLIENT_ID,
+        }.get(role, "Example.Package")
     version_policy = "self-updating" if role in SELF_UPDATING_ROLES else "exact"
     resource = {
         "name": f"package {role.replace('-', ' ')}",
@@ -421,6 +451,70 @@ def run_rejection_tests() -> None:
         }
     )
     cases.append(brave_startup)
+
+    wrong_communication_id = copy.deepcopy(allowed)
+    communication_client = next(
+        resource
+        for resource in wrong_communication_id["resources"]
+        if COMMUNICATION_CLIENT_ROLE
+        in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    )
+    communication_client["metadata"]["application"]["id"] = "Example.Client"
+    communication_client["properties"]["id"] = "Example.Client"
+    cases.append(wrong_communication_id)
+
+    exact_communication_client = copy.deepcopy(allowed)
+    communication_client = next(
+        resource
+        for resource in exact_communication_client["resources"]
+        if COMMUNICATION_CLIENT_ROLE
+        in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    )
+    communication_client["metadata"]["application"]["versionPolicy"] = "exact"
+    communication_client["metadata"]["application"]["version"] = "1.0.0"
+    communication_client["properties"]["version"] = "1.0.0"
+    communication_client["properties"]["useLatest"] = False
+    cases.append(exact_communication_client)
+
+    elevated_communication_client = copy.deepcopy(allowed)
+    communication_client = next(
+        resource
+        for resource in elevated_communication_client["resources"]
+        if COMMUNICATION_CLIENT_ROLE
+        in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    )
+    communication_client["metadata"]["winget"] = {"securityContext": "elevated"}
+    cases.append(elevated_communication_client)
+
+    duplicate_communication_client = copy.deepcopy(allowed)
+    duplicate_communication_client["resources"].append(
+        package_resource(COMMUNICATION_CLIENT_ROLE, "Example.OtherClient")
+    )
+    cases.append(duplicate_communication_client)
+
+    managed_communication_client = copy.deepcopy(allowed)
+    communication_client = next(
+        resource
+        for resource in managed_communication_client["resources"]
+        if COMMUNICATION_CLIENT_ROLE
+        in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    )
+    communication_client["metadata"]["application"]["id"] = "Managed.Package"
+    communication_client["properties"]["id"] = "Managed.Package"
+    cases.append(managed_communication_client)
+
+    ferdium_startup = copy.deepcopy(allowed)
+    ferdium_startup["resources"].append(
+        {
+            "name": "communication client startup",
+            "type": "Microsoft.Windows/Registry",
+            "properties": {
+                "keyPath": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+                "valueData": {"String": "Ferdium.exe"},
+            },
+        }
+    )
+    cases.append(ferdium_startup)
 
     unpinned = copy.deepcopy(allowed)
     unpinned["resources"][0]["metadata"]["application"]["version"] = ""
