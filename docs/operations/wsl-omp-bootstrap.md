@@ -268,8 +268,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $zenPolicies -Test
 ```
 
 Exit status `1` means drift, not an acceptable resource error. Require an elevation shield only on `package browser`.
-If only Brave reports drift because a security update exceeds the pin, review an updated declaration.
-Do not disable browser updates or force a downgrade.
+Zed and Brave are self-updating applications: their signed in-application channels own routine updates, and WinGet owns installation and repair through `useLatest: true`.
+The test accepts their installed version when it is equal to or newer than WinGet's catalog version.
+Every other declared application remains exact-pinned.
+If Zed or Brave reports package drift, inspect the installed and catalog versions before applying.
+Do not disable vendor updates or downgrade a newer installation.
 
 Open 64-bit PowerShell with **Run as administrator**, using the separate local `Administrator` credential:
 

@@ -35,10 +35,13 @@ let
     type = "Microsoft.WinGet/Package";
     name = "package-${application.role}";
     properties = {
-      inherit (application) id source version;
+      inherit (application) id source;
       acceptAgreements = true;
       installMode = "silent";
-      useLatest = false;
+      useLatest = application.versionPolicy == "self-updating";
+    }
+    // lib.optionalAttrs (application.versionPolicy == "exact") {
+      inherit (application) version;
     };
     metadata = {
       description = "Install ${application.name} for ${application.scope} scope";
@@ -47,9 +50,12 @@ let
           id
           scope
           source
-          version
+          versionPolicy
           ;
         roles = [ application.role ] ++ (application.provides or [ ]);
+      }
+      // lib.optionalAttrs (application.versionPolicy == "exact") {
+        inherit (application) version;
       };
     }
     // lib.optionalAttrs (application.scope == "machine") {
@@ -81,7 +87,17 @@ let
   collisions = lib.intersectLists managedApplications.identifiers (
     map (application: application.id) applications
   );
-  unpinned = builtins.filter (application: application.version == "") applications;
+  invalidVersionPolicies = builtins.filter (
+    application:
+    let
+      policy = application.versionPolicy or null;
+      hasVersion = application ? version && application.version != "";
+    in
+    !(
+      (policy == "exact" && hasVersion)
+      || (policy == "self-updating" && !hasVersion && application.source == "winget")
+    )
+  ) applications;
   roleCounts = map (
     role:
     lib.count (
@@ -210,7 +226,9 @@ let
   '') renderedFiles;
 in
 
-assert lib.assertMsg (unpinned == [ ]) "every Windows application must have an explicit version";
+assert lib.assertMsg (
+  invalidVersionPolicies == [ ]
+) "every Windows application must have one valid version policy";
 assert lib.assertMsg (collisions == [ ]) "a declared Windows application is centrally managed";
 assert lib.assertMsg (builtins.all (
   count: count == 1

@@ -18,10 +18,10 @@ OpenSpec CLI counts describe artifact and task state, not scheduling authorizati
 
 ## 3. Establish One Application Declaration
 
-- [ ] 3.1 Extend `applications.nix` with the AltSnap and font release data. Derive their resource metadata, URLs, versions, and review files from those entries.
+- [ ] 3.1 Extend `applications.nix` with the AltSnap and font release data. Preserve each version policy, and derive resource metadata, policy-specific selectors, URLs, and review files from those entries.
 - [ ] 3.2 Add one `byRole` selector and derive every application's rendered metadata from its entry. Delete the unused `provides`, `auditDate`, empty `files`, and repeated ReNeo package path values.
-- [ ] 3.3 Add `passthru.declaration` with roles, applications, managed identifiers, and review file names. Delete `passthru.document` and `passthru.renderedFiles`, and confirm the declaration JSON contains no derivation output.
-- [ ] 3.4 Change one temporary application pin in the declaration. Confirm that every applicable rendered location changes while the check needs no edit, then revert the probe.
+- [ ] 3.3 Add `passthru.declaration` with roles, applications and their version policies, managed identifiers, and review file names. Delete `passthru.document` and `passthru.renderedFiles`, and confirm the declaration JSON contains no derivation output.
+- [ ] 3.4 Change one temporary exact pin and one temporary self-updating policy in the declaration. Confirm that every applicable rendered location changes while the check needs no edit, then revert both probes.
 
 ## 4. Remove Evaluation-Time Reads
 
@@ -42,13 +42,13 @@ OpenSpec CLI counts describe artifact and task state, not scheduling authorizati
 - [ ] 6.2 Validate `configuration.winget` exactly as shipped. Register every pinned DSC schema by `$id`, preserve the WinGet `main` schema URL and bare-name dependencies, and remove the pre-validation rewrite.
 - [ ] 6.3 Parse every document script, both Administrator scripts, and the ReNeo launcher in one `pwsh` invocation. Report each parser error with its script name.
 - [ ] 6.4 Check Administrator and excluded-path boundaries from parsed variable and string AST values. Delete every source-substring assertion.
-- [ ] 6.5 Derive expected roles, applications, pins, scope, elevation, and review files from `passthru.declaration`. Keep only schema, uniqueness, dependency, elevation, and Administrator-boundary invariants as check literals.
+- [ ] 6.5 Derive expected roles, applications, version policies and selectors, scope, elevation, and review files from `passthru.declaration`. Keep only schema, uniqueness, dependency, elevation, and Administrator-boundary invariants as check literals.
 - [ ] 6.6 Delete the renderer's four policy assertions and make the packaged check the single policy owner. Confirm that a violating output still renders while the check fails with the resource name.
 - [ ] 6.7 Replace `packages/windows-configuration-check.py` with the packaged program and wire `checks.windowsConfiguration` through `flake-modules/checks.nix`. Confirm the check runs on both supported systems.
 
 ## 7. Prove Check Reach with Fixtures
 
-- [ ] 7.1 Add one accepted fixture and rejection fixtures for missing or mismatched pins, `useLatest`, managed applications, missing or duplicate roles, wrong scope, forbidden elevation, and Windows features. Confirm each failure names the application or resource.
+- [ ] 7.1 Add accepted fixtures for exact and self-updating policies. Add rejection fixtures for missing or unknown policies, policy-specific missing or conflicting selectors, managed applications, missing or duplicate roles, wrong scope, forbidden elevation, and Windows features. Confirm each failure names the application or resource.
 - [ ] 7.2 Add rejection fixtures for duplicate names, missing dependencies, `resourceId()` dependencies, a revision schema URL, missing declared applications, and review-file drift. Confirm each failure names the differing value.
 - [ ] 7.3 Add script fixtures for a syntax error and each forbidden Administrator variable or path. Confirm the parser or boundary check names the script and offending value.
 - [ ] 7.4 Temporarily remove one fixture-enforced validation at a time. Confirm its fixture fails to fail, then restore the validation before continuing.
@@ -61,12 +61,12 @@ OpenSpec CLI counts describe artifact and task state, not scheduling authorizati
 - [ ] 8.3 Run `nix flake check --all-systems --print-build-logs` on `korolev` through the configured Darwin remote builder.
 - [ ] 8.4 Run `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the Mac.
 - [ ] 8.5 Run `openspec validate derive-windows-check-from-declaration --strict`.
-- [ ] 8.6 On the Windows work machine, run the runbook's `winget configure test` and both Administrator `-Test` commands. Confirm the state matches the baseline.
+- [ ] 8.6 On the Windows work machine, run the runbook's `winget configure test` and both Administrator `-Test` commands. Confirm exact and self-updating packages match their policies, and confirm `Custom.theme` does not cause appearance drift.
 - [ ] 8.7 Remove `GitInstancePath` from the Fork settings, apply the new document, and confirm that Fork opens the WSL worktree and the next test reports desired state.
-- [ ] 8.8 Review the final diff by declaration, renderer, helper, check, fixture, and documentation. Confirm that no duplicate pin, policy assertion, unsafe JSON interpolation, import-from-derivation, source grep, dead field, or compatibility path remains.
+- [ ] 8.8 Review the final diff by declaration, renderer, helper, check, fixture, and documentation. Confirm that no duplicate version policy or pin, policy assertion, unsafe JSON interpolation, import-from-derivation, source grep, generated theme-path expectation, dead field, or compatibility path remains.
 
 ## 9. Documentation
 
-- [ ] 9.1 Update the Windows apply section of the provisioning runbook to distinguish repository validation from the Windows live test. Include the PowerToys review that must run when its version changes.
+- [ ] 9.1 Update the Windows apply section of the provisioning runbook to distinguish repository validation from the Windows live test. Describe exact and self-updating application policies, stable dark-appearance validation, and the PowerToys review that must run when its version changes.
 - [ ] 9.2 Record declaration-derived checks, check-owned policy, parser-based PowerShell validation, and network-free evaluation in this change and nearby rationale comments.
 - [ ] 9.3 Update relevant README links for `packages/windows-configuration/` and the packaged check without adding a layout inventory. Confirm `nix fmt -- --fail-on-change README.md` passes.

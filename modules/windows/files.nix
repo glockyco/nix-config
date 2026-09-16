@@ -423,6 +423,7 @@ let
         id = "AltSnap.AltSnap";
         roles = [ "window-tool" ];
         source = "github-release";
+        versionPolicy = "exact";
         version = altSnapPackage.version;
         scope = "user";
       };

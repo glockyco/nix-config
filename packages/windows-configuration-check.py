@@ -18,6 +18,7 @@ FORBIDDEN_TYPES = {
 }
 RELAY_BROWSER_ID = "Brave.Brave"
 RELAY_BROWSER_ROLE = "browser-relay"
+SELF_UPDATING_ROLES = {"browser-relay", "editor"}
 EXPECTED_ROLES = {
     "browser",
     RELAY_BROWSER_ROLE,
@@ -194,9 +195,25 @@ def validate_policy(document: dict, managed_ids: set[str]) -> None:
         if not isinstance(declared_roles, list) or not declared_roles:
             raise ValueError(f"package has no declared roles: {application.get('id')}")
         roles.update(declared_roles)
-        if not application.get("version"):
+        expected_policy = (
+            "self-updating" if set(declared_roles) & SELF_UPDATING_ROLES else "exact"
+        )
+        version_policy = application.get("versionPolicy")
+        if version_policy != expected_policy:
             raise ValueError(
-                f"package has no explicit version: {application.get('id')}"
+                f"package has invalid version policy: {application.get('id')}"
+            )
+        if version_policy == "exact" and not application.get("version"):
+            raise ValueError(
+                f"exact package has no explicit version: {application.get('id')}"
+            )
+        if version_policy == "self-updating" and (
+            "version" in application
+            or application.get("source") != "winget"
+            or resource.get("type") != PACKAGE_TYPE
+        ):
+            raise ValueError(
+                f"self-updating package has invalid fields: {application.get('id')}"
             )
         scope = application.get("scope")
         if scope not in {"user", "machine"}:
@@ -215,13 +232,23 @@ def validate_policy(document: dict, managed_ids: set[str]) -> None:
                 f"user package requests elevation: {application.get('id')}"
             )
         if resource.get("type") == PACKAGE_TYPE:
-            if properties.get("version") != application.get("version"):
+            if version_policy == "exact":
+                version = application.get("version")
+                if not version or properties.get("version") != version:
+                    raise ValueError(
+                        f"package version differs from its reviewed pin: {application.get('id')}"
+                    )
+                if properties.get("useLatest") is not False:
+                    raise ValueError(
+                        f"exact package permits the latest version: {application.get('id')}"
+                    )
+            elif (
+                "version" in application
+                or "version" in properties
+                or properties.get("useLatest") is not True
+            ):
                 raise ValueError(
-                    f"package version differs from its reviewed pin: {application.get('id')}"
-                )
-            if properties.get("useLatest") is not False:
-                raise ValueError(
-                    f"package permits an unpinned version: {application.get('id')}"
+                    f"self-updating package has conflicting selectors: {application.get('id')}"
                 )
 
     if roles != EXPECTED_ROLES:
@@ -278,25 +305,29 @@ def package_resource(role: str, package_id: str | None = None) -> dict:
         package_id = (
             RELAY_BROWSER_ID if role == RELAY_BROWSER_ROLE else "Example.Package"
         )
-    return {
+    version_policy = "self-updating" if role in SELF_UPDATING_ROLES else "exact"
+    resource = {
         "name": f"package {role.replace('-', ' ')}",
         "type": PACKAGE_TYPE,
         "properties": {
             "id": package_id,
             "source": "winget",
-            "version": "1.0.0",
-            "useLatest": False,
+            "useLatest": version_policy == "self-updating",
         },
         "metadata": {
             "application": {
                 "id": package_id,
                 "roles": [role],
                 "source": "winget",
-                "version": "1.0.0",
+                "versionPolicy": version_policy,
                 "scope": "user",
             }
         },
     }
+    if version_policy == "exact":
+        resource["properties"]["version"] = "1.0.0"
+        resource["metadata"]["application"]["version"] = "1.0.0"
+    return resource
 
 
 def run_rejection_tests() -> None:
@@ -313,6 +344,10 @@ def run_rejection_tests() -> None:
     validate_policy(allowed, {"Managed.Package"})
 
     cases = []
+
+    missing_policy = copy.deepcopy(allowed)
+    del missing_policy["resources"][0]["metadata"]["application"]["versionPolicy"]
+    cases.append(missing_policy)
 
     missing_relay = copy.deepcopy(allowed)
     missing_relay["resources"] = [
@@ -363,6 +398,16 @@ def run_rejection_tests() -> None:
     )
     relay["metadata"]["application"]["version"] = ""
     cases.append(unpinned_relay)
+
+    stale_self_updating = copy.deepcopy(allowed)
+    relay = next(
+        resource
+        for resource in stale_self_updating["resources"]
+        if RELAY_BROWSER_ROLE
+        in resource.get("metadata", {}).get("application", {}).get("roles", [])
+    )
+    relay["properties"]["useLatest"] = False
+    cases.append(stale_self_updating)
 
     brave_startup = copy.deepcopy(allowed)
     brave_startup["resources"].append(
@@ -480,13 +525,14 @@ def main() -> None:
         "AppsUseLightTheme",
         "SystemUsesLightTheme",
         "EnableTransparency",
-        "dark.theme",
         "img19.jpg",
         "SystemParametersInfo",
         "ImmersiveColorSet",
     }
     if any(value not in dark_scripts for value in required_appearance_values):
         raise ValueError("dark appearance resource is missing a declared setting")
+    if "CurrentTheme" in dark_scripts or "dark.theme" in dark_scripts:
+        raise ValueError("dark appearance resource owns generated theme state")
     dark_properties = dark_appearance.get("properties", {})
     if "EnableTransparency -eq 0" not in dark_properties.get(
         "testScript", ""

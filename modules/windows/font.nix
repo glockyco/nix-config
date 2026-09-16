@@ -103,6 +103,7 @@ in
       application = {
         id = "ryanoasis.nerd-fonts.JetBrainsMono";
         roles = [ "terminal-font" ];
+        versionPolicy = "exact";
         inherit version;
         source = "nerd-fonts-release";
         scope = "user";
