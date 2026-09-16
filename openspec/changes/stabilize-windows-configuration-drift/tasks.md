@@ -16,11 +16,11 @@
 ## 4. Validate and commit
 
 - [x] 4.1 Run `openspec validate stabilize-windows-configuration-drift --strict`, `nix fmt -- --fail-on-change`, and the platform-applicable flake check; resolve every failure.
-- [ ] 4.2 Inspect and commit only the drift-policy implementation, specifications, procedures, retained-plan corrections, and verification files as one atomic change with a causal commit body.
+- [x] 4.2 Inspect and commit only the drift-policy implementation, specifications, procedures, retained-plan corrections, and verification files as one atomic change with a causal commit body.
 
 ## 5. Prove Windows convergence
 
-- [ ] 5.1 Build a fresh reviewed Windows artifact and run `winget configure test` as the standard user; require Zed, Brave, and dark appearance to report desired without changing the machine.
-- [ ] 5.2 Apply the complete document as the standard user, then require every document resource and both Administrator-script tests to report desired.
-- [ ] 5.3 Record the installed and catalog versions, pre-apply results, post-apply results, WinGet version, and applied revisions in `evidence.md`; confirm that the older Zed and Brave versions were not installed.
-- [ ] 5.4 Unblock `prefer-standard-zed-control-shortcuts`, complete its Zed editor and terminal checks, and record its separate acceptance evidence.
+- [x] 5.1 Build a fresh reviewed Windows artifact and run `winget configure test` as the standard user; require Zed, Brave, and dark appearance to report desired without changing the machine.
+- [x] 5.2 Apply the complete document as the standard user, then require every document resource and both Administrator-script tests to report desired.
+- [x] 5.3 Record the installed and catalog versions, pre-apply results, post-apply results, WinGet version, and applied revisions in `evidence.md`; confirm that the older Zed and Brave versions were not installed.
+- [x] 5.4 Unblock `prefer-standard-zed-control-shortcuts`, complete its Zed editor and terminal checks, and record its separate acceptance evidence.

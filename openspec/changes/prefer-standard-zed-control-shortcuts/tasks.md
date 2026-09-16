@@ -11,10 +11,10 @@
 ## 3. Validate and review
 
 - [x] 3.1 Run `openspec validate prefer-standard-zed-control-shortcuts --strict`, `nix fmt -- --fail-on-change`, and the platform-applicable flake check; resolve every failure.
-- [ ] 3.2 Inspect and commit only the change-owned implementation, specification, procedure, and verification files as one atomic configuration change with a causal commit body.
+- [x] 3.2 Inspect and commit only the change-owned implementation, specification, procedure, and verification files as one atomic configuration change with a causal commit body.
 
 ## 4. Apply and prove Windows behavior
 
-- [ ] 4.1 After review, test and apply the rendered Windows configuration as the standard Windows user; require the first test to report keymap drift and the post-apply test to report the desired state.
-- [ ] 4.2 In Windows Zed, verify `Ctrl+C`, `Ctrl+V`, `Ctrl+A`, `Ctrl+Z`, `Ctrl+F`, `Ctrl+W`, and a `Ctrl+K` chord in a full editor across normal, visual, and insert modes; verify an unmodified Vim edit and `Escape` still work.
-- [ ] 4.3 In Zed's integrated terminal, verify that `Ctrl+C` still reaches the terminal process; record the commands, observed results, Zed version, and applied artifact revision in `evidence.md`.
+- [x] 4.1 After review, test and apply the rendered Windows configuration as the standard Windows user; require the first test to report keymap drift and the post-apply test to report the desired state.
+- [x] 4.2 In Windows Zed, verify `Ctrl+C`, `Ctrl+V`, `Ctrl+A`, `Ctrl+Z`, `Ctrl+F`, `Ctrl+W`, and a `Ctrl+K` chord in a full editor across normal, visual, and insert modes; verify an unmodified Vim edit and `Escape` still work.
+- [x] 4.3 In Zed's integrated terminal, verify that `Ctrl+C` still reaches the terminal process; record the commands, observed results, Zed version, and applied artifact revision in `evidence.md`.
