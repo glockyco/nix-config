@@ -22,6 +22,7 @@ let
   expectedRoles = [
     "browser"
     "browser-relay"
+    "communication-client"
     "editor"
     "git-client"
     "keyboard-layout"
