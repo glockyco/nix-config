@@ -12,6 +12,7 @@
   home.packages = [
     pkgs.texliveFull
     pkgs.texlab
+    pkgs.poppler-utils
     (pkgs.python3.withPackages (ps: [ ps.pygments ]))
     pkgs.aspell
     pkgs.aspellDicts.en
