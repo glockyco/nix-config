@@ -10,8 +10,8 @@ let
       upstreamUrl = "https://github.com/can1357/oh-my-pi.git";
       githubRepo = "can1357/oh-my-pi";
       patchUrl = "https://github.com/glockyco/oh-my-pi.git";
-      patchBase = "daf07999c2fee9b22edc7bf8fea1fb6272e0df5e";
-      patchTip = "16a6bd10e859ca26a0011ed5ba26d4c260e2b754";
+      patchBase = "37273117021129e96bd05d8277b140ec3fd61990";
+      patchTip = "6066a473e3cc682b19d82bb321e388a26677809d";
       system = pkgs.stdenv.hostPlatform.system;
       plugin = toString plugin;
       git = lib.getExe pkgs.git;
