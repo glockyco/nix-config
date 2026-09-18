@@ -9,7 +9,7 @@
 - [x] 2.2 Add a behavior check that uses disposable `wslpath` and `explorer.exe` doubles; verify the default target, a path with spaces and shell metacharacters, an absolute URI, excess arguments, an invalid target, and each missing interoperation command through captured arguments, statuses, and errors.
 - [x] 2.3 Register the WSL behavior check with the repository gates and run it through its flake check attribute; temporarily break path conversion and confirm the relevant case fails before restoring it.
 - [ ] 2.4 Activate the reviewed Korolev generation, start a fresh login shell, and visually confirm that `open`, `open <directory>`, `open <file>`, and `open https://example.com` reach the expected Windows desktop targets without a Linux graphical process.
-- [ ] 2.5 Document the common command and WSL failure boundary in the README-owned host guidance, then stage only the WSL unit, inspect its staged diff, and create an atomic commit with a causal body.
+- [x] 2.5 Keep the README unchanged because the command needs no permanent operator guidance; stage only the WSL unit, inspect its staged diff, and create an atomic commit with a causal body.
 
 ## 3. Add the Native Windows Command
 
