@@ -39,6 +39,7 @@ runCommand "check-wsl-open-command"
     for argument in "$@"; do
       printf '<%s>\n' "$argument" >> "$EXPLORER_CALLS"
     done
+    exit "''${EXPLORER_STATUS:-0}"
     EOF
     chmod +x "$fixture/explorer.exe"
 
@@ -47,6 +48,7 @@ runCommand "check-wsl-open-command"
         WSLPATH_CALLS="$TMPDIR/wslpath.calls" \
         EXPLORER_COUNT="$TMPDIR/explorer.count" \
         EXPLORER_CALLS="$TMPDIR/explorer.calls" \
+        EXPLORER_STATUS="''${EXPLORER_STATUS:-0}" \
         ${wslOpen}/bin/open "$@"
     }
 
@@ -84,6 +86,16 @@ runCommand "check-wsl-open-command"
     run_open 'https://example.com/a?x=1&y=2'
     test "$(cat "$TMPDIR/explorer.count")" -eq 1
     test "$(cat "$TMPDIR/explorer.calls")" = '<https://example.com/a?x=1&y=2>'
+
+    EXPLORER_STATUS=1 run_open 'https://example.com/dispatched'
+    test "$(cat "$TMPDIR/explorer.calls")" = '<https://example.com/dispatched>'
+
+    set +e
+    EXPLORER_STATUS=126 run_open 'https://example.com/execution-failed'
+    status=$?
+    set -e
+    test "$status" -eq 126
+
     mv "$TMPDIR/wslpath" "$fixture/wslpath"
 
     : > "$TMPDIR/explorer.calls"
