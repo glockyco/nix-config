@@ -293,6 +293,15 @@ After restart, reset the paths in standard PowerShell and apply the document the
 winget configure --file $configuration --accept-configuration-agreements --disable-interactivity --suppress-initial-details
 ```
 
+Start a fresh PowerShell 7 session. Require `Get-Command open` to report the user-scoped `OpenTarget` module, then exercise the current directory, one disposable path with spaces, one file, and one URI. The apply must leave both current-user PowerShell profiles unchanged and must not open a target itself.
+
+To remove a rejected version, delete only the configuration-owned module and start a fresh session:
+
+```powershell
+$module = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules\OpenTarget'
+Remove-Item -LiteralPath $module -Recurse -Force
+```
+
 Enter the separate Administrator credential only when the Zen installer requests it.
 Do not run the document as Administrator: that account has a different profile and cannot use the interactive user's DSC package.
 Sign out and sign in after the first apply. This applies the UI language and starts ReNeo's elevation launcher.
