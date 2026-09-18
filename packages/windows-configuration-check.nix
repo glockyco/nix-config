@@ -19,15 +19,11 @@ let
   ]);
 in
 
-pkgs.runCommand "check-windows-configuration"
-  {
-    nativeBuildInputs = [ pkgs.powershell ];
-  }
-  ''
-    ${python}/bin/python ${./windows-configuration-check.py} \
-      ${dscSchemas} \
-      ${windowsConfiguration}/configuration.winget \
-      ${managedIdentifiers} \
-      ${windowsConfiguration}
-    touch "$out"
-  ''
+pkgs.runCommand "check-windows-configuration" { } ''
+  ${python}/bin/python ${./windows-configuration-check.py} \
+    ${dscSchemas} \
+    ${windowsConfiguration}/configuration.winget \
+    ${managedIdentifiers} \
+    ${windowsConfiguration}
+  touch "$out"
+''
