@@ -1,13 +1,13 @@
 ## 1. Resolve Current Ownership
 
-- [ ] 1.1 Check whether `separate-platform-baseline-from-roles` changed the WSL user owner before editing; select the one current NixOS/WSL role or module and verify no shared or obsolete owner also installs `open`.
-- [ ] 1.2 Check whether `derive-windows-check-from-declaration` moved the Windows renderer and check before editing; select their current paths and verify the old and new paths do not coexist.
+- [x] 1.1 Check whether `separate-platform-baseline-from-roles` changed the WSL user owner before editing; select the one current NixOS/WSL role or module and verify no shared or obsolete owner also installs `open`.
+- [x] 1.2 Check whether `derive-windows-check-from-declaration` moved the Windows renderer and check before editing; select their current paths and verify the old and new paths do not coexist.
 
 ## 2. Add the WSL Command
 
-- [ ] 2.1 Add the Nix `writeShellApplication` command to the current NixOS/WSL user owner with the design's target classification, `wslpath -aw` translation, direct `explorer.exe` execution, and explicit boundary errors; evaluate Korolev and confirm its user package set contains `open` while the macOS package set does not.
-- [ ] 2.2 Add a behavior check that uses disposable `wslpath` and `explorer.exe` doubles; verify the default target, a path with spaces and shell metacharacters, an absolute URI, excess arguments, an invalid target, and each missing interoperation command through captured arguments, statuses, and errors.
-- [ ] 2.3 Register the WSL behavior check with the repository gates and run it through its flake check attribute; temporarily break path conversion and confirm the relevant case fails before restoring it.
+- [x] 2.1 Add the Nix `writeShellApplication` command to the current NixOS/WSL user owner with the design's target classification, `wslpath -aw` translation, direct `explorer.exe` execution, and explicit boundary errors; evaluate Korolev and confirm its user package set contains `open` while the macOS package set does not.
+- [x] 2.2 Add a behavior check that uses disposable `wslpath` and `explorer.exe` doubles; verify the default target, a path with spaces and shell metacharacters, an absolute URI, excess arguments, an invalid target, and each missing interoperation command through captured arguments, statuses, and errors.
+- [x] 2.3 Register the WSL behavior check with the repository gates and run it through its flake check attribute; temporarily break path conversion and confirm the relevant case fails before restoring it.
 - [ ] 2.4 Activate the reviewed Korolev generation, start a fresh login shell, and visually confirm that `open`, `open <directory>`, `open <file>`, and `open https://example.com` reach the expected Windows desktop targets without a Linux graphical process.
 - [ ] 2.5 Document the common command and WSL failure boundary in the README-owned host guidance, then stage only the WSL unit, inspect its staged diff, and create an atomic commit with a causal body.
 
