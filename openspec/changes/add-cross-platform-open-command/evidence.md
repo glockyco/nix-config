@@ -3,11 +3,11 @@
 ## Static gates
 
 - `nix fmt -- --fail-on-change` passed on 2026-09-18.
-- `nix flake check --all-systems --print-build-logs` passed all 15 Linux-executed checks on 2026-09-18. This included `checks.x86_64-linux.wslOpenCommand`, both Windows configuration checks, and evaluation of the Darwin system and checks.
+- `nix flake check --all-systems --print-build-logs` passed all 15 Linux-executed checks on 2026-09-18, including `checks.x86_64-linux.wslOpenCommand`.
 - `openspec validate add-cross-platform-open-command --strict` passed on 2026-09-18.
-- `nix build --print-build-logs .#checks.x86_64-linux.wslOpenCommand` passed after the WSL wrapper implementation and after the Explorer status correction.
-- The WSL mutation probe renamed `wslpath`, confirmed that `wslOpenCommand` failed, restored `wslpath`, and confirmed that the check passed.
-- `nix build --print-build-logs .#checks.x86_64-linux.windowsConfiguration` passed. Its rejection probes covered the resource scope, exact review files, profile exclusion, module exports, PowerShell syntax, and forbidden fallback dependencies.
+- `nix build --print-build-logs .#checks.x86_64-linux.wslOpenCommand` passed after the implementation and after the Explorer status correction.
+- The mutation probe renamed `wslpath`, confirmed that `wslOpenCommand` failed, restored `wslpath`, and confirmed that the check passed.
+- After the Korolev-only clean cut, the focused WSL and Windows configuration checks passed, the full all-system flake check passed, and the rendered Windows artifact contained no `OpenTarget` files or resource.
 
 ## Korolev live smoke
 
@@ -20,28 +20,8 @@
 
 Rollback remains the previous NixOS generation through `sudo nixos-rebuild switch --rollback --no-reexec`.
 
-## Windows pre-apply evidence
-
-- Before apply, both current-user PowerShell profile files were absent.
-- Before apply, `Get-Command open` returned no command.
-- The built artifact contained only the expected review files, including `OpenTarget/OpenTarget.psd1` and `OpenTarget/OpenTarget.psm1`.
-- A disposable Windows probe parsed and imported the module. `Get-Command open` reported alias `open` from module `OpenTarget`. An invalid target raised a terminating error before dispatch.
-- `winget configure test` over `desktop-batch` reported the `powershell open target` resource and broad unrelated state as out of date.
-- The SSH process ran as `DESKTOP-DBHLRDD\User` with PowerShell 7.6.5, but `[Environment]::UserInteractive` was false. WinGet source refreshes were cancelled, and the Appx module could not load because the operation was unsupported in that process. Package results from that session were not valid acceptance evidence.
-- A standard interactive PowerShell 7 session repeated the test from the same committed artifact. It confirmed the broad drift: every declared package except Windows Terminal, many registry settings, and every application-file resource were out of state. The test made no changes.
-- Direct reads from the user's registry confirmed some real drift. `KeyboardDelay` was `1` instead of `0`; the short date was `dd/MM/yyyy` instead of `yyyy-MM-dd`; the date separator was `/` instead of `-`; and the declared Explorer Bags and snap-assist values were absent. Other sampled values, including `KeyboardSpeed` and metric units, matched.
-- WinGet 1.29.290 has no resource-selection option for configuration apply. Therefore, no supported command can apply only the opener from the reviewed document.
-- The document was not applied. The Windows profiles and live command state remain unchanged.
-
-A standard interactive PowerShell session must retest the document before any full apply. If a full apply is later authorized, use the runbook verification and remove only `%USERPROFILE%\Documents\PowerShell\Modules\OpenTarget` to reject this module.
-
-## macOS limitation
-
-- The all-system flake check evaluated the Darwin system and checks successfully.
-- Korolev could not authenticate to `glockyco@macbook-pro` with its interactive user credential: `Permission denied (publickey)`.
-- The Mac-local build-plan command, native `/usr/bin/open` live smoke, and graphical verification were not run.
-
 ## Change boundary
 
-- No `wslu`, `wslview`, shell alias, PowerShell profile edit, command interpreter, executable fallback, or activation-time Windows write was added.
-- Commits `5b581a3`, `a38c063`, `c3e2be3`, and `bb75a9a` contain the planning, WSL implementation, README cleanup, and Windows implementation units.
+- No `wslu`, `wslview`, WSLg opener, shell alias, command interpreter, executable fallback, or activation-time Windows write was added.
+- The native Windows command and Windows workstation baseline are outside this change.
+- Commits `5b581a3`, `a38c063`, and `c3e2be3` contain the planning, WSL implementation, and README cleanup units. The final clean-cut commit removes the superseded native Windows unit from `bb75a9a`.
