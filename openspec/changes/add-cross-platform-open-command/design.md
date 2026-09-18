@@ -48,6 +48,8 @@ A small `writeShellApplication` command will apply this order:
 
 Existing-path detection precedes URI detection so that a valid Linux filename containing a colon remains a path. The wrapper will check both `wslpath` and `explorer.exe` and name the missing boundary. It will not search for another opener.
 
+A live WSL dispatch showed that `explorer.exe` returns status 1 after handing each valid file, directory, and URI request to the Windows shell. Explorer has no documented success exit code. The wrapper therefore validates the target and both interoperation commands itself, preserves shell-level execution failures 126 and 127, and otherwise reports that the dispatch request completed.
+
 `cmd.exe /c start` was rejected because `start` is a shell built-in and safe transport requires Windows command-line quoting. A target containing shell metacharacters can otherwise become code.
 
 Calling `Start-Process` through an inline PowerShell command was rejected for WSL. It adds a second quoting boundary without improving Windows shell dispatch.

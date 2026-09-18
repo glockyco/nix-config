@@ -38,7 +38,15 @@ writeShellApplication {
       exit 69
     fi
 
-    exec "$explorer_executable" "$windows_target"
+    # Explorer hands the request to the Windows shell and has no documented
+    # success exit code. Preserve only shell-level execution failures.
+    set +o errexit
+    "$explorer_executable" "$windows_target"
+    status=$?
+    set -o errexit
+    if (( status == 126 || status == 127 )); then
+      exit "$status"
+    fi
   '';
 
   meta = {
