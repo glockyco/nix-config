@@ -26,11 +26,13 @@ Rollback remains the previous NixOS generation through `sudo nixos-rebuild switc
 - Before apply, `Get-Command open` returned no command.
 - The built artifact contained only the expected review files, including `OpenTarget/OpenTarget.psd1` and `OpenTarget/OpenTarget.psm1`.
 - A disposable Windows probe parsed and imported the module. `Get-Command open` reported alias `open` from module `OpenTarget`. An invalid target raised a terminating error before dispatch.
-- `winget configure test` reported the `powershell open target` resource out of state. It also reported broad unrelated drift in packages, Windows settings, and application files.
+- `winget configure test` over `desktop-batch` reported the `powershell open target` resource and broad unrelated state as out of date.
+- The SSH process ran as `DESKTOP-DBHLRDD\User` with PowerShell 7.6.5, but `[Environment]::UserInteractive` was false. WinGet source refreshes were cancelled, and the Appx module could not load because the operation was unsupported in that process. Package results from this session are not valid acceptance evidence.
+- Direct reads from the user's registry confirmed some real drift. `KeyboardDelay` was `1` instead of `0`; the short date was `dd/MM/yyyy` instead of `yyyy-MM-dd`; the date separator was `/` instead of `-`; and the declared Explorer Bags and snap-assist values were absent. Other sampled values, including `KeyboardSpeed` and metric units, matched.
 - WinGet 1.29.290 has no resource-selection option for configuration apply. Therefore, no supported command can apply only the opener from the reviewed document.
 - The document was not applied. The Windows profiles and live command state remain unchanged.
 
-A full Windows apply requires owner authorization for the unrelated drift. If that apply is authorized, use the runbook verification and remove only `%USERPROFILE%\Documents\PowerShell\Modules\OpenTarget` to reject this module.
+A standard interactive PowerShell session must retest the document before any full apply. If a full apply is later authorized, use the runbook verification and remove only `%USERPROFILE%\Documents\PowerShell\Modules\OpenTarget` to reject this module.
 
 ## macOS limitation
 
