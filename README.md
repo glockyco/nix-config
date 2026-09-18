@@ -13,6 +13,18 @@ Nix owns the host configuration and OMP wrapper, updater, plugin, and language t
 
 [![System overview: pinned inputs and shared and platform-specific modules compose the macOS and NixOS/WSL environments. Windows configuration is applied separately. The OMP detail shows the Nix-managed wrapper, plugin, and language servers interacting with the host-local source runtime and writable state.](docs/images/system-overview.webp)](docs/images/system-overview.webp)
 
+### Open desktop targets
+
+Use the same command in macOS and Korolev login shells:
+
+```sh
+open                 # current directory
+open path/to/file    # existing file or directory
+open https://example.com
+```
+
+macOS uses its native command. Korolev converts an existing Linux path and sends it, or an absolute URI, directly to the Windows desktop. The portable form accepts zero or one target. It fails without a fallback when WSL path translation or Windows executable interoperation is unavailable.
+
 ## Network
 
 Tailscale connects the managed hosts, personal Windows desktop, and temporary MacBook Air. Korolev can initiate connections but does not accept inbound connections.

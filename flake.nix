@@ -139,6 +139,7 @@
             nixosOptionsDoc = final.callPackage ./packages/options-context.nix {
               nixosOptionsDoc = _prev.nixosOptionsDoc;
             };
+            wsl-open = final.callPackage ./packages/wsl-open.nix { };
           };
         };
 
@@ -218,6 +219,10 @@
             containerRuntimeConfigCheck = pkgs.callPackage ./packages/container-runtime-config-check.nix {
               inherit containerRuntimeCheck;
               homeConfiguration = self.darwinConfigurations.macbook-pro.config.home-manager.users.glockyco;
+            };
+            wslOpen = pkgs.wsl-open;
+            wslOpenCommandTest = pkgs.callPackage ./packages/wsl-open-tests.nix {
+              inherit wslOpen;
             };
             windowsConfiguration = pkgs.callPackage ./modules/windows { };
             windowsConfigurationCheck = pkgs.callPackage ./packages/windows-configuration-check.nix {
@@ -704,6 +709,8 @@
 
             }
             // onNixosHost {
+              wslOpenCommand = wslOpenCommandTest;
+
               # The host build is a check, so a host that stops building appears
               # in review rather than during activation.
               korolevSystem = korolevConfig.system.build.toplevel;
