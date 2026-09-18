@@ -18,12 +18,12 @@
 - [x] 3.3 Extend the declaration-derived Windows check at its current owner to verify the resource scope, exact review files, manifest exports, module syntax, profile exclusion, and forbidden fallback dependencies; temporarily violate each boundary and confirm the check reports the module or resource before restoring it.
 - [x] 3.4 Build the complete Windows configuration output and run its repository check; inspect the rendered document and module files and confirm the only new Windows surface is the declared user-scoped module resource and its review files.
 - [ ] 3.5 Apply the rendered document from a standard Windows PowerShell session, start a fresh PowerShell 7 process, and confirm `Get-Command open` reports the `OpenTarget` module. Visually verify the default directory, a path with spaces, a file, and an absolute URI, then confirm both profile paths remain absent or byte-identical.
-- [ ] 3.6 Add Windows apply, verification, and removal recovery steps to `docs/operations/wsl-omp-bootstrap.md`; stage only the Windows unit, inspect its staged diff, and create an atomic commit with a causal body.
+- [x] 3.6 Add Windows apply, verification, and removal recovery steps to `docs/operations/wsl-omp-bootstrap.md`; stage only the Windows unit, inspect its staged diff, and create an atomic commit with a causal body.
 
 ## 4. Verify Integrated Behavior
 
 - [ ] 4.1 On the Mac, start a fresh login shell and confirm `open` resolves to `/usr/bin/open`; visually exercise a disposable directory, file, and URI and confirm no Nix compatibility wrapper shadows it.
 - [ ] 4.2 Run `nix fmt -- --fail-on-change` and `nix flake check --all-systems --print-build-logs` from Korolev, then run `nix run .#check-darwin-build-plans` and `nix build .#darwinConfigurations.macbook-pro.system` on the Mac; resolve every change-owned failure.
 - [ ] 4.3 Run `openspec validate add-cross-platform-open-command --strict` and confirm every new scenario has implementation or live-smoke evidence.
-- [ ] 4.4 Record the exact static-gate results, command provenance, visual observations, activation result, and both rollback paths in the change evidence; verify no `wslu`, WSLg opener, shell alias, PowerShell profile edit, command interpreter, executable fallback, or activation-time Windows write remains.
+- [x] 4.4 Record the exact static-gate results, command provenance, visual observations, activation result, and both rollback paths in the change evidence; verify no `wslu`, WSLg opener, shell alias, PowerShell profile edit, command interpreter, executable fallback, or activation-time Windows write remains.
 - [ ] 4.5 Stage only the final documentation, evidence, and completed task-state changes, inspect the staged diff, and create the final atomic commit without pushing.
