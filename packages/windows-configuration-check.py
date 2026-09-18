@@ -1,8 +1,11 @@
 import copy
 import hashlib
 import json
+import os
 import pathlib
+import subprocess
 import sys
+import tempfile
 
 import jsonschema
 import yaml
@@ -100,10 +103,13 @@ FORBIDDEN_PROFILE_PATHS = (
     "$ENV:APPDATA",
 )
 EXPECTED_FILES = {
+    "OpenTarget/OpenTarget.psd1",
+    "OpenTarget/OpenTarget.psm1",
     "altsnap-package.json",
     "altsnap-settings.json",
     "apply-kbdneo.ps1",
     "apply-zen-policies.ps1",
+    "configuration.winget",
     "fork-wslgit.json",
     "kbdneo.json",
     "power-toys-settings.json",
@@ -571,6 +577,200 @@ def run_rejection_tests() -> None:
         raise AssertionError("invalid Windows fixture passed policy validation")
 
 
+OPEN_TARGET_FORBIDDEN_RESOURCE_TERMS = (
+    "$profile",
+    "-verb runas",
+    "cmd.exe",
+    "powershell.exe",
+    "pwsh.exe",
+    "wsl.exe",
+    "wslview",
+    "explorer.exe",
+    "xdg-open",
+    "start-process",
+    "import-module",
+    "get-command",
+    "fallback",
+)
+
+
+def validate_rendered_files(package_root: pathlib.Path) -> None:
+    actual_files = {
+        path.relative_to(package_root).as_posix()
+        for path in package_root.rglob("*")
+        if path.is_file()
+    }
+    if actual_files != EXPECTED_FILES:
+        missing = sorted(EXPECTED_FILES - actual_files)
+        unexpected = sorted(actual_files - EXPECTED_FILES)
+        raise ValueError(
+            f"rendered Windows files differ: missing={missing}, unexpected={unexpected}"
+        )
+
+
+def run_rendered_file_rejection_tests() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = pathlib.Path(directory)
+        for name in EXPECTED_FILES:
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.touch()
+        validate_rendered_files(root)
+
+        unexpected = root / "unexpected.txt"
+        unexpected.touch()
+        try:
+            validate_rendered_files(root)
+        except ValueError:
+            unexpected.unlink()
+        else:
+            raise AssertionError("unexpected Windows review file passed validation")
+
+        missing = root / next(iter(EXPECTED_FILES))
+        missing.unlink()
+        try:
+            validate_rendered_files(root)
+        except ValueError:
+            return
+        raise AssertionError("missing Windows review file passed validation")
+
+
+def parse_powershell(path: pathlib.Path) -> None:
+    script = """
+$tokens = $null
+$errors = $null
+[void] [Management.Automation.Language.Parser]::ParseFile(
+  $env:WINDOWS_CONFIGURATION_SCRIPT,
+  [ref] $tokens,
+  [ref] $errors
+)
+if ($errors.Count -ne 0) {
+  [Console]::Error.WriteLine(($errors.Message -join "`n"))
+  exit 1
+}
+"""
+    environment = os.environ | {"WINDOWS_CONFIGURATION_SCRIPT": str(path)}
+    result = subprocess.run(
+        ["pwsh", "-NoProfile", "-NonInteractive", "-Command", script],
+        check=False,
+        capture_output=True,
+        env=environment,
+        text=True,
+    )
+    if result.returncode != 0:
+        error = result.stderr.strip() or result.stdout.strip()
+        raise ValueError(f"PowerShell syntax error in {path.name}: {error}")
+
+
+def validate_open_target(resource: dict, module: str, manifest: str) -> None:
+    properties = resource.get("properties", {})
+    test_script = properties.get("testScript", "")
+    set_script = properties.get("setScript", "")
+    scripts = test_script + "\n" + set_script
+    lowered_scripts = scripts.lower()
+
+    if (
+        resource.get("type") != "Microsoft.DSC.Transitional/WindowsPowerShellScript"
+        or resource.get("metadata", {}).get("scope") != "user"
+        or resource.get("metadata", {}).get("winget", {}).get("securityContext")
+        is not None
+        or set(properties) != {"testScript", "setScript"}
+    ):
+        raise ValueError("OpenTarget must be one user-scoped script resource")
+
+    required_script_values = (
+        "MyDocuments",
+        "PowerShell\\Modules\\OpenTarget",
+        "OpenTarget.psm1",
+        "OpenTarget.psd1",
+        "ReadAllText",
+        "WriteAllText",
+        "UTF8Encoding",
+    )
+    if any(value not in scripts for value in required_script_values):
+        raise ValueError("OpenTarget resource is missing an exact file boundary")
+    if any(value in lowered_scripts for value in OPEN_TARGET_FORBIDDEN_RESOURCE_TERMS):
+        raise ValueError("OpenTarget resource crosses its user module boundary")
+
+    module_bytes = ",".join(str(value) for value in module.encode("utf-8"))
+    manifest_bytes = ",".join(str(value) for value in manifest.encode("utf-8"))
+    if any(
+        payload not in test_script or payload not in set_script
+        for payload in (module_bytes, manifest_bytes)
+    ):
+        raise ValueError("OpenTarget resource does not carry the exact module files")
+
+    required_module_values = (
+        "function Open-Target",
+        "Test-Path -LiteralPath $Target",
+        "[Uri]::TryCreate",
+        "Start-Process -FilePath $dispatchTarget",
+        "Set-Alias -Name open -Value Open-Target",
+        "Export-ModuleMember -Function Open-Target -Alias open",
+    )
+    if any(value not in module for value in required_module_values):
+        raise ValueError("OpenTarget module is missing required command behavior")
+    lowered_module = module.lower()
+    if any(
+        value in lowered_module
+        for value in ("$profile", "cmd.exe", "wsl.exe", "wslview", "explorer.exe")
+    ):
+        raise ValueError("OpenTarget module contains a forbidden compatibility path")
+
+    required_manifest_values = (
+        "RootModule = 'OpenTarget.psm1'",
+        "PowerShellVersion = '7.0'",
+        "FunctionsToExport = @('Open-Target')",
+        "AliasesToExport = @('open')",
+    )
+    if any(value not in manifest for value in required_manifest_values):
+        raise ValueError("OpenTarget manifest does not export the command and alias")
+
+
+def run_open_target_rejection_tests(resource: dict, module: str, manifest: str) -> None:
+    cases: list[tuple[dict, str, str]] = []
+
+    wrong_scope = copy.deepcopy(resource)
+    wrong_scope["metadata"]["scope"] = "machine"
+    cases.append((wrong_scope, module, manifest))
+
+    profile_write = copy.deepcopy(resource)
+    profile_write["properties"]["setScript"] += "\n$PROFILE"
+    cases.append((profile_write, module, manifest))
+
+    command_interpreter = copy.deepcopy(resource)
+    command_interpreter["properties"]["setScript"] += "\ncmd.exe /c start"
+    cases.append((command_interpreter, module, manifest))
+
+    graphical_dispatch = copy.deepcopy(resource)
+    graphical_dispatch["properties"]["setScript"] += "\nStart-Process open"
+    cases.append((graphical_dispatch, module, manifest))
+
+    incomplete_module = module.replace(
+        "Export-ModuleMember -Function Open-Target -Alias open", ""
+    )
+    cases.append((copy.deepcopy(resource), incomplete_module, manifest))
+
+    incomplete_manifest = manifest.replace("AliasesToExport = @('open')", "")
+    cases.append((copy.deepcopy(resource), module, incomplete_manifest))
+
+    for case in cases:
+        try:
+            validate_open_target(*case)
+        except ValueError:
+            continue
+        raise AssertionError("invalid OpenTarget fixture passed validation")
+
+    with tempfile.TemporaryDirectory() as directory:
+        invalid_module = pathlib.Path(directory) / "OpenTarget.psm1"
+        invalid_module.write_text("function Open-Target {", encoding="utf-8")
+        try:
+            parse_powershell(invalid_module)
+        except ValueError:
+            return
+        raise AssertionError("invalid OpenTarget PowerShell syntax passed validation")
+
+
 def schema_registry(source_root: pathlib.Path) -> Registry:
     registry = Registry()
     for path in (source_root / "schemas").rglob("*.json"):
@@ -743,11 +943,24 @@ def main() -> None:
     ):
         raise ValueError("font installation must activate faces in the current session")
 
-    missing = sorted(
-        name for name in EXPECTED_FILES if not (package_root / name).is_file()
+    validate_rendered_files(package_root)
+    run_rendered_file_rejection_tests()
+
+    open_target_module_path = package_root / "OpenTarget/OpenTarget.psm1"
+    open_target_manifest_path = package_root / "OpenTarget/OpenTarget.psd1"
+    open_target_module = open_target_module_path.read_text(encoding="utf-8")
+    open_target_manifest = open_target_manifest_path.read_text(encoding="utf-8")
+    open_target_resource = next(
+        resource
+        for resource in document.get("resources", [])
+        if resource.get("name") == "powershell open target"
     )
-    if missing:
-        raise ValueError(f"rendered Windows files are missing: {', '.join(missing)}")
+    parse_powershell(open_target_module_path)
+    parse_powershell(open_target_manifest_path)
+    validate_open_target(open_target_resource, open_target_module, open_target_manifest)
+    run_open_target_rejection_tests(
+        open_target_resource, open_target_module, open_target_manifest
+    )
 
     reneo_launcher_file = (package_root / "start-reneo-elevated.ps1").read_text(
         encoding="utf-8"

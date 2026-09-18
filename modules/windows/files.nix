@@ -194,6 +194,53 @@ let
     Start-Process -FilePath $path -Verb RunAs
   '';
 
+  openTargetModule = ''
+    function Open-Target {
+      [CmdletBinding()]
+      param(
+        [Parameter(Position = 0)]
+        [string] $Target = '.'
+      )
+
+      if (Test-Path -LiteralPath $Target) {
+        $dispatchTarget = (Resolve-Path -LiteralPath $Target -ErrorAction Stop).Path
+      } else {
+        $uri = $null
+        if (-not [Uri]::TryCreate($Target, [UriKind]::Absolute, [ref] $uri)) {
+          throw "open: target does not exist and is not an absolute URI: $Target"
+        }
+        $dispatchTarget = $Target
+      }
+
+      Start-Process -FilePath $dispatchTarget
+    }
+
+    Set-Alias -Name open -Value Open-Target
+    Export-ModuleMember -Function Open-Target -Alias open
+  '';
+
+  openTargetManifest = ''
+    @{
+      RootModule = 'OpenTarget.psm1'
+      ModuleVersion = '1.0.0'
+      PowerShellVersion = '7.0'
+      Description = 'Open a Windows path or URI with its registered desktop application'
+      FunctionsToExport = @('Open-Target')
+      CmdletsToExport = @()
+      VariablesToExport = @()
+      AliasesToExport = @('open')
+    }
+  '';
+  psBytes =
+    value:
+    builtins.concatStringsSep "," (
+      map (character: toString (pkgs.lib.strings.charToInt character)) (
+        pkgs.lib.strings.stringToCharacters value
+      )
+    );
+  openTargetModuleBytes = psBytes openTargetModule;
+  openTargetManifestBytes = psBytes openTargetManifest;
+
   catppuccinMocha = {
     name = "Catppuccin Mocha";
     cursorColor = "#F5E0DC";
@@ -238,6 +285,8 @@ let
   terminalSpecificationJson = builtins.toJSON terminalSettings;
 
   jsonFiles = {
+    "OpenTarget/OpenTarget.psd1" = openTargetManifest;
+    "OpenTarget/OpenTarget.psm1" = openTargetModule;
     "altsnap-package.json" = altSnapPackageJson;
     "altsnap-settings.json" = builtins.toJSON altSnapSettings;
     "fork-wslgit.json" = wslGitJson;
@@ -333,6 +382,49 @@ let
       };
       metadata = { inherit description; };
     };
+
+  openTargetResource = {
+    type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+    name = "powershell-open-target";
+    properties = {
+      testScript = ''
+        $documents = [Environment]::GetFolderPath([Environment+SpecialFolder]::MyDocuments)
+        if ([string]::IsNullOrWhiteSpace($documents)) { throw 'PowerShell user module directory is unavailable' }
+        $directory = Join-Path $documents 'PowerShell\Modules\OpenTarget'
+        $modulePath = Join-Path $directory 'OpenTarget.psm1'
+        $manifestPath = Join-Path $directory 'OpenTarget.psd1'
+        if (-not (Test-Path -LiteralPath $modulePath) -or -not (Test-Path -LiteralPath $manifestPath)) { return $false }
+        $desiredModule = [Text.Encoding]::UTF8.GetString([byte[]]@(${openTargetModuleBytes}))
+        $desiredManifest = [Text.Encoding]::UTF8.GetString([byte[]]@(${openTargetManifestBytes}))
+        return (
+          [IO.File]::ReadAllText($modulePath) -ceq $desiredModule -and
+          [IO.File]::ReadAllText($manifestPath) -ceq $desiredManifest
+        )
+      '';
+      setScript = ''
+        $documents = [Environment]::GetFolderPath([Environment+SpecialFolder]::MyDocuments)
+        if ([string]::IsNullOrWhiteSpace($documents)) { throw 'PowerShell user module directory is unavailable' }
+        $directory = Join-Path $documents 'PowerShell\Modules\OpenTarget'
+        New-Item -ItemType Directory -Path $directory -Force | Out-Null
+        $desiredModule = [Text.Encoding]::UTF8.GetString([byte[]]@(${openTargetModuleBytes}))
+        $desiredManifest = [Text.Encoding]::UTF8.GetString([byte[]]@(${openTargetManifestBytes}))
+        [IO.File]::WriteAllText(
+          (Join-Path $directory 'OpenTarget.psm1'),
+          $desiredModule,
+          [Text.UTF8Encoding]::new($false)
+        )
+        [IO.File]::WriteAllText(
+          (Join-Path $directory 'OpenTarget.psd1'),
+          $desiredManifest,
+          [Text.UTF8Encoding]::new($false)
+        )
+      '';
+    };
+    metadata = {
+      description = "Install the native PowerShell open command";
+      scope = "user";
+    };
+  };
 
   zedKeymapResource = {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
@@ -698,6 +790,7 @@ in
   files = jsonFiles;
 
   resources = [
+    openTargetResource
     altSnapResource
     forkWslGitResource
     zedThemeResource
