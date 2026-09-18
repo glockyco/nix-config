@@ -47,14 +47,14 @@ inputs.nixpkgs.lib.nixosSystem {
             email = "johann.glock@scch.at";
           };
 
-          # Personal repositories use the GitHub no-reply address instead.
+          # Every GitHub repository uses the no-reply address instead.
           # `programs.git.settings.ghq.root` is `~/src`, and ghq lays a clone
           # out as `~/src/<host>/<owner>/<repo>`, so this condition selects the
-          # personal owner and nothing else. A clone placed anywhere else, such
-          # as directly under `~/src`, keeps the employer address above.
+          # complete GitHub host tree. Repositories under other hosts, or
+          # directly under `~/src`, keep the employer address above.
           includes = [
             {
-              condition = "gitdir:~/src/github.com/glockyco/";
+              condition = "gitdir:~/src/github.com/";
               contents.user.email = "11704293+glockyco@users.noreply.github.com";
             }
           ];

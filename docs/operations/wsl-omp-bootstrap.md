@@ -96,7 +96,7 @@ cd "$HOME/src/github.com/glockyco/nix-config"
 git config user.email
 ```
 
-The email must be `11704293+glockyco@users.noreply.github.com`. Other locations use the global employer address.
+The email must be `11704293+glockyco@users.noreply.github.com`. Every repository below `~/src/github.com/` uses this address. Repositories below `~/src/gitlab.scch.at/` and other locations use the global employer address unless the repository declares a local override.
 Use the reviewed, published revision. An older checkout can activate successfully while dropping newer configuration.
 Follow [Develop](../../README.md#develop) and [Activate](../../README.md#activate), then initialize OMP with `omp-dev-update` as described under [Update](../../README.md#update).
 Activation reconciles Herdr but does not install or invoke OMP.
