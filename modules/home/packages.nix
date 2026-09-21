@@ -5,5 +5,8 @@ let
 in
 
 {
-  home.packages = [ llmAgents.herdr ];
+  home.packages = [
+    llmAgents.herdr
+    pkgs.uv
+  ];
 }
