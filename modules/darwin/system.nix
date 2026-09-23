@@ -45,6 +45,12 @@ in
   # configuration is in `modules/home/git.nix`.
   environment.systemPackages = [ pkgs.git ];
 
+  # GUI apps do not inherit the interactive zsh profile. Persist Nix discovery
+  # for user launchd domains across reboots; repository hooks keep pinned tools.
+  system.activationScripts.postActivation.text = ''
+    /bin/launchctl config user path '/usr/bin:/bin:/usr/sbin:/sbin:/nix/var/nix/profiles/default/bin'
+  '';
+
   # Use Touch ID for sudo, including `sudo darwin-rebuild switch`; nix-darwin
   # writes `/etc/pam.d/sudo_local`.
   security.pam.services.sudo_local.touchIdAuth = true;
