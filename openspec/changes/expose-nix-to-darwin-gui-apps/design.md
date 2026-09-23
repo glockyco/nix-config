@@ -22,3 +22,9 @@ The persistent setting affects all Mac users and is stored outside a Nix generat
 - The fixed GUI `PATH` replaces any prior persistent user-domain value. Record that value before activation, or stop if it cannot be established; retain a restoration command for rollback.
 - The value is for all Mac user domains, not the shell's dynamic path. Keep only system paths and the stable Nix bootstrap path; retain project tooling in `nix develop`.
 - The successful push proves the explicit-PATH launch for this session, not the persistent setting's effect after activation and reboot.
+
+## Activation evidence
+
+Before activation, `/private/var/db/com.apple.xpc.launchd/config` was empty and a GUI-launched Fork used `/usr/bin:/bin:/usr/sbin:/sbin`. There was no saved user-domain PATH to preserve. To restore that effective PATH after this activation, run `sudo launchctl config user path '/usr/bin:/bin:/usr/sbin:/sbin'` and reboot; this does not remove the saved configuration file.
+
+`darwin-switch` completed with exit status 0. The saved user-domain `PathEnvironmentVariable` is `/usr/bin:/bin:/usr/sbin:/sbin:/nix/var/nix/profiles/default/bin`. The Mac has not rebooted; the previously verified explicit-PATH Fork instance remained running. A normal GUI launch after reboot and its real hook are not yet verified.
