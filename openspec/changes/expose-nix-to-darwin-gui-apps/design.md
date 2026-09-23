@@ -18,7 +18,7 @@ The persistent setting affects all Mac users and is stored outside a Nix generat
 
 ## Risks / Trade-offs
 
-- The persistent value takes effect only after reboot. Check the value inherited by Fork after reboot; `launchctl getenv PATH` during the old session is not proof.
+- The persistent value takes effect only after reboot. In the current session, Fork launched from the GUI had only `/usr/bin:/bin:/usr/sbin:/sbin` even though its launchd service inherited a PATH with Nix: its application job had an explicit PATH for that process. Starting a second Fork instance with `env PATH=... open -n -a Fork` did pass Nix through. Check the actual Fork process and hook after reboot; the persistent launchd setting alone is not proof that Fork receives it.
 - The fixed GUI `PATH` replaces any prior persistent user-domain value. Record that value before activation, or stop if it cannot be established; retain a restoration command for rollback.
 - The value is for all Mac user domains, not the shell's dynamic path. Keep only system paths and the stable Nix bootstrap path; retain project tooling in `nix develop`.
-- Until activation and reboot are authorized, checks prove the generated command and simulated lookup, not the live Fork process.
+- Until activation and reboot are authorized, checks prove the generated command and simulated lookup, not the persistent setting's effect on Fork or a successful real hook run.
