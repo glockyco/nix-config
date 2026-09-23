@@ -7,4 +7,3 @@
 
 - [x] 2.1 Validate this change strictly, run `nix fmt -- --fail-on-change` and `nix flake check --print-build-logs`, and build the Darwin system; verify every pre-activation gate passes.
 - [x] 2.2 After review and merge, record the prior user-domain `PATH` state and functional rollback command, activate the Mac generation without reboot, inspect activation output, and record the result with this change.
-- [ ] 2.3 On a future reboot, verify normally launched Fork runs the real repository pre-push hook without a missing-`nix` error, and record the result with this change.

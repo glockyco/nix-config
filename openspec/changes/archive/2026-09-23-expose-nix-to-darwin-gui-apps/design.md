@@ -4,7 +4,7 @@
 
 ## Goals / Non-Goals
 
-**Goals:** Persist one host-owned GUI command lookup path across reboot. Preserve pinned project tools inside each repository's development shell.
+**Goals:** Save one host-owned user-domain lookup path for future sessions. Verify an explicit-PATH Fork launch in this session. Preserve pinned project tools inside each repository's development shell.
 
 **Non-Goals:** Rewrite hooks across repositories, change Korolev, install project tools globally, or bypass hook failures.
 
@@ -18,7 +18,7 @@ The persistent setting affects all Mac users and is stored outside a Nix generat
 
 ## Risks / Trade-offs
 
-- The persistent value takes effect only after reboot. In the current session, Fork launched from the GUI had only `/usr/bin:/bin:/usr/sbin:/sbin` even though its launchd service inherited a PATH with Nix: its application job had an explicit PATH for that process. After closing Fork, `env PATH=... open -a Fork` started a single process with Nix in its PATH; the user confirmed a successful push from that instance. Check the actual Fork process and hook after reboot; the persistent launchd setting alone is not proof that Fork receives it.
+- The persistent value takes effect only after reboot. In the current session, Fork launched from the GUI had only `/usr/bin:/bin:/usr/sbin:/sbin` even though its launchd service inherited a PATH with Nix: its application job had an explicit PATH for that process. After closing Fork, `env PATH=... open -a Fork` started a single process with Nix in its PATH; the user confirmed a successful push from that instance. A normal Fork launch after reboot remains unverified and is outside this change's acceptance scope; the saved setting alone is not proof that Fork receives it.
 - The fixed GUI `PATH` replaces any prior persistent user-domain value. Record that value before activation, or stop if it cannot be established; retain a restoration command for rollback.
 - The value is for all Mac user domains, not the shell's dynamic path. Keep only system paths and the stable Nix bootstrap path; retain project tooling in `nix develop`.
 - The successful push proves the explicit-PATH launch for this session, not the persistent setting's effect after activation and reboot.
