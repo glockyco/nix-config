@@ -559,11 +559,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1788859262,
-        "narHash": "sha256-UEc9YGKOzpwvkSr9keStn7sUEsv/yus/UsTHDmerkzA=",
+        "lastModified": 1790245033,
+        "narHash": "sha256-MWSWF+s2h44ZJB+eUDNjtJS+Vs5Y9gMyA5tM93nWm8g=",
         "owner": "glockyco",
         "repo": "omp-agent-setup",
-        "rev": "e6f340d7ba02aeee91d36204913e20e2245985a0",
+        "rev": "e4833cbe7e25a7272955e8edfb9eb8efd0d809ff",
         "type": "github"
       },
       "original": {
