@@ -331,7 +331,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $kbdNeo
 powershell -NoProfile -ExecutionPolicy Bypass -File $kbdNeo -Test
 ```
 
-Require `kbdneo: desired` after installation. Restart Windows before applying the document or selecting the layout.
+Require `kbdneo: desired` after installation. Restart Windows before the document registers the layout.
 After restart, reset the paths in standard PowerShell and apply the document there:
 
 ```powershell
@@ -340,15 +340,20 @@ winget configure --file $configuration --accept-configuration-agreements --disab
 
 Enter the separate Administrator credential only when the Zen installer requests it.
 Do not run the document as Administrator: that account has a different profile and cannot use the interactive user's DSC package.
-Sign out and sign in after the first apply. This applies the UI language and starts ReNeo's elevation launcher.
-Enter the Administrator credential at its prompt, including at subsequent sign-ins.
-If sign-out must wait, select `Deutsch (Neo)` with `Win+Space` and start the launcher from standard PowerShell:
+Sign out and sign in after the first apply. This applies the UI language, the German QWERTZ default input method, and ReNeo's elevation launcher.
+Enter the Administrator credential at its prompt, including at subsequent sign-ins. That prompt accepts QWERTZ input.
+If sign-out must wait, start the launcher from standard PowerShell:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\WindowsConfiguration\start-reneo-elevated.ps1"
 ```
 
-The native driver supplies UAC's base layout. Elevated ReNeo supplies higher layers in ordinary and elevated applications, not UAC.
+German QWERTZ is the default input method, and native Neo is the second German input method.
+Do not make native Neo the default: Office derives character shortcuts such as `Ctrl+]` from the first loaded layout, and native Neo puts those characters on letter keys.
+While QWERTZ is active, elevated ReNeo supplies every Neo layer in ordinary and elevated applications. UAC prompts accept QWERTZ input.
+To type native Neo in UAC, select `Deutsch (Neo)` with `Win+Space` before the prompt appears.
+ReNeo detects a changed layout at the first key press after the foreground window changes. After `Win+Space`, change windows once or use ReNeo's reload command.
+The native driver then supplies UAC's base layout, and ReNeo supplies higher layers in ordinary and elevated applications.
 In Administrator PowerShell, apply only the Zen policy file:
 
 ```powershell
@@ -431,7 +436,8 @@ Confirm these live boundaries after sign-in:
 
 - Zed starts `nixd` and wrapped `omp acp` inside NixOS without SSH. Fork uses the declared `wslgit` bridge.
 - Windows Terminal opens NixOS at the Linux home, with working font glyphs.
-- Neo works in ordinary applications, elevated applications, and UAC, with the higher-layer boundary described above.
+- Neo works through ReNeo over QWERTZ in ordinary and elevated applications, and native Neo works in UAC after `Win+Space`.
+- Word keeps `Ctrl+C` for copy and `Ctrl+V` for paste while QWERTZ or native Neo is active.
 - Command Palette launches applications and switches windows. Its PowerToys parent remains the sole startup owner.
   After a PowerToys pin change, compare the enabled and disabled module lists with the installed version.
 - AltSnap modifier-drag moves windows and performs 50/50 edge or corner snapping.

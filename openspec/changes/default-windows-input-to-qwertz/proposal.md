@@ -23,6 +23,6 @@ None.
 
 ## Impact
 
-The change affects `modules/windows/settings.nix`, `modules/windows/files.nix`, `packages/windows-configuration-check.py`, `docs/operations/wsl-omp-bootstrap.md`, the Windows workstation specification, and the live Windows evidence. It adds no package, privilege, Administrator operation, or startup entry. The operator applies the document and signs in again.
+The change affects `packages/windows-configuration/package.nix`, `packages/windows-configuration/settings.nix`, `packages/windows-configuration/files.nix`, the `packages/windows-configuration-check` checker and its tests, `docs/operations/wsl-omp-bootstrap.md`, the Windows workstation specification, and the live Windows evidence. It adds no package, privilege, Administrator operation, or startup entry. The operator applies the document and signs in again.
 
-The deferred `derive-windows-check-from-declaration` change keeps ownership of the check redesign. This change adjusts only the assertions for the changed resources.
+The `derive-windows-check-from-declaration` change made the checker read rendered policy data instead of script fragments. This change therefore exposes the German input methods as declaration data and validates that data.

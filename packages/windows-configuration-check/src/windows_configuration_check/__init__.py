@@ -204,6 +204,38 @@ def validate_declaration(declaration: dict) -> dict[str, dict]:
     return by_role
 
 
+def validate_input_methods(declaration: dict) -> None:
+    methods = mapping(declaration.get("inputMethods"), "declaration inputMethods")
+    german = methods.get("german")
+    default = methods.get("default")
+    native_neo = methods.get("nativeNeo")
+    require(
+        isinstance(german, list)
+        and len(german) >= 2
+        and all(isinstance(tip, str) and tip for tip in german)
+        and len(set(german)) == len(german),
+        "declaration inputMethods german: expected distinct input tips",
+    )
+    require(
+        isinstance(default, str) and isinstance(native_neo, str),
+        "declaration inputMethods: expected default and nativeNeo tips",
+    )
+    require(
+        native_neo in german,
+        "declaration inputMethods: native Neo is not a German input method",
+    )
+    # Office derives character shortcuts from the first loaded layout, which is
+    # the default input method. A native Neo default replaces Ctrl letter keys.
+    require(
+        default != native_neo,
+        "declaration inputMethods: native Neo must not be the default input method",
+    )
+    require(
+        german[0] == default,
+        "declaration inputMethods: the default must be the first German input method",
+    )
+
+
 def validate_files(directory: pathlib.Path, declaration: dict) -> None:
     review = declaration.get("reviewFiles")
     require(
@@ -427,6 +459,7 @@ def check(
 ) -> None:
     declaration = load_json(declaration_path)
     by_role = validate_declaration(declaration)
+    validate_input_methods(declaration)
     validate_files(directory, declaration)
     document_path = directory / "configuration.winget"
     try:

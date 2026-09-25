@@ -194,7 +194,7 @@ let
 
   reneoSettings = {
     standaloneLayout = "Neo";
-    standaloneMode = false;
+    standaloneMode = true;
   };
   reneoPackageDirectory = "Microsoft\\WinGet\\Packages\\${reneoApplication.id}_Microsoft.Winget.Source_8wekyb3d8bbwe\\ReNeo";
   reneoElevationLauncher = ''
@@ -673,12 +673,12 @@ in
       else
         mergeJsonScript {
           name = "reneo-settings";
-          description = "Select the Neo2 layout while preserving ReNeo state";
+          description = "Run ReNeo's Neo2 layout over QWERTZ while preserving ReNeo state";
           destination = "Join-Path $env:LOCALAPPDATA '${reneoPackageDirectory}\\config.json'";
           desired = reneoSettings;
           dependsOn = [
             "package-keyboard-layout"
-            "native-neo-input-method"
+            "german-input-methods"
           ];
         }
     )

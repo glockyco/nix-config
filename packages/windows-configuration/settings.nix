@@ -1,4 +1,7 @@
+{ inputMethods }:
+
 let
+  germanTips = "@(${builtins.concatStringsSep ", " (map (tip: "'${tip}'") inputMethods.german)})";
   registry =
     {
       name,
@@ -201,33 +204,48 @@ in
   }
   {
     type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
-    name = "native-neo-input-method";
+    name = "german-input-methods";
     properties = {
       testScript = ''
-        $inputTip = '0407:b0000407'
+        $default = '${inputMethods.default}'
+        $ordered = ${germanTips}
+        $languages = Get-WinUserLanguageList
+        $german = @($languages | Where-Object LanguageTag -eq 'de-DE')
         $override = Get-WinDefaultInputMethodOverride
-        $registered = $false
-        foreach ($language in Get-WinUserLanguageList) {
-          if ($language.InputMethodTips -contains $inputTip) { $registered = $true }
-        }
-        return $registered -and $null -ne $override -and $override.InputMethodTip -eq $inputTip
+        return $german.Count -eq 1 `
+          -and $german[0].InputMethodTips.Count -ge $ordered.Count `
+          -and (@($german[0].InputMethodTips)[0..($ordered.Count - 1)] -join ',') -eq ($ordered -join ',') `
+          -and $null -ne $override `
+          -and $override.InputMethodTip -eq $default
       '';
       setScript = ''
-        $inputTip = '0407:b0000407'
+        $default = '${inputMethods.default}'
+        $neo = '${inputMethods.nativeNeo}'
+        $ordered = ${germanTips}
         if (-not (Test-Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layouts\b0000407')) {
           throw 'Run apply-kbdneo.ps1 as Administrator and restart Windows before applying the WinGet document'
         }
         $languages = Get-WinUserLanguageList
         $german = @($languages | Where-Object LanguageTag -eq 'de-DE')
         if ($german.Count -ne 1) { throw 'The user language list must contain exactly one de-DE entry' }
-        if ($german[0].InputMethodTips -notcontains $inputTip) {
-          $german[0].InputMethodTips.Add($inputTip)
+        $tips = @($german[0].InputMethodTips)
+        $desired = $ordered + @($tips | Where-Object { $ordered -notcontains $_ })
+        if (($tips -join ',') -ne ($desired -join ',')) {
+          $german[0].InputMethodTips.Clear()
+          foreach ($tip in $desired) { $german[0].InputMethodTips.Add($tip) }
+          # Windows restores the UK keyboard for an empty English entry.
+          # It discards this German placeholder and leaves the entry keyboard-free.
+          foreach ($language in $languages) {
+            if ($language.LanguageTag -eq 'en-GB' -and $language.InputMethodTips.Count -eq 0) {
+              $language.InputMethodTips.Add($neo)
+            }
+          }
           Set-WinUserLanguageList -LanguageList $languages -Force
         }
-        Set-WinDefaultInputMethodOverride -InputTip $inputTip
+        Set-WinDefaultInputMethodOverride -InputTip $default
       '';
     };
-    metadata.description = "Select the native Neo2 layout for the interactive user";
+    metadata.description = "Default to German QWERTZ and register native Neo as the second German input method";
   }
   (registry {
     name = "keyboard-layout-startup";

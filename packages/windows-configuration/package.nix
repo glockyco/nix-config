@@ -42,7 +42,18 @@ let
       null
     else
       import ./font.nix { inherit byRole applicationMetadata powershell; };
-  settingsResources = import ./settings.nix;
+  # Office derives character shortcuts such as Ctrl+] from the first loaded
+  # layout, and Windows loads the default input method first. Native Neo types
+  # those characters on letter keys, so it must not be the default.
+  inputMethods = rec {
+    default = "0407:00000407";
+    nativeNeo = "0407:${kbdNeo.layoutId}";
+    german = [
+      default
+      nativeNeo
+    ];
+  };
+  settingsResources = import ./settings.nix { inherit inputMethods; };
 
   expectedRoles = [
     "browser"
@@ -107,6 +118,7 @@ let
     applications = map (application: builtins.removeAttrs application [ "release" ]) applications;
     managedApplications = managedApplications.identifiers;
     reviewFiles = builtins.attrNames renderedFiles;
+    inherit inputMethods;
   };
 
   zenPolicyScript = pkgs.writeText "apply-zen-policies.ps1" ''
