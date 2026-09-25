@@ -16,7 +16,7 @@
 ## 4. Apply and prove Windows behavior
 
 - [x] 4.1 Test and apply the rendered document as the standard Windows user. Require drift on `german input methods` and `reneo settings` before the apply and the desired state after it.
-- [ ] 4.2 Sign out, sign in, and accept the ReNeo `RunAs` prompt. Confirm that German QWERTZ is active and first in the loaded layout list, that native Neo is second, and that the managed ReNeo copy runs.
+- [x] 4.2 Sign out, sign in, and accept the ReNeo `RunAs` prompt. Confirm that German QWERTZ is active and first in the loaded layout list, that native Neo is second, and that the managed ReNeo copy runs.
 - [ ] 4.3 Start a new Word process while QWERTZ is active. Confirm with `FindKey` that `Ctrl+C`, `V`, `F`, `L`, `U`, `D`, `P`, `Q`, and `Y` invoke `EditCopy`, `EditPaste`, `SmartFind`, `LeftPara`, `Underline`, `FormatFont`, `PrintPreviewAndPrint`, `ResetPara`, and `EditRedoOrRepeat`. Copy and paste with `Ctrl+C` and `Ctrl+V` in Word and Excel.
 - [ ] 4.4 Select native Neo with `Win+Space`, change the foreground window, start a new Word process, and repeat the `FindKey` check.
 - [ ] 4.5 Type all Neo layers in an ordinary and an elevated application while QWERTZ is active, then while native Neo is active. Record the layout that a UAC prompt accepts in each state.

@@ -33,3 +33,7 @@ Revision `de56a74`. Artifacts copied to `C:\Temp\windows-configuration`.
 A full document apply would downgrade Zen. The operator selected the rendered set scripts for `german input methods`, `reneo settings`, and `fork wslgit` instead. The first wslgit run failed because six `wslgit\bin\git.exe` fetch and push processes from Fork had been hung since 2026-09-23 and 2026-09-24. They were stopped, and the second run completed.
 
 After the apply, `winget configure test` reported drift only on `package browser`. The persisted state was `en-GB=[]`, `de-DE=[0407:00000407,0407:B0000407]`, `de-AT=[0C07:00000407]`, override `0407:00000407`, and `Preload` `1=00000407 2=d0010407 3=00000c07`. The managed ReNeo `config.json` had `standaloneMode` `true`.
+
+## After sign-in on 2026-09-25
+
+The operator signed out, signed in, and accepted the ReNeo `RunAs` prompt. `GetKeyboardLayoutList` returned `04070407,f0c00407,04070c07`. One `reneo.exe` ran; its elevated token hid the executable path from the standard session, and no Desktop copy had a startup entry. A fresh Word automation process with QWERTZ active returned `EditCopy`, `EditPaste`, `SmartFind`, `LeftPara`, `Underline`, `FormatFont`, `PrintPreviewAndPrint`, `ResetPara`, and `EditRedoOrRepeat` for `Ctrl+C`, `V`, `F`, `L`, `U`, `D`, `P`, `Q`, and `Y`. The operator confirmed that `Ctrl+C` and `Ctrl+V` work in Word.
