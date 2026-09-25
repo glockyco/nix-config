@@ -11,6 +11,7 @@ Korolev runs systemd and a user D-Bus session under WSLg. `wslgit` runs Korolev'
 ## Decisions
 
 - Install the Linux Git Credential Manager through Korolev's Home Manager module. Set its store to `secretservice` and its Git helper there, not in a project-local Git configuration. This keeps the helper in the Nix closure and confines the setting to Korolev.
+- Declare Overleaf's generic provider in the Nix-owned Git configuration. GCM otherwise tries to remember its detection by writing to Home Manager's read-only config.
 - Enable GNOME Keyring as Korolev's Secret Service provider through the NixOS system module. WSLg supplies graphical prompts to create or unlock the login collection. Its encrypted collection lives in mutable user state, not the Nix store.
 - Keep an explicit first-use step for setting a keyring password and supplying the Overleaf token. Use the existing in-memory cache to avoid exposing the token to the assistant or to process arguments. If the cache has expired, Git requests the token interactively.
 - Remove the paper submodule's local `credential.helper` override only after the managed helper is active; a local helper masks the global helper.
