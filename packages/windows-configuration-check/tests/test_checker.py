@@ -83,6 +83,11 @@ def fixture():
             "start-reneo-elevated.ps1",
             *[f"review-{index:02}.json" for index in range(15)],
         ],
+        "inputMethods": {
+            "default": "0407:00000407",
+            "nativeNeo": "0407:b0000407",
+            "german": ["0407:00000407", "0407:b0000407"],
+        },
     }
     document = {
         "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json",
@@ -243,6 +248,42 @@ class Checker(unittest.TestCase):
                 "machine scope",
                 lambda: self.application("launcher").update(scope="machine"),
                 "launcher",
+            ),
+        ]
+        for label, mutate, expected in cases:
+            with self.subTest(label):
+                self.declaration, self.document = fixture()
+                mutate()
+                self.reject(expected)
+
+    def test_input_methods_reject_native_neo_default(self):
+        cases = [
+            (
+                "neo default",
+                lambda: self.declaration["inputMethods"].update(
+                    default="0407:b0000407",
+                    german=["0407:b0000407", "0407:00000407"],
+                ),
+                "must not be the default",
+            ),
+            (
+                "neo listed first",
+                lambda: self.declaration["inputMethods"].update(
+                    german=["0407:b0000407", "0407:00000407"]
+                ),
+                "first German input method",
+            ),
+            (
+                "neo absent",
+                lambda: self.declaration["inputMethods"].update(
+                    german=["0407:00000407", "0407:00020407"]
+                ),
+                "not a German input method",
+            ),
+            (
+                "missing policy",
+                lambda: self.declaration.pop("inputMethods"),
+                "declaration inputMethods",
             ),
         ]
         for label, mutate, expected in cases:

@@ -1,17 +1,17 @@
 ## 1. Declare the input methods and ReNeo mode
 
-- [ ] 1.1 Replace `native-neo-input-method` in `modules/windows/settings.nix` with `german-input-methods`. Its test requires `de-DE` tips `0407:00000407`, `0407:b0000407` first and the QWERTZ default override. Its set script orders the tips, keeps other tips, writes the list with the English placeholder, and sets the override. Render the document and inspect both scripts.
-- [ ] 1.2 Set `standaloneMode = true` in the declared ReNeo settings in `modules/windows/files.nix`. Render `reneo-settings.json` and confirm the value.
+- [x] 1.1 Declare `inputMethods` in `packages/windows-configuration/package.nix` with the QWERTZ default and German tips `0407:00000407`, `0407:b0000407`. Replace `native-neo-input-method` in `packages/windows-configuration/settings.nix` with `german-input-methods`, rendered from that declaration. Its test requires the declared tips first and the QWERTZ default override. Its set script orders the tips, keeps other tips, writes the list with the English placeholder, and sets the override. Render the document and inspect both scripts.
+- [x] 1.2 Set `standaloneMode = true` in the declared ReNeo settings in `packages/windows-configuration/files.nix`. Render `reneo-settings.json` and confirm the value.
 
 ## 2. Extend repository verification
 
-- [ ] 2.1 In `packages/windows-configuration-check.py`, require the new resource, the QWERTZ default, the tip order, and ReNeo standalone mode. Reject a native Neo default. Run the focused Windows configuration check.
-- [ ] 2.2 Update the Windows procedure in `docs/operations/wsl-omp-bootstrap.md` for the QWERTZ default, native Neo selection, ReNeo layout detection, and UAC input. Review the rendered procedure for account and sign-in accuracy.
+- [x] 2.1 Expose `inputMethods` in the rendered declaration. In `packages/windows-configuration-check`, require the default to lead the German tips and reject a native Neo default, with unit cases for both. Run the focused Windows configuration check.
+- [x] 2.2 Update the Windows procedure in `docs/operations/wsl-omp-bootstrap.md` for the QWERTZ default, native Neo selection, ReNeo layout detection, and UAC input. Review the rendered procedure for account and sign-in accuracy.
 
 ## 3. Validate and review
 
-- [ ] 3.1 Run `openspec validate default-windows-input-to-qwertz --strict`, `nix fmt -- --fail-on-change`, and `nix flake check --print-build-logs`. Resolve every failure.
-- [ ] 3.2 Inspect and commit only the change-owned implementation, specification, procedure, and verification files as one atomic configuration change with a causal commit body.
+- [x] 3.1 Run `openspec validate default-windows-input-to-qwertz --strict`, `nix fmt -- --fail-on-change`, and `nix flake check --print-build-logs`. Resolve every failure.
+- [x] 3.2 Inspect and commit only the change-owned implementation, specification, procedure, and verification files as one atomic configuration change with a causal commit body.
 
 ## 4. Apply and prove Windows behavior
 
