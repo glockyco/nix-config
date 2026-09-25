@@ -27,7 +27,7 @@ jobs:
       # login otherwise. The Numtide cache is what actually matters here, since
       # it serves the llm-agents packages that would otherwise build from
       # source. `modules/shared/binary-caches.nix` is the source for these values.
-      - uses: DeterminateSystems/determinate-nix-action@021c8a1bd3570eb21f5c20a054812b0c4d9ca614 # v3
+      - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
         with:
           extra-conf: |
             extra-substituters = https://cache.numtide.com
