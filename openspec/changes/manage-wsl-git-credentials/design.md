@@ -1,6 +1,6 @@
 ## Context
 
-Korolev runs systemd and a user D-Bus session under WSLg. `wslgit` runs Korolev's Git rather than a Windows Git executable. The pinned nixpkgs contains Git Credential Manager and GNOME Keyring. No Secret Service provider is currently active. `Git.Git` is explicitly excluded from the declared Windows application set because another authority manages it.
+`wslgit` runs Korolev's Git rather than a Windows Git executable. GNOME Keyring's first-use prompt appeared under WSLg but did not accept mouse or keyboard input. The pinned nixpkgs contains Git Credential Manager, GnuPG, `pass`, and a curses pinentry. `Git.Git` is excluded from the declared Windows application set because another authority manages it.
 
 ## Goals / Non-Goals
 
@@ -10,14 +10,15 @@ Korolev runs systemd and a user D-Bus session under WSLg. `wslgit` runs Korolev'
 
 ## Decisions
 
-- Install the Linux Git Credential Manager through Korolev's Home Manager module. Set its store to `secretservice` and its Git helper there, not in a project-local Git configuration. This keeps the helper in the Nix closure and confines the setting to Korolev.
+- Install Git Credential Manager, GnuPG, and `pass` through Korolev's Home Manager module. Set GCM's store to `gpg`; `pass` keeps encrypted credentials in mutable user state.
+- Enable the NixOS GPG agent with curses pinentry. Export `GPG_TTY` in interactive Korolev shells so passphrase requests use the terminal rather than WSLg.
 - Declare Overleaf's generic provider in the Nix-owned Git configuration. GCM otherwise tries to remember its detection by writing to Home Manager's read-only config.
-- Enable GNOME Keyring as Korolev's Secret Service provider through the NixOS system module. WSLg supplies graphical prompts to create or unlock the login collection. Its encrypted collection lives in mutable user state, not the Nix store.
-- Keep an explicit first-use step for setting a keyring password and supplying the Overleaf token. Use the existing in-memory cache to avoid exposing the token to the assistant or to process arguments. If the cache has expired, Git requests the token interactively.
-- Remove the paper submodule's local `credential.helper` override only after the managed helper is active; a local helper masks the global helper.
+- Generate a passphrase-protected GPG key and initialize `pass` interactively. Transfer the existing cached Overleaf token through credential-helper stdin only after `pass` works. No token or private key enters Nix derivations.
+- The GPG agent caches the unlocked key for a bounded period. Fork reuses it while unlocked; after expiration or a WSL restart, unlock the key from a WSL terminal before using Fork.
+- Keep the paper submodule's local cache override removed; a local helper would mask the managed helper.
 
 ## Risks / Trade-offs
 
-- WSL has no PAM graphical login that unlocks a collection automatically. A user may need to unlock the keyring after restarting WSL, but does not need to regenerate or re-enter the token. An empty keyring password would forfeit at-rest protection; do not use one.
-- Fork's Windows process depends on WSLg forwarding the keyring unlock prompt. First enroll and verify from a WSL terminal; then verify Fork uses the same credential.
+- Fork has no usable terminal for curses pinentry. After GPG agent cache expiry or a WSL restart, the user must unlock the key in a WSL terminal before Fork can authenticate. The Overleaf token stays encrypted on disk and need not be re-entered.
+- Loss of the GPG private key makes stored credentials unreadable. Keep a secure key backup or re-enroll a fresh Overleaf token after restoring the host; never export the private key to the repository.
 - A system switch must follow repository release gates and review. Keep the previous generation until the Git authentication smoke test passes.

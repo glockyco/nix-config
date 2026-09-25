@@ -4,9 +4,9 @@ Fork runs NixOS Git through `wslgit`, but the WSL host has no persistent, secure
 
 ## What Changes
 
-- Provide a Nix-managed Git credential helper and encrypted Secret Service storage on Korolev.
+- Provide a Nix-managed Git credential helper and encrypted GPG-backed storage on Korolev.
 - Keep credential contents in mutable user state, outside the Nix store and repository.
-- Document first-time enrollment and unlock behavior for the WSL graphical session.
+- Document first-time GPG enrollment and terminal unlock after a WSL restart.
 - Remove the temporary per-repository cache override after the managed helper works.
 - Do not install or declare the centrally managed Windows `Git.Git` package.
 
@@ -22,4 +22,4 @@ None.
 
 ## Impact
 
-Korolev gains a user-scoped Git helper and a Secret Service provider. GitLab SSH remains unchanged. Fork's `wslgit` bridge uses the same WSL Git configuration as terminal Git. Activation does not create, unlock, or copy credentials; the operator supplies the Overleaf token to the keyring once.
+Korolev gains a user-scoped Git helper, GPG agent, and encrypted password store. GitLab SSH remains unchanged. Fork's `wslgit` bridge uses the same WSL Git configuration as terminal Git. Activation does not create, unlock, or copy credentials; the operator protects a GPG key with a passphrase and enrolls the Overleaf token once.

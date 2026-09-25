@@ -126,16 +126,26 @@ The token remains in writable `hosts.yml`, and the host already declares HTTPS. 
 
 ### Enroll HTTPS Git credentials in WSL
 
-Korolev provides Git Credential Manager and GNOME Keyring through Nix. The keyring stores tokens in encrypted user state, not in the Nix store. WSL does not unlock the collection through a graphical login. Create a nonempty collection password when prompted, and unlock the collection after a WSL restart when needed.
+Korolev provides Git Credential Manager, GnuPG, `pass`, and curses pinentry through Nix. `pass` stores tokens as GPG-encrypted files in user state, not in the Nix store. The WSLg keyring password dialog does not accept input on this host, so use terminal pinentry instead.
 
-For an Overleaf checkout, remove any local cache override and fetch once in a WSL terminal:
+In a WSL terminal, create one GPG key with a nonempty passphrase and initialize the password store with its fingerprint:
+
+```sh
+gpg --quick-generate-key 'Git credentials <your-address@example.com>' default default never
+gpg --list-secret-keys --fingerprint
+pass init FINGERPRINT
+```
+
+Replace the example address and fingerprint with your own values. Keep the private key and its passphrase outside the repository. If the private key is lost, the encrypted token cannot be recovered; generate a new Overleaf token and enroll it again.
+
+For an Overleaf checkout that has a local cache helper override, remove that override. Fetch once in a WSL terminal:
 
 ```sh
 git -C /path/to/overleaf-checkout config --local --unset-all credential.helper
 git -C /path/to/overleaf-checkout fetch origin
 ```
 
-The second command prompts for the keyring password if the collection is locked. If Git asks for an Overleaf password, paste your Git authentication token. Keep both passwords out of commands, Git URLs, and the repository. The remote uses the `git` username. Git Credential Manager persists the token; Fork's `wslgit` bridge uses the same WSL Git configuration.
+If pinentry asks for a passphrase, enter the GPG key passphrase. If Git asks for an Overleaf password, paste the Git authentication token. Do not put either secret in a command, Git URL, or repository. The remote uses the `git` username. Fork's `wslgit` bridge uses the same Git configuration, but cannot display curses pinentry itself.
 
 Verify access without a terminal prompt:
 
@@ -143,7 +153,7 @@ Verify access without a terminal prompt:
 GIT_TERMINAL_PROMPT=0 git -C /path/to/overleaf-checkout ls-remote origin HEAD
 ```
 
-After a WSL restart, unlock the collection at its prompt and repeat the lookup. If the token expires or is revoked, generate a new Overleaf Git token and repeat the interactive fetch. Do not use Git's plaintext `store` helper or an empty keyring password.
+After a WSL restart or GPG agent cache expiry, open a WSL terminal and run `gpg-connect-agent updatestartuptty /bye` before the lookup. Unlock the key at the terminal prompt, then use Fork. The token remains encrypted on disk and does not need to be entered again until it expires or is revoked. Do not use Git's plaintext `store` helper.
 
 Run the [wrapped-session release smoke](dependency-updates.md#release-smoke) in a disposable WSL repository through Windows Terminal Stable.
 Record the tested Terminal, Windows, WSL, and NixOS versions, host architecture, and locked repository revision.
