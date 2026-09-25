@@ -123,6 +123,28 @@ git ls-remote https://github.com/glockyco/nix-config HEAD
 
 `gh auth login` can report `read-only file system` after authentication when it writes the Nix-owned `config.yml`.
 The token remains in writable `hosts.yml`, and the host already declares HTTPS. Accept this only if the verification commands succeed.
+
+### Enroll HTTPS Git credentials in WSL
+
+Korolev provides Git Credential Manager and GNOME Keyring through Nix. The keyring stores tokens in encrypted user state, not in the Nix store. WSL does not unlock the collection through a graphical login. Create a nonempty collection password when prompted, and unlock the collection after a WSL restart when needed.
+
+For an Overleaf checkout, remove any local cache override and fetch once in a WSL terminal:
+
+```sh
+git -C /path/to/overleaf-checkout config --local --unset-all credential.helper
+git -C /path/to/overleaf-checkout fetch origin
+```
+
+The second command prompts for the keyring password if the collection is locked. If Git asks for an Overleaf password, paste your Git authentication token. Keep both passwords out of commands, Git URLs, and the repository. The remote uses the `git` username. Git Credential Manager persists the token; Fork's `wslgit` bridge uses the same WSL Git configuration.
+
+Verify access without a terminal prompt:
+
+```sh
+GIT_TERMINAL_PROMPT=0 git -C /path/to/overleaf-checkout ls-remote origin HEAD
+```
+
+After a WSL restart, unlock the collection at its prompt and repeat the lookup. If the token expires or is revoked, generate a new Overleaf Git token and repeat the interactive fetch. Do not use Git's plaintext `store` helper or an empty keyring password.
+
 Run the [wrapped-session release smoke](dependency-updates.md#release-smoke) in a disposable WSL repository through Windows Terminal Stable.
 Record the tested Terminal, Windows, WSL, and NixOS versions, host architecture, and locked repository revision.
 Then run the browser smoke below.
