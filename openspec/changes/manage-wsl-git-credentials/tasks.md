@@ -2,6 +2,7 @@
 
 - [x] 1.1 Enable a NixOS Secret Service provider on Korolev; verify the evaluated D-Bus registration and package closure.
 - [x] 1.2 Configure the Nix-managed Git Credential Manager for Korolev's Git; verify the evaluated Home Manager Git settings and preserve GitHub's `gh` helper.
+- [x] 1.3 Declare Overleaf's generic provider in the read-only Home Manager Git settings; verify the evaluated URL-specific setting.
 
 ## 2. Document enrollment
 

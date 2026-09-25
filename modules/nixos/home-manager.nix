@@ -23,6 +23,7 @@
     programs.git.settings.credential = {
       helper = "${pkgs.git-credential-manager}/bin/git-credential-manager";
       credentialStore = "secretservice";
+      "https://git.overleaf.com".provider = "generic";
     };
   };
 }
