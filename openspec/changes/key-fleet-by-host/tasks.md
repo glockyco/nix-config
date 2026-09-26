@@ -9,9 +9,9 @@ The owner scheduled this change after a plan review. It is position 1, after `al
 
 ## 2. Split the Flake
 
-- [ ] 2.1 Move output families into `flake-modules/{hosts,packages,checks,devshell,formatter}.nix` and import them through `default.nix`. Keep inputs and `mkFlake` in `flake.nix`. Proof: `nix flake show --json` exposes the same pre-refactor outputs.
+- [x] 2.1 Move output families into `flake-modules/{hosts,packages,checks,devshell,formatter}.nix` and import them through `default.nix`. Keep inputs and `mkFlake` in `flake.nix`. Proof: `nix flake show --json` exposes the same pre-refactor outputs.
 - [ ] 2.2 Extend the module-import gate to `flake-modules/`. Probe and remove a temporary unlisted sibling. Proof: the gate rejects the omission and accepts the complete imports.
-- [ ] 2.3 Retain the single `_module.args.pkgs` override and remove its stale Darwin comment. Proof: repeat the pinned-revision path comparison.
+- [x] 2.3 Retain the single `_module.args.pkgs` override and remove its stale Darwin comment. Proof: repeat the pinned-revision path comparison.
 
 ## 3. Build the Standalone Host Registry
 

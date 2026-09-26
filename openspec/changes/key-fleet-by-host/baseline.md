@@ -23,3 +23,10 @@ identical values; the exact system probe also matched both paths above.
 | ------------- | ----------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | `macbook-pro` | `/nix/store/2phmwnldaazd4c9n96ylgm8ny9h54lfk-omp.drv` | `/nix/store/ykgjlzzdnzmyzjri0pykswvzgy0h6ddi-herdr-0.8.2.drv` | `/nix/store/9vc3jfqh5rajc9lrhni4307jm7nf2xjm-openspec-1.12.0.drv` | `/nix/store/1cyv5p4i1nq88jb2h6211jjhcf0nny3x-personal-omp-plugin-0.1.0.drv` |
 | `korolev`     | `/nix/store/6f16w3x0mj390xcdbcv0arbywbbivy86-omp.drv` | `/nix/store/f0fggh2a3yck94f5gsskyzpvs7k3dfgi-herdr-0.8.2.drv` | `/nix/store/20yq76v63djy9kcdnlpy7fcc63pmdx0a-openspec-1.12.0.drv` | `/nix/store/q7ywbmksq3dp0x0qbax84b9y8r1v95fi-personal-omp-plugin-0.1.0.drv` |
+
+## Flake output split
+
+After the output families moved to `flake-modules/`, the exact
+`nix eval --impure --json -f /tmp/fleet-drv.nix` probe returned both baseline
+system paths unchanged. `nix flake show --json` returned an output inventory
+identical to the pre-split inventory, including each package and check name.
