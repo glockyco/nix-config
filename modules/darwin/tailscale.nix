@@ -7,9 +7,7 @@
 let
   inherit (import ../shared) tailnetDnsDomain;
   cfg = config.services.tailscale;
-  tailscaleSetAfterLogin = pkgs.callPackage ../../packages/tailscale-set-after-login.nix {
-    tailscale = cfg.package;
-  };
+  tailscaleSetAfterLogin = pkgs.tailscale-set-after-login.override { tailscale = cfg.package; };
   builderAuthorizedKeys = pkgs.writeText "macbook-pro-builder-authorized-keys" ''
     restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICv/rjs4XMaAm1F3k7J+SAmJ/Sf40O6ZLEh5sX/pTP8b korolev-builder
   '';

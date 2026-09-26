@@ -274,7 +274,7 @@ If recovery fails, roll back locally. Nix rollback neither restores keys nor cha
 
 Close all Windows Terminal windows after import, then reopen Terminal so its WSL generator discovers `NixOS`.
 The artifact selects that generated profile without replacing the profile list.
-Build the reviewed [Windows artifact](../../modules/windows/default.nix) in NixOS.
+Build the reviewed [Windows artifact](../../packages/windows-configuration/package.nix) in NixOS.
 Use an absent destination under writable `C:\Temp`. Do not merge the artifact into a stale copy.
 
 ```sh

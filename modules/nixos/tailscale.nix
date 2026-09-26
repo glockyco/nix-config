@@ -7,9 +7,7 @@
 
 let
   cfg = config.services.tailscale;
-  tailscaleSetAfterLogin = pkgs.callPackage ../../packages/tailscale-set-after-login.nix {
-    tailscale = cfg.package;
-  };
+  tailscaleSetAfterLogin = pkgs.tailscale-set-after-login.override { tailscale = cfg.package; };
 in
 {
   services.tailscale = {

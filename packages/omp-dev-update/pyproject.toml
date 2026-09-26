@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omp-dev-update"
+version = "0.1.0"
+description = "Prepare and select verified OMP source generations"
+requires-python = ">=3.11"
+
+[project.scripts]
+omp-dev-update = "omp_dev_update:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

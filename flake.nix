@@ -66,7 +66,10 @@
 
     # Do not set `inputs.nixpkgs.follows`: upstream pins nixpkgs-unstable for its packages and cache.
     # Overriding it breaks cache hits and is unsupported on this stable release branch.
-    llm-agents.url = "github:numtide/llm-agents.nix";
+    llm-agents = {
+      url = "github:numtide/llm-agents.nix";
+      inputs.flake-parts.follows = "flake-parts";
+    };
 
     # Pin Plannotator releases independently; retain the vendor's own transitive inputs.
     plannotator-packages.url = "github:numtide/llm-agents.nix/b1c9a31450a814e50cddc3ab683b05c1dff7bb01";

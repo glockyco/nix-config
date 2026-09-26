@@ -10,6 +10,19 @@ in
       description = "Stable host name used by generated system outputs.";
     };
 
+    system = mkOption {
+      type = types.str;
+      description = "System architecture and operating system of this host.";
+    };
+
+    kind = mkOption {
+      type = types.enum [
+        "darwin"
+        "nixos"
+      ];
+      description = "System configuration kind of this host.";
+    };
+
     username = mkOption {
       type = types.str;
       description = "Interactive user managed by the host configuration.";

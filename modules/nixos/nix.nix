@@ -1,29 +1,16 @@
-{
-  inputs,
-  lib,
-  ...
-}:
-
+{ config, lib, ... }:
 let
   inherit (import ../shared) binaryCaches;
-  macHost = inputs.self.darwinConfigurations.macbook-pro.config.host;
-  macLogicalCores = macHost.build.logicalCores;
+  builders = lib.filterAttrs (
+    name: host: name != config.host.name && host.build.logicalCores != null
+  ) config.fleet.hosts;
 in
-assert lib.assertMsg (
-  macLogicalCores != null
-) "the Darwin remote builder must declare host.build.logicalCores";
 {
   # A daemon setting is the only source of this cache on this host. The root
-  # flake declares no `nixConfig`, because Nix ignores a flake-provided key for
-  # a user who is not in `trusted-users`, and it warns on every command.
-  #
-  # These supplement the default NixOS substituter rather than replacing it.
+  # flake declares no `nixConfig`: untrusted users cannot apply its keys.
   nix.settings = {
     extra-substituters = binaryCaches.substituters;
     extra-trusted-public-keys = binaryCaches.trustedPublicKeys;
-
-    # `nix build`, `nix flake check`, and `nixos-rebuild --flake` all require
-    # both features.
     experimental-features = [
       "nix-command"
       "flakes"
@@ -32,20 +19,17 @@ assert lib.assertMsg (
   };
 
   nix.distributedBuilds = true;
-  nix.buildMachines = [
-    {
-      hostName = macHost.name;
-      sshUser = macHost.username;
-      sshKey = "/root/.ssh/macbook-pro-builder";
-      system = "aarch64-darwin";
-      protocol = "ssh-ng";
-      maxJobs = macLogicalCores;
-      speedFactor = macLogicalCores;
-      supportedFeatures = [ "big-parallel" ];
-    }
-  ];
+  nix.buildMachines = lib.mapAttrsToList (_: builder: {
+    hostName = builder.name;
+    sshUser = builder.username;
+    sshKey = "/root/.ssh/${builder.name}-builder";
+    system = builder.system;
+    protocol = "ssh-ng";
+    maxJobs = builder.build.logicalCores;
+    speedFactor = builder.build.logicalCores;
+    supportedFeatures = [ "big-parallel" ];
+  }) builders;
 
-  # `trusted-users` stays at its default of `root` alone. Adding the interactive
-  # user would let any flake it evaluates add a substituter and a signing key,
-  # which is the privilege this module exists to avoid needing.
+  # `trusted-users` stays at its default of `root` alone. An interactive user
+  # must not add a substituter or signing key through a flake.
 }

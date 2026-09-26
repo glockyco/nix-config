@@ -15,7 +15,7 @@ Publish a verified plugin revision before advancing `personal-omp-plugin` here. 
 After an OpenSpec update, regenerate adapters in the plugin repository with `nix run .#sync-openspec-adapters` before advancing its pin here.
 
 For an artifact update, change the version, platform asset selection, and fixed hash together.
-Use the [Markdown Oxide](../../packages/markdown-oxide.nix) or [Roslyn](../../packages/roslyn-language-server.nix) declaration.
+Use the [Markdown Oxide](../../packages/markdown-oxide/package.nix) or [Roslyn](../../packages/roslyn-language-server/package.nix) declaration.
 Never accept changed bytes under an existing hash.
 If the plugin selects a different server, publish its verified revision and change the wrapper package selection together.
 Do not publish a plugin that selects an unavailable server or retain the previous server as a fallback.
@@ -62,7 +62,7 @@ The result is a verified selected runtime, not only a repaired patch series or i
 
 1. Identify the current host and system from the environment and repository declarations. Default to that supported host unless the user names another.
 1. Resolve `omp`, `omp-dev-update`, and `verify-personal-omp` from the caller's command environment. Inspect their resolved launchers for ownership; do not select a convenient developer executable.
-1. Read [the declared inputs](../../packages/omp-dev-update.nix). Resolve the installed updater script and read the immutable JSON path passed to its `--config` argument. Compare its upstream URL, fork URL, patch base, patch tip, and system with the reviewed repository declaration. Do not execute file contents to extract these fields.
+1. Read [the declared inputs](../../packages/omp-dev-update/package.nix). Resolve the installed updater script and read the immutable JSON path passed to its `--config` argument. Compare its upstream URL, fork URL, patch base, patch tip, and system with the reviewed repository declaration. Do not execute file contents to extract these fields.
 1. Run `omp-dev-update --status` to record the selected release, upstream, patch range, resulting commit, and system. Inspect the declared state root's `current` and `previous` targets and their generation metadata. A first installation can have neither target. Status metadata describes the selected generation, not necessarily the installed updater's current pins.
 1. Inspect repository changes and granted scope. Preserve unrelated work. A normal update request authorizes the existing updater's selection on the current host, unless restricted. Obtain missing authorization before patch publication, configuration publication, host activation, or recovery outside the granted scope. Never infer fleet permission from access to a remote builder.
 
@@ -94,7 +94,7 @@ Retain previous generations while any session uses them.
 ### Repair a non-conflict failure
 
 Read the reported command, exit status, phase, and relevant source before choosing a repair.
-Use [the updater implementation](../../packages/omp-dev-update.py) as the current phase and command reference.
+Use [the updater implementation](../../packages/omp-dev-update/src/omp_dev_update/__init__.py) as the current phase and command reference.
 
 - **Fetch or input validation:** check declared URLs, release/tag identity, exact commit availability, ancestry, and existing credential access. Do not print tokens, change credential ownership, or accept a moving branch as a pin.
 - **Environment or dependencies:** inspect the resolved release's Nix shell and lockfiles, available disk space, and the actual dependency error. Preserve frozen dependency installation; do not update locks merely to make installation pass.
