@@ -1,42 +1,35 @@
-## Scheduling — 2026-09-05
+## Scheduling — 2026-09-26
 
-This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. The scheduling notice below remains authoritative.
-
-The technical proposal, design, specifications, and unchecked tasks remain requirements for future implementation. CLI artifact and task counts describe artifact and task state, not authorization to start work. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules the change after another plan review.
+The owner scheduled this change after a plan review. Implement it at position 4, after `separate-platform-baseline-from-roles` is archived.
 
 ## Why
 
-The Darwin host runs eight programs at activation or from the user's shell that no package builds and no check exercises. Two are Python files that a module interpolates by path: `modules/home/darwin/fastmail.nix:15` runs `python3 ${./fastmail.py}`, a 503-line JMAP client with a DMARC report decoder, and `modules/home/darwin/apple-terminal.nix:17` runs `${pkgs.python3}/bin/python3 ${./apple-terminal.py}`. `apple-terminal.py:9` reads `sys.argv[1]` at import time and `apple-terminal.py:56-94` executes at module level, so no test can import it. Every shell program under `packages/` is a `writeShellApplication` with a sibling `*-tests.nix` that runs it against doubles. The Python programs have neither.
+The Darwin host has two Python programs that no package build tests. `modules/home/darwin/fastmail.nix:12-17` wraps the path to `fastmail.py`. `modules/home/darwin/apple-terminal.nix:16-18` runs `apple-terminal.py` by path. The Fastmail client already has `main()` and catches `JmapError` (`modules/home/darwin/fastmail.py:444-503`). The font program reads `sys.argv[1]` on import and executes at module scope (`modules/home/darwin/apple-terminal.py:9,56-94`).
 
-The six remaining programs are inline shell strings in activation blocks, and most of them rewrite host state on every switch. `neo2.nix:21-26` removes and recopies the keyboard layout bundle and bumps the directory mtime, which the module's own comment at `neo2.nix:16-17` says makes macOS recompile every layout. `karabiner.nix:57` reinstalls `karabiner.json` on every switch. `default-apps.nix:376-379` deletes and recopies `FileTypes.app` and reruns `lsregister -f`, and `default-apps.nix:308-345` ends every `duti` call in `|| true`. `keyboard-shortcuts.nix:69-76` runs `mktemp`, `defaults export`, and `plutil` outside `run`, so a Home Manager dry run writes files. `power.nix:10-11` runs `pmset` unconditionally. `rosetta.nix:6-10` decides from a process name and calls `softwareupdate`, which needs the network. `postgresql.nix:38-39` runs `install -d` as root on every switch because the user agent cannot create its cluster under `/var/lib`.
+Several Darwin activation blocks write unchanged state. `modules/home/darwin/neo2.nix:19-26` recopies a keyboard layout and touches its directory. `modules/home/darwin/karabiner.nix:55-58` reinstalls its configuration. `modules/home/darwin/default-apps.nix:375-383` recopies and registers `FileTypes.app`, while its binding writes ignore errors (`modules/home/darwin/default-apps.nix:311-345`). `modules/home/darwin/keyboard-shortcuts.nix:68-77` creates and edits a temporary file outside Home Manager's `run` helper. `modules/darwin/power.nix:9-12` always runs `pmset`. `modules/darwin/rosetta.nix:5-10` probes a daemon rather than execution and ignores installation failure.
 
-The 2026-09-04 audit recorded each of these. A second activation of the same generation is therefore not a no-op, which hides real changes in the activation output, and a wrong bundle identifier or a missing binary passes silently.
+`modules/home/darwin/screenshots.nix:15-17` already uses `run` for an idempotent `mkdir -p`, so it needs no new program. `modules/home/darwin/network-shares.nix:13-46` manages the temporary Air's mount agent, not activation; the Air role owns it. The PostgreSQL `install -d` step remains: the user agent needs `/var/lib/postgresql/17`, and that step is idempotent (`modules/darwin/postgresql.nix:35-40`).
 
 ## What Changes
 
-- Package `fastmail` as a Python application under `packages/` with a `main()` entry point, `meta`, and unit tests with DMARC fixtures in ZIP, gzip, and XML form. The Home Manager module wraps the package with the token path as it does today.
-- Package the Terminal.app font program as `apple-terminal-font` with a `main()` entry point, a `defaults` seam, unit tests for the font blob round trip, and a command test against a `defaults` double.
-- Replace the symbolic hotkeys activation block with a packaged `symbolic-hotkeys` program that edits the exported domain with `plistlib`, imports it only when a shortcut changes, and runs under `run`. Replace the `disabled` attribute set with a list of identifiers whose bindings are comments.
-- Replace each remaining inline activation block with one packaged, tested `writeShellApplication`: `neo-keyboard-layout-install`, `karabiner-configuration`, `default-applications`, `power-settings`, and `rosetta`. Each program reads the current state, compares it with the declared state, mutates only what differs, and fails on an error it does not expect. `default-applications` tolerates only the documented LaunchServices `-50` result.
-- Move the PostgreSQL data directory under the primary user's home so that the launchd user agent creates its own cluster and activation creates no directory. **BREAKING**: the existing cluster moves once by hand.
-- Add a `*-tests.nix` sibling for every new program and register each as a repository check.
+- Package `fastmail`, `apple-terminal-font`, and `symbolic-hotkeys` under `packages/<name>/` with import-safe `main(argv: Sequence[str] | None = None) -> int` entry points. Each owns `argparse`, parses `sys.argv[1:]` when `argv` is `None`, and exits its console script with the return value. Give Fastmail ZIP, gzip, XML, malformed-report, and command tests. Test font preservation and hotkey domain merges against `defaults` doubles.
+- Package `neo-keyboard-layout-install`, `karabiner-configuration`, `default-applications`, `power-settings`, and `rosetta` as tested shell programs. Compare before writing and report failures, except for the documented LaunchServices `-50` result.
+- Replace the symbolic-hotkey description attribute set with identifiers and nearby binding comments. Put its complete invocation behind Home Manager's `run` helper.
+- Put every package in `packages/<name>/package.nix`, with `tests.nix` beside it. Use the generated overlay from `key-fleet-by-host` and register the command tests through `flake-modules/checks.nix`.
+- Update the affected module comments, README activation guidance, and relevant operations documentation as part of this change.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `darwin-host-activation`: how the Darwin host applies state that Nix cannot link from the store. Activation reads before it writes, changes only what differs, fails on an unexpected error, and writes nothing in a dry run.
+- `darwin-host-activation`: packaged activation concerns compare before writes, fail on unexpected errors, and write nothing in a Home Manager dry run.
 
 ### Modified Capabilities
 
-- `repository-quality-gates`: every program a host installs or runs at activation is a package with a check that exercises its behavior.
+- `repository-quality-gates`: repository-owned user and activation programs have packages and observable behavior checks.
 
 ## Impact
 
-The change affects `modules/home/darwin/{fastmail,apple-terminal,neo2,karabiner,default-apps,keyboard-shortcuts}.nix`, the two Python files beside them, `modules/roles/darwin/{power,rosetta,postgresql}/default.nix`, the overlay and check lists under `flake-modules/`, and `packages/`, which gains eight programs with their tests.
+The change replaces the two Python files and activation blocks in `modules/home/darwin/{fastmail,apple-terminal,neo2,karabiner,default-apps,keyboard-shortcuts}.nix`. It also updates the power and Rosetta declarations after the Darwin role cutover. `separate-platform-baseline-from-roles` places their declarations in `modules/roles/darwin/desktop/default.nix`; it places PostgreSQL in `modules/roles/darwin/postgresql/default.nix`. The package overlay is generated in `flake-modules/packages.nix`; command checks are registered in `flake-modules/checks.nix`.
 
-Host behavior changes in three observable ways. A second activation of the same generation changes no file under `~/Library/Keyboard Layouts`, `~/.config/karabiner`, or `~/Applications`, calls no `lsregister`, `pmset`, or `defaults import`, and the activation output states that each concern is current. A failed `duti` binding, a failed Rosetta installation, or a malformed `defaults` domain fails activation instead of printing a warning. The PostgreSQL cluster lives under the user's home.
-
-The acceptance gate is a live proof on the Mac for each activation concern, a deterministic test for each program, and the existing release gates. Every activation program declares `meta.platforms = lib.platforms.darwin`, so its test builds on the Darwin continuous-integration leg, on the Mac, and from korolev through the remote builder that `connect-fleet-over-tailnet` introduced.
-
-This change assumes that `declare-typed-host-options`, `connect-fleet-over-tailnet`, `key-fleet-by-host`, and `separate-platform-baseline-from-roles` are archived. Packages reach modules as `pkgs.<name>` from `overlays.default`, checks are declared in `flake-modules/checks.nix`, and platform gating derives from `meta.platforms`.
+A repeated Mac activation makes no write for any concern this change replaces. A Home Manager dry run runs none of these programs. An unexpected binding, preference, or Rosetta error fails activation rather than silently continuing. PostgreSQL keeps its existing cluster and idempotent directory preparation. The Mac and Darwin CI can build Darwin-only checks; Fastmail also builds on Linux. The owner records the live Mac activation and dry-run results before archive.

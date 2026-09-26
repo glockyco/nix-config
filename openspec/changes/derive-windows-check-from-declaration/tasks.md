@@ -1,72 +1,65 @@
-## Scheduling — 2026-09-05
+## Scheduling — 2026-09-26
 
-This change is deferred, not canceled or completed. It is not a prerequisite for working OMP or Tailscale. The scheduling notice below remains authoritative.
+The owner scheduled this change after reviewing the plan. It runs at position 2, directly after `key-fleet-by-host`. Leave it unarchived until the owner records the Windows live result.
 
-Small acceptance-record corrections support the current OMP and Tailscale checks. They do not authorize these refactor tasks or the separate broad documentation and planning-store migration.
+## 1. Record the 19-File Baseline
 
-OpenSpec CLI counts describe artifact and task state, not scheduling authorization. All unchecked tasks remain preserved. Execution resumes only when a concrete maintenance or use requirement warrants it and the owner schedules and reviews the plan again.
+- [ ] 1.1 After `key-fleet-by-host`, record the parent commit, `flake.lock` SHA-256, output store path, and all 19 file SHA-256 values in `baseline.md`. Build twice and prove equal store paths and hashes.
+- [ ] 1.2 Record parsed YAML and the exact Fork and Zen script fragments permitted to differ in design decision 11. Run the comparison against the baseline itself and prove zero differences.
+- [ ] 1.3 Record the current 46-resource breakdown, nine named dependencies, Ferdium package, Zed keymap and TexLab setting, PowerToys state, and stable dark-appearance behavior. Prove these facts from the built output, not from the old checker's copied constants.
 
-## 1. Record the Rendered Baseline
+## 2. Establish One Application Declaration
 
-- [ ] 1.1 Record the parent commit, `flake.lock` checksum, output store path, and SHA-256 of all eighteen rendered files in `baseline.md`. Confirm that a second build produces the same paths and hashes.
-- [ ] 1.2 Record the parsed YAML data and the exact Fork and Zen theme script fragments that design decision 11 permits to change. Confirm that the comparison script reports no difference against the baseline itself.
+- [ ] 2.1 Extend `packages/windows-configuration/applications.nix` with AltSnap and font release data. Derive metadata, policy selectors, URLs, and review files from entries. Prove that all 19 output hashes still match the baseline.
+- [ ] 2.2 Add one `byRole` selector. Remove unused `provides`, `auditDate`, empty font `files`, and repeated ReNeo path values. Prove that the role set still has ten members and the output remains byte-identical.
+- [ ] 2.3 Expose `passthru.declaration` with roles, applications and policies, managed identifiers, and sixteen review file names. Migrate callers and remove `passthru.document` and `passthru.renderedFiles`. Prove that declaration JSON contains no derivation output.
+- [ ] 2.4 Temporarily change one exact version pin. Prove that every rendered copy updates and the check needs no edit. Temporarily give one accepted self-updating role an exact policy and prove the check rejects it by role. Revert both probes and confirm baseline hashes.
 
-## 2. Move the Windows Package
+## 3. Remove Evaluation-Time Reads
 
-- [ ] 2.1 Move `modules/windows/` to `packages/windows-configuration/` with Git history preserved. Update the overlay call site, and confirm that the output derivation and every rendered file remain byte-identical.
-- [ ] 2.2 Remove the old directory from module-import ownership. Confirm that `modules/` contains modules and shared module data only and that the module-import check still passes.
+- [ ] 3.1 Keep fetched themes as store-path members of `renderedFiles` and copy them in the build. Prove `nix eval --option allow-import-from-derivation false .#windows-configuration.drvPath` succeeds without network access.
+- [ ] 3.2 Keep one hexadecimal SHA-256 value for each fetched asset and derive SRI with `builtins.convertHash`. Prove that only `zen-catppuccin.json` and its two document scripts lose the three SRI members in design decision 11.
 
-## 3. Establish One Application Declaration
+## 4. Centralize PowerShell Rendering
 
-- [ ] 3.1 Extend `applications.nix` with the AltSnap and font release data. Preserve each version policy, and derive resource metadata, policy-specific selectors, URLs, and review files from those entries.
-- [ ] 3.2 Add one `byRole` selector and derive every application's rendered metadata from its entry. Delete the unused `provides`, `auditDate`, empty `files`, and repeated ReNeo package path values.
-- [ ] 3.3 Add `passthru.declaration` with roles, applications and their version policies, managed identifiers, and review file names. Delete `passthru.document` and `passthru.renderedFiles`, and confirm the declaration JSON contains no derivation output.
-- [ ] 3.4 Change one temporary exact pin and one temporary self-updating policy in the declaration. Confirm that every applicable rendered location changes while the check needs no edit, then revert both probes.
+- [ ] 4.1 Add `packages/windows-configuration/powershell.nix` with `psJson`, `psHereString`, SHA-256, subset, merge, archive, and Administrator fragments. Prove that an unsafe here-string terminator is rejected during evaluation.
+- [ ] 4.2 Replace single-quoted JSON interpolation and both multiline literals with the helpers. Prove that an apostrophe probe renders valid PowerShell and that all other scripts remain byte-identical. Revert the probe.
+- [ ] 4.3 Share the repeated subset, merge, archive, hash, and Administrator fragments. Prove that each fragment has one Nix definition and all baseline scripts remain unchanged except listed differences.
+- [ ] 4.4 Replace the Fork-specific merge branch with `Merge-Object`. Prove that its set script differs only in the two fragments in design decision 11.
 
-## 4. Remove Evaluation-Time Reads
+## 5. Package the Declaration-Driven Check
 
-- [ ] 4.1 Make each fetched theme asset a store-path member of `renderedFiles` and copy it during the build. Confirm that `nix eval --option allow-import-from-derivation false .#windows-configuration.drvPath` succeeds without network access.
-- [ ] 4.2 Keep one hexadecimal SHA-256 value per fetched asset and derive the SRI form with `builtins.convertHash`. Remove every duplicate SRI member and literal.
-- [ ] 4.3 Compare the output with `baseline.md`. Confirm that only `zen-catppuccin.json` and the corresponding scripts lose the three listed SRI members.
+- [ ] 5.1 Add `packages/windows-configuration-check/{package.nix,pyproject.toml,src/,tests/}` using `buildPythonApplication`, `pyproject = true`, and `unittestCheckHook`. Prove that importing its module has no side effects and package build runs the tests.
+- [ ] 5.2 Add the repository-owned WinGet v3 schema, pinned DSC definitions, and `parse.ps1`. Validate shipped `configuration.winget` without `dependsOn` rewriting. Prove that the unchanged document passes and a `resourceId()` dependency or revision schema URL fails.
+- [ ] 5.3 Parse every document script, both Administrator scripts, and the ReNeo launcher in one `pwsh` invocation. Prove that a syntax error reports the script name and parser message.
+- [ ] 5.4 Check Administrator and excluded-path boundaries from parsed variable and string AST values. Remove all script-source substring assertions. Prove that a forbidden reference fails while an equivalent script refactor passes without checker changes.
+- [ ] 5.5 Derive expected resources, selectors, scope, and sixteen review-file names from `passthru.declaration`. Include the three primary artifacts from the fixed Windows interface. Keep schema, uniqueness, dependency, elevation, Administrator, and accepted fixed-role ownership invariants as literals. Prove a declaration-only pin update passes without a checker edit while a replaced Zen, Zed, Brave, or Ferdium role fails.
+- [ ] 5.6 Move `run_rejection_tests` out of the CLI path into stdlib `unittest` under `tests/`. Prove a normal command never runs self-tests and a package build does.
+- [ ] 5.7 Implement `main(argv: Sequence[str] | None = None) -> int` with `argparse`. Parse `sys.argv[1:]` when `argv` is `None`. Make the console script exit with the returned status. Prove malformed arguments, a missing output file, and a missing document resource each print one finding to stderr and exit 1 without a traceback or `StopIteration`. Prove unexpected programming failures still retain a traceback.
+- [ ] 5.8 Remove the four renderer policy assertions. Replace `checks/windows-configuration.nix` with a call to the packaged CLI; delete `checks/windows-configuration-check.py`, the temporary plain driver. Prove violating output still renders and the flake check fails with the resource name on both systems.
 
-## 5. Centralize PowerShell Rendering
+## 6. Prove Check Reach with Build-Time Fixtures
 
-- [ ] 5.1 Add `packages/windows-configuration/powershell.nix` with `psJson`, `psHereString`, SHA-256, subset, merge, archive, and Administrator fragments. Reject an unsafe here-string terminator with an evaluation assertion.
-- [ ] 5.2 Replace every single-quoted JSON interpolation with `psJson` and both multiline literals with `psHereString`. Confirm that an apostrophe probe renders valid PowerShell and that all baseline scripts otherwise remain byte-identical.
-- [ ] 5.3 Replace every repeated subset, merge, archive, hash, and Administrator block with the shared fragment. Confirm that each fragment has one definition in Nix.
-- [ ] 5.4 Replace the Fork-specific merge branch with `Merge-Object`. Confirm that its script differs only by the two fragments listed in design decision 11.
+- [ ] 6.1 Add accepted exact and self-updating fixtures. Add one-fact rejection cases for absent or invalid policies, a forbidden self-updating role, missing or conflicting selectors, managed identifiers, absent or duplicate roles, wrong scope, elevation, and Windows features. Prove each failure names its application or resource.
+- [ ] 6.2 Reject duplicate names, missing or `resourceId()` dependencies, a revision schema URL, absent declared applications, replaced Zen, Zed, Brave, or Ferdium identities, Brave or Ferdium startup and profile ownership, and changed review files. Prove each failure names the offending value.
+- [ ] 6.3 Add script syntax and forbidden Administrator path or variable cases. Prove each failure names the script and offending value.
+- [ ] 6.4 Temporarily disable each distinct fixture-enforced validation, observe the relevant test fail, and restore the rule. Prove the package tests pass after restoration.
 
-## 6. Package a Declaration-Driven Check
+## 7. Verify Rendered Output and Repository Gates
 
-- [ ] 6.1 Create `packages/windows-configuration-check/` as an import-safe Python application with the repository-owned WinGet v3 schema, `parse.ps1`, and fixture tests. Package it with the pinned DSC schemas and prebuilt `powershell` dependency.
-- [ ] 6.2 Validate `configuration.winget` exactly as shipped. Register every pinned DSC schema by `$id`, preserve the WinGet `main` schema URL and bare-name dependencies, and remove the pre-validation rewrite.
-- [ ] 6.3 Parse every document script, both Administrator scripts, and the ReNeo launcher in one `pwsh` invocation. Report each parser error with its script name.
-- [ ] 6.4 Check Administrator and excluded-path boundaries from parsed variable and string AST values. Delete every source-substring assertion.
-- [ ] 6.5 Derive expected roles, applications, version policies and selectors, scope, elevation, and review files from `passthru.declaration`. Keep only schema, uniqueness, dependency, elevation, and Administrator-boundary invariants as check literals.
-- [ ] 6.6 Delete the renderer's four policy assertions and make the packaged check the single policy owner. Confirm that a violating output still renders while the check fails with the resource name.
-- [ ] 6.7 Replace `packages/windows-configuration-check.py` with the packaged program and wire `checks.windowsConfiguration` through `flake-modules/checks.nix`. Confirm the check runs on both supported systems.
+- [ ] 7.1 Run the `baseline.md` comparison. Prove byte identity for 17 files and only the specified Zen SRI and Fork script differences in the other two. Prove no new or missing files and no other YAML semantic changes.
+- [ ] 7.2 Build `packages/windows-configuration-check` and run the packaged CLI on the built Windows output. Prove exit 0 and no self-test output during a normal invocation.
+- [ ] 7.3 Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the Mac. Record command results.
+- [ ] 7.4 Run `openspec validate derive-windows-check-from-declaration --strict`. Record the successful result.
+- [ ] 7.5 Review declaration, renderer, helper, checker, fixtures, and documentation. Prove no copied mutable pin or policy, duplicate source assertion, unsafe JSON interpolation, import-from-derivation, source grep, obsolete theme-path expectation, dead field, or old driver remains.
+- [ ] 7.6 Owner: On Korolev, run `nix flake check --all-systems --print-build-logs`. Record both systems' results; the Mac has no Linux builder.
+- [ ] 7.7 Owner: Review the CI result after the reviewed change reaches CI. Record the result without requesting an unapproved push.
 
-## 7. Prove Check Reach with Fixtures
+## 8. Documentation and Windows Live Gate
 
-- [ ] 7.1 Add accepted fixtures for exact and self-updating policies. Add rejection fixtures for missing or unknown policies, policy-specific missing or conflicting selectors, managed applications, missing or duplicate roles, wrong scope, forbidden elevation, and Windows features. Confirm each failure names the application or resource.
-- [ ] 7.2 Add rejection fixtures for duplicate names, missing dependencies, `resourceId()` dependencies, a revision schema URL, missing declared applications, and review-file drift. Confirm each failure names the differing value.
-- [ ] 7.3 Add script fixtures for a syntax error and each forbidden Administrator variable or path. Confirm the parser or boundary check names the script and offending value.
-- [ ] 7.4 Temporarily remove one fixture-enforced validation at a time. Confirm its fixture fails to fail, then restore the validation before continuing.
-- [ ] 7.5 Confirm that an implementation-only PowerShell refactor with equal parsed values needs no check edit, then revert the probe.
-
-## 8. Verify Rendered Identity and Live Behavior
-
-- [ ] 8.1 Run the comparison from `baseline.md`. Require byte identity for every file except `configuration.winget` and `zen-catppuccin.json`, and require exactly the semantic and fragment differences listed in design decision 11.
-- [ ] 8.2 Run `nix fmt -- --fail-on-change`.
-- [ ] 8.3 Run `nix flake check --all-systems --print-build-logs` on `korolev` through the configured Darwin remote builder.
-- [ ] 8.4 Run `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the Mac.
-- [ ] 8.5 Run `openspec validate derive-windows-check-from-declaration --strict`.
-- [ ] 8.6 On the Windows work machine, run the runbook's `winget configure test` and both Administrator `-Test` commands. Confirm exact and self-updating packages match their policies, and confirm `Custom.theme` does not cause appearance drift.
-- [ ] 8.7 Remove `GitInstancePath` from the Fork settings, apply the new document, and confirm that Fork opens the WSL worktree and the next test reports desired state.
-- [ ] 8.8 Review the final diff by declaration, renderer, helper, check, fixture, and documentation. Confirm that no duplicate version policy or pin, policy assertion, unsafe JSON interpolation, import-from-derivation, source grep, generated theme-path expectation, dead field, or compatibility path remains.
-
-## 9. Documentation
-
-- [ ] 9.1 Update the Windows apply section of the provisioning runbook to distinguish repository validation from the Windows live test. Describe exact and self-updating application policies, stable dark-appearance validation, and the PowerToys review that must run when its version changes.
-- [ ] 9.2 Record declaration-derived checks, check-owned policy, parser-based PowerShell validation, and network-free evaluation in this change and nearby rationale comments.
-- [ ] 9.3 Update relevant README links for `packages/windows-configuration/` and the packaged check without adding a layout inventory. Confirm `nix fmt -- --fail-on-change README.md` passes.
+- [ ] 8.1 Update the Windows apply runbook. Distinguish repository schema and PowerShell syntax checks from Windows PowerShell 5.1 behavior. Document exact and self-updating policies, stable `Custom.theme` acceptance, and PowerToys module review on pin changes. Prove that its commands and paths match the implementation.
+- [ ] 8.2 Update README links and release guidance for `packages/windows-configuration/` and the packaged check. Prove no obsolete `modules/windows/` link remains.
+- [ ] 8.3 Owner: On the Windows work machine, run the runbook's `winget configure test`. Record resource states, installed exact and self-updating versions, `Custom.theme` result, and exit status in `baseline.md`.
+- [ ] 8.4 Owner: From the required Administrator PowerShell contexts, run both `apply-kbdneo.ps1 -Test` and `apply-zen-policies.ps1 -Test`. Record `kbdneo: desired` and `Zen policies: desired`, or exact drift and recovery, in `baseline.md`.
+- [ ] 8.5 Owner: Remove `GitInstancePath` from Fork settings, apply the reviewed document, open a WSL worktree in Fork, then repeat `winget configure test`. Record the observed state and desired-state result in `baseline.md`.
+- [ ] 8.6 Owner: Review the live evidence and archive only after tasks 8.3-8.5 pass. Record the archive decision.

@@ -1,6 +1,6 @@
 ## Purpose
 
-Define how the Darwin host applies state that Nix cannot link from the store: keyboard layouts, Karabiner rules, LaunchServices handlers, symbolic hotkeys, the Terminal.app font, power settings, and Rosetta. Activation reads before it writes, changes only what differs, fails on an unexpected error, and writes nothing in a dry run.
+Define how packaged Darwin activation concerns apply state that Nix cannot link from the store: keyboard layouts, Karabiner rules, LaunchServices handlers, symbolic hotkeys, the Terminal.app font, power settings, and Rosetta. Each concern compares before it writes and fails on unexpected errors. Home Manager dry runs write nothing.
 
 ## ADDED Requirements
 
@@ -117,7 +117,6 @@ An activation concern SHALL exit non-zero, and activation SHALL stop, when a pla
 
 - **WHEN** Rosetta is absent and `softwareupdate` exits non-zero
 - **THEN** activation fails
-- **AND** the previous generation stays current
 
 #### Scenario: A preferences domain cannot be read
 
@@ -134,18 +133,3 @@ Each Home Manager activation concern SHALL run through the `run` helper so that 
 - **WHEN** the user runs the Home Manager activation of a generation with `DRY_RUN` set
 - **THEN** the output names each activation program that would run
 - **AND** every file and directory owned by those activation concerns remains unchanged
-
-### Requirement: A user agent creates its own data
-
-The PostgreSQL launchd user agent SHALL own its data directory under the primary user's home. Activation SHALL create no directory for a user agent.
-
-#### Scenario: First start on a host without a cluster
-
-- **WHEN** the PostgreSQL agent starts and its data directory does not exist
-- **THEN** the agent creates the directory and initialises the cluster with the declared encoding and locale provider
-- **AND** the system activation script contains no step for that directory
-
-#### Scenario: Restart with an existing cluster
-
-- **WHEN** the PostgreSQL agent starts and its data directory holds a cluster
-- **THEN** the agent serves that cluster unchanged

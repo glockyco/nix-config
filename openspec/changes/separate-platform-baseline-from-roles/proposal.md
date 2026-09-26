@@ -1,31 +1,26 @@
-## Scheduling — 2026-09-05
+## Scheduling — 2026-09-26
 
-This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. The scheduling notice below remains authoritative.
-
-The technical proposal, design, specifications, and unchecked tasks remain requirements for future implementation. CLI artifact and task counts describe artifact and task state, not authorization to start work. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules the change after another plan review.
+The owner scheduled this change after plan review. It runs at position 3, after `derive-windows-check-from-declaration`. Changes 0 through 2 are archived before implementation starts.
 
 ## Why
 
-The platform module lists mix operating-system baseline with one machine's roles and identity. That structure makes a second Darwin or NixOS host inherit services, applications, paths, and names that belong only to `macbook-pro` or `korolev`.
+The Darwin platform list imports desktop applications, power settings, and PostgreSQL; the NixOS list imports WSL and containers (`modules/darwin/default.nix:2-15`, `modules/nixos/default.nix:5-13`). A second host would inherit machine roles it did not select. Host-specific names, screenshot paths, Git identities, Dock applications, Colima resources, and Nix settings remain split among host and platform modules (`modules/darwin/system.nix:24-42`, `modules/darwin/defaults.nix:76-104,121-126`, `hosts/korolev/default.nix:34-61`, `modules/home/darwin/container-runtime.nix:10-24`).
 
-The same facts also have several declarations. Examples include the screenshot directory, Git identity, Air endpoint, Dock applications, container sizing, and Nix settings. Several copies have already drifted or become ineffective. The Air is a borrowed research machine that will be returned after the PhD thesis and TOSEM results are retrieved, so its integration must also be removable as one unit.
+The borrowed Air has SSH aliases, a batch command and check, an SMB mount agent, and a `~/Air` link in several files (`modules/home/darwin/ssh.nix:12-16,38-39,76-92`, `packages/air-batch-config-check.nix:21-28`, `modules/home/darwin/network-shares.nix:9-45`). Issue #17 removes the integration after the research results are preserved. Isolate the existing behavior for deletion; do not improve its endpoint, mount, or Docker-path contracts.
 
 ## What Changes
 
-- Keep `modules/darwin/` and `modules/nixos/` as platform baselines only. Move optional machine functions to `modules/roles/<platform>/<role>/` and let each host select its roles.
-- Extend the typed host declaration with machine identity, locale, time zone, repository checkout, screenshot, container-profile, and remote-endpoint data. Consumers read those values instead of literals.
-- Declare the Git author once. Let each host select the applicable email policy without repeating the author name or GitHub no-reply address.
-- Declare each Homebrew application once with its cask, application path, Dock position, and rationale. Generate the cask set and Dock entries from that list.
-- Give the Air share an explicit mount point. Derive every use from the mount declaration instead of relying on the order-dependent `/Volumes/...-1` name.
-- Make the Air batch checker receive the declared remote Docker path as a package argument. Derive the checker expectations from the evaluated SSH configuration.
-- Isolate every Air endpoint, mount, package, check, and credential reference behind one temporary `air-client` role. Prove that removing the role and declaration leaves the durable workstation configuration valid.
-- Pin the Nix registry on both platforms, disable legacy channels, and apply the same garbage-collection and store-optimisation policy where each platform supports it.
-- Remove the redundant NixOS `nano` and normal-user home declarations after proving the pinned module defaults.
-- Move the macOS-only Zen policy and nix-homebrew path adjustment out of shared modules.
-- Derive the Colima architecture from the host platform and read its reviewed resource sizes from the host declaration.
-- Replace duplicated secrets helpers with one helper and use the XDG file option for XDG configuration.
-- Remove `.sops.yaml`'s value-name allowlist. Add an offline recovery recipient and a behavior check that rejects every unencrypted scalar under `secrets/`.
-- Preserve the remote-builder trust added by `connect-fleet-over-tailnet`, but replace the obsolete substituter comment with its actual unsigned-import rationale.
+- Keep `modules/darwin/` and `modules/nixos/` as platform baselines. Select desktop, PostgreSQL, container-client, Air-client, and WSL-workstation roles from the host modules.
+- Extend `modules/fleet/host.nix` with typed identity, locale, Git, path, application, and container-profile options. Put facts in `hosts/<name>/host.nix`. Roles read `config.host`; cross-host consumers use `config.fleet.hosts`.
+- Generate the Darwin cask list and Dock application entries from one typed inventory. Keep platform policy and role-specific choices outside host facts.
+- Keep Air artifacts in `modules/roles/darwin/air-client/`, `packages/air-batch-check/`, the Air-only `checks/air-batch-config-check.nix`, their flake wiring, and the `macbook-air` peer entry. Split the current combined SSH check so `checks/desktop-batch-config-check.nix` survives Air removal. Issue #17 removes only the Air units.
+- Keep the Air's current SSH destinations, `AIR_BATCH_DOCKER` contract, Finder-selected SMB path, and `~/Air` link. Do not add `host.remote.air`, a stable mount point, or a Docker-path derivation.
+- Put PostgreSQL in its Darwin role without changing `/var/lib/postgresql/17` or the idempotent directory-creation activation (`modules/darwin/postgresql.nix:4-11,38-39`).
+- Apply the shared Nix registry, channel, garbage-collection, and store-optimisation policy through platform adapters. Check the NixOS behavior on Korolev after owner activation.
+- Move the macOS-only Zen policy and nix-homebrew path adjustment out of shared modules. Preserve the byte baseline recorded by the preceding Windows change.
+- Derive Colima architecture from the host platform and its capacity from typed host data. Unify the two Cloudflare direnv helpers and use `xdg.configFile`.
+- Remove the SOPS value-name allowlist. Encrypt all secret data for the Mac key and an owner-supplied offline public recipient. Add a repository check for plaintext YAML data scalars.
+- Update the README and operations documentation affected by these role, Nix-policy, Air, and SOPS changes.
 
 ## Capabilities
 
@@ -35,15 +30,12 @@ None.
 
 ### Modified Capabilities
 
-- `repository-quality-gates`: separates platform baselines from host roles, requires one declaration per host fact, and rejects plaintext secret scalars.
-- `personal-omp-workstation`: expands declared host defaults so identity, locale, paths, and selected roles belong to the host.
-- `container-runtime`: derives the declared Apple Silicon profile from reviewed host data and the host platform.
-- `batch-ssh`: makes the declared remote Docker path the one value used by automation and its checks.
+- `repository-quality-gates`: separates baselines from roles, gives each machine fact one source, and rejects plaintext secret data.
+- `wsl-host`: extends declared host defaults with typed identity, locale, paths, and explicit roles after change 0 moves this requirement.
+- `container-runtime`: derives the reviewed Apple Silicon Colima profile from typed host capacity and the platform.
 
 ## Impact
 
-The change affects `modules/darwin/`, `modules/nixos/`, `modules/roles/`, `modules/home/`, `modules/shared/`, `hosts/`, `.sops.yaml`, the Air and secret checks under `packages/`, and the host/check generators under `flake-modules/`.
+The change affects host declarations, platform and Home Manager modules, role modules, `.sops.yaml`, encrypted files under `secrets/`, packages and checks in the position-1 layout, and the relevant README and operations pages. `key-fleet-by-host` supplies `hosts/<name>/host.nix`, `config.fleet.hosts`, `packages/<name>/`, `checks/`, and `flake-modules/` before this change starts.
 
-Most moves preserve behavior. The pinned-revision system derivation gate proves each structural step. The intentional behavior changes are separate: NixOS gains the shared registry, channel, garbage-collection, and optimisation policy; the Air mount gets a stable path; the batch checker receives the actual Docker path; and SOPS encrypts every scalar for both the host and an offline recovery key. Each change has a direct evaluation, fixture, or live-host proof.
-
-This change assumes that `declare-typed-host-options`, `connect-fleet-over-tailnet`, and `key-fleet-by-host` are archived. `package-user-programs` owns activation idempotence and PostgreSQL data ownership. `derive-windows-check-from-declaration` owns the Windows renderer and check. `simplify-repository-documentation` owns the final documentation consolidation.
+The pinned-revision system derivation gate covers behavior-preserving moves. Intentional differences are NixOS maintenance settings and re-encrypted secret data. Record the completed position-2 Windows output before editing; the Zen cutover must preserve those bytes. Air and PostgreSQL behavior remain unchanged. Owner-only activation, Windows, Korolev, offline-key, and CI gates remain open until the owner records their results.

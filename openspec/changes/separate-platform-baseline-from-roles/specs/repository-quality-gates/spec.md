@@ -6,9 +6,9 @@ A platform baseline SHALL contain only configuration required by every host of t
 
 #### Scenario: Add a second Darwin host
 
-- **WHEN** a maintainer declares a Darwin host without desktop, database, or container roles
+- **WHEN** a maintainer declares a Darwin host without desktop, database, container-client, or Air-client roles
 - **THEN** the host receives the Darwin baseline
-- **AND** it receives no Homebrew application set, Dock layout, PostgreSQL service, Colima profile, or Air endpoint
+- **AND** it receives no Homebrew application set, Dock application list, PostgreSQL service, Colima profile, or Air endpoint
 
 #### Scenario: Select a role
 
@@ -21,20 +21,20 @@ A platform baseline SHALL contain only configuration required by every host of t
 - **WHEN** repository validation inspects a shared module
 - **THEN** the module contains no Darwin, NixOS, WSL, or Windows condition
 
-#### Scenario: Remove a temporary role
+#### Scenario: Remove the temporary Air integration
 
-- **WHEN** a host removes the temporary Air role and its nullable declaration
-- **THEN** the host still evaluates with every durable role and release gate
-- **AND** no package, check, launchd agent, SSH alias, Home Manager file, policy entry, or credential reference names the Air
+- **WHEN** the Air role, its package directory, Air check and output wiring, and `macbook-air` peer entry are removed
+- **THEN** the host still evaluates with every durable role and release gate, including the desktop SSH configuration check
+- **AND** no generated package, check, launchd agent, SSH alias, Home Manager file, policy entry, or credential reference names the Air
 
 ### Requirement: One declaration owns each host fact
 
-A host-specific fact SHALL have one typed declaration. Every module, generated file, and check that uses the fact SHALL derive it from that declaration. A check SHALL read its expected value from the evaluated configuration rather than repeat a machine name, user name, path, application, or resource value.
+Each host-specific fact SHALL have one typed source: its name is the host directory key, and its other facts are in `hosts/<name>/host.nix`. Every module, generated file, and check that uses a fact SHALL derive it from `config.host` or the typed `config.fleet.hosts` registry. A check SHALL NOT repeat a machine name, user name, durable path, application, or resource value. The temporary Air integration SHALL remain role-owned until its removal under issue #17; it SHALL NOT gain a durable host endpoint declaration.
 
 #### Scenario: Change a screenshot directory
 
 - **WHEN** a host changes its declared screenshot directory
-- **THEN** the system default and the Home Manager directory preparation use the new path
+- **THEN** the system default and Home Manager directory preparation use the new path
 - **AND** neither consumer needs an edit
 
 #### Scenario: Change an application record
@@ -43,30 +43,42 @@ A host-specific fact SHALL have one typed declaration. Every module, generated f
 - **THEN** the generated Homebrew cask set and Dock layout change together
 - **AND** no second application list exists
 
-#### Scenario: Check a remote endpoint
+#### Scenario: Change a container resource
 
-- **WHEN** a repository check validates an SSH endpoint and its remote executable
-- **THEN** the expected host, user, and executable come from the evaluated endpoint declaration
-- **AND** the check contains no copy of those values
+- **WHEN** a maintainer changes one declared Colima capacity or mount value
+- **THEN** the generated profile and its configuration check use the new value
+- **AND** no second resource literal needs an edit
 
-### Requirement: Secret files contain only encrypted scalar values
+#### Scenario: Keep the temporary endpoint removable
 
-Every scalar value in a tracked file under `secrets/` SHALL be a SOPS encrypted value. The SOPS creation rule SHALL encrypt every scalar independent of its key name. Every secret file SHALL be encrypted to the host recipient and an offline recovery recipient. Repository validation SHALL inspect the parsed YAML data and reject any plaintext scalar.
+- **WHEN** the Air role is selected
+- **THEN** its current SSH aliases, batch command, SMB agent, link, and checks are available
+- **AND** durable host declarations and platform baselines contain no Air endpoint value
+
+### Requirement: Secret files contain only encrypted data scalars
+
+Every scalar value in the YAML data outside the top-level `sops` metadata mapping of a tracked file under `secrets/` SHALL be a SOPS encrypted value. The SOPS creation rule SHALL encrypt data independent of its key name. Every secret file SHALL be encrypted for the Mac recipient and the owner-supplied offline recovery recipient. Repository validation SHALL inspect parsed YAML data and reject any plaintext scalar.
 
 #### Scenario: Add a secret with a new key name
 
 - **WHEN** a maintainer adds an `api_key` or nested scalar and encrypts the file with SOPS
-- **THEN** the committed scalar starts with `ENC[`
+- **THEN** the committed data scalar starts with `ENC[`
 - **AND** both declared recipients can decrypt it
 
 #### Scenario: Commit a plaintext scalar
 
-- **WHEN** a tracked secret file contains a scalar that does not start with `ENC[`
+- **WHEN** a tracked secret file contains a data scalar that does not start with `ENC[`
 - **THEN** repository validation fails
-- **AND** the failure names the file and the scalar path
+- **AND** the failure names the file and scalar path
 
 #### Scenario: Prove the detector
 
-- **WHEN** the secret-encryption check runs against a fixture with one nested plaintext scalar
-- **THEN** the fixture is rejected
+- **WHEN** the secret-encryption check runs against fixtures with nested plaintext mappings and list entries
+- **THEN** each plaintext fixture is rejected with its scalar path
 - **AND** an equivalent fully encrypted fixture passes
+
+#### Scenario: Preserve SOPS metadata
+
+- **WHEN** the repository check examines a SOPS-encrypted YAML file
+- **THEN** it excludes only the top-level `sops` metadata mapping from the data-scalar rule
+- **AND** it checks every scalar in all other top-level keys
