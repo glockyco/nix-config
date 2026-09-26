@@ -9,10 +9,19 @@
 }:
 
 let
-  airlessPeers = removeAttrs peers [ "macbook-air" ];
-  airlessPolicy = tailnetPolicyRenderer {
+  # Offboarding a temporary peer must leave a valid policy with no trace of it.
+  # A synthetic peer proves that without depending on a real declaration, which
+  # offboarding itself removes.
+  fixturePeers = peers // {
+    fixture-peer = {
+      tag = "tag:fixture-peer";
+      lifecycle = "temporary";
+      purpose = "Offboarding fixture.";
+    };
+  };
+  fixturePolicy = tailnetPolicyRenderer {
     inherit managedHosts;
-    peers = airlessPeers;
+    peers = fixturePeers;
   };
   hostTags = map (host: host.tailnet.tag) (builtins.attrValues managedHosts);
   reachableHostTags = map (host: host.tailnet.tag) (
@@ -46,14 +55,20 @@ runCommand "check-tailnet-policy"
     check_policy ${tailnetPolicy}/policy.hujson \
       ${lib.escapeShellArg (expectedTags peers)} \
       ${lib.escapeShellArg (expectedReachable peers)}
-    check_policy ${airlessPolicy}/policy.hujson \
-      ${lib.escapeShellArg (expectedTags airlessPeers)} \
-      ${lib.escapeShellArg (expectedReachable airlessPeers)}
+    check_policy ${fixturePolicy}/policy.hujson \
+      ${lib.escapeShellArg (expectedTags fixturePeers)} \
+      ${lib.escapeShellArg (expectedReachable fixturePeers)}
 
-    if jq -e '.. | strings | select(contains("tag:macbook-air"))' \
-      ${airlessPolicy}/policy.hujson >/dev/null
+    if ! jq -e '.. | strings | select(contains("tag:fixture-peer"))' \
+      ${fixturePolicy}/policy.hujson >/dev/null
     then
-      echo 'Airless policy retained tag:macbook-air' >&2
+      echo 'Fixture policy omitted tag:fixture-peer' >&2
+      exit 1
+    fi
+    if jq -e '.. | strings | select(contains("tag:fixture-peer"))' \
+      ${tailnetPolicy}/policy.hujson >/dev/null
+    then
+      echo 'Policy without the fixture peer retained tag:fixture-peer' >&2
       exit 1
     fi
 
