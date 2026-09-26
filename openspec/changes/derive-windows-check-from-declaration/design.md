@@ -1,19 +1,18 @@
 ## Context
 
-See `proposal.md` for the motivation and the 2026-09-05 scheduling notice. This design preserves the deferred scope, not authorization to execute it. Its prerequisite sequence applies only after the owner reviews and schedules the plan again. This refactor is not a prerequisite for working OMP or Tailscale.
+The owner scheduled this change at position 2 after `key-fleet-by-host`. That change relocates the renderer to `packages/windows-configuration/package.nix`, exposes it through the generated overlay, and moves the temporary assertion check to `checks/`. This change does not repeat that relocation. At HEAD, the renderer is `modules/windows/default.nix:1-7,219-257`; the direct flake call and check are `flake.nix:227-230,708`. Source references below describe HEAD; implementation paths describe the state after position 1.
 
-The original plan uses these assumptions:
+- Current evaluation renders 19 files: `configuration.winget`, `apply-kbdneo.ps1`, `apply-zen-policies.ps1`, and sixteen review files. The list comes from `modules/windows/default.nix:219-257` and `modules/windows/files.nix:240-256`. The checker lists sixteen review files and two scripts separately from its document input (`packages/windows-configuration-check.py:102-121,586-593`). A direct evaluation of `windows-configuration.document` reports 46 resources: eight `Microsoft.WinGet/Package`, 22 `Microsoft.Windows/Registry`, and sixteen `Microsoft.DSC.Transitional/WindowsPowerShellScript`. Nine resources have `dependsOn`. The schema URL is the DSC `main` document URL (`modules/windows/default.nix:80-86`).
+- Current roles include `browser-relay` and `communication-client` (`modules/windows/default.nix:22-33`); Brave and Ferdium are self-updating (`modules/windows/applications.nix:20-34`). Ferdium has no managed startup or profile (`modules/windows/applications.nix:27-34`). The checker still copies both identities and policy (`packages/windows-configuration-check.py:19-35,260-310`). Keep the accepted Ferdium ownership boundary and Brave's relay boundary.
+- Zed's Windows-first full-editor keymap is an enforced file (`modules/windows/files.nix:83-131,337-355`). The TexLab build-on-save setting lives in Zed user settings (`modules/windows/files.nix:64-81`), not in a project build command. Dark appearance deliberately does not compare the generated active theme path (`modules/windows/settings.nix`); the checker currently searches script text for related fragments (`packages/windows-configuration-check.py:609-650`). Preserve these behaviors without another literal copy in the checker.
+- PowerToys lists its enabled module keys in the renderer (`modules/windows/files.nix:133-174`). The checker copies the whole set (`packages/windows-configuration-check.py:59-95,914-930`). The list has no offline source of completeness for a later PowerToys release. The runbook must require a manual review on every PowerToys pin change.
+- `packages/windows-configuration-check.py:151-172,595-598` rewrites bare `dependsOn` names into `resourceId()` expressions for validation. The pinned DSC schema's dependency form differs from WinGet's bare-name contract. The renderer normalizes names and dependencies together (`modules/windows/default.nix:67-86`). Validate the actual document with a repository-owned WinGet v3 schema.
+- The current check executes fixture rejections on every invocation (`packages/windows-configuration-check.py:363-571,1053`). It unpacks raw `sys.argv` (`:586-589`) and searches for resources with unguarded `next(...)` (`:609-613,795-799,937-941`). Move self-tests to package `tests/`; expected bad arguments or missing resources need one finding and exit 1.
+- `builtins.readFile` forces fetched theme paths during evaluation (`modules/windows/files.nix:244,252-254`). The renderer still has four import-time policy assertions (`modules/windows/default.nix:230-239`). The shared Zen policy still includes `EnterprisePoliciesEnabled` (`modules/shared/zen-policies.nix:11-14`); Windows excludes it with `removeAttrs` (`modules/windows/files.nix:234-236`).
 
-- This change starts after `declare-typed-host-options`, `connect-fleet-over-tailnet`, `key-fleet-by-host`, `separate-platform-baseline-from-roles`, and `package-user-programs` are archived. `flake-modules/packages.nix` owns `overlays.default` and `perSystem.packages`, and `flake-modules/checks.nix` owns every repository check. The overlay builds `windows-configuration` with `final.callPackage ../modules/windows { }`, and `checks.windowsConfiguration` calls `packages/windows-configuration-check.nix` with the overlay attribute as its argument. `separate-platform-baseline-from-roles` moved `EnterprisePoliciesEnabled` out of `modules/shared/zen-policies.nix` and deleted the `removeAttrs` compensation in `files.nix`. `package-user-programs` set the Python convention: `packages/<name>/` with `pyproject.toml`, `src/<module>/` with an `argparse` `main()`, `tests/` with fixtures run by `pytestCheckHook`, and `packages/<name>.nix` with `buildPythonApplication` and `meta`.
-- `modules/windows/default.nix` is a function `{ lib, pkgs }` that returns a `runCommand`. Nothing under `modules/windows/` is a module. The `moduleImports` check reads `./modules` (`flake.nix:246-249`) and accepts the directory because its `default.nix` names every sibling with `import ./<file>`.
-- The rendered output has eighteen files: `configuration.winget`, `apply-kbdneo.ps1`, `apply-zen-policies.ps1`, and fifteen review files (`default.nix:204-206,222-231`). The document has 43 resources: 8 of type `Microsoft.WinGet/Package` and `Microsoft.DSC.Transitional/WindowsPowerShellScript` with an application, 19 of type `Microsoft.Windows/Registry`, and 16 further script resources. Eight resources carry `dependsOn`, and every entry is a bare resource name. The `$schema` value is `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json` (`default.nix:75-76`).
-- The WinGet parser maps that exact URL to its 0.3 document parser and reports `WINGET_CONFIG_ERROR_UNKNOWN_CONFIGURATION_FILE_VERSION` for any other `$schema` value (`src/Microsoft.Management.Configuration/ConfigurationSetParser.cpp`, `SchemaVersionAndUriMap` and `ConfigurationSetParser::Create` in `microsoft/winget-cli` at `master`). The WinGet v3 reference defines `dependsOn` as "an array of resource `name` values" and its example uses a bare name. `microsoft/winget-cli` issue 5906 records that `winget dsc validate` accepts only bare names and rejects the `resourceId()` form.
-- The pinned DSC schema at `45b10078ba49d9f9ec13b72c1040368eac9838e9` constrains `$schema` to the `main` URL with an `enum` (`schemas/2023/08/config/document.json`), constrains `dependsOn` items to `^\[resourceId\(...\)\]$` (`schemas/2023/08/config/document.resource.json`), and constrains `name` to `^[a-zA-Z0-9 ]+$` (`schemas/2023/08/definitions/instanceName.json`). Every `$id` and every `$ref` in that checkout names the `main` URL. The DSC schema and the WinGet parser therefore disagree on `dependsOn`, and the document must follow the parser.
-- `powershell` in the pinned Nixpkgs is version 7.6.2. Its source is the official release archive for each of `x86_64-linux` and `aarch64-darwin`, its `meta.platforms` lists both systems, and it is a `stdenv.mkDerivation` over prebuilt files with `autoPatchelfHook` on Linux. A probe on `x86_64-linux` ran `pwsh -NoProfile -NonInteractive -File` with `HOME=/nonexistent`, parsed 33 scripts from the current output through `[System.Management.Automation.Language.Parser]::ParseInput`, reported no parse error, reported two errors for a script with a missing parenthesis, and listed `env:APPDATA` among the variable references of a script that reads `$env:APPDATA`. The run took 1.4 seconds.
-- `builtins.toJSON` emits attribute names in sorted order, so a JSON literal is unchanged when the same attributes come from another expression. No JSON literal that the current output embeds in a single-quoted PowerShell string contains an apostrophe, so the quoting helper renders the same bytes today.
-- The download, verify, and extract sequence appears four times with the same five lines. Each copy sits inside a `try` block at the same nesting depth relative to its `''` string. The Fork resource reads and merges its settings with its own branch instead of `Merge-Object` (`files.nix:411-429`).
-- `pkgs.formats.yaml` renders each script as one double-quoted, line-folded scalar. A change to one script therefore changes the folding of that scalar and no other line.
-- `allow-import-from-derivation = false` makes Nix reject a `builtins.readFile` of a derivation output during evaluation. The current output reads three `fetchurl` outputs at `files.nix:191,198-200`.
+The WinGet parser requires the current `main` schema URL and resolves bare-name dependencies. The pinned DSC checkout (`packages/windows-configuration-check.nix:7-12`) instead constrains `dependsOn` to `resourceId()` expressions. Keep the WinGet contract, reuse the pinned definitions for resource type and name, and state the difference in a local v3 document schema.
+
+The `powershell` package from pinned Nixpkgs provides a prebuilt executable for `x86_64-linux` and `aarch64-darwin`. Parse all scripts with its PowerShell 7 parser. PowerShell 7 syntax acceptance alone does not prove Windows PowerShell 5.1 execution; the Windows live gate remains necessary.
 
 ## Goals / Non-Goals
 
@@ -24,7 +23,7 @@ The original plan uses these assumptions:
 - One policy owner. A policy violation is a failed check with a message, and the output still renders.
 - Evaluation of the output with `allow-import-from-derivation = false`.
 - The package where its kind belongs: `packages/windows-configuration/`.
-- Every rendered file byte-identical to the baseline except the two listed differences.
+- All 19 rendered files byte-identical to the baseline except the two documented file differences.
 
 **Non-Goals:**
 
@@ -32,23 +31,24 @@ The original plan uses these assumptions:
 - Fetching the AltSnap, wslgit, kbdneo, or font archives with Nix. Those archives do not ship in the output, and their pins are data that the scripts verify on Windows.
 - Proving on Linux that a script behaves as intended on Windows. The check proves syntax and boundary. The live test in the Windows apply section of the provisioning runbook proves behavior.
 - A check that proves the PowerToys module list complete against the installed version. That list has no offline source. The check no longer carries a copy, and the runbook records the review at each PowerToys pin change.
-- Documentation outside the Windows apply section of the provisioning runbook, relevant README links, and implementation rationale. `simplify-repository-documentation` owns the rest.
+- Windows documentation outside this change's runbook and README edits. This change owns both of those edits; there is no documentation handoff.
+- Changes to the WSL `open` command. It dispatches one target through the Windows desktop (`packages/wsl-open.nix:6-49`), while this change only renders Windows configuration and checks it. Keep that separate activation boundary.
 
 ## Decisions
 
-### 1. Move the package to `packages/windows-configuration/`
+### 1. Consume the package and check layout from `key-fleet-by-host`
 
-`git mv modules/windows packages/windows-configuration`. The overlay line in `flake-modules/packages.nix` becomes `windows-configuration = final.callPackage ../packages/windows-configuration { }`. `modules/` then holds module lists and shared data alone, and the `moduleImports` scope is unchanged.
+Position 1 relocates `modules/windows/default.nix` to `packages/windows-configuration/package.nix`, moves its sibling renderer files with it, and exposes `pkgs.windows-configuration`. Its overlay uses `lib.packagesFromDirectoryRecursive { inherit (final) callPackage; directory = ../packages; }` in `flake-modules/packages.nix`. This change starts from that package and adds `packages/windows-configuration-check/package.nix`; the overlay discovers the checker by directory name. The flake-level assertion remains in `checks/windows-configuration.nix`, wired by `flake-modules/checks.nix`.
 
-The output derivation names no source path, so the store path of `nix build .#windows-configuration` is identical before and after the move. That equality is the proof for this step.
+Both package functions accept package-set arguments only. The check expression passes the rendered Windows package and its declaration file to the checker CLI. A package relocation is not part of this change's byte comparison: record the baseline after position 1, then compare every subsequent rendered output to it.
 
-Alternative rejected: leave the directory and document the exception. The audit named the mismatch, and the fix is one rename.
+Alternative rejected: keep a second move task. Position 1 already makes the package layout mandatory, so a second move would target paths that no longer exist.
 
 ### 2. `applications.nix` is the single application declaration
 
 Each entry keeps `name`, `role`, `id`, `versionPolicy`, `source`, and `scope`; an `exact` entry also keeps `version`, while a `self-updating` entry omits it. An entry whose source is not `winget` gains a `release` attribute with the data its script needs. AltSnap carries `url`, `archiveSha256`, `executableSha256`, and `hooksSha256`. The font carries `archiveSha256`, `legacyRegistryNames`, and `fonts`, and `font.nix` builds the URL from the version. `provides` leaves, because no entry uses it and `roles = [ role ]` renders the same bytes.
 
-`files.nix` and `font.nix` receive `applications` and select their entry by role with one `byRole` function in `default.nix`. Each resource derives `metadata.application` from that entry with `id`, `roles`, `source`, `versionPolicy`, and `scope`, plus `version` only for `exact`. `altsnap-package.json` becomes `builtins.toJSON ({ inherit (entry) version; } // entry.release)`, whose sorted attributes equal the current literal.
+`files.nix` and `font.nix` receive `applications` and select entries by role through one `byRole` function in `package.nix`. Each resource derives `metadata.application` from that entry with `id`, `roles`, `source`, `versionPolicy`, and `scope`, plus `version` only for `exact`. `altsnap-package.json` becomes `builtins.toJSON ({ inherit (entry) version; } // entry.release)`, whose sorted attributes equal the current literal.
 
 The ReNeo package directory `Microsoft\WinGet\Packages\<id>_Microsoft.Winget.Source_8wekyb3d8bbwe\ReNeo` is built once from the `keyboard-layout` entry. The launcher appends `reneo.exe` and the settings resource appends `config.json`.
 
@@ -58,16 +58,16 @@ Alternative rejected: keep `files.nix` data and delete the entries from `applica
 
 ```text
 declaration = {
-  roles               = [ "browser" "editor" ... ];          # eight names
+  roles               = [ "browser" "browser-relay" "communication-client" ... ]; # ten names
   applications        = [ { name; role; id; versionPolicy; version ?; source; scope; } ... ];
   managedApplications = [ "7zip.7zip" ... ];
-  reviewFiles         = [ "altsnap-package.json" ... ];      # fifteen names
+  reviewFiles         = [ "altsnap-package.json" ... ]; # sixteen names
 };
 ```
 
-`release` data stays out of the declaration, because the check does not verify archive checksums that Nix does not fetch. `passthru.document` and `passthru.renderedFiles` leave, because nothing reads them.
+The list includes the current Ferdium and Brave roles (`modules/windows/default.nix:22-33`, `modules/windows/applications.nix:20-34`). Release data stays in each application entry but out of the exposed declaration because the checker does not fetch those archives. `passthru.document` and `passthru.renderedFiles` leave after all callers migrate; HEAD exposes both (`modules/windows/default.nix:242-249`).
 
-`checks.nix` writes `builtins.toJSON pkgs.windows-configuration.declaration` to a store file and passes it to the check. The check derives from it: the expected application resources, version policies and selectors, scopes, roles, elevation set, and file set.
+`checks/windows-configuration.nix` serializes `pkgs.windows-configuration.declaration` to a store file. The checker derives expected resources, version policies and selectors, scopes, roles, elevation, and sixteen review-file names from that file. The three required artifact names remain part of the fixed Windows CLI contract (`modules/windows/default.nix:253-255`). A package version or policy change does not require a checker edit. The renderer still owns the Zed keymap and TexLab setting (`modules/windows/files.nix:64-131`), Ferdium's package-only boundary (`modules/windows/applications.nix:27-34`), and PowerToys values (`modules/windows/files.nix:133-174`). Do not replace those values with new check literals.
 
 ### 4. The check is the single policy owner
 
@@ -76,6 +76,10 @@ The four policy `assert` expressions leave. Each rule moves to the check with th
 An import-time `assert` fails every evaluation that reaches the output. After `key-fleet-by-host` the output is in the overlay, so `nix flake show` and `nix build .#windows-configuration` fail with the assertion text instead of a check report. A policy violation is a review finding. The operator needs the rendered output to inspect it, and `nix flake check` is the gate that names the resource.
 
 The `browser` role and the machine scope stay literal in the check. The specification names Zen as the only elevated resource, and that is a rule about the declaration rather than a value in it.
+
+Keep immutable identity, version-policy scope, and ownership rules from the accepted `windows-workstation-layer` capability. The machine-scoped `browser` role remains Zen (`modules/windows/applications.nix:11-18`). The `editor`, `browser-relay`, and `communication-client` roles remain Zed, Brave, and Ferdium with self-updating policies (`modules/windows/applications.nix:2-34`). Every other application role remains exact-pinned (`modules/windows/applications.nix:35-89`). Brave and Ferdium must have no repository-owned startup or writable profile resource. The current check enforces Brave and Ferdium identities and forbids their startup resources (`packages/windows-configuration-check.py:260-310,442-517`); preserve that reach without copying version pins or application data. The document remains the declaration's projection, not a second source of mutable values. A role reassignment or conflicting profile owner fails by role name.
+
+Alternative rejected: derive every accepted identity solely from the declaration. That would let a declaration change replace `Ferdium.Ferdium` or `Brave.Brave` and pass validation, despite the accepted fixed-role requirements.
 
 Alternative rejected: keep the Nix asserts and reduce the check to schema validation. The audit accepted that option too. It keeps evaluation failures for review findings, and it leaves the Administrator-script boundary, which Nix cannot evaluate, in the check anyway. One owner is simpler.
 
@@ -97,7 +101,7 @@ resources    array, minItems 1, items:
   no additional properties
 ```
 
-The `$ref` values name the `main` URLs, and the check registers every JSON file of the pinned DSC checkout under its `$id`, so the pinned revision supplies the definitions. The pin lives in `packages/windows-configuration-check.nix` alone, and the document carries no revision. The check validates the shipped YAML as loaded, with no rewrite, and adds two rules that JSON Schema cannot express: every `dependsOn` name is the `name` of another resource in the document, and no `name` repeats.
+The `$ref` values name the `main` URLs. The checker registers every JSON file of the pinned DSC checkout under its `$id`, so the pinned revision supplies definitions. The pin moves from the temporary `checks/windows-configuration.nix` expression to `packages/windows-configuration-check/package.nix`. The document carries no revision. The check validates the shipped YAML as loaded, without a rewrite. It also requires unique resource names and existing bare-name dependencies, two rules that JSON Schema cannot express.
 
 The `instanceName` pattern rejects a `resourceId()` entry, so the schema also rejects the form that WinGet cannot resolve.
 
@@ -117,9 +121,9 @@ The check depends on `powershell` on both systems. The package is a prebuilt rel
 
 Alternative rejected: a Python tokenizer for PowerShell. There is none that follows the grammar, and the real parser is one prebuilt package away.
 
-### 7. The check is a packaged program with fixtures
+### 7. The checker is a packaged program with build-time self-tests
 
-`packages/windows-configuration-check/` follows the `package-user-programs` convention: `pyproject.toml`, `src/windows_configuration_check/` with `__main__`, `schema.py`, `policy.py`, `scripts.py`, `parse.ps1`, and `winget-configuration.schema.json`, and `tests/` with fixtures. `packages/windows-configuration-check.nix` builds it with `buildPythonApplication`, depends on `jsonschema`, `pyyaml`, and `referencing`, wraps `pwsh` into `PATH`, holds the DSC checkout as `passthru.dscSchemas`, and sets `meta` with `description`, `mainProgram`, and `platforms`. `pytestCheckHook` runs the fixtures with `pwsh` in `nativeCheckInputs` and the checkout in `DSC_SCHEMAS`.
+`packages/windows-configuration-check/` follows the Python program convention from `key-fleet-by-host`: `package.nix`, `pyproject.toml`, import-safe `src/windows_configuration_check/`, and stdlib `unittest` under `tests/`. The entry point is `main(argv: Sequence[str] | None = None) -> int`. It owns `argparse` and uses `sys.argv[1:]` only when `argv` is `None`. The console script exits with its return value. Normal imports run no check and normal invocations run no self-tests. `buildPythonApplication` uses `pyproject = true` and `unittestCheckHook`. Dependencies include `jsonschema`, `pyyaml`, and `referencing`. The command and its package tests can run `pwsh`. Package resources include `parse.ps1` and `winget-configuration.schema.json`. The DSC checkout stays pinned once in `package.nix` and is available through `passthru.dscSchemas`.
 
 The command line is:
 
@@ -127,11 +131,11 @@ The command line is:
 windows-configuration-check --schemas <dsc-checkout> --declaration <declaration.json> <output-directory>
 ```
 
-The program exits 0 on success. It exits 1 with one line per finding that names the resource, script, application, or file.
+Valid output returns 0. An expected failure prints one finding with a resource, script, application, or file name to stderr and returns 1. Customize `argparse`'s error path so missing arguments and bad options also return 1 through the top-level boundary. Missing resources, JSON/YAML errors, schema errors, and predictable file I/O failures use the same boundary. Avoid unguarded `next(...)` and tuple-unpacking failures. Unexpected programming errors keep a traceback.
 
-Each fixture is a small output directory and declaration that a test writes. Accepted fixtures cover `exact` and `self-updating`. Each rejection fixture changes one fact: a missing or unknown policy, an `exact` entry without a version, a mismatched exact version, a self-updating entry with a version, a mismatched `useLatest` selector, a managed identifier, a role with two applications, a declared role with none, a `HKLM\` key path, an elevated user-scope package, an elevated registry resource, a Windows feature type, a machine-scope package without `securityContext`, a duplicate name, a `dependsOn` name that no resource declares, a `dependsOn` entry in `resourceId()` form, a `$schema` that names a revision, a declared application that the document omits, a review file that the declaration does not name, a script with a syntax error, an Administrator script that reads `$env:APPDATA`, and an Administrator script that names an `HKCU:` path. Each rejection test asserts the exit status and the named subject.
+Tests create small output directories and declarations. Accepted cases cover `exact`, `self-updating`, Brave's relay and Ferdium's package-only ownership. Rejected cases cover missing or invalid policies, selectors, roles, scopes, managed identifiers, extra elevation, Windows features, duplicate names, unknown or `resourceId()` dependencies, a revision schema URL, missing application resources, changed review files, parser errors, and Administrator-script boundary violations. Confirm each expected CLI failure is one line with exit 1. Run a mutation probe for each distinct rule, then restore the rule. `unittestCheckHook` executes these tests during the package build, not in `main()`.
 
-`checks.windowsConfiguration` in `flake-modules/checks.nix` is one `runCommand` that runs the program against `pkgs.windows-configuration` with the declaration file from decision 3 and `passthru.dscSchemas`, then touches `$out`. `packages/windows-configuration-check.py` is deleted.
+`checks/windows-configuration.nix` is one flake-level `runCommand`. It runs the packaged CLI against `pkgs.windows-configuration` and its declaration with `passthru.dscSchemas`, then creates `$out`. Replace the temporary `checks/windows-configuration-check.py` driver that position 1 moved into `checks/`. Do not leave two check implementations.
 
 ### 8. `powershell.nix` renders every repeated fragment
 
@@ -163,64 +167,53 @@ Each fetched file keeps its hexadecimal `sha256` in the data, because the script
 
 ### 10. Dead data leaves
 
-`managed-applications.nix` keeps its identifiers and states the audit date in a comment. `font.nix` drops `files = { }`, and `default.nix` composes `renderedFiles` from `files.nix` and the kbdneo JSON alone. `provides` leaves with decision 2.
+`managed-applications.nix` keeps its identifiers and states the audit date in a comment. `font.nix` drops `files = { }`, and `package.nix` composes `renderedFiles` from `files.nix` and the kbdneo JSON alone. `provides` leaves with decision 2.
 
-### 11. Acceptance gate: byte identity with two listed differences
+### 11. Acceptance gate: 19-file baseline with two listed differences
 
-`baseline.md` records the parent commit, the SHA-256 of `flake.lock`, the store path of `nix build .#windows-configuration`, and the SHA-256 of each of the eighteen files at the parent commit.
+After `key-fleet-by-host` lands, record the parent commit, `flake.lock` SHA-256, output store path, and SHA-256 of all 19 files in `baseline.md`. The files are:
 
-The gate at the final revision:
+```text
+configuration.winget          apply-kbdneo.ps1             apply-zen-policies.ps1
+altsnap-package.json         altsnap-settings.json        fork-wslgit.json
+kbdneo.json                  power-toys-settings.json     reneo-settings.json
+start-reneo-elevated.ps1     terminal-settings.json       zed-catppuccin-theme.json
+zed-keymap.json              zed-settings.json           zen-catppuccin-logo.svg
+zen-catppuccin-userChrome.css zen-catppuccin-userContent.css
+zen-catppuccin.json          zen-policies.json
+```
 
-1. Every file except `configuration.winget` and `zen-catppuccin.json` has the SHA-256 recorded in `baseline.md`.
+The three primary files come from `modules/windows/default.nix:253-255` at HEAD. Fourteen JSON or asset names and the ReNeo launcher come from `modules/windows/files.nix:240-256`; `kbdneo.json` is added in `modules/windows/default.nix:221-223`. The resulting set has sixteen review files and three primary files. Confirm a second build has the same store path and file hashes. Store the exact baseline comparison command and output in `baseline.md` when implementing this change.
 
-1. `zen-catppuccin.json` differs from the baseline only by the removal of these three members: `"sri":"sha256-mLqXUQvy7NhjZoYjgkLLDy5DVS4ruTxSCBjtidqSGJs="` under `userChrome.css`, `"sri":"sha256-KXo8ReYkeSiSSCq0VVJiWydl5tRJR+h4/lxXMet81Eo="` under `userContent.css`, and `"sri":"sha256-tBvov2yGWcUyoLG5hEiGlgc62zGux6CJIR1PSn7NmoM="` under `zen-logo.svg`.
+The final gate requires:
 
-1. `configuration.winget` loaded as YAML equals the baseline document loaded as YAML, after both sides drop `properties.setScript` of the resource named `fork wslgit` and `properties.testScript` and `properties.setScript` of the resource named `zen catppuccin theme`.
+1. Every file except `configuration.winget` and `zen-catppuccin.json` has the baseline SHA-256.
+1. `zen-catppuccin.json` loses only three redundant SRI members: `userChrome.css` `sha256-mLqXUQvy7NhjZoYjgkLLDy5DVS4ruTxSCBjtidqSGJs=`, `userContent.css` `sha256-KXo8ReYkeSiSSCq0VVJiWydl5tRJR+h4/lxXMet81Eo=`, and `zen-logo.svg` `sha256-tBvov2yGWcUyoLG5hEiGlgc62zGux6CJIR1PSn7NmoM=` (`modules/windows/files.nix:37-53`).
+1. Both YAML documents have equal parsed data after removing `properties.setScript` from `fork wslgit` and `properties.testScript` and `properties.setScript` from `zen catppuccin theme`.
+1. The Zen theme scripts change only the embedded `$specification` JSON literal by the same three SRI removals. No other script text changes.
+1. The Fork set script adds the shared `Merge-Object` definition, equal to the definition for `zed settings`, and replaces only its separate `GitInstancePath` branch with `Merge-Object $settings ([PSCustomObject]@{ GitInstancePath = (Join-Path $root 'bin\git.exe') })` (`modules/windows/files.nix:492-507`).
+1. On the Windows work machine, the owner runs `winget configure test` and both Administrator scripts with `-Test`. The owner records the resulting state in `baseline.md`; the check remains unarchived until that record exists. For the Fork change, remove `GitInstancePath` from `%LOCALAPPDATA%\Fork\settings.json`, apply the new document, and confirm that Fork opens the WSL worktree. The next test must report desired state.
 
-1. The two `zen catppuccin theme` scripts differ from the baseline only in their `$specification = '...'` literal, by the same three removed members.
+The repository-level comparison runs on an available supported build host. The owner-only Windows gate is not replaceable with a PowerShell 7 syntax parse. A later `separate-platform-baseline-from-roles` change moves `EnterprisePoliciesEnabled` out of `modules/shared/zen-policies.nix` and removes the Windows renderer's `removeAttrs` (`modules/shared/zen-policies.nix:11-14`, `modules/windows/files.nix:234-236`). That later change must compare against this baseline and preserve the entire Windows output byte for byte. Do not preempt that move here.
 
-1. The `fork wslgit` set script differs from the baseline in two places and nowhere else. First, the script starts with the `Merge-Object` definition and one blank line, identical to the first eleven lines of the `zed settings` set script. Second, the lines
-
-   ```text
-   $gitPath = Join-Path $root 'bin\git.exe'
-   if ($null -eq $settings.PSObject.Properties['GitInstancePath']) {
-     $settings | Add-Member -NotePropertyName GitInstancePath -NotePropertyValue $gitPath
-   } else {
-     $settings.GitInstancePath = $gitPath
-   }
-   ```
-
-   become
-
-   ```text
-   Merge-Object $settings ([PSCustomObject]@{ GitInstancePath = (Join-Path $root 'bin\git.exe') })
-   ```
-
-1. On the work machine, `winget configure test` per the Windows apply section of the provisioning runbook reports the same state as before the change, and the two Administrator scripts report `kbdneo: desired` and `Zen policies: desired` with `-Test`.
-
-1. For listed difference 1: the operator removes `GitInstancePath` from `%LOCALAPPDATA%\Fork\settings.json`, runs `winget configure` with the new document, and confirms that the `fork wslgit` test then reports the desired state and that Fork still opens the WSL worktree.
-
-Steps 1 to 5 run on `korolev` with a short Python script that the change keeps under `baseline.md` as the gate command. Steps 6 and 7 are the live proof.
-
-`flake.lock` does not change while the change is open.
+`flake.lock` stays fixed during this change's baseline comparison.
 
 ## Risks / Trade-offs
 
-- [The 7 grammar accepts a construct that 5.1 rejects] → The live test runs every test script under 5.1. Decision 6 records the gap.
-- [The check no longer proves the PowerToys module list complete] → The literal list was a copy tied to one version. The Windows apply section of the provisioning runbook records the review at each PowerToys pin change, and the declaration is the single source.
-- [The check no longer asserts the dark-appearance and animation values] → Those were substring matches on source. The declared settings are data in `settings.nix`, and the live test and the post-apply confirmation in the runbook prove them.
-- [A fragment renders at a different nesting than its call site] → The gate compares every script byte for byte. A whitespace difference fails step 1 or step 3.
-- \[`pwsh` cannot start in the build sandbox\] → The probe ran with an unwritable `HOME` and `-NoProfile`, and the program sets `-NonInteractive`. The check phase of the package proves it on each system.
-- \[`winget configure` rejects the unchanged document because of a WinGet update\] → The document does not change its contract, so the risk is the same as before the change. The live test is step 6.
-- [A policy violation now reaches a rendered output] → That is the intent of decision 4. `nix flake check` remains a release gate.
+- [PowerShell 7 parses a construct that Windows PowerShell 5.1 rejects] → The owner runs the real Windows test scripts on the work machine. The repository check proves syntax and boundary only.
+- [The PowerToys list changes with an upstream release] → The runbook requires review of the module set at each pin update. `modules/windows/files.nix:133-174` remains the source, not a copied checker list.
+- [The check no longer pins dark-mode, animation, Zed keymap, or TexLab script text] → The renderer owns the values (`modules/windows/settings.nix`, `modules/windows/files.nix:64-131`). The byte baseline protects their present output. The live test covers Windows behavior, including `Custom.theme`.
+- [A PowerShell fragment changes script folding or indentation] → The byte comparison rejects changes except the listed script fragments.
+- [The schema and parser disagree on dependencies] → The local WinGet v3 schema uses pinned DSC definitions but permits bare names. The real Windows test is still required.
+- [A policy violation reaches a rendered output] → That is intentional. The flake check reports the named finding and remains a release gate.
+- [An expected CLI error escapes as a traceback] → A top-level error boundary covers malformed arguments and missing files or resources. Build-time fixtures exercise exit status and stderr.
 
 ## Migration Plan
 
-1. Record the baseline as decision 11 states.
-1. Move the package and confirm the store path is unchanged.
-1. Land the declaration, helper, and evaluation changes in the order of `tasks.md`. After each group, confirm that every file is unchanged except the listed differences.
-1. Land the check and remove the asserts and the old script.
-1. Run the repository gates on both systems.
-1. Run the live proof on the work machine and record the result in `baseline.md`.
+1. Start after `key-fleet-by-host` and record the 19-file baseline.
+1. Change the declaration, PowerShell helpers, and fetched asset handling. Compare the output after each group.
+1. Package the checker and move its self-tests out of the runtime path. Replace the temporary assertion check and remove the renderer policy assertions.
+1. Compare all files and allowed differences with the baseline. Run scoped package tests and repository gates.
+1. Update the Windows runbook and README. Leave the change unarchived until the owner records the Windows live result.
 
-Rollback is a Git revert. The change installs nothing on any host, and the document keeps its contract with WinGet.
+Rollback is a Git revert. The change installs nothing on a host. Windows applies remain explicit manual operations.

@@ -2,7 +2,7 @@
 
 ### Requirement: Check expectations derive from the declaration
 
-The Windows configuration output SHALL expose its declaration: the role set, the application list with each version policy and selector, the centrally managed application identifiers, and the review file names. The repository check SHALL read that declaration from the output and SHALL derive its expectations for version policies, selectors, roles, elevation, and the file set from it. The check SHALL NOT carry a copy of an application policy, pin, palette, module list, theme hash, or file name. The check SHALL keep as literals only the rules that the declaration cannot express: the document schema, unique resource names, dependency existence, the elevation policy, and the Administrator-script boundary.
+The Windows configuration output SHALL expose its declaration: the role set, the application list with each version policy and selector, the centrally managed application identifiers, and the review file names. The repository check SHALL read that declaration from the output. It SHALL derive version selectors, roles, elevation, and review-file names from it. The three primary artifact names SHALL come from the fixed Windows output contract. The check SHALL NOT copy mutable pins, palettes, module lists, theme hashes, or review file names. It SHALL keep only invariant rules as literals: schema, unique resource names, dependency existence, elevation and Administrator boundaries, and accepted role identity, policy scope, and ownership rules.
 
 #### Scenario: Change one pin
 
@@ -12,7 +12,7 @@ The Windows configuration output SHALL expose its declaration: the role set, the
 
 #### Scenario: Declare a self-updating application
 
-- **WHEN** the declaration selects the self-updating policy without a version
+- **WHEN** the declaration selects the self-updating policy without a version for Zed, Brave, or Ferdium
 - **THEN** the repository check expects `useLatest: true` and no rendered version
 - **AND** the check carries no application-specific exception
 
@@ -32,6 +32,12 @@ The Windows configuration output SHALL expose its declaration: the role set, the
 - **WHEN** the rendered output carries a file that the declaration does not name, or omits one that it names
 - **THEN** the repository check fails and names the file
 
+#### Scenario: Reject a different named application
+
+- **WHEN** the declaration replaces the required Zen, Zed, Brave, or Ferdium identity or assigns a policy outside the accepted contract
+- **THEN** the repository check fails and names the role
+- **AND** the check does not copy a mutable release version or the application's profile data
+
 ### Requirement: Every script parses
 
 The repository check SHALL parse every script that the Windows layer ships: each test and set script inside the document, both Administrator scripts, and the ReNeo launcher. The check SHALL use the PowerShell parser for that purpose and SHALL NOT match script source against substrings. The check SHALL assert the Administrator-script boundary on the parsed variable references and string values.
@@ -45,6 +51,28 @@ The repository check SHALL parse every script that the Windows layer ships: each
 
 - **WHEN** a maintainer restructures a script without a change to the values it reads or writes
 - **THEN** the repository check passes with no edit to the check
+
+### Requirement: Checker errors and self-tests have separate paths
+
+The Windows checker SHALL expose an import-safe `main(argv: Sequence[str] | None = None) -> int` that owns `argparse`. When `argv` is `None`, it SHALL parse `sys.argv[1:]`. Its console script SHALL exit with the returned status. Its normal command SHALL NOT run self-tests. The package build SHALL run its tests from `tests/`. Expected invalid arguments, missing output files, and missing document resources SHALL produce one named finding on stderr and exit 1. These failures SHALL NOT print a traceback or `StopIteration`. Unexpected programming failures SHALL retain a traceback.
+
+#### Scenario: Reject a missing resource
+
+- **WHEN** the document omits a resource that its declaration requires
+- **THEN** the command prints one finding that names the missing resource and exits 1
+- **AND** it prints no traceback
+
+#### Scenario: Reject bad input
+
+- **WHEN** a caller omits an argument or names a missing output file
+- **THEN** the command prints one finding on stderr and exits 1
+- **AND** it prints no traceback
+
+#### Scenario: Build and invoke the checker
+
+- **WHEN** the checker package builds
+- **THEN** its tests run from `tests/`
+- **AND** a later normal checker invocation validates only its supplied output, without running those tests
 
 ## MODIFIED Requirements
 
@@ -100,7 +128,7 @@ Every document resource SHALL apply in the interactive user's own scope except t
 
 ### Requirement: Validation before and after apply
 
-The repository SHALL validate the rendered document and privilege boundary without a Windows machine. The repository check SHALL validate the shipped document byte for byte against the WinGet Configuration v3 document contract, and SHALL NOT rewrite the document before validation. The document SHALL carry the schema URL and the bare-name dependency form that the WinGet parser recognizes. The operator SHALL test the document and both Administrator scripts before their first apply and SHALL confirm each applied state after the apply.
+The repository SHALL validate the rendered document and privilege boundary without a Windows machine. The repository check SHALL validate the shipped document against the WinGet Configuration v3 document contract without rewriting it. The document SHALL carry the schema URL and bare-name dependency form that the WinGet parser recognizes. The operator SHALL test the document and both Administrator scripts before their first apply and SHALL confirm each applied state after the apply.
 
 #### Scenario: Validate without Windows
 
@@ -121,6 +149,6 @@ The repository SHALL validate the rendered document and privilege boundary witho
 
 #### Scenario: Preview and confirm on the machine
 
-- **WHEN** the operator tests the document and both Administrator scripts on `korolev`
+- **WHEN** the operator tests the document and both Administrator scripts on the Windows work machine
 - **THEN** each test reports drift without applying it
 - **AND** later test operations report that the applied state matches all three artifacts

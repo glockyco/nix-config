@@ -1,77 +1,69 @@
-## Scheduling — 2026-09-05
+## Scheduling — 2026-09-26
 
-This change is deferred, not canceled or complete. It is not a prerequisite for wrapped OMP usability or the WSL restart, DNS, MagicDNS, and SSH checks. The scheduling notice below remains authoritative.
+The owner scheduled this change after plan review. It runs at position 3, after `derive-windows-check-from-declaration`. Changes 0 through 2 are archived before implementation starts.
 
-The technical proposal, design, specifications, and unchecked tasks remain requirements for future implementation. CLI artifact and task counts describe artifact and task state, not authorization to start work. Work resumes only when a concrete maintenance or use requirement warrants it and the owner schedules the change after another plan review.
+## 1. Record behavior before role moves
 
-## 1. Record the Structural Baseline
+- [ ] 1.1 Record the parent commit and `flake.lock` checksum in `baseline.md`. Force one `system.configurationRevision` through `extendModules` and `lib.mkForce`; evaluate each host's `toplevel.drvPath` twice and record equal paths.
+- [ ] 1.2 Build the completed change 2 Windows output. Record its store path and the names and SHA-256 hashes of all 19 rendered files in `baseline.md`. Evaluate Air SSH, SMB, batch, Colima, screenshot, Git, Nix, PostgreSQL `dataDir`, and SOPS values; record successful commands and values.
 
-- [ ] 1.1 Record the parent commit, `flake.lock` checksum, and both system `toplevel.drvPath` values in `baseline.md`. Force one `system.configurationRevision` through `extendModules`, and confirm that both recorded expressions evaluate twice to the same paths.
-- [ ] 1.2 Record the current Windows configuration output hash and the current Air SSH, batch, SMB, Colima, screenshot, Git, Nix, and SOPS evaluated values. Confirm that each command in `baseline.md` succeeds before editing.
+## 2. Extend standalone typed host declarations
 
-## 2. Extend the Typed Host Declaration
+- [ ] 2.1 Extend `modules/fleet/host.nix` with typed display identity, time zone, locale, checkout and screenshot paths, and Git identity. Set values only in `hosts/<name>/host.nix`. Probe each required option omission; record the failing option path and restored evaluations.
+- [ ] 2.2 Add typed `host.darwin.applications` records with optional cask and Dock position. Probe duplicate non-null casks, application paths, and positions; record each expected failure and remove each probe.
+- [ ] 2.3 Add positive Colima CPU, memory, and disk values and typed mounts to the Mac host declaration. Probe zero values; record the expected errors and restored evaluation.
+- [ ] 2.4 Keep `hosts/<name>/default.nix` for imports and per-machine Home Manager wiring. Confirm the registry evaluates each standalone `host.nix` without evaluating either full host configuration.
 
-- [ ] 2.1 Add typed host options for display identity, time zone, locale, checkout and screenshot paths, and Git identity. Add assertions for required non-empty values, and confirm that a temporary host which omits each required value fails with its option path.
-- [ ] 2.2 Add the typed Darwin application inventory with optional Dock positions. Reject duplicate casks, application paths, and positions, and confirm each rejection with a temporary duplicate that is then reverted.
-- [ ] 2.3 Add typed Colima capacity and mount values with positive-number assertions. Confirm that a temporary zero CPU, memory, or disk value fails evaluation, then revert the probe.
-- [ ] 2.4 Add the typed Air endpoint, batch, remote Docker, SMB share, and mount-point values. Confirm that the evaluated `macbook-pro` declaration contains one value for each fact and no `.local` destination.
-- [ ] 2.5 Move the values into `hosts/macbook-pro/default.nix` and `hosts/korolev/default.nix`. Confirm that no platform or shared module retains a machine name, user name, Git author, GitHub no-reply address, checkout path, screenshot path, Air account, or Colima capacity literal.
+## 3. Select platform roles explicitly
 
-## 3. Separate Baselines from Roles
+- [ ] 3.1 Create `modules/roles/darwin/{desktop,postgresql,container-client,air-client}/default.nix` and `modules/roles/nixos/wsl-workstation/default.nix`. Extend the module-import check for these directories; prove one temporary unlisted sibling fails, then remove it.
+- [ ] 3.2 Reduce `modules/darwin/default.nix` and `modules/nixos/default.nix` to common platform imports. Move each role's system and Home Manager imports under its role. Record that the Mac imports four roles, Korolev imports `wsl-workstation`, and neither baseline imports a role.
+- [ ] 3.3 Move the desktop system and user modules without changing behavior. Compare both pinned-revision `toplevel.drvPath` values to section 1 after each cutover; record any `nvd diff` and remove unintended changes.
+- [ ] 3.4 Move the PostgreSQL service and its idempotent `install -d` activation into the Darwin PostgreSQL role. Confirm evaluated `services.postgresql.dataDir` remains `/var/lib/postgresql/17`, package remains PostgreSQL 17, and both pinned-revision derivation paths remain unchanged.
+- [ ] 3.5 Move Colima into `container-client`, Air integration into `air-client`, and WSL integration and rootless containers into `wsl-workstation`. Compare both pinned-revision paths after each behavior-preserving move.
+- [ ] 3.6 Evaluate a temporary Darwin host with only its baseline. Record that it has no desktop casks or Dock applications, PostgreSQL service, Colima profile, or Air aliases. Remove the probe.
+- [ ] 3.7 Search shared modules for platform branches and machine-only options. Move each remaining case to its owner; record a clean search and both host evaluations.
 
-- [ ] 3.1 Create `modules/roles/darwin/{desktop,postgresql,container-client,air-client}/default.nix` and `modules/roles/nixos/wsl-workstation/default.nix`. Update the module-import check scope, and confirm it rejects one temporary unlisted sibling before the probe is reverted.
-- [ ] 3.2 Reduce `modules/darwin/default.nix` and `modules/nixos/default.nix` to platform baselines. Make each host import its roles explicitly, and confirm that no platform baseline imports a role.
-- [ ] 3.3 Move the desktop system and user modules into the Darwin desktop role without content changes. Confirm that both pinned-revision system derivation paths equal the baseline after the move.
-- [ ] 3.4 Move PostgreSQL, Colima client, and Air client ownership into their Darwin roles. Move WSL integration and rootless containers into the NixOS WSL role. Confirm both pinned-revision paths after each role cutover.
-- [ ] 3.5 Evaluate a temporary Darwin host that imports only the baseline. Confirm it declares no Homebrew casks, persistent Dock entries, PostgreSQL service, Colima profile, or Air endpoint, then remove the probe.
-- [ ] 3.6 Search shared modules for platform conditionals and platform-owned options. Move every remaining case to its role, and confirm that the search reports none.
+## 4. Derive durable values from one host fact
 
-## 4. Remove Duplicate Identity and Path Declarations
+- [ ] 4.1 Render the system screenshot setting and Home Manager directory from `host.paths.screenshots`. Change the value temporarily; record both changed evaluated consumers and restore the declaration.
+- [ ] 4.2 Render Git author and email policy from `host.git`. Derive Korolev's personal include from evaluated `programs.git.settings.ghq.root`; change that root temporarily, observe the include change, and restore it.
+- [ ] 4.3 Generate casks and ordered Dock apps from `host.darwin.applications`; keep spacer and empty `persistent-others`. Compare both generated lists with section 1; change one app record temporarily and observe both consumers.
+- [ ] 4.4 Feed `host.paths.configurationCheckout` and the pinned `darwin-rebuild` executable into `darwin-switch`. Inspect its generated script for the declared checkout and store executable and absence of a `PATH` lookup.
+- [ ] 4.5 Move the nix-homebrew profile adjustment to the Darwin desktop user module. Confirm the rendered path comes from `config.home.profileDirectory` and both pinned-revision derivations match section 1.
+- [ ] 4.6 Move `EnterprisePoliciesEnabled` into the Darwin Zen module. Delete `removeAttrs` in the renderer at `packages/windows-configuration/`. Build the Windows package, compare every rendered file byte-for-byte with section 1's completed change 2 output, and record equal file hashes.
 
-- [ ] 4.1 Render the system screenshot default and Home Manager directory from `host.paths.screenshots`. Change the value temporarily, confirm both evaluated consumers change, then revert it.
-- [ ] 4.2 Render Git author and email policy from `host.git`. Derive the personal Git include from the evaluated ghq root, and confirm that changing the root changes the include without another edit.
-- [ ] 4.3 Generate Homebrew casks and Dock entries from `host.darwin.applications`. Compare the generated lists with the baseline, and confirm that one temporary application edit changes both applicable consumers before it is reverted.
-- [ ] 4.4 Pass `host.paths.configurationCheckout` and the pinned `darwin-rebuild` executable to the packaged `darwin-switch`. Confirm that its script contains the declared store executable and no literal checkout or PATH lookup.
-- [ ] 4.5 Move the nix-homebrew profile fragment from the portable shell module to the Darwin desktop user module. Derive it from `config.home.profileDirectory`, and confirm both pinned-revision system paths remain equal to the baseline.
-- [ ] 4.6 Move `EnterprisePoliciesEnabled` to the Darwin Zen module and delete the Windows `removeAttrs` compensation. Confirm that the Windows output hash remains equal to the baseline.
+## 5. Keep Air working as one removable integration
 
-## 5. Make the Air Contract Declaration-Driven
+- [ ] 5.1 Move both existing Air SSH aliases, `air-batch-check` installation, the existing SMB mount agent, and `~/Air` link into the Air role's imports. Inspect evaluated SSH, launchd, and Home Manager outputs against section 1; record equal values.
+- [ ] 5.2 Keep `AIR_BATCH_DOCKER`, the current remote Docker path interface, and Finder's current numbered `/Volumes` target. Run the package's scoped command fixtures and verify no `host.remote.air` option, stable mount, or new Docker-path derivation appears.
+- [ ] 5.3 Split the combined SSH assertion into Air-only `checks/air-batch-config-check.nix` and durable `checks/desktop-batch-config-check.nix`. Preserve all existing desktop host-pin and transport checks. Keep the Air package and tests in `packages/air-batch-check/`. Condition Air package/check wiring in `flake-modules/{packages,checks}.nix` on role selection; prove both checks run with the role and the desktop check remains without it.
+- [ ] 5.4 Remove the Air role temporarily with its package directory, Air-only assertion, flake wiring, and `macbook-air` peer entry. Evaluate durable host outputs and checks, including the desktop SSH gate, without Air references. Restore the temporary deletion and record the exact removal set for issue #17.
+- [ ] 5.5 Run the documented live Air acceptance when the Air is reachable: successful command, remote status 23, protocol transfer, remote Docker inspection, and SMB link resolution. Record results without changing its mount or Docker command contracts.
 
-- [ ] 5.1 Render the interactive and batch SSH aliases from `host.remote.air`. Confirm that both aliases share the evaluated MagicDNS host and user while only the batch alias carries the non-interactive settings.
-- [ ] 5.2 Make `remoteDockerExecutable` a required argument of `air-batch-check`. Pass it from the Air client role, remove the `AIR_BATCH_DOCKER` environment contract, and confirm the existing command tests pass with an overridden argument.
-- [ ] 5.3 Make `air-batch-config-check` derive the destination and account from the evaluated SSH settings. Confirm that a temporary host or user change needs no check edit and that one mismatched batch alias fails the check.
-- [ ] 5.4 Replace the Finder-selected `/Volumes` path with the declared mount point and `mount_smbfs -N`. Confirm on the Mac that the Air share mounts at that exact path without a prompt and that `~/Air` resolves into it.
-- [ ] 5.5 Re-run the documented batch acceptance on the reachable Air. Confirm success, remote failure propagation, protocol transfer, and the declared remote Docker executable.
-- [ ] 5.6 Evaluate a temporary Mac configuration without the `air-client` import and with `host.remote.air = null`. Confirm that it retains every durable role and gate and contains no Air package, check, launchd agent, SSH alias, Home Manager file, policy entry, or credential reference, then remove the probe.
-- [ ] 5.7 Link this clean-removal proof from the Air offboarding issue created by `connect-fleet-over-tailnet`. Confirm the issue's done-when boundary names removal of both the role and declaration.
+## 6. Apply platform policy and secrets
 
-## 6. Unify Nix Policy
+- [ ] 6.1 Declare pinned registry, disabled legacy channels, weekly garbage collection, and weekly store optimisation once with native Darwin and NixOS adapters. Evaluate both hosts and record option values, unit names, and intentional NixOS differences from section 1.
+- [ ] 6.2 Keep Darwin `trusted-users` for remote unsigned input paths and correct its comment only if needed. Evaluate that Korolev retains its Darwin remote builder and Darwin retains the trusted SSH user.
+- [ ] 6.3 Confirm pinned NixOS defaults for `programs.nano.enable` and a normal user's home, then remove the redundant assignments. Record that Nano remains enabled and Korolev's home remains `/home/<user>`.
+- [ ] 6.4 Render Colima resources from the host declaration and architecture from `pkgs.stdenv.hostPlatform.qemuArch`. Update the config check to derive expected resources; record equal generated profile bytes and a changed value in a temporary probe.
+- [ ] 6.5 Render both Cloudflare direnv functions with one helper and `xdg.configFile`. Compare both generated shell files byte-for-byte with section 1 and confirm token paths still come from `config.sops.secrets`.
+- [ ] 6.6 Re-encrypt each tracked secret with the Mac recipient; decrypt a temporary copy with the Mac key and record success without exposing plaintext. Keep current ciphertext until the final two-recipient proof.
+- [ ] 6.7 Add `checks/secret-encryption-check.nix` and fixtures. Recursively reject plaintext data scalars outside SOPS metadata with file and path. Prove nested map and list failures and encrypted-fixture success; wire the check on every system.
+- [ ] 6.8 Insert a temporary plaintext scalar under `secrets/`; run the repository check and record the file and scalar path in its failure. Revert the scalar and confirm the check passes.
+- [ ] 6.9 Owner: Generate the offline age private key on encrypted offline media and supply only its public recipient. Record the public recipient and confirm the private key is absent from the repository and both hosts.
+- [ ] 6.10 Add the owner-supplied public recipient to `.sops.yaml`, re-encrypt all `secrets/*.yaml` for both recipients, and remove `encrypted_regex`. Confirm Mac-key decryption of every file before replacing the prior ciphertext; record only recipients and success, not secret data.
+- [ ] 6.11 Owner: Decrypt every final secret file with the offline recovery key. Record per-file success without copying the key or plaintext into the repository.
+- [ ] 6.12 Owner: Activate Korolev after the Nix-policy change. Inspect registry lookup, disabled channels, GC and optimisation timers, retained generations, and builder behavior; record observed commands and results.
 
-- [ ] 6.1 Add one shared Nix policy for the pinned registry, disabled channels, garbage collection, and store optimisation. Add thin Darwin and NixOS adapters, and confirm that both evaluated configurations carry the same policy values.
-- [ ] 6.2 Keep the Darwin user in `trusted-users` and replace its comment with the remote-builder unsigned-input rationale. Confirm that `korolev` completes one Darwin build through the tailnet after the comment-only edit.
-- [ ] 6.3 Remove the explicit NixOS `programs.nano.enable` and normal-user home declarations. Confirm against the pinned module defaults and evaluated `korolev` configuration that Nano stays enabled and the home path stays `/home/<user>`.
-- [ ] 6.4 Activate `korolev` after the intentional Nix-policy change. Confirm the registry pin, disabled channel lookup, garbage-collection timer, optimisation timer, and retained generations match the declaration.
+## 7. Prove release boundaries and update affected documentation
 
-## 7. Derive Container and Secrets Configuration
-
-- [ ] 7.1 Render Colima CPU, memory, disk, and mounts from the host declaration and its architecture from `pkgs.stdenv.hostPlatform.qemuArch`. Confirm that the generated profile keeps every baseline value.
-- [ ] 7.2 Replace the two Cloudflare direnv blocks with one Nix helper and `xdg.configFile`. Confirm that both generated functions are byte-identical to the baseline.
-- [ ] 7.3 Generate an offline age recovery key on encrypted removable storage. Add only its public recipient to `.sops.yaml`, and confirm that the private key is absent from the repository and both hosts.
-- [ ] 7.4 Re-encrypt every file under `secrets/` for the Mac and recovery recipients, then remove `encrypted_regex`. Confirm that the Mac key and the offline recovery key each decrypt every file before replacing the prior ciphertext.
-- [ ] 7.5 Add `packages/secret-encryption-check.nix` and its fixture tests. Register the command and tree checks on every system, and confirm that the encrypted fixture passes while nested plaintext mapping and list fixtures fail with their scalar paths.
-- [ ] 7.6 Prove the repository check rejects a temporary plaintext scalar under `secrets/`, observe the file and scalar path in the failure, then revert and re-encrypt the probe.
-
-## 8. Verify Intentional and Structural Changes
-
-- [ ] 8.1 Confirm that every behavior-preserving step leaves both pinned-revision system derivation paths equal to `baseline.md`. For any difference, run `nvd diff`, explain the cause, and remove unintended closure changes.
-- [ ] 8.2 Confirm the intentional differences only: NixOS maintenance options and units, the stable Air mount path, the parameterized batch Docker path, and re-encrypted secret files. Record their evaluations and live results in `baseline.md`.
-- [ ] 8.3 Run `nix fmt -- --fail-on-change`.
-- [ ] 8.4 Run `nix flake check --all-systems --print-build-logs` on `korolev` through the configured Darwin remote builder.
-- [ ] 8.5 Run `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the Mac.
-- [ ] 8.6 Run `openspec validate separate-platform-baseline-from-roles --strict`.
-- [ ] 8.7 Review the final diff by host option, baseline, role, generated declaration, secret, and check. Confirm that every old literal, duplicate list, compatibility compensation, and obsolete path is removed.
-
-## 9. Documentation
-
-- [ ] 9.1 Record platform baselines, explicit roles, declaration-owned facts, full secret encryption, and the temporary Air removal boundary in this change and nearby rationale comments.
-- [ ] 9.2 Update relevant README links to the role directories and typed host declaration without adding a layout inventory; confirm `nix fmt -- --fail-on-change README.md` passes.
+- [ ] 7.1 Compare both pinned-revision system derivations after all behavior-preserving moves. Explain every remaining difference with `nvd diff`; record intentional NixOS Nix policy and SOPS ciphertext differences separately in `baseline.md`.
+- [ ] 7.2 Run `nix fmt -- --fail-on-change` and `openspec validate separate-platform-baseline-from-roles --strict`; record both outcomes.
+- [ ] 7.3 Run Mac `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system`; record each outcome.
+- [ ] 7.4 Owner: Run `nix flake check --all-systems --print-build-logs` on Korolev with the configured Darwin builder. Record the NixOS and remote Darwin results.
+- [ ] 7.5 Owner: Activate the Mac with sudo while retaining local recovery access. Check PostgreSQL on `/var/lib/postgresql/17`, role outputs, Air integration, and Nix policy; record observed results.
+- [ ] 7.6 Owner: Run `winget configure test` on the Windows work machine against the unchanged rendered document. Record the exit status and Zen resource state; do not run Windows resources from Nix activation.
+- [ ] 7.7 Owner: Observe CI on the reviewed revision after an authorized push. Record each platform gate result; do not substitute a local run for CI evidence.
+- [ ] 7.8 Update affected README links, `docs/operations/*` procedures, and nearby comments for role selection, Air offboarding, Nix maintenance, and offline SOPS recovery. Check references against the final paths and actual command output.
+- [ ] 7.9 Review the final diff by host declaration, baseline, role, generated output, encrypted secret, check, and documentation owner. Record that no old duplicate list, obsolete renderer compensation, or Air artifact remains outside the deletion set.

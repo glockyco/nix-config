@@ -2,7 +2,7 @@
 
 ### Requirement: Declared Apple Silicon runtime profile
 
-The workstation SHALL provide reviewed Colima profile defaults that use Apple Virtualization.framework and Rosetta for `linux/amd64` execution. The host declaration SHALL own the profile's CPU, memory, disk, and mount values. The profile architecture SHALL derive from the host platform. The profile SHALL declare its runtime rather than rely on changing upstream defaults.
+The workstation SHALL provide reviewed Colima profile defaults that use Apple Virtualization.framework and Rosetta for `linux/amd64` execution. The Mac's standalone `hosts/macbook-pro/host.nix` declaration SHALL own the profile's positive CPU, memory, disk, and mount values. The `container-client` role SHALL derive profile architecture from `pkgs.stdenv.hostPlatform.qemuArch`. The role SHALL declare its runtime rather than rely on changing upstream defaults.
 
 #### Scenario: Native container execution
 
@@ -17,8 +17,8 @@ The workstation SHALL provide reviewed Colima profile defaults that use Apple Vi
 #### Scenario: Change a reviewed resource value
 
 - **WHEN** the host changes one declared CPU, memory, disk, or mount value
-- **THEN** the generated Colima profile carries the new value
-- **AND** the module and its check need no matching literal change
+- **THEN** the generated Colima profile and its configuration check use the new value
+- **AND** neither consumer needs a matching literal edit
 
 #### Scenario: Evaluate for Apple Silicon
 
