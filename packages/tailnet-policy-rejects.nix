@@ -15,6 +15,19 @@ let
       // overrides
     );
   force = value: builtins.tryEval (builtins.deepSeq value.policy true);
+  fixturePeer = {
+    tag = "tag:fixture-peer";
+    lifecycle = "temporary";
+    purpose = "Rejection fixture.";
+  };
+
+  # Proves the fixture renders, so each rejection below comes from the one
+  # field it removes.
+  completePeer = force (render {
+    peers = peers // {
+      fixture-peer = fixturePeer;
+    };
+  });
 
   unreachableGrant = force (render {
     grantDestinations = [
@@ -33,16 +46,17 @@ let
 
   missingLifecycle = force (render {
     peers = peers // {
-      macbook-air = removeAttrs peers.macbook-air [ "lifecycle" ];
+      fixture-peer = removeAttrs fixturePeer [ "lifecycle" ];
     };
   });
 
   missingPurpose = force (render {
     peers = peers // {
-      macbook-air = removeAttrs peers.macbook-air [ "purpose" ];
+      fixture-peer = removeAttrs fixturePeer [ "purpose" ];
     };
   });
 in
+assert completePeer.success;
 assert !unreachableGrant.success;
 assert !emailAddress.success;
 assert !missingLifecycle.success;
