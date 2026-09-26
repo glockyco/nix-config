@@ -1,6 +1,8 @@
 { pkgs, ... }:
 
 let
+  inherit (import ../../shared) tailnetDnsDomain;
+
   # Secretive's Secure Enclave agent socket. The single secret it serves was
   # created with protection level "Notify", so it signs without a Touch ID
   # prompt. Protection level is fixed when a secret is created, so a secret
@@ -23,7 +25,7 @@ let
     StrictHostKeyChecking = "yes";
     UserKnownHostsFile = toString (
       pkgs.writeText "desktop-known-hosts" ''
-        desktop,desktop.tail8768af.ts.net ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN/+XoGCH3MVvNQuvVfjmidMk5mEa+gqs84C00s6DiEt
+        desktop,desktop.${tailnetDnsDomain} ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN/+XoGCH3MVvNQuvVfjmidMk5mEa+gqs84C00s6DiEt
       ''
     );
     GlobalKnownHostsFile = "/dev/null";
