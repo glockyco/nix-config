@@ -282,7 +282,7 @@
               markdownOxideVersion =
                 pkgs.runCommand "check-markdown-oxide-version" { nativeBuildInputs = [ markdownOxide ]; }
                   ''
-                    test "$(markdown-oxide --version)" = "markdown-oxide 0.25.12"
+                    test "$(markdown-oxide --version)" = "markdown-oxide ${markdownOxide.version}"
                     touch $out
                   '';
 
