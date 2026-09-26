@@ -1,10 +1,4 @@
-# dependency-update-automation Specification
-
-## Purpose
-
-Define a reviewable and enforced path from weekly dependency discovery through cross-system CI, deliberate workstation activation, and generation rollback.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Explicit update ownership
 
@@ -16,29 +10,6 @@ The central dependency automation control plane SHALL own Nix inputs. Renovate S
 - **THEN** every dependency class has exactly one declared update owner and one source of version truth
 - **AND** `omp-dev-update` selects patched OMP source generations outside Nix activation
 - **AND** the target repository contains no App credential or scheduled Nix update workflow
-
-### Requirement: Authenticated weekly pull request
-
-A weekly and manually dispatchable central workflow SHALL run a complete flake lock update and open or refresh a review-only pull request. It SHALL use a short-lived GitHub App token scoped to this repository and SHALL NOT merge the pull request.
-
-#### Scenario: Locked inputs change
-
-- **WHEN** the central workflow produces a different `flake.lock`
-- **THEN** it creates a pull request whose head commit starts the normal Darwin and Linux checks automatically
-
-#### Scenario: Locked inputs do not change
-
-- **WHEN** the locked inputs are current
-- **THEN** the workflow exits successfully without an empty commit or pull request
-
-### Requirement: Required merge checks
-
-The main branch SHALL require current Darwin and Linux CI jobs for human and automated actors, including administrators. It SHALL require an up-to-date pull-request branch and linear history, and SHALL reject force-push and branch deletion.
-
-#### Scenario: A required check fails
-
-- **WHEN** either platform job fails or has not completed
-- **THEN** GitHub prevents the pull request from merging
 
 ### Requirement: Manual activation boundary
 
@@ -81,18 +52,3 @@ The repository SHALL contain one concise agent entry point and one canonical dep
 
 - **WHEN** an agent receives an update question in the repository
 - **THEN** repository guidance points directly to the runbook and the declared Nix and `omp-dev-update` commands
-
-### Requirement: CI-reachable dependency sources
-
-Dependencies exercised by required update checks SHALL use reproducible sources that can complete unattended on every required platform. A platform-specific artifact SHALL use the smallest official fixed-output source that preserves the accepted behavior when the authoritative repository transport is unreliable.
-
-#### Scenario: Repository transport is unreliable
-
-- **WHEN** repeated required checks fail or stall while fetching an authoritative repository
-- **THEN** the package uses an official fixed-output release source when one provides the required artifact
-- **AND** the obsolete repository input is removed completely
-
-#### Scenario: Required source is not cacheable
-
-- **WHEN** a routine update check evaluates its Darwin build plan
-- **THEN** incidental compiler source builds are absent when Nixpkgs provides hash-pinned binary packages for the same supported toolchain

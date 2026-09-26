@@ -99,39 +99,6 @@ The repository SHALL instantiate one Nixpkgs package set per supported system, a
 - **WHEN** a host module declares package-set options that the supplied instance already fixes
 - **THEN** evaluation fails rather than silently ignoring those options
 
-### Requirement: One typed host declaration per host
-
-Each host SHALL describe its identity through one declaration that the module system validates: the host name, the interactive user name, the platform-owned OMP executable location, and the command that installs that executable. The executable location SHALL state whether it is an absolute path or a path relative to the user's home directory. A module that needs a host value SHALL read it from that declaration. No host value SHALL travel to a module as an untyped argument.
-
-#### Scenario: A host omits a required value
-
-- **WHEN** a host declaration omits the user name or the OMP executable location
-- **THEN** evaluation fails with an error that names the missing option
-- **AND** the failure occurs before any consumer of the value evaluates
-
-#### Scenario: A host misstates the executable location
-
-- **WHEN** a host declaration gives the OMP executable location without stating whether it is absolute or home-relative
-- **THEN** evaluation fails with a type error that names the option
-
-#### Scenario: The wrapper expands a home-relative location
-
-- **WHEN** a host declares the OMP executable at a path relative to the user's home directory
-- **THEN** the wrapped `omp` command resolves that path under the user's home directory at run time
-- **AND** the absence message names the same location and the declared installation command
-
-#### Scenario: The wrapper uses an absolute location
-
-- **WHEN** a host declares the OMP executable at an absolute path
-- **THEN** the wrapped `omp` command invokes exactly that path
-- **AND** no home-directory expansion applies
-
-#### Scenario: A user-scope module reads a host value
-
-- **WHEN** a portable user-scope module needs the OMP executable location or the installation command
-- **THEN** it reads the host declaration of the system that manages it
-- **AND** the host passes the value through no additional argument
-
 ### Requirement: One declaration for each fact that both platforms share
 
 A fact that both platform scopes consume SHALL have one declaration. The Darwin scope, the NixOS scope, and every repository check that asserts the fact SHALL read that declaration. The binary cache substituter and its public key are such a fact. The Home Manager wiring that both platforms share is such a fact.
@@ -178,3 +145,46 @@ The Linux host SHALL be able to build every `aarch64-darwin` check of the reposi
 
 - **WHEN** a gate on the Darwin host exits nonzero
 - **THEN** the Linux caller receives that nonzero status without a parsing wrapper or success fallback
+
+### Requirement: OpenSpec package consistency
+
+The workstation checks SHALL verify that the OpenSpec executable reports the version declared by its Nix package. They SHALL NOT require a hard-coded historical version after a reviewed update.
+
+#### Scenario: Package and executable disagree
+
+- **WHEN** the packaged executable reports a version different from its Nix package metadata
+- **THEN** the workstation release gate fails
+
+### Requirement: Generated OpenSpec adapter freshness
+
+The workstation checks SHALL verify that tracked OpenSpec commands and skills match the selected generator. An OpenSpec update SHALL require review of generated changes before merge.
+
+#### Scenario: Generator output changes
+
+- **WHEN** the selected OpenSpec package would rewrite a tracked adapter
+- **THEN** the release gate fails until the generated difference is reviewed and committed
+
+### Requirement: Archived change completeness
+
+The workstation checks SHALL reject an archived OpenSpec change that contains an incomplete task. Strict validation SHALL also retain scenario and task-numbering checks for active contracts.
+
+#### Scenario: An incomplete change is archived
+
+- **WHEN** an archived change contains an unchecked task
+- **THEN** the workstation release gate fails
+
+### Requirement: One typed host declaration per host
+
+Each host SHALL declare its host name and interactive user name through one declaration validated by the module system. A module that needs a host value SHALL read it from that typed declaration. No host value SHALL travel to a module as an untyped argument.
+
+#### Scenario: A host omits a required value
+
+- **WHEN** a host declaration omits the host name or interactive user name
+- **THEN** evaluation fails with an error that names the missing option
+- **AND** the failure occurs before any consumer of the value evaluates
+
+#### Scenario: A module reads a host value
+
+- **WHEN** a system or user-scope module needs the host name or interactive user name
+- **THEN** it reads the value from the managing system's typed host declaration
+- **AND** the host passes the value through no additional untyped argument
