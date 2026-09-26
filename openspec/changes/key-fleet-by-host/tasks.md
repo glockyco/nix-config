@@ -4,8 +4,8 @@ The owner scheduled this change after a plan review. It is position 1, after `al
 
 ## 1. Record the Baseline
 
-- [ ] 1.1 Fill `baseline.md` with the parent commit, `flake.lock` checksum, and both systems' wrapper, `herdr`, `openspec`, and plugin derivation paths. Use `/tmp/fleet-drv.nix` with `system.configurationRevision` forced to 40 zeros through `extendModules` and `lib.mkForce`. Proof: record the two pinned paths and the exact probe command.
-- [ ] 1.2 Evaluate the pinned system paths and package paths twice before edits. Proof: identical repeated results, including the known `7723a53` system paths in `baseline.md`.
+- [x] 1.1 Fill `baseline.md` with the parent commit, `flake.lock` checksum, and both systems' wrapper, `herdr`, `openspec`, and plugin derivation paths. Use `/tmp/fleet-drv.nix` with `system.configurationRevision` forced to 40 zeros through `extendModules` and `lib.mkForce`. Proof: record the two pinned paths and the exact probe command.
+- [x] 1.2 Evaluate the pinned system paths and package paths twice before edits. Proof: identical repeated results, including the known `7723a53` system paths in `baseline.md`.
 
 ## 2. Split the Flake
 
