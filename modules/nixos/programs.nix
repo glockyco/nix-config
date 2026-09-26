@@ -1,6 +1,5 @@
 {
   config,
-  inputs,
   lib,
   pkgs,
   ...
@@ -8,8 +7,11 @@
 
 let
   inherit (import ../shared) tailnetDnsDomain tailnetPeers;
-  macHost = inputs.self.darwinConfigurations.macbook-pro.config.host;
-  macTailnetName = "${macHost.name}.${tailnetDnsDomain}";
+  builderHost =
+    lib.findFirst (host: host.name != config.host.name && host.build.logicalCores != null)
+      (throw "the SSH client requires a declared remote builder")
+      (builtins.attrValues config.fleet.hosts);
+  builderTailnetName = "${builderHost.name}.${tailnetDnsDomain}";
 
   # The desktop's Windows account owns its own name, so it cannot be derived
   # from this host's user. The peer declaration is the source for the node name.
@@ -24,12 +26,10 @@ let
       identityFile = "/home/${config.host.username}/.ssh/id_ed25519";
     };
   desktopTailnetName = "${desktopHost.name}.${tailnetDnsDomain}";
-  tailnetBuilderCheck = pkgs.callPackage ../../packages/tailnet-builder-check.nix {
-    hostName = macHost.name;
-  };
-  macBuilder = lib.findFirst (
-    machine: machine.hostName == macHost.name
-  ) (throw "the Mac SSH client requires its declared remote builder") config.nix.buildMachines;
+  tailnetBuilderCheck = pkgs.tailnet-builder-check.override { hostName = builderHost.name; };
+  builder = lib.findFirst (
+    machine: machine.hostName == builderHost.name
+  ) (throw "the SSH client requires its declared remote builder") config.nix.buildMachines;
 in
 {
   # Zed's Windows UI starts language servers in its WSL remote process. Keep
@@ -76,10 +76,10 @@ in
   programs.nano.enable = true;
 
   # The Nix daemon and release commands use the same root-only credential.
-  programs.ssh.knownHosts.${macHost.name} = {
+  programs.ssh.knownHosts.${builderHost.name} = {
     hostNames = [
-      macHost.name
-      macTailnetName
+      builderHost.name
+      builderTailnetName
     ];
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKVMJe00KQ0ozyXyJ+PB5BllhI5tckDKKCVpJnM2Kw+3";
   };
@@ -115,10 +115,10 @@ in
       ControlMaster no
       ControlPath none
 
-    Host ${macBuilder.hostName}
-      HostName ${macTailnetName}
-      User ${macBuilder.sshUser}
-      IdentityFile ${macBuilder.sshKey}
+    Host ${builder.hostName}
+      HostName ${builderTailnetName}
+      User ${builder.sshUser}
+      IdentityFile ${builder.sshKey}
       IdentitiesOnly yes
       StrictHostKeyChecking yes
       UserKnownHostsFile /dev/null

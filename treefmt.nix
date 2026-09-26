@@ -18,8 +18,9 @@ _:
     # RFC 166 formatter.
     nixfmt.enable = true;
 
-    # Every tracked Python file.
+    # Format and lint every tracked Python file.
     ruff-format.enable = true;
+    ruff-check.enable = true;
 
     # Plain mdformat only speaks CommonMark, which has no tables: it collapses
     # the cells and leaves the delimiter row ragged. The GFM plugin adds

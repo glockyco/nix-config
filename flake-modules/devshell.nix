@@ -1,15 +1,18 @@
-{ inputs, ... }: {
+{ config, inputs, ... }:
+let
+  hosts = builtins.attrValues config.fleet.hosts;
+in
+{
   perSystem =
     {
       config,
       lib,
       pkgs,
       system,
-      fleetBindings,
       ...
     }:
     let
-      inherit (fleetBindings) host;
+      hasDarwinHost = lib.any (host: host.system == system && host.kind == "darwin") hosts;
     in
     {
       # Declared for every system, with no platform condition. `.envrc` and
@@ -38,7 +41,7 @@
         # `modules/home/darwin/secrets.nix` decrypts through sops. The WSL
         # host declares no secret, so shipping `dnscontrol` there would move
         # the failure from shell entry into the middle of a DNS operation.
-        ++ lib.optionals (host.kind == "darwin") [
+        ++ lib.optionals hasDarwinHost [
           inputs.nix-darwin.packages.${system}.darwin-rebuild
           pkgs.dnscontrol
         ];

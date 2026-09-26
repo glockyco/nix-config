@@ -30,3 +30,59 @@ After the output families moved to `flake-modules/`, the exact
 `nix eval --impure --json -f /tmp/fleet-drv.nix` probe returned both baseline
 system paths unchanged. `nix flake show --json` returned an output inventory
 identical to the pre-split inventory, including each package and check name.
+
+## Host registry and package migration
+
+After the host registry and package/check cutover, the pinned probe returned
+`/nix/store/nyv3902mvw9vfmhr21s9ay4a33f053c0-darwin-system-26.05.c3e90c8.drv`
+and `/nix/store/gwmdxyacsdf8sg9fx5462jkx86x7jfxl-nixos-system-korolev-26.05.20260903.a5cc6f2.drv`.
+After fixing the Python wrapper's quoted `--config` argument, it returned
+`/nix/store/y2fwxxcapvsdkf2zlcc17w92sygdxf0g-darwin-system-26.05.c3e90c8.drv`
+and `/nix/store/3fnxzzd9yyc8hq6rmf0qbb1rjhfg17g4-nixos-system-korolev-26.05.20260903.a5cc6f2.drv`.
+The wrapper, Herdr, OpenSpec, and plugin derivations remained identical to
+their pre-migration paths on both systems. The Windows output remained
+`/nix/store/sfyngvylyfv8kl7b18dmdr25aqf3bw8j-windows-workstation-configuration`.
+The policy remained `/nix/store/ydbn9dyb204vbmascj5lc2ci7a3sw74p-tailnet-policy`;
+its `policy.hujson` SHA-256 is
+`151e3fd8cb9e0b26de7aea26c5ca98167bfb0998fcf5fde6364aee4e288c4279`.
+
+## Gated lock experiment and final comparison
+
+`llm-agents.inputs.flake-parts.follows = "flake-parts"` removed the duplicate
+`flake-parts_3` lock node. The former `flake-parts_4` became `_3`; no locked
+revision changed. The new `flake.lock` SHA-256 is
+`f0d738d46e2fb144cae9e471f53a89f2c1a4772f9b65cd72f6bb44b983ef2871`.
+The pinned system, wrapper, Herdr, OpenSpec, and plugin paths matched the
+pre-experiment measurements on both systems.
+
+After treefmt normalized the moved sources, the final
+`nix eval --impure --json -f /tmp/fleet-snapshot.nix` returned:
+
+| Host          | Final pinned `config.system.build.toplevel.drvPath`                                           |
+| ------------- | --------------------------------------------------------------------------------------------- |
+| `macbook-pro` | `/nix/store/5yif3pzimw7gk54pxnmz2i9868zrqd9c-darwin-system-26.05.c3e90c8.drv`                 |
+| `korolev`     | `/nix/store/gm6nyljbwwrlnylcdp6mg0ck2sh65baj-nixos-system-korolev-26.05.20260903.a5cc6f2.drv` |
+
+The four selected package derivations for both systems still match the
+pre-migration table. The Mac command
+`nix run nixpkgs#nvd -- diff /nix/store/7ykhsrnm6ij5bl9ry3hrlfrlkwgmqpg5-darwin-system-26.05.c3e90c8 /nix/store/k6n3wj7cpmdksg1vyy3r6swpqj0lcc1q-darwin-system-26.05.c3e90c8`
+reported one version addition (`omp-dev-update` 0.1.0) and removal of the
+standalone `omp-dev-update.py` source. Its closure changed from 5,855 to
+5,854 paths (+14, -15, +153.8 KiB). Python packaging and source relocation
+explain the Mac path change; no unrelated package version changed. The
+Korolev path also changed with the updater packaging, but its closure has
+not been built or compared here. Owner task 7.5 must record the actual
+Korolev `nvd diff` before that explanation can be accepted.
+
+## Mac repository gates
+
+| Command                                                         | Exit | Key evidence                                                                                                                                                                                                       |
+| --------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `nix fmt -- --fail-on-change`                                   | 0    | `formatted 1 files (0 changed)` after formatting the migration. A temporary unused Python local failed `ruff-check` with `F841`; removal restored the passing gate.                                                |
+| `nix flake check --print-build-logs`                            | 0    | `Ran 27 tests ... OK` for the packaged updater; `checks.aarch64-darwin.treefmt`, the generated Mac system/home gates, the wrapper checks, and policy checks passed. Linux was omitted as incompatible on this Mac. |
+| `nix run .#check-darwin-build-plans`                            | 0    | `42 outputs, none reaching a forbidden source build.`                                                                                                                                                              |
+| `nix build .#darwinConfigurations.macbook-pro.system --no-link` | 0    | Built the Darwin configuration without activation.                                                                                                                                                                 |
+| `openspec validate key-fleet-by-host --strict`                  | 0    | `Change 'key-fleet-by-host' is valid`.                                                                                                                                                                             |
+
+The development-shell hook smoke ran `nix develop --command lefthook version`
+and returned `2.1.5`; the installed `.git/hooks/pre-commit` invokes lefthook.

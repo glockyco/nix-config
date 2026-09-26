@@ -38,9 +38,9 @@ jobs:
       - if: runner.os == 'macOS'
         run: nix run .#check-darwin-build-plans
 
-      # On macOS this builds `darwinSystem`; on Linux it is the host closure,
-      # the module-import and the formatting checks. Evaluation errors, build
-      # failures, an unimported module and unformatted files all fail here.
+      # Each system builds its host-prefixed system and home closures, module
+      # import checks, and formatting checks. Evaluation or build failure fails
+      # this job.
       #
       # Each leg runs the Nix that its host runs, because `nix flake check` is
       # implementation-sensitive: revision f24e147 passed on this runner under

@@ -21,7 +21,7 @@ The disk limit in the declaration is sparse, not an immediate allocation.
 The context must be `colima`. The engine must report Linux on ARM64 with the name `colima`.
 Do not use `colima start --edit`. Change the declaration through review and activation instead.
 
-The [acceptance command](../../packages/container-runtime-check.nix) uses fixed time limits and removes its two unique Compose projects.
+The [acceptance command](../../packages/container-runtime-check/package.nix) uses fixed time limits and removes its two unique Compose projects.
 It verifies Compose discovery, ARM64 and Rosetta AMD64 execution, PostgreSQL health, service operations, mounts, volumes, and project isolation.
 On failure, use its printed cleanup commands and retained diagnostic directory.
 Rosetta does not replace native Linux x86-64 release checks.
@@ -56,7 +56,7 @@ Use the reviewed absolute Docker executable path on the Air:
 AIR_BATCH_DOCKER='/absolute/path/to/docker' air-batch-check
 ```
 
-The [bounded verifier](../../packages/air-batch-check.nix) checks command completion, exit-status propagation, an rsync transfer, Docker inspection, and connection cleanup.
+The [bounded verifier](../../packages/air-batch-check/package.nix) checks command completion, exit-status propagation, an rsync transfer, Docker inspection, and connection cleanup.
 On failure, follow its printed recovery instructions. This optional endpoint is not the MacBook Pro's Nix builder.
 
 ## Upgrade or roll back
