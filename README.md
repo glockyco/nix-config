@@ -15,11 +15,7 @@ Nix owns the host configuration and OMP wrapper, updater, plugin, and language t
 
 ## Network
 
-Tailscale connects the managed hosts, personal Windows desktop, and temporary MacBook Air. Korolev can initiate connections but does not accept inbound connections.
-
-[![Tailscale overview: Korolev can initiate connections to the MacBook Pro, Windows desktop, and temporary MacBook Air. Those three peers can initiate connections to one another.](docs/images/tailscale-overview.webp)](docs/images/tailscale-overview.webp)
-
-The diagram shows topology only. Its service cards predate the desktop's verification and no longer describe current state; [the change evidence](openspec/changes/archive/2026-09-06-enable-native-windows-remote-work/evidence.md) is authoritative.
+Tailscale connects the MacBook Pro, Korolev, the personal Windows desktop, and the temporary MacBook Air. The MacBook Pro, the desktop, and the Air can initiate connections to one another. Korolev can initiate connections to the other three but does not accept inbound connections.
 
 ### Desktop SSH and file access
 
