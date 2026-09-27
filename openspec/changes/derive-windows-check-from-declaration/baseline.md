@@ -67,3 +67,61 @@ bun openspec/changes/derive-windows-check-from-declaration/compare-baseline.js \
 ```
 
 Baseline self-comparison: `baseline self-comparison: 19 identical files; zero differences`.
+
+After the renderer migration, `nix eval --offline --option allow-import-from-derivation false .#windows-configuration.drvPath` returned `/nix/store/jk37lkwm4wyq9nzgb1nhs93vhnrwa2s3-windows-workstation-configuration.drv`.
+The output build returned `/nix/store/smc4vlqga3lvrcpss5f84yq5mn7haxpx-windows-workstation-configuration`.
+
+```sh
+bun openspec/changes/derive-windows-check-from-declaration/compare-baseline.js \
+  /nix/store/sfyngvylyfv8kl7b18dmdr25aqf3bw8j-windows-workstation-configuration \
+  /nix/store/smc4vlqga3lvrcpss5f84yq5mn7haxpx-windows-workstation-configuration
+```
+
+The result was `19 files: 17 byte-identical; Zen SRI removal and Fork merge only; no YAML semantic drift`.
+The comparison found no new or missing files.
+The declaration has ten roles, ten applications, and sixteen review files.
+It contains no release fields or Nix store paths.
+
+For an exact-pin probe, Fork changed from `2.21.0` to `2.21.1`.
+Only `configuration.winget` changed; its package selector and application metadata both changed.
+The packaged checker accepted the probed output and its matching declaration without a checker edit.
+An exact `editor` policy with version `1.0.0` still rendered and produced `application editor: forbidden exact policy`.
+Removing AltSnap also rendered and produced `application window-tool: declared role has no application`.
+Both probes were reverted; another build returned the unchanged migrated output path.
+
+The `psHereString` probe returned `{"success":false,"value":false}` for a line equal to `'@`.
+The `psJson` probe rendered `'{"label":"O''Brien"}'`.
+PowerShell 7 parsed it, converted it from JSON, and printed `O'Brien` with exit status 0.
+
+The packaged check build ran eleven `unittest` methods and passed.
+The packaged CLI returned exit 0 without output for the migrated output and serialized declaration.
+The Darwin flake check also passed.
+With an exact `editor` policy, the renderer still built.
+The Darwin flake check failed with `windows-configuration-check: application editor: forbidden exact policy`.
+The Linux check derivation evaluated to `/nix/store/c116lz1ix50g39bl3v76a9lpcpv03j1j-check-windows-configuration.drv`.
+It was not built on this Mac.
+
+Six temporary validator mutations each made the corresponding fixture method fail.
+Disabled `validate_declaration`, `validate_files`, `validate_document`, `validate_applications`, `validate_boundaries`, and `parse_scripts` produced 7, 1, 4, 9, 4, and 6 failures or errors respectively.
+After restoring those functions, the package build ran all eleven tests and passed.
+
+The final Mac gates passed:
+
+| Command                                                            | Result                                                                                                                            |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `nix fmt -- --fail-on-change`                                      | Passed after the first run formatted eight task-owned files. The second run changed no files.                                     |
+| `nix flake check --print-build-logs`                               | Passed the Darwin checks, including eleven checker tests, `windowsConfiguration`, and treefmt. Linux was omitted as incompatible. |
+| `nix run .#check-darwin-build-plans`                               | Passed: 43 outputs, none reaching a forbidden source build.                                                                       |
+| `nix build .#darwinConfigurations.macbook-pro.system --no-link`    | Passed.                                                                                                                           |
+| `openspec validate derive-windows-check-from-declaration --strict` | Passed: the change is valid.                                                                                                      |
+
+The final Windows build returned `/nix/store/smc4vlqga3lvrcpss5f84yq5mn7haxpx-windows-workstation-configuration` again.
+Its final comparison reported 17 identical files and only the allowed Fork and Zen changes.
+
+The pinned system drvPaths after this change were unchanged:
+
+```json
+{"korolev":"/nix/store/gm6nyljbwwrlnylcdp6mg0ck2sh65baj-nixos-system-korolev-26.05.20260903.a5cc6f2.drv","macbook-pro":"/nix/store/5yif3pzimw7gk54pxnmz2i9868zrqd9c-darwin-system-26.05.c3e90c8.drv"}
+```
+
+The Windows live gate remains an owner action. No Windows resource was applied from this Mac.

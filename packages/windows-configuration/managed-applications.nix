@@ -1,5 +1,5 @@
 {
-  auditDate = "2026-09-02";
+  # Audited on 2026-09-02.
 
   identifiers = [
     "7zip.7zip"

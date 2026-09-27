@@ -4,7 +4,28 @@ let
   applications = import ./applications.nix;
   managedApplications = import ./managed-applications.nix;
   shared = import ../../modules/shared;
-  applicationFiles = import ./files.nix { inherit pkgs shared; };
+  powershell = import ./powershell.nix { inherit lib; };
+  byRole = role: lib.findFirst (application: application.role == role) null applications;
+  applicationMetadata =
+    application:
+    {
+      inherit (application) id scope source;
+      roles = [ application.role ];
+      versionPolicy = application.versionPolicy or null;
+    }
+    // lib.optionalAttrs (application ? version) {
+      inherit (application) version;
+    };
+  applicationFiles = import ./files.nix {
+    inherit
+      lib
+      pkgs
+      shared
+      byRole
+      applicationMetadata
+      powershell
+      ;
+  };
   kbdNeo = {
     version = "2022-10-04";
     url = "https://dl.neo-layout.org/kbdneo64.zip";
@@ -16,7 +37,11 @@ let
     layoutText = "Deutsch (Neo)";
   };
   kbdNeoJson = builtins.toJSON kbdNeo;
-  font = import ./font.nix;
+  font =
+    if byRole "terminal-font" == null then
+      null
+    else
+      import ./font.nix { inherit byRole applicationMetadata powershell; };
   settingsResources = import ./settings.nix;
 
   expectedRoles = [
@@ -39,25 +64,14 @@ let
       inherit (application) id source;
       acceptAgreements = true;
       installMode = "silent";
-      useLatest = application.versionPolicy == "self-updating";
+      useLatest = (application.versionPolicy or null) == "self-updating";
     }
-    // lib.optionalAttrs (application.versionPolicy == "exact") {
+    // lib.optionalAttrs ((application.versionPolicy or null) == "exact" && application ? version) {
       inherit (application) version;
     };
     metadata = {
       description = "Install ${application.name} for ${application.scope} scope";
-      application = {
-        inherit (application)
-          id
-          scope
-          source
-          versionPolicy
-          ;
-        roles = [ application.role ] ++ (application.provides or [ ]);
-      }
-      // lib.optionalAttrs (application.versionPolicy == "exact") {
-        inherit (application) version;
-      };
+      application = applicationMetadata application;
     }
     // lib.optionalAttrs (application.scope == "machine") {
       winget.securityContext = "elevated";
@@ -65,7 +79,10 @@ let
   }) (builtins.filter (application: application.source == "winget") applications);
 
   rawResources =
-    packageResources ++ [ font.resource ] ++ settingsResources ++ applicationFiles.resources;
+    packageResources
+    ++ lib.optional (font != null) font.resource
+    ++ settingsResources
+    ++ applicationFiles.resources;
   normalizeName = lib.replaceStrings [ "-" ] [ " " ];
   normalizeResource =
     resource:
@@ -85,37 +102,12 @@ let
     resources = normalizedResources;
   };
 
-  collisions = lib.intersectLists managedApplications.identifiers (
-    map (application: application.id) applications
-  );
-  invalidVersionPolicies = builtins.filter (
-    application:
-    let
-      policy = application.versionPolicy or null;
-      hasVersion = application ? version && application.version != "";
-    in
-    !(
-      (policy == "exact" && hasVersion)
-      || (policy == "self-updating" && !hasVersion && application.source == "winget")
-    )
-  ) applications;
-  roleCounts = map (
-    role:
-    lib.count (
-      application: application.role == role || builtins.elem role (application.provides or [ ])
-    ) applications
-  ) expectedRoles;
-  machineResources = builtins.filter (
-    resource:
-    lib.hasPrefix "HKLM\\" (resource.properties.keyPath or "")
-    || builtins.elem resource.type [
-      "Microsoft.Windows/OptionalFeatureList"
-      "PSDesiredStateConfiguration/WindowsFeature"
-      "PSDesiredStateConfiguration/WindowsFeatureSet"
-    ]
-    || (resource.metadata.winget.securityContext or null) == "elevated"
-  ) normalizedResources;
-  machineResourceKinds = map (resource: "${resource.name}:${resource.type}") machineResources;
+  declaration = {
+    roles = expectedRoles;
+    applications = map (application: builtins.removeAttrs application [ "release" ]) applications;
+    managedApplications = managedApplications.identifiers;
+    reviewFiles = builtins.attrNames renderedFiles;
+  };
 
   zenPolicyScript = pkgs.writeText "apply-zen-policies.ps1" ''
     [CmdletBinding()]
@@ -124,9 +116,7 @@ let
     $ErrorActionPreference = 'Stop'
     $browser = Join-Path $env:ProgramFiles 'Zen Browser\zen.exe'
     $path = Join-Path $env:ProgramFiles 'Zen Browser\distribution\policies.json'
-    $desired = @'
-    ${builtins.toJSON applicationFiles.zenPolicies}
-    '@
+    $desired = ${powershell.psHereString (builtins.toJSON applicationFiles.zenPolicies)}
     $current = if (Test-Path -LiteralPath $path) { [IO.File]::ReadAllText($path) } else { $null }
     if ($current -eq $desired) {
       Write-Output 'Zen policies: desired'
@@ -137,10 +127,7 @@ let
       exit 1
     }
 
-    $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
-    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-      throw 'The Zen policy apply requires an Administrator PowerShell session'
-    }
+    ${powershell.requireAdministrator "Zen policy"}
     if (-not (Test-Path -LiteralPath $browser)) {
       throw "Zen is not installed at $browser"
     }
@@ -155,15 +142,15 @@ let
     param([switch]$Test)
 
     $ErrorActionPreference = 'Stop'
-    $specification = '${kbdNeoJson}' | ConvertFrom-Json
+    $specification = ${powershell.psJson kbdNeo} | ConvertFrom-Json
     $system32 = Join-Path $env:SystemRoot "System32\$($specification.layoutFile)"
     $sysWow64 = Join-Path $env:SystemRoot "SysWOW64\$($specification.layoutFile)"
     $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layouts\$($specification.layoutId)"
     $registry = Get-ItemProperty -Path $registryPath -ErrorAction SilentlyContinue
     $desired = (Test-Path -LiteralPath $system32) `
-      -and (Get-FileHash -LiteralPath $system32 -Algorithm SHA256).Hash.ToLowerInvariant() -eq $specification.system32Sha256 `
+      -and ${powershell.sha256Of "$system32"} -eq $specification.system32Sha256 `
       -and (Test-Path -LiteralPath $sysWow64) `
-      -and (Get-FileHash -LiteralPath $sysWow64 -Algorithm SHA256).Hash.ToLowerInvariant() -eq $specification.sysWow64Sha256 `
+      -and ${powershell.sha256Of "$sysWow64"} -eq $specification.sysWow64Sha256 `
       -and $registry.'Layout Text' -eq $specification.layoutText `
       -and $registry.'Layout File' -eq $specification.layoutFile `
       -and $registry.'Layout Id' -eq '00c0' `
@@ -179,10 +166,7 @@ let
       exit 1
     }
 
-    $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
-    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-      throw 'The kbdneo apply requires an Administrator PowerShell session'
-    }
+    ${powershell.requireAdministrator "kbdneo"}
     if (-not [Environment]::Is64BitProcess) {
       throw 'Run the kbdneo apply from 64-bit PowerShell'
     }
@@ -190,16 +174,15 @@ let
     $archive = Join-Path $env:TEMP 'kbdneo64.zip'
     $expanded = Join-Path $env:TEMP 'kbdneo64'
     try {
-      Invoke-WebRequest -Uri $specification.url -OutFile $archive -UseBasicParsing
-      if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $specification.archiveSha256) { throw 'kbdneo archive checksum mismatch' }
-      Remove-Item -LiteralPath $expanded -Recurse -Force -ErrorAction SilentlyContinue
-      Add-Type -AssemblyName System.IO.Compression.FileSystem
-      [IO.Compression.ZipFile]::ExtractToDirectory($archive, $expanded)
+      ${powershell.expandArchive {
+        variable = "$specification";
+        label = "kbdneo";
+      }}
       $payload = Join-Path $expanded 'kbdneo64'
       $system32Source = Join-Path $payload "System32\$($specification.layoutFile)"
       $sysWow64Source = Join-Path $payload "SysWOW64\$($specification.layoutFile)"
-      if ((Get-FileHash -LiteralPath $system32Source -Algorithm SHA256).Hash.ToLowerInvariant() -ne $specification.system32Sha256) { throw 'kbdneo System32 DLL checksum mismatch' }
-      if ((Get-FileHash -LiteralPath $sysWow64Source -Algorithm SHA256).Hash.ToLowerInvariant() -ne $specification.sysWow64Sha256) { throw 'kbdneo SysWOW64 DLL checksum mismatch' }
+      if (${powershell.sha256Of "$system32Source"} -ne $specification.system32Sha256) { throw 'kbdneo System32 DLL checksum mismatch' }
+      if (${powershell.sha256Of "$sysWow64Source"} -ne $specification.sysWow64Sha256) { throw 'kbdneo SysWOW64 DLL checksum mismatch' }
       Copy-Item -LiteralPath $system32Source -Destination $system32 -Force
       Copy-Item -LiteralPath $sysWow64Source -Destination $sysWow64 -Force
       New-Item -Path $registryPath -Force | Out-Null
@@ -220,23 +203,13 @@ let
   renderedDocument = yaml.generate "configuration.winget" document;
   renderedFiles =
     lib.mapAttrs pkgs.writeText (applicationFiles.files // { "kbdneo.json" = kbdNeoJson; })
-    // font.files;
+    // applicationFiles.assets;
   fileCopies = lib.concatMapAttrsStringSep "\n" (name: path: ''
     mkdir -p "$out/${builtins.dirOf name}"
     cp ${path} "$out/${name}"
   '') renderedFiles;
 in
 
-assert lib.assertMsg (
-  invalidVersionPolicies == [ ]
-) "every Windows application must have one valid version policy";
-assert lib.assertMsg (collisions == [ ]) "a declared Windows application is centrally managed";
-assert lib.assertMsg (builtins.all (
-  count: count == 1
-) roleCounts) "each Windows application role must have exactly one package";
-assert lib.assertMsg (
-  machineResourceKinds == [ "package browser:Microsoft.WinGet/Package" ]
-) "only the Zen package may require elevation in the WinGet document";
 pkgs.runCommand "windows-workstation-configuration"
   {
     meta = {
@@ -246,14 +219,7 @@ pkgs.runCommand "windows-workstation-configuration"
         "x86_64-linux"
       ];
     };
-    passthru = {
-      inherit
-        applications
-        document
-        managedApplications
-        renderedFiles
-        ;
-    };
+    passthru = { inherit declaration; };
   }
   ''
     mkdir -p "$out"

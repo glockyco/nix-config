@@ -1,13 +1,19 @@
-{ pkgs, shared }:
+{
+  lib,
+  pkgs,
+  shared,
+  byRole,
+  applicationMetadata,
+  powershell,
+}:
 
 let
+  altSnapApplication = byRole "window-tool";
+  reneoApplication = byRole "keyboard-layout";
   altSnapPackage = {
-    version = "1.68";
-    url = "https://github.com/RamonUnch/AltSnap/releases/download/1.68/AltSnap1.68bin_x64.zip";
-    archiveSha256 = "7db3dad3746e7b23857db92fc05ee2d3e17eee1b28e237709a612366ba909c79";
-    executableSha256 = "dba17fbfc2633aac31f5faedb992f4f24ddee3092bb4c803d2b8db83d58255b9";
-    hooksSha256 = "fa2ff5c2f76267ab6a1d80e432649da023b94e2183fe2f8c27f254f1b0637ed7";
-  };
+    inherit (altSnapApplication) version;
+  }
+  // altSnapApplication.release;
   altSnapPackageJson = builtins.toJSON altSnapPackage;
 
   wslGit = {
@@ -23,7 +29,11 @@ let
   zedThemeSha256 = "2dccb9fb3ff888e646407b4f84d400304553e0d9a9688ac75d0f9fcd3f8bdf6a";
   zedThemeSource = pkgs.fetchurl {
     url = zedThemeUrl;
-    hash = "sha256-Lcy5+z/4iOZGQHtPhNQAMEVT4NmpaIrHXQ+fzT+L32o=";
+    hash = builtins.convertHash {
+      hash = zedThemeSha256;
+      hashAlgo = "sha256";
+      toHashFormat = "sri";
+    };
   };
 
   zenTheme = {
@@ -38,17 +48,14 @@ let
       "userChrome.css" = {
         url = "https://raw.githubusercontent.com/catppuccin/zen-browser/c855685442c6040c4dda9c8d3ddc7b708de1cbaa/themes/Mocha/Mauve/userChrome.css";
         sha256 = "98ba97510bf2ecd8636686238242cb0f2e43552e2bb93c520818ed89da92189b";
-        sri = "sha256-mLqXUQvy7NhjZoYjgkLLDy5DVS4ruTxSCBjtidqSGJs=";
       };
       "userContent.css" = {
         url = "https://raw.githubusercontent.com/catppuccin/zen-browser/c855685442c6040c4dda9c8d3ddc7b708de1cbaa/themes/Mocha/Mauve/userContent.css";
         sha256 = "297a3c45e624792892482ab45552625b2765e6d44947e878fe5c5731eb7cd44a";
-        sri = "sha256-KXo8ReYkeSiSSCq0VVJiWydl5tRJR+h4/lxXMet81Eo=";
       };
       "zen-logo.svg" = {
         url = "https://raw.githubusercontent.com/catppuccin/zen-browser/c855685442c6040c4dda9c8d3ddc7b708de1cbaa/themes/Mocha/Mauve/zen-logo-mocha.svg";
         sha256 = "b41be8bf6c8659c532a0b1b984488696073adb31aec7a089211d4f4a7ecd9a83";
-        sri = "sha256-tBvov2yGWcUyoLG5hEiGlgc62zGux6CJIR1PSn7NmoM=";
       };
     };
   };
@@ -56,7 +63,11 @@ let
     _: file:
     pkgs.fetchurl {
       inherit (file) url;
-      hash = file.sri;
+      hash = builtins.convertHash {
+        hash = file.sha256;
+        hashAlgo = "sha256";
+        toHashFormat = "sri";
+      };
     }
   ) zenTheme.files;
   zenThemeJson = builtins.toJSON zenTheme;
@@ -185,10 +196,10 @@ let
     standaloneLayout = "Neo";
     standaloneMode = false;
   };
-  reneoPackagePath = "Microsoft\\WinGet\\Packages\\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\\ReNeo\\reneo.exe";
+  reneoPackageDirectory = "Microsoft\\WinGet\\Packages\\${reneoApplication.id}_Microsoft.Winget.Source_8wekyb3d8bbwe\\ReNeo";
   reneoElevationLauncher = ''
     $ErrorActionPreference = 'Stop'
-    $path = Join-Path $env:LOCALAPPDATA '${reneoPackagePath}'
+    $path = Join-Path $env:LOCALAPPDATA '${reneoPackageDirectory}\reneo.exe'
     if (-not (Test-Path -LiteralPath $path)) { throw "ReNeo is not installed at $path" }
     if (@(Get-Process -Name reneo -ErrorAction SilentlyContinue).Count -gt 0) { exit 0 }
     Start-Process -FilePath $path -Verb RunAs
@@ -235,24 +246,28 @@ let
     policies = builtins.removeAttrs shared.zenPolicies [ "EnterprisePoliciesEnabled" ];
   };
 
-  terminalSpecificationJson = builtins.toJSON terminalSettings;
-
   jsonFiles = {
-    "altsnap-package.json" = altSnapPackageJson;
     "altsnap-settings.json" = builtins.toJSON altSnapSettings;
     "fork-wslgit.json" = wslGitJson;
-    "zed-catppuccin-theme.json" = builtins.readFile zedThemeSource;
     "zed-keymap.json" = zedKeymapJson;
     "power-toys-settings.json" = builtins.toJSON powerToysSettings;
-    "reneo-settings.json" = builtins.toJSON reneoSettings;
-    "start-reneo-elevated.ps1" = reneoElevationLauncher;
     "terminal-settings.json" = builtins.toJSON terminalSettings;
     "zed-settings.json" = builtins.toJSON zedSettings;
     "zen-catppuccin.json" = zenThemeJson;
-    "zen-catppuccin-userChrome.css" = builtins.readFile zenThemeSources."userChrome.css";
-    "zen-catppuccin-userContent.css" = builtins.readFile zenThemeSources."userContent.css";
-    "zen-catppuccin-logo.svg" = builtins.readFile zenThemeSources."zen-logo.svg";
     "zen-policies.json" = builtins.toJSON zenPolicies;
+  }
+  // lib.optionalAttrs (altSnapApplication != null) {
+    "altsnap-package.json" = altSnapPackageJson;
+  }
+  // lib.optionalAttrs (reneoApplication != null) {
+    "reneo-settings.json" = builtins.toJSON reneoSettings;
+    "start-reneo-elevated.ps1" = reneoElevationLauncher;
+  };
+  assets = {
+    "zed-catppuccin-theme.json" = zedThemeSource;
+    "zen-catppuccin-userChrome.css" = zenThemeSources."userChrome.css";
+    "zen-catppuccin-userContent.css" = zenThemeSources."userContent.css";
+    "zen-catppuccin-logo.svg" = zenThemeSources."zen-logo.svg";
   };
 
   mergeJsonScript =
@@ -265,27 +280,12 @@ let
       beforeSet ? "",
       afterSet ? "",
     }:
-    let
-      desiredJson = builtins.toJSON desired;
-    in
     {
       type = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
       inherit name dependsOn;
       properties = {
         testScript = ''
-          function Test-Subset($actual, $desired) {
-            foreach ($property in $desired.PSObject.Properties) {
-              $actualProperty = $actual.PSObject.Properties[$property.Name]
-              if ($null -eq $actualProperty) { return $false }
-              if ($property.Value -is [PSCustomObject]) {
-                if (-not ($actualProperty.Value -is [PSCustomObject])) { return $false }
-                if (-not (Test-Subset $actualProperty.Value $property.Value)) { return $false }
-              } elseif (($property.Value | ConvertTo-Json -Depth 100 -Compress) -ne ($actualProperty.Value | ConvertTo-Json -Depth 100 -Compress)) {
-                return $false
-              }
-            }
-            return $true
-          }
+          ${powershell.testSubsetFunction}
 
           $path = ${destination}
           if (-not (Test-Path -LiteralPath $path)) { return $false }
@@ -297,22 +297,11 @@ let
             return $false
           }
           if ($null -eq $actual) { return $false }
-          $desired = '${desiredJson}' | ConvertFrom-Json
+          $desired = ${powershell.psJson desired} | ConvertFrom-Json
           return Test-Subset $actual $desired
         '';
         setScript = ''
-          function Merge-Object($actual, $desired) {
-            foreach ($property in $desired.PSObject.Properties) {
-              $actualProperty = $actual.PSObject.Properties[$property.Name]
-              if ($property.Value -is [PSCustomObject] -and $null -ne $actualProperty -and $actualProperty.Value -is [PSCustomObject]) {
-                Merge-Object $actualProperty.Value $property.Value
-              } elseif ($null -eq $actualProperty) {
-                $actual | Add-Member -NotePropertyName $property.Name -NotePropertyValue $property.Value
-              } else {
-                $actualProperty.Value = $property.Value
-              }
-            }
-          }
+          ${powershell.mergeObjectFunction}
 
           ${beforeSet}
           $path = ${destination}
@@ -324,7 +313,7 @@ let
             $actual = $null
           }
           if ($null -eq $actual) { $actual = [PSCustomObject]@{} }
-          $desired = '${desiredJson}' | ConvertFrom-Json
+          $desired = ${powershell.psJson desired} | ConvertFrom-Json
           Merge-Object $actual $desired
           $json = $actual | ConvertTo-Json -Depth 100
           [IO.File]::WriteAllText($path, $json, [Text.UTF8Encoding]::new($false))
@@ -344,12 +333,12 @@ let
         if (-not (Test-Path -LiteralPath $path)) { return $false }
         $bytes = [IO.File]::ReadAllBytes($path)
         if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xef -and $bytes[1] -eq 0xbb -and $bytes[2] -eq 0xbf) { return $false }
-        return [IO.File]::ReadAllText($path) -ceq '${zedKeymapJson}'
+        return [IO.File]::ReadAllText($path) -ceq ${powershell.psJson zedKeymap}
       '';
       setScript = ''
         $path = Join-Path $env:APPDATA 'Zed\keymap.json'
         New-Item -ItemType Directory -Path (Split-Path -Parent $path) -Force | Out-Null
-        [IO.File]::WriteAllText($path, '${zedKeymapJson}', [Text.UTF8Encoding]::new($false))
+        [IO.File]::WriteAllText($path, ${powershell.psJson zedKeymap}, [Text.UTF8Encoding]::new($false))
       '';
     };
     metadata.description = "Enforce the Windows-first Zed keymap";
@@ -360,14 +349,14 @@ let
     name = "package-window-tool";
     properties = {
       testScript = ''
-        $package = '${altSnapPackageJson}' | ConvertFrom-Json
-        $desired = '${builtins.toJSON altSnapSettings}' | ConvertFrom-Json
+        $package = ${powershell.psJson altSnapPackage} | ConvertFrom-Json
+        $desired = ${powershell.psJson altSnapSettings} | ConvertFrom-Json
         $root = Join-Path $env:APPDATA 'AltSnap'
         $path = Join-Path $root 'AltSnap.ini'
         $executable = Join-Path $root 'AltSnap.exe'
         $hooks = Join-Path $root 'hooks.dll'
-        if (-not (Test-Path -LiteralPath $executable) -or (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.executableSha256) { return $false }
-        if (-not (Test-Path -LiteralPath $hooks) -or (Get-FileHash -LiteralPath $hooks -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.hooksSha256) { return $false }
+        if (-not (Test-Path -LiteralPath $executable) -or ${powershell.sha256Of "$executable"} -ne $package.executableSha256) { return $false }
+        if (-not (Test-Path -LiteralPath $hooks) -or ${powershell.sha256Of "$hooks"} -ne $package.hooksSha256) { return $false }
         if (-not (Test-Path -LiteralPath $path)) { return $false }
         $ini = Add-Type -Namespace WindowsConfiguration -Name AltSnapIniReadApi -MemberDefinition @'
           [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
@@ -383,21 +372,20 @@ let
         return $true
       '';
       setScript = ''
-        $package = '${altSnapPackageJson}' | ConvertFrom-Json
-        $desired = '${builtins.toJSON altSnapSettings}' | ConvertFrom-Json
+        $package = ${powershell.psJson altSnapPackage} | ConvertFrom-Json
+        $desired = ${powershell.psJson altSnapSettings} | ConvertFrom-Json
         $root = Join-Path $env:APPDATA 'AltSnap'
         $path = Join-Path $root 'AltSnap.ini'
         $archive = Join-Path $env:TEMP "AltSnap-$($package.version).zip"
         $expanded = Join-Path $env:TEMP "AltSnap-$($package.version)"
         Get-Process -Name AltSnap -ErrorAction SilentlyContinue | Stop-Process
         try {
-          Invoke-WebRequest -Uri $package.url -OutFile $archive -UseBasicParsing
-          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.archiveSha256) { throw 'AltSnap archive checksum mismatch' }
-          Remove-Item -LiteralPath $expanded -Recurse -Force -ErrorAction SilentlyContinue
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [IO.Compression.ZipFile]::ExtractToDirectory($archive, $expanded)
-          if ((Get-FileHash -LiteralPath (Join-Path $expanded 'AltSnap.exe') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.executableSha256) { throw 'AltSnap executable checksum mismatch' }
-          if ((Get-FileHash -LiteralPath (Join-Path $expanded 'hooks.dll') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.hooksSha256) { throw 'AltSnap hooks checksum mismatch' }
+          ${powershell.expandArchive {
+            variable = "$package";
+            label = "AltSnap";
+          }}
+          if (${powershell.sha256Of "(Join-Path $expanded 'AltSnap.exe')"} -ne $package.executableSha256) { throw 'AltSnap executable checksum mismatch' }
+          if (${powershell.sha256Of "(Join-Path $expanded 'hooks.dll')"} -ne $package.hooksSha256) { throw 'AltSnap hooks checksum mismatch' }
           New-Item -ItemType Directory -Path $root -Force | Out-Null
           Get-ChildItem -LiteralPath $expanded -Force | Where-Object Name -ne 'AltSnap.ini' | Copy-Item -Destination $root -Recurse -Force
           if (-not (Test-Path -LiteralPath $path)) { Copy-Item -LiteralPath (Join-Path $expanded 'AltSnap.ini') -Destination $path }
@@ -419,14 +407,7 @@ let
     };
     metadata = {
       description = "Install portable AltSnap with modifier dragging and 50/50 edge snapping";
-      application = {
-        id = "AltSnap.AltSnap";
-        roles = [ "window-tool" ];
-        source = "github-release";
-        versionPolicy = "exact";
-        version = altSnapPackage.version;
-        scope = "user";
-      };
+      application = applicationMetadata altSnapApplication;
     };
   };
 
@@ -436,7 +417,7 @@ let
     dependsOn = [ "package-git-client" ];
     properties = {
       testScript = ''
-        $specification = '${wslGitJson}' | ConvertFrom-Json
+        $specification = ${powershell.psJson wslGit} | ConvertFrom-Json
         $root = Join-Path $env:LOCALAPPDATA 'wslgit'
         $executablePaths = @(
           (Join-Path $root 'cmd\wslgit.exe'),
@@ -445,11 +426,11 @@ let
         )
         foreach ($path in $executablePaths) {
           if (-not (Test-Path -LiteralPath $path)) { return $false }
-          if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $specification.executableSha256) { return $false }
+          if (${powershell.sha256Of "$path"} -ne $specification.executableSha256) { return $false }
         }
         $integration = Join-Path $root 'bin\Fork.RI'
         if (-not (Test-Path -LiteralPath $integration)) { return $false }
-        if ((Get-FileHash -LiteralPath $integration -Algorithm SHA256).Hash.ToLowerInvariant() -ne $specification.forkIntegrationSha256) { return $false }
+        if (${powershell.sha256Of "$integration"} -ne $specification.forkIntegrationSha256) { return $false }
         $systemWslHash = (Get-FileHash -LiteralPath (Join-Path $env:SystemRoot 'System32\wsl.exe') -Algorithm SHA256).Hash
         foreach ($name in @('sh.exe', 'bash.exe')) {
           $path = Join-Path $root "bin\$name"
@@ -467,17 +448,18 @@ let
         return $settings.GitInstancePath -eq (Join-Path $root 'bin\git.exe')
       '';
       setScript = ''
-        $specification = '${wslGitJson}' | ConvertFrom-Json
+        ${powershell.mergeObjectFunction}
+
+        $specification = ${powershell.psJson wslGit} | ConvertFrom-Json
         $archive = Join-Path $env:TEMP "wslgit-$($specification.version).zip"
         $expanded = Join-Path $env:TEMP "wslgit-$($specification.version)"
         $root = Join-Path $env:LOCALAPPDATA 'wslgit'
         Get-Process -Name Fork -ErrorAction SilentlyContinue | Stop-Process
         try {
-          Invoke-WebRequest -Uri $specification.url -OutFile $archive -UseBasicParsing
-          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $specification.archiveSha256) { throw 'wslgit archive checksum mismatch' }
-          Remove-Item -LiteralPath $expanded -Recurse -Force -ErrorAction SilentlyContinue
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [IO.Compression.ZipFile]::ExtractToDirectory($archive, $expanded)
+          ${powershell.expandArchive {
+            variable = "$specification";
+            label = "wslgit";
+          }}
           Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path (Join-Path $root 'cmd') -Force | Out-Null
           New-Item -ItemType Directory -Path (Join-Path $root 'bin') -Force | Out-Null
@@ -497,12 +479,7 @@ let
             $settings = $null
           }
           if ($null -eq $settings) { $settings = [PSCustomObject]@{} }
-          $gitPath = Join-Path $root 'bin\git.exe'
-          if ($null -eq $settings.PSObject.Properties['GitInstancePath']) {
-            $settings | Add-Member -NotePropertyName GitInstancePath -NotePropertyValue $gitPath
-          } else {
-            $settings.GitInstancePath = $gitPath
-          }
+          Merge-Object $settings ([PSCustomObject]@{ GitInstancePath = (Join-Path $root 'bin\git.exe') })
           $json = $settings | ConvertTo-Json -Depth 100
           [IO.File]::WriteAllText($settingsPath, $json, [Text.UTF8Encoding]::new($false))
         } finally {
@@ -523,14 +500,14 @@ let
       testScript = ''
         $path = Join-Path $env:APPDATA 'Zed\themes\catppuccin-mauve.json'
         if (-not (Test-Path -LiteralPath $path)) { return $false }
-        return (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -eq '${zedThemeSha256}'
+        return ${powershell.sha256Of "$path"} -eq '${zedThemeSha256}'
       '';
       setScript = ''
         $path = Join-Path $env:APPDATA 'Zed\themes\catppuccin-mauve.json'
         $temporary = Join-Path $env:TEMP 'zed-catppuccin-mauve.json'
         try {
           Invoke-WebRequest -Uri '${zedThemeUrl}' -OutFile $temporary -UseBasicParsing
-          if ((Get-FileHash -LiteralPath $temporary -Algorithm SHA256).Hash.ToLowerInvariant() -ne '${zedThemeSha256}') { throw 'Zed Catppuccin theme checksum mismatch' }
+          if (${powershell.sha256Of "$temporary"} -ne '${zedThemeSha256}') { throw 'Zed Catppuccin theme checksum mismatch' }
           New-Item -ItemType Directory -Path (Split-Path -Parent $path) -Force | Out-Null
           Move-Item -LiteralPath $temporary -Destination $path -Force
         } finally {
@@ -547,7 +524,7 @@ let
     dependsOn = [ "package-browser" ];
     properties = {
       testScript = ''
-        $specification = '${zenThemeJson}' | ConvertFrom-Json
+        $specification = ${powershell.psJson zenTheme} | ConvertFrom-Json
         $profilesIni = Join-Path $env:APPDATA 'zen\profiles.ini'
         if (-not (Test-Path -LiteralPath $profilesIni)) { return $false }
         $profilePaths = @(Select-String -LiteralPath $profilesIni -Pattern '^Path=(.+)$' | ForEach-Object { $_.Matches[0].Groups[1].Value })
@@ -561,13 +538,13 @@ let
           foreach ($file in $specification.files.PSObject.Properties) {
             $path = Join-Path $chrome $file.Name
             if (-not (Test-Path -LiteralPath $path)) { return $false }
-            if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $file.Value.sha256) { return $false }
+            if (${powershell.sha256Of "$path"} -ne $file.Value.sha256) { return $false }
           }
         }
         return $true
       '';
       setScript = ''
-        $specification = '${zenThemeJson}' | ConvertFrom-Json
+        $specification = ${powershell.psJson zenTheme} | ConvertFrom-Json
         $profilesIni = Join-Path $env:APPDATA 'zen\profiles.ini'
         if (-not (Test-Path -LiteralPath $profilesIni)) { throw 'Launch Zen once to create its user profile, then reapply the configuration' }
         $profilePaths = @(Select-String -LiteralPath $profilesIni -Pattern '^Path=(.+)$' | ForEach-Object { $_.Matches[0].Groups[1].Value })
@@ -580,7 +557,7 @@ let
           foreach ($file in $specification.files.PSObject.Properties) {
             $download = Join-Path $temporary $file.Name
             Invoke-WebRequest -Uri $file.Value.url -OutFile $download -UseBasicParsing
-            if ((Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant() -ne $file.Value.sha256) { throw "Zen Catppuccin checksum mismatch for $($file.Name)" }
+            if (${powershell.sha256Of "$download"} -ne $file.Value.sha256) { throw "Zen Catppuccin checksum mismatch for $($file.Name)" }
           }
           $preferenceLine = "user_pref(`"$($specification.preference.name)`", $($specification.preference.value | ConvertTo-Json -Compress));"
           $preferencePattern = '^\s*user_pref\("' + [regex]::Escape($specification.preference.name) + '"\s*,'
@@ -612,16 +589,12 @@ let
     properties = {
       testScript = ''
         $path = Join-Path $env:LOCALAPPDATA 'WindowsConfiguration\start-reneo-elevated.ps1'
-        $desired = @'
-        ${reneoElevationLauncher}
-        '@
+        $desired = ${powershell.psHereString reneoElevationLauncher}
         return (Test-Path -LiteralPath $path) -and [IO.File]::ReadAllText($path) -eq $desired
       '';
       setScript = ''
         $path = Join-Path $env:LOCALAPPDATA 'WindowsConfiguration\start-reneo-elevated.ps1'
-        $desired = @'
-        ${reneoElevationLauncher}
-        '@
+        $desired = ${powershell.psHereString reneoElevationLauncher}
         New-Item -ItemType Directory -Path (Split-Path -Parent $path) -Force | Out-Null
         [IO.File]::WriteAllText($path, $desired, [Text.UTF8Encoding]::new($false))
       '';
@@ -638,26 +611,14 @@ let
     ];
     properties = {
       testScript = ''
-        function Test-Subset($actual, $desired) {
-          foreach ($property in $desired.PSObject.Properties) {
-            $actualProperty = $actual.PSObject.Properties[$property.Name]
-            if ($null -eq $actualProperty) { return $false }
-            if ($property.Value -is [PSCustomObject]) {
-              if (-not ($actualProperty.Value -is [PSCustomObject])) { return $false }
-              if (-not (Test-Subset $actualProperty.Value $property.Value)) { return $false }
-            } elseif (($property.Value | ConvertTo-Json -Depth 100 -Compress) -ne ($actualProperty.Value | ConvertTo-Json -Depth 100 -Compress)) {
-              return $false
-            }
-          }
-          return $true
-        }
+        ${powershell.testSubsetFunction}
 
         $path = Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'
         if (-not (Test-Path -LiteralPath $path)) { return $false }
         $bytes = [IO.File]::ReadAllBytes($path)
         if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xef -and $bytes[1] -eq 0xbb -and $bytes[2] -eq 0xbf) { return $false }
         $actual = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
-        $specification = '${terminalSpecificationJson}' | ConvertFrom-Json
+        $specification = ${powershell.psJson terminalSettings} | ConvertFrom-Json
         $profile = $actual.profiles.list | Where-Object name -eq $specification.defaultProfileName | Select-Object -First 1
         if ($null -eq $profile -or $actual.defaultProfile -ne $profile.guid) { return $false }
         $scheme = $actual.schemes | Where-Object name -eq $specification.scheme.name | Select-Object -First 1
@@ -665,22 +626,11 @@ let
         return Test-Subset $actual $specification.settings
       '';
       setScript = ''
-        function Merge-Object($actual, $desired) {
-          foreach ($property in $desired.PSObject.Properties) {
-            $actualProperty = $actual.PSObject.Properties[$property.Name]
-            if ($property.Value -is [PSCustomObject] -and $null -ne $actualProperty -and $actualProperty.Value -is [PSCustomObject]) {
-              Merge-Object $actualProperty.Value $property.Value
-            } elseif ($null -eq $actualProperty) {
-              $actual | Add-Member -NotePropertyName $property.Name -NotePropertyValue $property.Value
-            } else {
-              $actualProperty.Value = $property.Value
-            }
-          }
-        }
+        ${powershell.mergeObjectFunction}
 
         $path = Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'
         $actual = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
-        $specification = '${terminalSpecificationJson}' | ConvertFrom-Json
+        $specification = ${powershell.psJson terminalSettings} | ConvertFrom-Json
         $profile = $actual.profiles.list | Where-Object name -eq $specification.defaultProfileName | Select-Object -First 1
         if ($null -eq $profile) { throw "Windows Terminal has no $($specification.defaultProfileName) profile" }
         $actual.defaultProfile = $profile.guid
@@ -696,13 +646,14 @@ in
 
 {
   files = jsonFiles;
+  inherit assets;
 
-  resources = [
-    altSnapResource
+  resources = builtins.filter (resource: resource != null) [
+    (if altSnapApplication == null then null else altSnapResource)
     forkWslGitResource
     zedThemeResource
     zenThemeResource
-    reneoElevationResource
+    (if reneoApplication == null then null else reneoElevationResource)
     terminalResource
     zedKeymapResource
     (mergeJsonScript {
@@ -716,16 +667,21 @@ in
         "zed-catppuccin-theme"
       ];
     })
-    (mergeJsonScript {
-      name = "reneo-settings";
-      description = "Select the Neo2 layout while preserving ReNeo state";
-      destination = "Join-Path $env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages\\Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe\\ReNeo\\config.json'";
-      desired = reneoSettings;
-      dependsOn = [
-        "package-keyboard-layout"
-        "native-neo-input-method"
-      ];
-    })
+    (
+      if reneoApplication == null then
+        null
+      else
+        mergeJsonScript {
+          name = "reneo-settings";
+          description = "Select the Neo2 layout while preserving ReNeo state";
+          destination = "Join-Path $env:LOCALAPPDATA '${reneoPackageDirectory}\\config.json'";
+          desired = reneoSettings;
+          dependsOn = [
+            "package-keyboard-layout"
+            "native-neo-input-method"
+          ];
+        }
+    )
     (mergeJsonScript {
       name = "power-toys-settings";
       description = "Enable only Command Palette in PowerToys";
@@ -743,11 +699,5 @@ in
     })
   ];
 
-  inherit
-    powerToysSettings
-    reneoSettings
-    terminalSettings
-    zedSettings
-    zenPolicies
-    ;
+  inherit zenPolicies;
 }

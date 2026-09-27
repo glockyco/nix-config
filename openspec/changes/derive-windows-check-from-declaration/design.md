@@ -52,6 +52,8 @@ Each entry keeps `name`, `role`, `id`, `versionPolicy`, `source`, and `scope`; a
 
 The ReNeo package directory `Microsoft\WinGet\Packages\<id>_Microsoft.Winget.Source_8wekyb3d8bbwe\ReNeo` is built once from the `keyboard-layout` entry. The launcher appends `reneo.exe` and the settings resource appends `config.json`.
 
+The selector returns `null` for an absent role. The renderer omits that role's dependent resources and review files when an application is removed. This lets the check report the missing role instead of failing Nix evaluation. A present application must still provide the release fields that its script needs.
+
 Alternative rejected: keep `files.nix` data and delete the entries from `applications.nix`. The role count and the elevation policy read `applications.nix`, so that file must list every application.
 
 ### 3. The output exposes `passthru.declaration`
