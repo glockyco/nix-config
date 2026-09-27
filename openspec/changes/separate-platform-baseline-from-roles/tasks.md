@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-26
 
-The owner scheduled this change after plan review. It runs at position 3, after `derive-windows-check-from-declaration`. Changes 0 through 2 are archived before implementation starts.
+The owner scheduled this change after plan review. It runs at position 3, after `derive-windows-check-from-declaration`. On 2026-09-26 the owner authorized implementation after changes 1 and 2 are implemented and pass the Mac gates, while their Korolev, CI, and Windows owner gates are pending. Changes 1 through 5 archive in order, each after its owner gates pass.
 
 ## 1. Record behavior before role moves
 

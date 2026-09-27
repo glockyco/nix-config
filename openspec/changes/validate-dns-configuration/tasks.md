@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-26
 
-The owner scheduled this change after plan review. It runs at position 5, after `package-user-programs`.
+The owner scheduled this change after plan review. It runs at position 5, after `package-user-programs` is implemented and passes the Mac gates. It uses the check module that `key-fleet-by-host` creates. Changes 1 through 5 archive in order, each after its owner gates pass.
 
 ## 1. Offline Validation Proof
 
