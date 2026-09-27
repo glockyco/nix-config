@@ -275,6 +275,15 @@ If recovery fails, roll back locally. Nix rollback neither restores keys nor cha
 Close all Windows Terminal windows after import, then reopen Terminal so its WSL generator discovers `NixOS`.
 The artifact selects that generated profile without replacing the profile list.
 Build the reviewed [Windows artifact](../../packages/windows-configuration/package.nix) in NixOS.
+The [packaged repository check](../../packages/windows-configuration-check/package.nix) validates the shipped WinGet v3 document, declared policy, and PowerShell 7 syntax.
+It does not prove that scripts run under Windows PowerShell 5.1 or that Windows accepts each resource.
+Run the NixOS repository gate before copying the output:
+
+```sh
+nix flake check --print-build-logs
+```
+
+Continue only when `windowsConfiguration` passes. Keep the Windows tests below as a separate acceptance gate.
 Use an absent destination under writable `C:\Temp`. Do not merge the artifact into a stale copy.
 
 ```sh
@@ -300,15 +309,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $zenPolicies -Test
 ```
 
 Exit status `1` means drift, not an acceptable resource error. Require an elevation shield only on `package browser`.
-Zed, Brave, and Ferdium are self-updating applications.
-Their vendor channels own routine updates, and WinGet owns installation and repair through `useLatest: true`.
+Zed, Brave, and Ferdium use the self-updating policy with `useLatest: true` and no exact version.
+Their vendor channels own routine updates, while WinGet owns installation and repair.
 The test accepts each installed version when it is equal to or newer than WinGet's catalog version.
-Every other declared application remains exact-pinned.
+Every other declared application uses an exact version with `useLatest: false`.
 If Zed, Brave, or Ferdium reports package drift, inspect the installed and catalog versions before applying.
 Do not disable vendor updates or downgrade a newer installation.
 Ferdium owns its profile, services, credentials, sessions, cache, update preference, and startup preference.
 Do not manage these values in the Windows configuration.
 A fresh Ferdium profile enables automatic updates and disables launch at sign-in by default.
+The dark-appearance test accepts Windows' generated `Custom.theme` path when dark modes, transparency, and wallpaper match.
+It does not require one fixed active theme-file path.
+When the PowerToys version pin changes, inspect every enabled-module key against that installed release.
+The repository check does not claim to verify that upstream module list.
 
 Open 64-bit PowerShell with **Run as administrator**, using the separate local `Administrator` credential:
 

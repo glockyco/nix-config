@@ -57,6 +57,11 @@ nix flake check --all-systems --print-build-logs
 
 Permanent behavior changes use [OpenSpec](openspec/). [Agent guidance](AGENTS.md) explains the repository workflow.
 
+The flake also builds the separately applied [Windows configuration](packages/windows-configuration/package.nix).
+Its [packaged check](packages/windows-configuration-check/package.nix) validates the declaration, shipped WinGet document, and PowerShell syntax during `nix flake check`.
+This check does not apply Windows resources or prove Windows PowerShell 5.1 behavior.
+Follow the [Windows apply procedure](docs/operations/wsl-omp-bootstrap.md#apply-the-windows-layer) for live tests and manual application.
+
 ## Activate
 
 Review and merge first. Keep the previous generation and read activation output. For Mac networking changes, retain a local administrator terminal for recovery.
