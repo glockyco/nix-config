@@ -69,10 +69,18 @@ pre-migration table. The Mac command
 reported one version addition (`omp-dev-update` 0.1.0) and removal of the
 standalone `omp-dev-update.py` source. Its closure changed from 5,855 to
 5,854 paths (+14, -15, +153.8 KiB). Python packaging and source relocation
-explain the Mac path change; no unrelated package version changed. The
-Korolev path also changed with the updater packaging, but its closure has
-not been built or compared here. Owner task 7.5 must record the actual
-Korolev `nvd diff` before that explanation can be accepted.
+explain the Mac path change; no unrelated package version changed.
+
+`nix run nixpkgs#nix-diff -- /nix/store/g49mzl623c5b30jb3y21m1v916byafvv-nixos-system-korolev-26.05.20260903.a5cc6f2.drv /nix/store/gm6nyljbwwrlnylcdp6mg0ck2sh65baj-nixos-system-korolev-26.05.20260903.a5cc6f2.drv`
+compares the Korolev derivations without a build. Every difference descends
+from one cause: the input derivation `omp-dev-update` became
+`omp-dev-update-0.1.0` in `home-manager-path` and in `verify-personal-omp`,
+whose script names the new updater store path. The remaining differing
+derivations (`user-environment`, `home-manager-files`, `home-manager-generation`,
+`unit-home-manager-user.service`, `system-units`, `etc`, `activate`) only carry
+those two inputs upward. `tailnet-builder-check`, `nix.buildMachines`, the SSH
+client configuration, and every other system derivation are identical. Owner
+task 7.5 still records the built closure on Korolev.
 
 ## Mac repository gates
 
