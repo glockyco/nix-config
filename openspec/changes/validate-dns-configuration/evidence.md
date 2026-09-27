@@ -39,3 +39,9 @@ Done. 1 corrections.
 ```
 
 This is the intended change and the only change. Nothing was pushed.
+
+A second run of the exact README command, after the README change, printed the same single correction and exited 0.
+
+## Local gates
+
+At `bab2b0a` plus this record: `nix fmt -- --fail-on-change` and `openspec validate --all --strict` (23 items) passed. `nix flake check --print-build-logs` passed every `aarch64-darwin` check, including `dnsZone`. Every `x86_64-linux` check and package, including `dnsZone`, evaluated to a derivation, and `nix flake show --all-systems` exited 0. `nix run .#check-darwin-build-plans` reported `62 outputs, none reaching a forbidden source build.` `nix build .#darwinConfigurations.macbook-pro.system` exited 0.
