@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   pkgs,
   ...
@@ -296,90 +297,44 @@ let
     "net.daringfireball.markdown"
   ];
 
-  duti = "${pkgs.duti}/bin/duti";
+  # The package reads each handler before binding it. An extension with no
+  # handler falls back to its declared UTI, as the old activation did.
+  bindings =
+    (map (uti: {
+      app = zed;
+      inherit uti;
+    }) utis)
+    ++ (map (extension: {
+      app = zed;
+      inherit extension;
+      uti = utiOf extension;
+    }) (builtins.attrNames fileTypes))
+    ++ [
+      {
+        app = pdfExpert;
+        uti = "com.adobe.pdf";
+      }
+    ]
+    ++ (map (scheme: {
+      app = thunderbird;
+      inherit scheme;
+    }) thunderbirdHandlers);
 
-  lsregister = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister";
-
-  # Bind only what Zed does not already own. Rebinding a type that is already
-  # Zed's costs a `duti` call per type on every activation and risks raising the
-  # confirmation dialog again, so each binding is gated on a read first.
-  bindings = ''
-    handlerOfUti() {
-      ${duti} -d "$1" 2>/dev/null || true
-    }
-
-    bindUti() {
-      if test "$(handlerOfUti "$2")" != "$1"; then
-        run ${duti} -s "$1" "$2" all || true
-      fi
-    }
-
-    bindScheme() {
-      if test "$(handlerOfUti "$2")" != "$1"; then
-        run ${duti} -s "$1" "$2" || true
-      fi
-    }
-
-    # `$1` is the extension and `$2` the UTI this module declares for it. One of
-    # the two bindings lands: the declared UTI when macOS has no type of its own
-    # for the extension, the extension's system UTI when it has.
-    #
-    # `duti -x` reports the handler macOS would use for the extension, which is
-    # the authoritative answer, but it fails for some types whose UTI does have a
-    # handler (`fs`). Fall back to the declared UTI so those are not rebound on
-    # every activation.
-    #
-    # Home Manager activation runs under `set -e` and `set -o pipefail`, so the
-    # read has to end in `|| true`: `duti -x` exits nonzero for an extension with
-    # no handler, and that would abort activation.
-    bindExtension() {
-      local handler
-      handler="$(${duti} -x "$1" 2>/dev/null | tail -1 || true)"
-      if test -z "$handler"; then
-        handler="$(handlerOfUti "$2")"
-      fi
-
-      if test "$handler" != ${zed}; then
-        run ${duti} -s ${zed} "$2" all || true
-        run ${duti} -s ${zed} "$1" all || true
-      fi
-    }
-  '';
-
-  setAll = builtins.concatStringsSep "\n" (
-    map (u: "bindUti ${zed} ${lib.escapeShellArg u}") utis
-    ++ map (ext: "bindExtension ${lib.escapeShellArg ext} ${lib.escapeShellArg (utiOf ext)}") (
-      builtins.attrNames fileTypes
-    )
-  );
-
-  setThunderbird = builtins.concatStringsSep "\n" (
-    map (t: "bindScheme ${thunderbird} ${lib.escapeShellArg t}") thunderbirdHandlers
-  );
-
-  setPdfExpert = "bindUti ${pdfExpert} com.adobe.pdf";
+  declaration = (pkgs.formats.json { }).generate "default-applications.json" {
+    bundle = {
+      source = "${fileTypesApp}/FileTypes.app";
+      destination = "${config.home.homeDirectory}/Applications/FileTypes.app";
+    };
+    inherit bindings;
+  };
 in
 
 {
-  # `duti` binds many UTIs and extensions via LaunchServices; Finder's "Change
-  # All" only rebinds one UTI.
-  # Reapply on every activation because LaunchServices bindings can be rebuilt by
-  # OS updates, app installs, or `lsregister -kill`. A binding that already
-  # points at the right app is read and skipped, so a steady-state activation
-  # writes nothing and raises no dialog.
-  # Ignore unknown UTIs so one failure does not abort activation.
-  #
-  # The bundle is copied, not symlinked: LaunchServices ignores the type
-  # declarations of a bundle reached through a symlink, so a store link
-  # registers as an app that declares nothing. Measured, not documented.
+  # `duti` binds UTIs and extensions through LaunchServices; Finder's "Change
+  # All" only rebinds one UTI. The package compares each binding and reports
+  # unexpected write failures. LaunchServices ignores declarations in a store
+  # symlink, so the package copies and registers only a changed bundle.
   home.activation.defaultApplications = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    run ${pkgs.coreutils}/bin/rm -rf $VERBOSE_ARG "$HOME/Applications/FileTypes.app"
-    run ${pkgs.coreutils}/bin/cp -R $VERBOSE_ARG ${fileTypesApp}/FileTypes.app "$HOME/Applications/FileTypes.app"
-    run ${pkgs.coreutils}/bin/chmod -R u+w "$HOME/Applications/FileTypes.app"
-    run ${lsregister} -f "$HOME/Applications/FileTypes.app" || true
-    ${bindings}
-    ${setAll}
-    ${setPdfExpert}
-    ${setThunderbird}
+    run ${lib.getExe pkgs.default-applications} --declaration ${declaration}
   '';
 }

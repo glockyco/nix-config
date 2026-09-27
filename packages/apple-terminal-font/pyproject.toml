@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apple-terminal-font"
+version = "0.1.0"
+description = "Set the font of Terminal startup and default profiles"
+requires-python = ">=3.11"
+
+[project.scripts]
+apple-terminal-font = "apple_terminal_font:entry_point"
+
+[tool.setuptools.packages.find]
+where = ["src"]

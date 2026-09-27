@@ -56,6 +56,8 @@ Use `plistlib` to preserve unrelated preference entries and Terminal profile fon
 
 Keep the type table and measured rationale in `modules/home/darwin/default-apps.nix:19-67`. Render one JSON declaration with `pkgs.formats.json`, containing the bundle and `{ app, uti }`, `{ app, extension, uti }`, and `{ app, scheme }` bindings. Pass it to `default-applications --declaration <file>`. Its package performs the reads, writes, and error handling. The current code already checks a handler before binding, but ignores failed writes (`modules/home/darwin/default-apps.nix:303-345`). Fail a `duti -s` call unless its diagnostic identifies `(error -50)`; print the skipped type. Fail a `lsregister -f` error. Keep the present `duti -d`/`-x` missing-handler read behavior.
 
+If registration fails after replacing the bundle, restore the prior copy (or remove a newly installed copy). Otherwise the next activation sees equal bundle contents and skips the registration that failed. The check must prove that the next run retries and succeeds.
+
 **Alternative:** retain `|| true` for binding writes. Reject it because it masks a wrong app identifier or a failed handler binding.
 
 ### 6. Keep hotkey identifiers, not unused descriptions

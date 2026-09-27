@@ -53,7 +53,7 @@ in
   # Copy the file instead of symlinking it; store symlinks are read-only and break on save.
   # The generated file overwrites UI changes on the next switch; edit `enabledRules`.
   home.activation.karabinerConfiguration = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    run ${pkgs.coreutils}/bin/install -d -m 0700 $VERBOSE_ARG ${lib.escapeShellArg karabinerDir}
-    run ${pkgs.coreutils}/bin/install -m 0600 $VERBOSE_ARG ${karabinerJson} ${lib.escapeShellArg "${karabinerDir}/karabiner.json"}
+    run ${lib.getExe pkgs.karabiner-configuration} \
+      ${karabinerJson} ${lib.escapeShellArg "${karabinerDir}/karabiner.json"}
   '';
 }

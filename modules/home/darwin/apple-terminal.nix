@@ -14,6 +14,6 @@ in
   # Profile fonts are NSKeyedArchiver blobs, not strings; `system.defaults`
   # cannot set them.
   home.activation.appleTerminalFont = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    run ${pkgs.python3}/bin/python3 ${./apple-terminal.py} ${lib.escapeShellArg fontPostScriptName}
+    run ${lib.getExe pkgs.apple-terminal-font} ${lib.escapeShellArg fontPostScriptName}
   '';
 }

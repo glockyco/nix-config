@@ -12,9 +12,8 @@ let
 
   fastmail = pkgs.writeShellApplication {
     name = "fastmail";
-    runtimeInputs = [ pkgs.python3 ];
     text = ''
-      exec python3 ${./fastmail.py} --token-file ${tokenFile} "$@"
+      exec ${lib.getExe pkgs.fastmail} --token-file ${lib.escapeShellArg tokenFile} "$@"
     '';
   };
 in
