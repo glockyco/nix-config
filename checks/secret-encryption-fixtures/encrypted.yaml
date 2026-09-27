@@ -1,0 +1,11 @@
+service:
+  credentials:
+    token: ENC[AES256_GCM,data:fixture]
+providers:
+  - api_key: ENC[AES256_GCM,data:fixture]
+  - sops:
+      note: ENC[AES256_GCM,data:fixture]
+sops:
+  age:
+    - recipient: age1fixture
+  mac: unencrypted metadata
