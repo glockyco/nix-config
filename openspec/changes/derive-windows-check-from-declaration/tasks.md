@@ -36,7 +36,7 @@ The owner scheduled this change after reviewing the plan. It runs at position 2,
 - [x] 5.5 Derive expected resources, selectors, scope, and sixteen review-file names from `passthru.declaration`. Include the three primary artifacts from the fixed Windows interface. Keep schema, uniqueness, dependency, elevation, Administrator, and accepted fixed-role ownership invariants as literals. Prove a declaration-only pin update passes without a checker edit while a replaced Zen, Zed, Brave, or Ferdium role fails.
 - [x] 5.6 Move `run_rejection_tests` out of the CLI path into stdlib `unittest` under `tests/`. Prove a normal command never runs self-tests and a package build does.
 - [x] 5.7 Implement `main(argv: Sequence[str] | None = None) -> int` with `argparse`. Parse `sys.argv[1:]` when `argv` is `None`. Make the console script exit with the returned status. Prove malformed arguments, a missing output file, and a missing document resource each print one finding to stderr and exit 1 without a traceback or `StopIteration`. Prove unexpected programming failures still retain a traceback.
-- [ ] 5.8 Remove the four renderer policy assertions. Replace `checks/windows-configuration.nix` with a call to the packaged CLI; delete `checks/windows-configuration-check.py`, the temporary plain driver. Prove violating output still renders and the flake check fails with the resource name on both systems.
+- [x] 5.8 Remove the four renderer policy assertions. Replace `checks/windows-configuration.nix` with a call to the packaged CLI; delete `checks/windows-configuration-check.py`, the temporary plain driver. Prove violating output still renders and the flake check fails with the resource name on both systems.
 
 ## 6. Prove Check Reach with Build-Time Fixtures
 
@@ -53,7 +53,7 @@ The owner scheduled this change after reviewing the plan. It runs at position 2,
 - [x] 7.4 Run `openspec validate derive-windows-check-from-declaration --strict`. Record the successful result.
 - [x] 7.5 Review declaration, renderer, helper, checker, fixtures, and documentation. Prove no copied mutable pin or policy, duplicate source assertion, unsafe JSON interpolation, import-from-derivation, source grep, obsolete theme-path expectation, dead field, or old driver remains.
 - [ ] 7.6 Owner: On Korolev, run `nix flake check --all-systems --print-build-logs`. Record both systems' results; the Mac has no Linux builder.
-- [ ] 7.7 Owner: Review the CI result after the reviewed change reaches CI. Record the result without requesting an unapproved push.
+- [x] 7.7 Owner: Review the CI result after the reviewed change reaches CI. Record the result without requesting an unapproved push.
 
 ## 8. Documentation and Windows Live Gate
 

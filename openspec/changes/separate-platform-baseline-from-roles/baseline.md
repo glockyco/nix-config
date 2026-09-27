@@ -124,3 +124,7 @@ Task 7.1 stays open: the Mac closure has an `nvd` explanation, but the Korolev e
 ## Final review
 
 Outside `docs/plans/` and `openspec/`, every Air reference is in the deletion set, `README.md`, or `docs/operations/container-runtime.md`. The Air role's `default.nix` lists that set for issue #17. `packages/windows-configuration/` has no Zen `removeAttrs` compensation; its one `removeAttrs` drops release data from `passthru.declaration`. Homebrew casks and Dock applications derive from `host.darwin.applications`, and no module under `modules/` repeats a host name, user name, home path, time zone, or locale literal. Every relative link in `README.md`, `AGENTS.md`, `docs/operations/`, and the OMP update skill resolves.
+
+## CI evidence
+
+PR #44 (`refactor/fleet-roles-programs` at `7903d59`) ran the `check` workflow (https://github.com/glockyco/nix-config/actions/runs/36333360593). `check (ubuntu-latest)` passed in 5m58s with Korolev's declared Nix and built every `x86_64-linux` check, including the Korolev system and home generation. `check (macos-15)` passed in 13m34s. The `tailnet-policy` `test` job passed.

@@ -65,8 +65,8 @@ needs the owner-host closure comparison in task 7.5, so task 6.3 stays open.
 - [x] 7.1 Update affected README links, workflow comments, and nearby rationale for the new host-prefixed gates and file layout. Proof: each named command or path resolves and `nix flake show --json` lists named outputs.
 - [x] 7.2 Keep `lefthook.yml` limited to pre-commit and record the no-pre-push decision here. Proof: inspect hook configuration and run the development-shell hook smoke.
 - [x] 7.3 Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the Mac. Proof: record command exit statuses and inspect the build-plan output.
-- [ ] 7.4 Owner: Run `nix flake check --print-build-logs` on `x86_64-linux` with Korolev's declared Nix, either on Korolev or in CI. Proof: record the complete passing check run for that system.
+- [x] 7.4 Owner: Run `nix flake check --print-build-logs` on `x86_64-linux` with Korolev's declared Nix, either on Korolev or in CI. Proof: record the complete passing check run for that system.
 - [ ] 7.5 Owner: Run any required Korolev `nvd diff` for changed pinned-revision paths and record the closure explanation. Proof: attach the actual Korolev comparison to `baseline.md`.
-- [ ] 7.6 Owner: Record the CI outcome after a reviewed push; do not push solely for this gate. Proof: link the passing `check` workflow run.
+- [x] 7.6 Owner: Record the CI outcome after a reviewed push; do not push solely for this gate. Proof: link the passing `check` workflow run.
 - [x] 7.7 Run `openspec validate key-fleet-by-host --strict` after the predecessor is archived. Proof: strict validation exits zero.
 - [x] 7.8 Review the complete diff for old package paths, host/user lookup literals, inline programs, duplicate package calls, and obsolete options. Proof: every former caller has one replacement and there are no compatibility aliases.
