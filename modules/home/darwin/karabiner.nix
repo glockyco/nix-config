@@ -48,7 +48,7 @@ let
 in
 
 {
-  # Karabiner-Elements is installed as a Homebrew cask (modules/darwin/homebrew.nix).
+  # The desktop role installs Karabiner-Elements as a Homebrew cask.
   # Karabiner rewrites `karabiner.json` in place and chmods the directory to 0700.
   # Copy the file instead of symlinking it; store symlinks are read-only and break on save.
   # The generated file overwrites UI changes on the next switch; edit `enabledRules`.

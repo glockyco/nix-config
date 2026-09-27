@@ -9,6 +9,8 @@ Personal workstation configuration for an Apple Silicon MacBook Pro and NixOS un
 | `macbook-pro` | `aarch64-darwin` | [nix-darwin](hosts/macbook-pro/default.nix) |
 | `korolev`     | `x86_64-linux`   | [NixOS/WSL](hosts/korolev/default.nix)      |
 
+Host facts live in [typed declarations](modules/fleet/host.nix) under `hosts/<name>/host.nix`. Each `hosts/<name>/default.nix` selects its roles: the Mac selects [desktop](modules/roles/darwin/desktop/default.nix), [PostgreSQL](modules/roles/darwin/postgresql/default.nix), [container client](modules/roles/darwin/container-client/default.nix), and the temporary [Air client](modules/roles/darwin/air-client/default.nix); Korolev selects [WSL workstation](modules/roles/nixos/wsl-workstation/default.nix). The Darwin and NixOS baselines do not enable these functions on their own. Change a machine value in its host declaration and role policy in its role module.
+
 Nix owns the host configuration and OMP wrapper, updater, plugin, and language tools. `omp-dev-update` prepares patched OMP source generations independently on each host. OMP owns its writable authentication, configuration, sessions, and databases; activation and Nix rollback do not replace them. Project repositories own their development environments.
 
 [![System overview: pinned inputs and shared and platform-specific modules compose the macOS and NixOS/WSL environments. Windows configuration is applied separately. The OMP detail shows the Nix-managed wrapper, plugin, and language servers interacting with the host-local source runtime and writable state.](docs/images/system-overview.webp)](docs/images/system-overview.webp)
@@ -85,6 +87,12 @@ In a fresh local OMP session, use `/plannotator-annotate <path>` to annotate a d
 For a new Windows machine, follow [WSL and Windows provisioning](docs/operations/wsl-omp-bootstrap.md). It covers image import, credentials, the separate Windows apply, and recovery. Run one WSL distribution at a time; confirm `systemctl is-active user@1000.service` reports `active` before activation.
 
 For local containers on the Mac, use the [container lifecycle and recovery procedure](docs/operations/container-runtime.md). Activation does not start or delete the VM.
+
+## Nix maintenance and encrypted secrets
+
+Both hosts use the [shared Nix policy](modules/shared/nix-policy.nix) for pinned registries and disabled legacy channels. On the Mac, Determinate Nix owns automatic store garbage collection; this configuration does not schedule an optimiser. On Korolev, NixOS owns weekly garbage collection and store optimisation. Keep generations needed for recovery before collecting store paths.
+
+The Mac's [SOPS user module](modules/home/darwin/secrets.nix) decrypts committed secrets with its private age key at `~/.config/sops/age/keys.txt`. Never commit, print, or copy that key or decrypted values into this repository. The repository check rejects plaintext secret values outside SOPS metadata. Offline recovery is **not yet configured**: the owner must create a key on encrypted offline media, provide only its public recipient, and verify each re-encrypted file with that key before treating offline recovery as available. Do not remove the current ciphertext until the Mac can decrypt replacements.
 
 ## Update
 

@@ -170,7 +170,7 @@ Use OMP's managed browser, not the browser relay. Open https://example.com, repo
 
 Require `Example Domain` and a screenshot of the same page, without a missing-library error.
 Repeat after OMP updates, OMP recovery, or activation changes to the browser ABI.
-NixOS supplies the [loader and libraries](../../modules/nixos/programs.nix), not Chromium downloads or browser profiles.
+NixOS supplies the [loader and libraries](../../modules/roles/nixos/wsl-workstation/programs.nix), not Chromium downloads or browser profiles.
 
 ## Join the tailnet and provision the builder
 
@@ -189,7 +189,7 @@ resolvectl status
 getent ahosts github.com
 ```
 
-Require the [declared resolver](../../modules/nixos/wsl.nix), `10.255.255.254`.
+Require the [declared resolver](../../modules/roles/nixos/wsl-workstation/wsl.nix), `10.255.255.254`.
 If employer-internal services are used from WSL, also resolve a known employer hostname. Otherwise, that check is not applicable.
 Join once with the declared tag and complete the displayed browser login:
 
@@ -215,10 +215,10 @@ sudo ssh-keygen -y -f /root/.ssh/macbook-pro-builder
 ```
 
 Require root ownership, directory mode `700`, and private-key mode `600`.
-Review the printed public key against the Mac's [restricted authorization](../../modules/darwin/tailscale.nix) before activation.
+Review the printed public key against the Mac's [restricted authorization](../../modules/roles/darwin/desktop/tailscale.nix) before activation.
 Never overwrite an existing private key to make bootstrap pass.
 The client pins the Mac's actual OpenSSH host key, not a Tailscale SSH key.
-If it changes, verify the replacement from a local Mac terminal before editing the [pin](../../modules/nixos/programs.nix).
+If it changes, verify the replacement from a local Mac terminal before editing the [pin](../../modules/roles/nixos/wsl-workstation/programs.nix).
 Never disable strict host checking or accept an unverified key.
 
 ### Verify or recover builder access
@@ -253,7 +253,7 @@ printf 'SSH status: %s\n' "$?"
 tailnet-builder-check
 ```
 
-Compare effective settings with the [client declaration](../../modules/nixos/programs.nix), including strict checking, the dedicated identity, and bounded batch connections.
+Compare effective settings with the [client declaration](../../modules/roles/nixos/wsl-workstation/programs.nix), including strict checking, the dedicated identity, and bounded batch connections.
 Require `/nix/var/nix/profiles/default/bin/nix-daemon`, status `23`, and a fresh builder result naming `arm64`, `macbook-pro`, and `passed`.
 The builder check also reports the measured Tailscale path.
 For authentication failures, collect native Mac logs without changing the daemon's log level:

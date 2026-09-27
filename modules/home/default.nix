@@ -1,7 +1,6 @@
 {
-  # User-scope modules that any supported host can import. A module that depends
-  # on a macOS interface belongs in `./darwin`, which only the Darwin host
-  # imports.
+  # User-scope modules that every supported host can import. Modules that
+  # depend on macOS interfaces belong in `./darwin` under the desktop role.
   #
   # `catppuccin.nix` stays here because its palette and its ports for portable
   # programs apply to any host. Ports for a platform-specific program live

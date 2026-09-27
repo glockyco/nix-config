@@ -16,7 +16,7 @@
       lfs.enable = true;
 
       # The commit identity belongs to the host, because it differs per machine.
-      # See `hosts/<name>/default.nix`.
+      # See `hosts/<name>/host.nix` for the declared identity.
       settings = {
         init.defaultBranch = "main";
 
