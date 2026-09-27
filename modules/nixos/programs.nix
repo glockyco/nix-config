@@ -69,12 +69,6 @@ in
     ];
   };
 
-  # `EDITOR` must name a program this host provides, and the portable user
-  # modules carry no editor: the Darwin host uses Zed, and on this machine the
-  # Windows layer owns that. `nano` is not in the NixOS default package set, so
-  # it is declared here rather than assumed.
-  programs.nano.enable = true;
-
   # The Nix daemon and release commands use the same root-only credential.
   programs.ssh.knownHosts.${builderHost.name} = {
     hostNames = [

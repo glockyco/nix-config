@@ -55,6 +55,18 @@ Each host-specific fact SHALL have one typed source: its name is the host direct
 - **THEN** its current SSH aliases, batch command, SMB agent, link, and checks are available
 - **AND** durable host declarations and platform baselines contain no Air endpoint value
 
+### Requirement: Nix policy uses supported platform interfaces
+
+The host configurations SHALL share one pinned registry, disabled legacy channel policy, and maintenance intent. NixOS SHALL schedule native weekly garbage collection and store optimisation. Darwin SHALL use Determinate Nix's automatic garbage collection without setting `auto-optimise-store` or adding an independent maintenance job; its pinned Determinate module has no scheduled store optimiser.
+
+#### Scenario: Evaluate each native adapter
+
+- **WHEN** the Darwin and NixOS hosts evaluate their Nix settings
+- **THEN** both use the pinned registry and disable legacy channel lookup
+- **AND** Korolev has weekly native GC and optimisation timers
+- **AND** Darwin retains its trusted SSH builder user and uses Determinate's automatic GC
+- **AND** Darwin does not enable automatic store optimisation
+
 ### Requirement: Secret files contain only encrypted data scalars
 
 Every scalar value in the YAML data outside the top-level `sops` metadata mapping of a tracked file under `secrets/` SHALL be a SOPS encrypted value. The SOPS creation rule SHALL encrypt data independent of its key name. Every secret file SHALL be encrypted for the Mac recipient and the owner-supplied offline recovery recipient. Repository validation SHALL inspect parsed YAML data and reject any plaintext scalar.
