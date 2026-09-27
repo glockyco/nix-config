@@ -98,6 +98,19 @@ Both hosts use the [shared Nix policy](modules/shared/nix-policy.nix) for pinned
 
 The Mac's [SOPS user module](modules/home/darwin/secrets.nix) decrypts committed secrets with its private age key at `~/.config/sops/age/keys.txt`. Never commit, print, or copy that key or decrypted values into this repository. The repository check rejects plaintext secret values outside SOPS metadata. Offline recovery is **not yet configured**: the owner must create a key on encrypted offline media, provide only its public recipient, and verify each re-encrypted file with that key before treating offline recovery as available. Do not remove the current ciphertext until the Mac can decrypt replacements.
 
+## DNS
+
+[`dns/dnsconfig.js`](dns/dnsconfig.js) declares the `glockyco.com` zone. `nix flake check` validates it on both systems without a token or provider access, and any DNSControl warning fails the check. Checks and activation never publish the zone.
+
+Publish only from the Mac, after a review of the preview. In `dns/`, inside the development shell, load the token with the `use_cloudflare_dns` direnv function, then run:
+
+```sh
+dnscontrol preview
+dnscontrol push
+```
+
+Run `push` only after the preview shows the intended record changes and nothing else.
+
 ## Update
 
 The central [dependency automation](https://github.com/glockyco/dependency-automation) opens review-only Nix-input PRs every Saturday. Renovate updates GitHub Actions. Neither merges or activates hosts. Plannotator stays at an explicitly selected vendor revision. [Dependency operations](docs/operations/dependency-updates.md) covers on-demand Plannotator updates, external authorization, and release recovery.
