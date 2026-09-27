@@ -9,6 +9,7 @@
     {
       lib,
       pkgs,
+      self',
       system,
       ...
     }:
@@ -16,11 +17,10 @@
       hosts = lib.filterAttrs (_: host: host.system == system) config.fleet.hosts;
       inherit (import ../modules/shared) binaryCaches tailnetPeers;
       supports = package: lib.meta.availableOn pkgs.stdenv.hostPlatform package;
+      # The fixtures render variants; the policy under test is the exported
+      # one that the workflow applies.
       tailnetPolicyRenderer = pkgs.callPackage ../lib/tailnet-policy.nix { };
-      tailnetPolicy = tailnetPolicyRenderer {
-        managedHosts = config.fleet.hosts;
-        peers = tailnetPeers;
-      };
+      tailnetPolicy = self'.packages.tailnet-policy;
 
       markdownTests = pkgs.callPackage ../packages/markdown-oxide/tests.nix { };
       roslynTests = pkgs.callPackage ../packages/roslyn-language-server/tests.nix { };
