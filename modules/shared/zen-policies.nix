@@ -9,8 +9,6 @@ let
 in
 
 {
-  EnterprisePoliciesEnabled = true;
-
   ExtensionSettings = {
     "uBlock0@raymondhill.net" = forceInstalled "ublock-origin" // {
       private_browsing = true;

@@ -10,5 +10,7 @@ in
   # EnterprisePoliciesEnabled is set. Writing them here instead of
   # `Contents/Resources/distribution/policies.json` keeps the Homebrew-managed
   # bundle untouched -- editing it breaks the signature and is lost on upgrade.
-  system.defaults.CustomUserPreferences."app.zen-browser.zen" = shared.zenPolicies;
+  system.defaults.CustomUserPreferences."app.zen-browser.zen" = shared.zenPolicies // {
+    EnterprisePoliciesEnabled = true;
+  };
 }
