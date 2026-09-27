@@ -69,10 +69,10 @@ in
       # fingerprint is SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw.
       "desktop" = desktopHost;
 
-      # Same reasoning as `air-batch`: an unattended command must exit with its
-      # remote process instead of inheriting the interactive control-master
-      # lifetime. The desktop's agent workflows are driven this way, so the
-      # split matters here for the same reason it does for the Air.
+      # Unattended commands must exit with their remote process instead of
+      # inheriting the interactive one-hour control-master lifetime. Keep stdin
+      # available because rsync and sftp carry their protocol over the SSH
+      # streams. The desktop's agent workflows use this endpoint.
       "desktop-batch" = desktopHost // {
         BatchMode = "yes";
         RequestTTY = "no";
