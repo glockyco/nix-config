@@ -4,8 +4,8 @@ The owner scheduled this change after plan review. It runs at position 3, after 
 
 ## 1. Record behavior before role moves
 
-- [ ] 1.1 Record the parent commit and `flake.lock` checksum in `baseline.md`. Force one `system.configurationRevision` through `extendModules` and `lib.mkForce`; evaluate each host's `toplevel.drvPath` twice and record equal paths.
-- [ ] 1.2 Build the completed change 2 Windows output. Record its store path and the names and SHA-256 hashes of all 19 rendered files in `baseline.md`. Evaluate Air SSH, SMB, batch, Colima, screenshot, Git, Nix, PostgreSQL `dataDir`, and SOPS values; record successful commands and values.
+- [x] 1.1 Record the parent commit and `flake.lock` checksum in `baseline.md`. Force one `system.configurationRevision` through `extendModules` and `lib.mkForce`; evaluate each host's `toplevel.drvPath` twice and record equal paths.
+- [x] 1.2 Build the completed change 2 Windows output. Record its store path and the names and SHA-256 hashes of all 19 rendered files in `baseline.md`. Evaluate Air SSH, SMB, batch, Colima, screenshot, Git, Nix, PostgreSQL `dataDir`, and SOPS values; record successful commands and values.
 
 ## 2. Extend standalone typed host declarations
 
