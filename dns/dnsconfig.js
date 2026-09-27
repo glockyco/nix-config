@@ -1,7 +1,9 @@
 var DSP_CLOUDFLARE = NewDnsProvider("cloudflare");
 var REG_NONE = NewRegistrar("none");
 
-D("glockyco.com", REG_NONE,
+D(
+  "glockyco.com",
+  REG_NONE,
   DnsProvider(DSP_CLOUDFLARE),
   DefaultTTL(1),
 
@@ -73,7 +75,11 @@ D("glockyco.com", REG_NONE,
   IGNORE("www", "AAAA", "100::"),
 
   // Google uses this token to verify ownership of the public site.
-  TXT("@", "google-site-verification=jFHLKO_n1tlV12VSycCUJHi7K-iaH2QH6OPRr03In00", TTL(3600)),
+  TXT(
+    "@",
+    "google-site-verification=jFHLKO_n1tlV12VSycCUJHi7K-iaH2QH6OPRr03In00",
+    TTL(3600),
+  ),
 
   // RFC 6186 autoconfiguration. A target of "." means the service is
   // deliberately not offered, which is the correct answer for cleartext IMAP

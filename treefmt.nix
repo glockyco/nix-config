@@ -42,5 +42,13 @@ _:
       enable = true;
       settings.formatter.retain_line_breaks = true;
     };
+
+    # The DNSControl zone is the only JavaScript source. Prettier's defaults
+    # match its style: two spaces, double quotes, semicolons, trailing commas.
+    # Scope it to that file, so it does not compete with the formatters above.
+    prettier = {
+      enable = true;
+      includes = [ "dns/dnsconfig.js" ];
+    };
   };
 }
