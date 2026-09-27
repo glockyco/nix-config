@@ -1,12 +1,14 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 
 let
-  flake = "${config.home.homeDirectory}/.config/nix-darwin";
+  flake = config.host.paths.configurationCheckout;
+  darwinRebuild = inputs.nix-darwin.packages.${pkgs.stdenv.hostPlatform.system}.darwin-rebuild;
 in
 
 {
@@ -22,7 +24,7 @@ in
 
         # `sudo` rather than requiring the caller to be root, so that nvd below
         # still runs as the user.
-        sudo darwin-rebuild switch --flake ${lib.escapeShellArg flake} "$@"
+        sudo ${lib.getExe darwinRebuild} switch --flake ${lib.escapeShellArg flake} "$@"
 
         after=$(readlink -f /run/current-system)
 

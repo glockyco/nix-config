@@ -8,6 +8,7 @@
   # `./catppuccin.nix` holds the theme ports for the programs in this directory.
   imports = [
     ./catppuccin.nix
+    ./homebrew-path.nix
     ./darwin-switch.nix
     ./secrets.nix
     ./fastmail.nix

@@ -3,13 +3,14 @@
   coreutils,
   gnugrep,
   homeConfiguration,
+  host,
+  platform,
   lib,
   runCommand,
 }:
 
 let
   profile = homeConfiguration.xdg.configFile."colima/default/colima.yaml".source;
-  homeDirectory = homeConfiguration.home.homeDirectory;
   homePath = homeConfiguration.home.path;
   activationPackage = homeConfiguration.home.activationPackage;
   colimaAgents = builtins.filter (name: lib.hasInfix "colima" (lib.toLower name)) (
@@ -40,17 +41,19 @@ runCommand "check-container-runtime-configuration"
     test -x ${homePath}/bin/container-runtime-check
     test ! -e ${homePath}/bin/dockerd
 
-    grep -qFx 'arch: aarch64' ${profile}
+    grep -qFx 'arch: ${platform.qemuArch}' ${profile}
     grep -qFx 'autoActivate: true' ${profile}
-    grep -qFx 'cpu: 8' ${profile}
-    grep -qFx 'disk: 150' ${profile}
+    grep -qFx 'cpu: ${toString host.darwin.containerProfile.cpu}' ${profile}
+    grep -qFx 'disk: ${toString host.darwin.containerProfile.disk}' ${profile}
     grep -qFx 'forwardAgent: false' ${profile}
     grep -qFx '  enabled: false' ${profile}
-    grep -qFx 'memory: 16' ${profile}
+    grep -qFx 'memory: ${toString host.darwin.containerProfile.memory}' ${profile}
     grep -qFx 'mountType: virtiofs' ${profile}
     grep -qFx 'mounts:' ${profile}
-    grep -qFx -- '- location: ${homeDirectory}' ${profile}
-    grep -qFx '  writable: true' ${profile}
+    ${lib.concatMapStringsSep "\n" (mount: ''
+      grep -qFx -- '- location: ${mount.location}' ${profile}
+      grep -qFx '  writable: ${if mount.writable then "true" else "false"}' ${profile}
+    '') host.darwin.containerProfile.mounts}
     grep -qFx '  address: false' ${profile}
     grep -qFx '  hostAddresses: false' ${profile}
     grep -qFx '  mode: shared' ${profile}

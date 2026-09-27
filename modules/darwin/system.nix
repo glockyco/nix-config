@@ -24,7 +24,7 @@ in
   # Keep `localHostName` aligned with the flake attribute used by
   # `darwin-rebuild --flake .`.
   networking = {
-    computerName = "MacBook Pro";
+    computerName = config.host.displayName;
     hostName = name;
     localHostName = name;
 

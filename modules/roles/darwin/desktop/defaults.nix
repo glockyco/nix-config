@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 
 {
   # Do not set `system.keyboard.remapCapsLockToControl`: Caps Lock is Neo2's
@@ -29,13 +29,13 @@
       # nix-darwin writes only specified keys.
       NSWindowShouldDragOnGesture = false;
 
-      AppleICUForce24HourTime = true;
-      AppleMetricUnits = 1;
-      AppleMeasurementUnits = "Centimeters";
-      AppleTemperatureUnit = "Celsius";
+      AppleICUForce24HourTime = config.host.locale.use24HourClock;
+      AppleMetricUnits = if config.host.locale.useMetric then 1 else 0;
+      AppleMeasurementUnits = if config.host.locale.useMetric then "Centimeters" else "Inches";
+      AppleTemperatureUnit = if config.host.locale.useMetric then "Celsius" else "Fahrenheit";
     };
 
-    menuExtraClock.Show24Hour = true;
+    menuExtraClock.Show24Hour = config.host.locale.use24HourClock;
 
     finder = {
       AppleShowAllExtensions = true;
@@ -76,32 +76,23 @@
       # These lists are authoritative: the Dock is rebuilt from them on every
       # switch, so rearranging it in the UI does not survive.
       #
-      # Ordered left to right: credentials, chat, terminal, browser, editor,
-      # documents, version control, tasks. Brave is omitted because it exists only to
-      # host the browser relay; background and menu-bar-only apps (Rectangle
-      # Pro, Secretive) are absent for the same reason -- nothing here is
-      # launched from the Dock.
-      #
       # macOS appends running-but-unpinned apps after this list, so the
       # trailing spacer renders on that boundary. macOS offers no way to place
       # its thin divider there -- that one is fixed between the app region and
       # the files region -- so a narrow gap is as close as it gets.
-      persistent-apps = [
-        { app = "/Applications/Bitwarden.app"; }
-        { app = "/Applications/Ferdium.app"; }
-        { app = "/Applications/Signal.app"; }
-        { app = "/Applications/Microsoft Teams.app"; }
-        { app = "/Applications/Ghostty.app"; }
-        { app = "/Applications/Zen.app"; }
-        { app = "/Applications/Zed.app"; }
-        { app = "/Applications/PDF Expert.app"; }
-        { app = "/Applications/Fork.app"; }
-        {
-          spacer = {
-            small = true;
-          };
-        }
-      ];
+      persistent-apps =
+        map (application: { app = application.appPath; }) (
+          lib.sort (a: b: a.dockPosition < b.dockPosition) (
+            builtins.filter (application: application.dockPosition != null) config.host.darwin.applications
+          )
+        )
+        ++ [
+          {
+            spacer = {
+              small = true;
+            };
+          }
+        ];
 
       # Keep the right-hand side empty. An explicit list is required: omitting
       # the option would leave whatever the Dock already holds.
@@ -120,7 +111,7 @@
 
     screencapture = {
       # macOS silently falls back to Desktop if the screenshot location is absent.
-      location = "${config.system.primaryUserHome}/Pictures/Screenshots";
+      location = config.host.paths.screenshots;
       type = "png";
       disable-shadow = true;
     };
