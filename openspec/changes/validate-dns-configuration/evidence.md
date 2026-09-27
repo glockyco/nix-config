@@ -49,3 +49,7 @@ At `bab2b0a` plus this record: `nix fmt -- --fail-on-change` and `openspec valid
 ## Token handling
 
 The README command now starts the development shell first and reads the token inside it, so the Nix CLI never receives the token: `nix develop .. --command bash -c 'CLOUDFLARE_API_TOKEN="$(< ~/.config/sops-nix/secrets/cloudflare-dns-token)" exec dnscontrol preview'`. Run from `dns/`, this exact command printed the same single correction and exited 0. The README states that only the owner runs `push`.
+
+## CI evidence
+
+PR #44 (`refactor/fleet-roles-programs` at `7903d59`) ran the `check` workflow (https://github.com/glockyco/nix-config/actions/runs/36333360593). `check (ubuntu-latest)` passed in 5m58s with Korolev's declared Nix and built every `x86_64-linux` check, including the Korolev system and home generation. `check (macos-15)` passed in 13m34s. The `tailnet-policy` `test` job passed.

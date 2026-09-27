@@ -64,6 +64,6 @@ The owner scheduled this change after plan review. It runs at position 3, after 
 - [ ] 7.4 Owner: Run `nix flake check --all-systems --print-build-logs` on Korolev with the configured Darwin builder. Record the NixOS and remote Darwin results.
 - [ ] 7.5 Owner: Activate the Mac with sudo while retaining local recovery access. Check PostgreSQL on `/var/lib/postgresql/17`, role outputs, Air integration, and Nix policy; record observed results.
 - [ ] 7.6 Owner: Run `winget configure test` on the Windows work machine against the unchanged rendered document. Record the exit status and Zen resource state; do not run Windows resources from Nix activation.
-- [ ] 7.7 Owner: Observe CI on the reviewed revision after an authorized push. Record each platform gate result; do not substitute a local run for CI evidence.
+- [x] 7.7 Owner: Observe CI on the reviewed revision after an authorized push. Record each platform gate result; do not substitute a local run for CI evidence.
 - [x] 7.8 Update affected README links, `docs/operations/*` procedures, and nearby comments for role selection, Air offboarding, Nix maintenance, and offline SOPS recovery. Check references against the final paths and actual command output.
 - [x] 7.9 Review the final diff by host declaration, baseline, role, generated output, encrypted secret, check, and documentation owner. Record that no old duplicate list, obsolete renderer compensation, or Air artifact remains outside the deletion set.

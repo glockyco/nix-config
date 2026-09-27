@@ -125,3 +125,9 @@ The pinned system drvPaths after this change were unchanged:
 ```
 
 The Windows live gate remains an owner action. No Windows resource was applied from this Mac.
+
+## CI evidence
+
+PR #44 (`refactor/fleet-roles-programs` at `7903d59`) ran the `check` workflow (https://github.com/glockyco/nix-config/actions/runs/36333360593). `check (ubuntu-latest)` passed in 5m58s with Korolev's declared Nix and built every `x86_64-linux` check, including the Korolev system and home generation. `check (macos-15)` passed in 13m34s. The `tailnet-policy` `test` job passed.
+
+Task 5.8 on Linux: a throwaway branch gave the `editor` role an exact policy with version `1.0.0`. Its `check` run (https://github.com/glockyco/nix-config/actions/runs/36334082359) failed on both runners; `check-windows-configuration` on `ubuntu-latest` failed with `windows-configuration-check: application editor: forbidden exact policy`. The branch was deleted.
