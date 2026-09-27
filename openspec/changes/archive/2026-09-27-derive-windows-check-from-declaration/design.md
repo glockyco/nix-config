@@ -12,7 +12,7 @@ The owner scheduled this change at position 2 after `key-fleet-by-host`. That ch
 
 The WinGet parser requires the current `main` schema URL and resolves bare-name dependencies. The pinned DSC checkout (`packages/windows-configuration-check.nix:7-12`) instead constrains `dependsOn` to `resourceId()` expressions. Keep the WinGet contract, reuse the pinned definitions for resource type and name, and state the difference in a local v3 document schema.
 
-The `powershell` package from pinned Nixpkgs provides a prebuilt executable for `x86_64-linux` and `aarch64-darwin`. Parse all scripts with its PowerShell 7 parser. PowerShell 7 syntax acceptance alone does not prove Windows PowerShell 5.1 execution; the Windows live gate remains necessary.
+The `powershell` package from pinned Nixpkgs provides a prebuilt executable for `x86_64-linux` and `aarch64-darwin`. Parse all scripts with its PowerShell 7 parser. PowerShell 7 syntax acceptance alone does not prove Windows PowerShell 5.1 execution. The Windows apply runbook requires a local test before applying the configuration.
 
 ## Goals / Non-Goals
 
@@ -29,7 +29,7 @@ The `powershell` package from pinned Nixpkgs provides a prebuilt executable for 
 
 - Any change to what the document declares: no new resource, setting, application, or pin. The two listed differences change script text and review data without a change in behavior.
 - Fetching the AltSnap, wslgit, kbdneo, or font archives with Nix. Those archives do not ship in the output, and their pins are data that the scripts verify on Windows.
-- Proving on Linux that a script behaves as intended on Windows. The check proves syntax and boundary. The live test in the Windows apply section of the provisioning runbook proves behavior.
+- Proving on Linux that a script behaves as intended on Windows. The check proves syntax and boundary. The Windows apply runbook describes a local test before application.
 - A check that proves the PowerToys module list complete against the installed version. That list has no offline source. The check no longer carries a copy, and the runbook records the review at each PowerToys pin change.
 - Windows documentation outside this change's runbook and README edits. This change owns both of those edits; there is no documentation handoff.
 - Changes to the WSL `open` command. It dispatches one target through the Windows desktop (`packages/wsl-open.nix:6-49`), while this change only renders Windows configuration and checks it. Keep that separate activation boundary.
@@ -117,7 +117,7 @@ Alternative rejected: patch the pinned `document.resource.json` in the check. A 
 
 The check fails when any script reports a parse error, and names the script and the message. The Administrator-script boundary reads the parsed data: `apply-kbdneo.ps1` and `apply-zen-policies.ps1` reference no variable in `env:APPDATA`, `env:LOCALAPPDATA`, `env:USERPROFILE`, and no string value that starts with `HKCU:`. The excluded-surface rule reads the same data: no registry `keyPath` and no script string contains `CloudStore`. Every substring assertion on script source leaves, including the stable dark-mode, animation, font, JSON-writer, Fork, and AltSnap checks. The declaration records no active theme-file path because Windows owns its generated `Custom.theme`.
 
-`pwsh` parses with the PowerShell 7 grammar, and the scripts run under Windows PowerShell 5.1. The 7 grammar is a superset, so a 7-only construct passes the check and fails on Windows. The live test in the Windows apply section of the provisioning runbook runs every test script under 5.1 and is the proof for that gap.
+`pwsh` parses with the PowerShell 7 grammar, and the scripts run under Windows PowerShell 5.1. The 7 grammar is a superset, so a 7-only construct can pass the check and fail on Windows. The operator runs the test scripts under 5.1 before applying the Windows configuration, as described in the runbook.
 
 The check depends on `powershell` on both systems. The package is a prebuilt release archive on each, so it is cached and `check-darwin-build-plans` reaches no source-built .NET package.
 
@@ -194,19 +194,20 @@ The final gate requires:
 1. Both YAML documents have equal parsed data after removing `properties.setScript` from `fork wslgit` and `properties.testScript` and `properties.setScript` from `zen catppuccin theme`.
 1. The Zen theme scripts change only the embedded `$specification` JSON literal by the same three SRI removals. No other script text changes.
 1. The Fork set script adds the shared `Merge-Object` definition, equal to the definition for `zed settings`, and replaces only its separate `GitInstancePath` branch with `Merge-Object $settings ([PSCustomObject]@{ GitInstancePath = (Join-Path $root 'bin\git.exe') })` (`modules/windows/files.nix:492-507`).
-1. On the Windows work machine, the owner runs `winget configure test` and both Administrator scripts with `-Test`. The owner records the resulting state in `baseline.md`; the check remains unarchived until that record exists. For the Fork change, remove `GitInstancePath` from `%LOCALAPPDATA%\Fork\settings.json`, apply the new document, and confirm that Fork opens the WSL worktree. The next test must report desired state.
 
-The repository-level comparison runs on an available supported build host. The owner-only Windows gate is not replaceable with a PowerShell 7 syntax parse. A later `separate-platform-baseline-from-roles` change moves `EnterprisePoliciesEnabled` out of `modules/shared/zen-policies.nix` and removes the Windows renderer's `removeAttrs` (`modules/shared/zen-policies.nix:11-14`, `modules/windows/files.nix:234-236`). That later change must compare against this baseline and preserve the entire Windows output byte for byte. Do not preempt that move here.
+The Windows apply runbook instructs the operator to run `winget configure test` and both Administrator scripts with `-Test` before applying the configuration. For the Fork change, remove `GitInstancePath` from `%LOCALAPPDATA%\Fork\settings.json`, apply the reviewed document, and confirm that Fork opens the WSL worktree. The next test should report desired state. These are operating steps, not acceptance evidence for this repository change.
+
+The repository-level comparison runs on an available supported build host. CI checks run on both platforms. A later `separate-platform-baseline-from-roles` change moves `EnterprisePoliciesEnabled` out of `modules/shared/zen-policies.nix` and removes the Windows renderer's `removeAttrs` (`modules/shared/zen-policies.nix:11-14`, `modules/windows/files.nix:234-236`). That later change compares against this baseline and preserves the entire Windows output byte for byte. Do not preempt that move here.
 
 `flake.lock` stays fixed during this change's baseline comparison.
 
 ## Risks / Trade-offs
 
-- [PowerShell 7 parses a construct that Windows PowerShell 5.1 rejects] → The owner runs the real Windows test scripts on the work machine. The repository check proves syntax and boundary only.
+- [PowerShell 7 parses a construct that Windows PowerShell 5.1 rejects] → The runbook directs the operator to test on Windows before applying. The repository check proves syntax and boundary only.
 - [The PowerToys list changes with an upstream release] → The runbook requires review of the module set at each pin update. `modules/windows/files.nix:133-174` remains the source, not a copied checker list.
-- [The check no longer pins dark-mode, animation, Zed keymap, or TexLab script text] → The renderer owns the values (`modules/windows/settings.nix`, `modules/windows/files.nix:64-131`). The byte baseline protects their present output. The live test covers Windows behavior, including `Custom.theme`.
+- [The check no longer pins dark-mode, animation, Zed keymap, or TexLab script text] → The renderer owns the values (`modules/windows/settings.nix`, `modules/windows/files.nix:64-131`). The byte baseline protects their present output. The runbook covers `Custom.theme` behavior on Windows.
 - [A PowerShell fragment changes script folding or indentation] → The byte comparison rejects changes except the listed script fragments.
-- [The schema and parser disagree on dependencies] → The local WinGet v3 schema uses pinned DSC definitions but permits bare names. The real Windows test is still required.
+- [The schema and parser disagree on dependencies] → The local WinGet v3 schema uses pinned DSC definitions but permits bare names. The Windows apply runbook instructs the operator to run `winget configure test` before applying.
 - [A policy violation reaches a rendered output] → That is intentional. The flake check reports the named finding and remains a release gate.
 - [An expected CLI error escapes as a traceback] → A top-level error boundary covers malformed arguments and missing files or resources. Build-time fixtures exercise exit status and stderr.
 
@@ -216,6 +217,6 @@ The repository-level comparison runs on an available supported build host. The o
 1. Change the declaration, PowerShell helpers, and fetched asset handling. Compare the output after each group.
 1. Package the checker and move its self-tests out of the runtime path. Replace the temporary assertion check and remove the renderer policy assertions.
 1. Compare all files and allowed differences with the baseline. Run scoped package tests and repository gates.
-1. Update the Windows runbook and README. Leave the change unarchived until the owner records the Windows live result.
+1. Update the Windows runbook and README. Review CI results for both supported platforms.
 
 Rollback is a Git revert. The change installs nothing on a host. Windows applies remain explicit manual operations.

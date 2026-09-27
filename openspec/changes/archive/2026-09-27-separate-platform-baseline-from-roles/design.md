@@ -14,7 +14,7 @@ The Air currently uses literal SSH aliases, a checked batch command, Finder's nu
 - Keep each durable machine fact in a typed standalone host declaration; derive consumers and checks from that fact.
 - Preserve existing Air and PostgreSQL behavior while making Air removal bounded.
 - Preserve Windows output bytes and behavior-preserving system derivations.
-- Encrypt all YAML secret data for Mac and offline recovery recipients; reject plaintext data in repository checks.
+- Reject plaintext YAML secret data in repository checks. Keep the Mac SOPS recipient and current `encrypted_regex`.
 
 **Non-Goals:**
 
@@ -78,7 +78,7 @@ Alternative rejected: relocate the data directory as part of a module move. The 
 
 Declare the pinned nixpkgs registry, disabled legacy channels, and maintenance intent once. Darwin maps the registry and an empty `nix-path` through Determinate Nix, which disables nix-darwin's `nix.settings`, `nix.registry`, `nix.gc`, and `nix.optimise`. The pinned Determinate module supports automatic garbage collection through `determinateNixd.garbageCollector.strategy`, but exposes no weekly schedule or scheduled store optimiser. Do not set `auto-optimise-store` on Darwin: pinned nix-darwin warns that it can corrupt the store. NixOS maps the shared intent to a pinned registry, disabled channels, and native weekly garbage-collection and optimisation timers. Check evaluated values and preserve Darwin `trusted-users`: Korolev sends unsigned store paths to the remote builder.
 
-Remove NixOS `programs.nano.enable` and the normal-user home assignment only after evaluating pinned module defaults and confirming unchanged `programs.nano` and `/home/<user>` (`modules/nixos/programs.nix:72-76`, `modules/nixos/system.nix:38-46`). The new NixOS Nix policy changes Korolev's live services; owner activation and timer inspection are separate gates.
+Remove NixOS `programs.nano.enable` and the normal-user home assignment only after evaluating pinned module defaults and confirming unchanged `programs.nano` and `/home/<user>` (`modules/nixos/programs.nix:72-76`, `modules/nixos/system.nix:38-46`). The new NixOS Nix policy changes Korolev's generated services; compare the derivations with `nix-diff` and build the CI Linux check.
 
 Alternative rejected: copy Darwin option syntax directly to NixOS or add a custom Darwin launchd maintenance job. Determinate Nix owns Darwin store maintenance and does not expose the same timer interfaces.
 
@@ -100,23 +100,21 @@ Use one Nix function to render both Cloudflare direnv functions through `xdg.con
 
 Alternative rejected: a new executable for token exports. A sourced function must mutate the current shell's environment.
 
-### 10. SOPS encrypts secret data and includes offline recovery
+### 10. SOPS plaintext check; offline recovery is follow-up work
 
-On 2026-09-27 the owner waived the offline-recovery part to archive this change. The shipped contract is the plaintext-scalar check alone: `.sops.yaml` keeps the Mac-only recipient and its `encrypted_regex`, the check rejects any data value that rule leaves in plaintext, and the README states that offline recovery is not configured. The rest of this decision records the intended follow-up; a later change adds the offline recipient, re-encrypts every file, and removes `encrypted_regex`.
+The Mac remains the only SOPS recipient. `.sops.yaml` retains `encrypted_regex`, and the repository check rejects plaintext data scalars outside SOPS metadata. The README states that offline recovery is not configured. Adding an offline recipient, re-encrypting every secret for both recipients, removing `encrypted_regex`, and proving offline-key decryption belong to a later change.
 
-The owner generates an age private key on encrypted offline media and supplies only its public recipient. Add that public recipient beside the Mac recipient in `.sops.yaml`. Re-encrypt each `secrets/*.yaml` with both recipients using the existing Mac private key; remove `encrypted_regex`. Current files contain SOPS metadata and an encrypted `token` (`secrets/fastmail.yaml:1-16`), so the repository check recursively visits YAML data outside the top-level `sops` metadata mapping. It rejects each non-`ENC[` scalar with its file and YAML path. Fixture tests cover nested mappings, sequence entries, and valid encrypted data.
-
-The repository check lives in `checks/secret-encryption-check.nix` and its fixtures beside the check, wired for every supported system by `flake-modules/checks.nix`. The check does not decrypt: CI has no private keys. Mac-key decrypt and offline-key decrypt are independent proofs. Re-encryption with the Mac key can proceed while the owner prepares the recovery recipient; final two-recipient ciphertext and acceptance wait for the public key.
+The repository check lives in `checks/secret-encryption-check.nix` with adjacent fixtures. `flake-modules/checks.nix` wires it on every supported system. It visits YAML data outside the top-level `sops` metadata mapping and reports the file and YAML path for each plaintext scalar. Fixture tests cover nested mappings, sequence entries, and encrypted data. The check does not decrypt; CI has no private keys. An in-memory Mac-key round trip confirms the existing files decrypt without changing their ciphertext.
 
 Alternative rejected: another name allowlist. Future YAML keys would bypass encryption. Alternative rejected: a Korolev recovery recipient. That online host has no workstation secrets (`flake.nix:727-734`) and is not offline recovery.
 
 ## Risks / Trade-offs
 
-- Role moves change import boundaries. Compare pinned-revision system derivations after each behavior-preserving cutover; explain unintended differences with `nvd diff`.
+- Role moves change import boundaries. Compare pinned-revision system derivations after each behavior-preserving cutover. Use `nvd diff` for built Mac closures and `nix-diff` for changed Korolev derivations.
 - Windows renderer input changes. Require byte identity against the completed change 2 output recorded before this change's edits.
 - The Air remains order-dependent while borrowed. This is an accepted temporary risk; the role-removal probe and issue #17 bound its lifetime.
-- Re-encryption changes ciphertext in every secret file. Check parsed data, both recipients, and Mac decryption before accepting new files. The owner confirms the offline decryption.
-- NixOS maintenance introduces timers. Owner verification on Korolev is required; a Mac evaluation cannot prove activation.
+- The current SOPS setup has no offline recovery recipient. The README identifies this limit; adding recovery is separate work.
+- NixOS maintenance introduces timers. Evaluated units, a `nix-diff` comparison, and the Linux CI build verify the repository change, not activation on Korolev.
 
 ## Migration Plan
 
@@ -126,7 +124,7 @@ Alternative rejected: another name allowlist. Future YAML keys would bypass encr
 1. Isolate Air without changing its commands, mount path, or credentials. Prove role deletion leaves durable outputs valid.
 1. Move Zen enablement and remove Windows compensation. Prove byte identity to this change's section 1 Windows baseline.
 1. Apply Nix policy, Colima derivation, and direnv helper changes; verify intentional differences separately.
-1. Re-encrypt secrets when the offline public recipient is supplied; add the parsed-data repository check. Prove Mac decrypt and obtain owner offline decrypt evidence.
-1. Update affected README, operations pages, and adjacent code comments. Run local and owner gates in their respective environments.
+1. Keep the existing SOPS recipient and ciphertext. Add the parsed-data repository check and verify Mac-key decryption in memory.
+1. Update affected README, operations pages, and adjacent code comments. Run Mac gates and review CI results on both platforms.
 
-Rollback uses a reviewed Git revert plus activation of the prior host generation. Preserve prior encrypted files and the Mac key until both recipient decrypt proofs pass. Air offboarding removes the listed integration units; it does not migrate a mount or a remote Docker path.
+Rollback uses a reviewed Git revert plus activation of the prior host generation. The encrypted files and Mac key remain unchanged. Air offboarding removes the listed integration units; it does not migrate a mount or remote Docker path.

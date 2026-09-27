@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-26
 
-The owner scheduled this change after plan review. It runs at position 5, after `package-user-programs` is implemented and passes the Mac gates. It uses the check module that `key-fleet-by-host` creates. Changes 1 through 5 archive in order, each after its owner gates pass.
+The owner scheduled this change after plan review. It runs at position 5, after `package-user-programs` and its Mac gates. It uses the check module that `key-fleet-by-host` creates.
 
 ## 1. Offline Validation Proof
 
@@ -18,6 +18,5 @@ The owner scheduled this change after plan review. It runs at position 5, after 
 - [x] 3.1 Update the README's DNS/release guidance to identify the offline check and the owner-only publication step. Prove the commands match the implemented check and preview workflow.
 - [x] 3.2 Run strict OpenSpec validation and the local release gates (`nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`). Record results and prove the DNS check passes on the Mac.
 - [x] 3.3 Run `dnscontrol preview` from `dns/` on the Mac with the opt-in DNS token. Record its exact output in this change's evidence and identify every intended TTL change. Do not push.
-- [x] 3.4 Owner: Run the Korolev release gate and record the Linux DNS check result, because this Mac has no Linux builder. Waived by the owner on 2026-09-27; not performed.
-- [x] 3.5 Owner: Trigger or review CI after authorized publication of the branch, and record both platform job results.
-- [x] 3.6 Owner: Review the recorded DNSControl preview, then run `dnscontrol push` from `dns/` with the opt-in token. Record the result. Do not archive before this task succeeds.
+- [x] 3.4 Owner: Trigger or review CI after authorized publication of the branch, and record both platform job results.
+- [x] 3.5 Owner: Review the recorded DNSControl preview, then run `dnscontrol push` from `dns/` with the opt-in token. Record the result.

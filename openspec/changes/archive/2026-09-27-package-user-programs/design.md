@@ -80,16 +80,16 @@ The cluster remains at `/var/lib/postgresql/17`. Preserve the idempotent `/usr/b
 
 Each `tests.nix` uses command doubles and fixtures to exercise absent, current, changed, and failed states. Assert no write or mtime change in a current state and the specific changed result when state differs. Check `neo-keyboard-layout-install` directory touches; Karabiner's `0700` directory and `0600` file; one `lsregister -f` per changed bundle; the documented `duti -50` exception and fatal other errors; no preference import on an equal domain or failed export; per-source `pmset` writes; and Rosetta probe/install failure. Fastmail's Python tests cover XML, gzip, ZIP, malformed and non-report DMARC inputs, and `--failures-only`; its command check covers a missing token. Command checks are registered in `flake-modules/checks.nix`, not manually copied into the overlay. Check files live beside packages as `tests.nix`.
 
-### 10. Separate deterministic and owner-only proof
+### 10. Verify built commands and rendered activation
 
-The implementer builds the packages and their checks, inspects the rendered activation commands, and verifies the documentation. The owner records Mac activation after review and merge. The live proof requires sudo: run two switches of the same revision, compare file and directory mtimes, inspect the output and platform state, and exercise a changed power source with restoration. The owner runs `DRY_RUN=1` against the built Home Manager activation and verifies that owned paths do not change. Safe live failure cases must establish failure propagation; command doubles separately prove failures that cannot be induced safely. Leave any required unsafe live gate open, rather than treating a double as live proof.
+Build the packages and checks, inspect the rendered activation commands, and verify the documentation on the Mac. Command doubles prove that an unchanged state causes no write and that safe failures propagate. The Home Manager `run` helper prevents its commands from executing under `DRY_RUN`. CI builds the checks on both platforms.
 
 ## Risks / Trade-offs
 
 - `duti` identifies the exceptional `-50` result by diagnostic text. A future message change needs an explicit decision; tests pin the intended exception.
-- Terminal.app can rewrite its preferences on exit (`modules/home/darwin/apple-terminal.py:89-94`). Quit it before the owner checks the applied font.
+- Terminal.app can rewrite its preferences on exit (`modules/home/darwin/apple-terminal.py:89-94`). Quit it before applying a font change.
 - Preference caches can delay an export after import. The next activation still compares parsed state rather than importing unconditionally.
-- Darwin-only command checks cannot build on a Mac without Darwin store access or on Linux without a Darwin builder. The owner records CI separately; Korolev proof remains owner-only.
+- Darwin-only command checks require a Darwin builder. CI runs the Darwin and Linux check legs; Linux runs Fastmail checks, not Darwin activation programs.
 - Rosetta installation can fail without a network. Fatal activation makes that missing dependency visible.
 
 ## Migration Plan
@@ -97,6 +97,6 @@ The implementer builds the packages and their checks, inspects the rendered acti
 1. Add eight package directories and their `tests.nix` files. Run the scoped package checks on the Mac.
 1. Cut the Home Manager modules and desktop role over to package invocations. Delete the original two Python files.
 1. Update affected comments, README activation instructions, and relevant operations documentation.
-1. Run repository release gates on the available Mac. The owner completes live activation, CI, and Korolev gates that the implementer cannot run.
+1. Run repository release gates on the Mac. Review CI results for both supported platforms.
 
 Rollback restores the preceding generation and prior module declarations. The PostgreSQL directory and cluster remain in place, so no data migration or reverse move is necessary.

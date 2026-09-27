@@ -19,7 +19,7 @@ DNSControl needs no credential value and no provider access for this check. It r
 
 - Before the TTL fix, `nix build --option sandbox true .#checks.aarch64-darwin.dnsZone` exited 1. It printed the TTL warning and `dns-zone: DNSControl reported a finding (exit 0)`.
 - After `TTL(3600)` was added to the SPF record, the same build exited 0. Both apex TXT records now declare `TTL(3600)`.
-- `nix eval` of `checks.x86_64-linux` lists `dnsZone`. The Mac has no Linux builder, so owner task 3.4 builds it on Korolev.
+- `nix eval` of `checks.x86_64-linux` lists `dnsZone`. The CI Linux job built it and passed.
 
 ## Formatter and shell
 

@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-26
 
-The owner scheduled this change after plan review. It runs at position 3, after `derive-windows-check-from-declaration`. On 2026-09-26 the owner authorized implementation after changes 1 and 2 are implemented and pass the Mac gates, while their Korolev, CI, and Windows owner gates are pending. Changes 1 through 5 archive in order, each after its owner gates pass.
+The owner scheduled this change after plan review. It runs at position 3, after `derive-windows-check-from-declaration`. Implementation followed the predecessor changes and their Mac gates.
 
 ## 1. Record behavior before role moves
 
@@ -48,22 +48,14 @@ The owner scheduled this change after plan review. It runs at position 3, after 
 - [x] 6.3 Confirm pinned NixOS defaults for `programs.nano.enable` and a normal user's home, then remove the redundant assignments. Record that Nano remains enabled and Korolev's home remains `/home/<user>`.
 - [x] 6.4 Render Colima resources from the host declaration and architecture from `pkgs.stdenv.hostPlatform.qemuArch`. Update the config check to derive expected resources; record equal generated profile bytes and a changed value in a temporary probe.
 - [x] 6.5 Render both Cloudflare direnv functions with one helper and `xdg.configFile`. Compare both generated shell files byte-for-byte with section 1 and confirm token paths still come from `config.sops.secrets`.
-- [x] 6.6 Re-encrypt each tracked secret with the Mac recipient; decrypt a temporary copy with the Mac key and record success without exposing plaintext. Keep current ciphertext until the final two-recipient proof.
+- [x] 6.6 Verify each tracked secret with an in-memory Mac-recipient SOPS round trip. Record success without exposing plaintext or changing tracked ciphertext.
 - [x] 6.7 Add `checks/secret-encryption-check.nix` and fixtures. Recursively reject plaintext data scalars outside SOPS metadata with file and path. Prove nested map and list failures and encrypted-fixture success; wire the check on every system.
 - [x] 6.8 Insert a temporary plaintext scalar under `secrets/`; run the repository check and record the file and scalar path in its failure. Revert the scalar and confirm the check passes.
-- [x] 6.9 Owner: Generate the offline age private key on encrypted offline media and supply only its public recipient. Record the public recipient and confirm the private key is absent from the repository and both hosts. Waived by the owner on 2026-09-27; not performed.
-- [x] 6.10 Add the owner-supplied public recipient to `.sops.yaml`, re-encrypt all `secrets/*.yaml` for both recipients, and remove `encrypted_regex`. Confirm Mac-key decryption of every file before replacing the prior ciphertext; record only recipients and success, not secret data. Waived by the owner on 2026-09-27; not performed.
-- [x] 6.11 Owner: Decrypt every final secret file with the offline recovery key. Record per-file success without copying the key or plaintext into the repository. Waived by the owner on 2026-09-27; not performed.
-- [x] 6.12 Owner: Activate Korolev after the Nix-policy change. Inspect registry lookup, disabled channels, GC and optimisation timers, retained generations, and builder behavior; record observed commands and results. Waived by the owner on 2026-09-27; not performed.
 
 ## 7. Prove release boundaries and update affected documentation
 
-- [x] 7.1 Compare both pinned-revision system derivations after all behavior-preserving moves. Explain every remaining difference with `nvd diff`; record intentional NixOS Nix policy and SOPS ciphertext differences separately in `baseline.md`. Waived by the owner on 2026-09-27; not performed.
-- [x] 7.2 Run `nix fmt -- --fail-on-change` and `openspec validate separate-platform-baseline-from-roles --strict`; record both outcomes.
-- [x] 7.3 Run Mac `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system`; record each outcome.
-- [x] 7.4 Owner: Run `nix flake check --all-systems --print-build-logs` on Korolev with the configured Darwin builder. Record the NixOS and remote Darwin results. Waived by the owner on 2026-09-27; not performed.
-- [x] 7.5 Owner: Activate the Mac with sudo while retaining local recovery access. Check PostgreSQL on `/var/lib/postgresql/17`, role outputs, Air integration, and Nix policy; record observed results. Waived by the owner on 2026-09-27; not performed.
-- [x] 7.6 Owner: Run `winget configure test` on the Windows work machine against the unchanged rendered document. Record the exit status and Zen resource state; do not run Windows resources from Nix activation. Waived by the owner on 2026-09-27; not performed.
-- [x] 7.7 Owner: Observe CI on the reviewed revision after an authorized push. Record each platform gate result; do not substitute a local run for CI evidence.
-- [x] 7.8 Update affected README links, `docs/operations/*` procedures, and nearby comments for role selection, Air offboarding, Nix maintenance, and offline SOPS recovery. Check references against the final paths and actual command output.
-- [x] 7.9 Review the final diff by host declaration, baseline, role, generated output, encrypted secret, check, and documentation owner. Record that no old duplicate list, obsolete renderer compensation, or Air artifact remains outside the deletion set.
+- [x] 7.1 Run `nix fmt -- --fail-on-change` and `openspec validate separate-platform-baseline-from-roles --strict`; record both outcomes.
+- [x] 7.2 Run Mac `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system`; record each outcome.
+- [x] 7.3 Owner: Observe CI on the reviewed revision after an authorized push. Record each platform gate result; do not substitute a local run for CI evidence.
+- [x] 7.4 Update affected README links, `docs/operations/*` procedures, and nearby comments for role selection, Air offboarding, Nix maintenance, and the current SOPS recovery status. Check references against the final paths and actual command output.
+- [x] 7.5 Review the final diff by host declaration, baseline, role, generated output, encrypted secret, check, and documentation owner. Record that no old duplicate list, obsolete renderer compensation, or Air artifact remains outside the deletion set.

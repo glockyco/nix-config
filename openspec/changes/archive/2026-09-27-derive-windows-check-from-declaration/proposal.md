@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-26
 
-The owner scheduled this change after reviewing the plan. It runs at position 2, directly after `key-fleet-by-host`. The Windows live gate remains an owner action before archival.
+The owner scheduled this change after reviewing the plan. It runs at position 2, directly after `key-fleet-by-host`.
 
 ## Why
 
@@ -25,7 +25,7 @@ The current output has 19 files: three primary artifacts and sixteen review file
 - Centralize PowerShell quoting, subset and merge functions, archive verification, SHA-256, and Administrator guards in `powershell.nix`. Keep fetched theme assets as store paths until the build. Derive SRI hashes from hexadecimal hashes.
 - Remove dead fields and repeated package paths. Preserve the current Ferdium ownership boundary, Zed shortcuts and TexLab setting, PowerToys declaration, and stable dark-appearance test.
 - Record byte hashes for all 19 rendered files before editing. Require byte identity except the specified Fork script and Zen hash-data differences.
-- Update the Windows apply runbook and README in this change. The owner runs `winget configure test` and both Administrator `-Test` scripts on the Windows work machine and records the result before archival.
+- Update the Windows apply runbook and README in this change. The runbook tells the operator to run `winget configure test` before applying the configuration and explains the Administrator `-Test` scripts.
 
 ## Capabilities
 

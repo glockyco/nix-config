@@ -32,6 +32,6 @@ None.
 
 Implementation changes the flake, both host directories, `modules/fleet/`, the NixOS peer consumers, package and check layout, the tailnet renderer, `treefmt.nix`, the tailnet workflow, related comments, and relevant documentation. `modules/windows/` becomes `packages/windows-configuration/` without changing rendered output. The next change, `derive-windows-check-from-declaration`, consumes that package layout.
 
-The gate compares both system derivations with `system.configurationRevision` pinned. The baseline at `7723a53` is in `baseline.md`; other package paths and the lock checksum are recorded during implementation. The only permitted lock change removes the gated duplicate `flake-parts` node without changing any input revision. Owner-only Linux and live gates remain separate tasks.
+The gate compares both system derivations with `system.configurationRevision` pinned. The baseline at `7723a53` is in `baseline.md`. The only permitted lock change removes the duplicate `flake-parts` node without changing an input revision. CI builds both platform checks; `nix-diff` explains the Korolev derivation change.
 
 This change does not add a host, change tailnet access, prepare OMP source during activation, change the Air lifecycle, or install a Windows resource. The Air package and checks stay functional for the later role split and eventual removal under issue #17.
