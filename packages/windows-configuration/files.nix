@@ -243,7 +243,7 @@ let
   };
 
   zenPolicies = {
-    policies = builtins.removeAttrs shared.zenPolicies [ "EnterprisePoliciesEnabled" ];
+    policies = shared.zenPolicies;
   };
 
   jsonFiles = {
