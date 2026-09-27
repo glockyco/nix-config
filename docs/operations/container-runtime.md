@@ -2,6 +2,7 @@
 
 Use this procedure for the Mac's first Colima start, runtime acceptance, or recovery.
 First complete [activation](../../README.md#activate). Activation installs files but never starts or deletes the virtual machine.
+The desktop activation probes x86_64 execution before installing Rosetta. A failed Rosetta installation stops activation. Resolve that failure before the AMD64 container acceptance check; activation still does not start Colima.
 The [profile declaration](../../modules/roles/darwin/container-client/container-runtime.nix) owns configuration, not images, containers, volumes, credentials, logs, or disks. The Mac's [host facts](../../hosts/macbook-pro/host.nix) set the profile capacity and mounts.
 
 ## Start and verify

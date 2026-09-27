@@ -248,6 +248,20 @@
           wslOpen = pkgs.wsl-open;
         };
       }
+      // lib.optionalAttrs (supports pkgs.fastmail) {
+        fastmailCommand = pkgs.callPackage ../packages/fastmail/tests.nix { };
+      }
+      // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
+        appleTerminalFontCommand = pkgs.callPackage ../packages/apple-terminal-font/tests.nix { };
+        symbolicHotkeysCommand = pkgs.callPackage ../packages/symbolic-hotkeys/tests.nix { };
+        neoKeyboardLayoutInstallCommand =
+          pkgs.callPackage ../packages/neo-keyboard-layout-install/tests.nix
+            { };
+        karabinerConfigurationCommand = pkgs.callPackage ../packages/karabiner-configuration/tests.nix { };
+        defaultApplicationsCommand = pkgs.callPackage ../packages/default-applications/tests.nix { };
+        powerSettingsCommand = pkgs.callPackage ../packages/power-settings/tests.nix { };
+        rosettaCommand = pkgs.callPackage ../packages/rosetta/tests.nix { };
+      }
       // lib.optionalAttrs (self'.packages ? air-batch-check) {
         airBatchCommand = pkgs.callPackage ../packages/air-batch-check/tests.nix {
           airBatchCheck = pkgs.air-batch-check;

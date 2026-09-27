@@ -9,6 +9,7 @@ token anyway.
 """
 
 import argparse
+from collections.abc import Sequence
 import datetime
 import gzip
 import io
@@ -441,7 +442,7 @@ def cmd_dmarc(session: Session, args) -> object:
     return reports
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     default_token = os.environ.get("FASTMAIL_TOKEN_FILE", "")
     parser = argparse.ArgumentParser(
         prog="fastmail", description="Query Fastmail over JMAP. Output is JSON."
@@ -475,7 +476,7 @@ def main() -> int:
         "--failures-only", action="store_true", help="only include failing records"
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(sys.argv[1:] if argv is None else argv)
     handlers = {
         "mailboxes": cmd_mailboxes,
         "search": cmd_search,
@@ -497,7 +498,3 @@ def main() -> int:
     except KeyboardInterrupt:
         return 130
     return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

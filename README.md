@@ -80,6 +80,10 @@ Later activations use `darwin-switch`, which also prints the closure diff. On Ko
 sudo nixos-rebuild switch --flake .#korolev
 ```
 
+Mac activation runs packaged commands for layouts, application handlers, shortcuts, Terminal fonts, power settings, and Rosetta. Each command compares current state before it writes. It reports `current` or names the change. A repeated switch should not rewrite files, re-register applications, import preferences, or reset power settings. An unexpected command error stops activation; inspect the diagnostic before retrying. Quit Terminal.app before verifying its font because it can save old preferences on exit. PostgreSQL keeps its cluster at `/var/lib/postgresql/17`. Activation prepares that directory without moving data.
+
+Before accepting a changed Mac generation, compare the layout, Karabiner, and `FileTypes.app` mtimes across two switches of one revision. Run the built Home Manager activation with `DRY_RUN=1`. Confirm that none of those paths change. Check both power sources and the Rosetta execution probe before and after activation. These live checks require owner authorization; package command tests do not replace them.
+
 Run `verify-personal-omp` afterward. It reports the selected release and commits, OMP version, plugin store path, and current Herdr integration. After OMP or plugin behavior changes, also complete the [release smoke](docs/operations/dependency-updates.md#release-smoke).
 
 In a fresh local OMP session, use `/plannotator-annotate <path>` to annotate a document or `/plannotator-last` to annotate the last response. Submitted annotations return as feedback, without editing the source or approving implementation. Use `/plannotator-cancel` if a closed browser tab leaves a review pending.
