@@ -4,9 +4,9 @@ The owner scheduled this change after reviewing the plan. It runs at position 2,
 
 ## 1. Record the 19-File Baseline
 
-- [ ] 1.1 After `key-fleet-by-host`, record the parent commit, `flake.lock` SHA-256, output store path, and all 19 file SHA-256 values in `baseline.md`. Build twice and prove equal store paths and hashes.
-- [ ] 1.2 Record parsed YAML and the exact Fork and Zen script fragments permitted to differ in design decision 11. Run the comparison against the baseline itself and prove zero differences.
-- [ ] 1.3 Record the current 46-resource breakdown, nine named dependencies, Ferdium package, Zed keymap and TexLab setting, PowerToys state, and stable dark-appearance behavior. Prove these facts from the built output, not from the old checker's copied constants.
+- [x] 1.1 After `key-fleet-by-host`, record the parent commit, `flake.lock` SHA-256, output store path, and all 19 file SHA-256 values in `baseline.md`. Build twice and prove equal store paths and hashes.
+- [x] 1.2 Record parsed YAML and the exact Fork and Zen script fragments permitted to differ in design decision 11. Run the comparison against the baseline itself and prove zero differences.
+- [x] 1.3 Record the current 46-resource breakdown, nine named dependencies, Ferdium package, Zed keymap and TexLab setting, PowerToys state, and stable dark-appearance behavior. Prove these facts from the built output, not from the old checker's copied constants.
 
 ## 2. Establish One Application Declaration
 
