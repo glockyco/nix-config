@@ -43,9 +43,9 @@ The owner scheduled this change after plan review. It runs at position 3, after 
 
 ## 6. Apply platform policy and secrets
 
-- [ ] 6.1 Declare pinned registry, disabled legacy channels, weekly garbage collection, and weekly store optimisation once with native Darwin and NixOS adapters. Evaluate both hosts and record option values, unit names, and intentional NixOS differences from section 1.
-- [ ] 6.2 Keep Darwin `trusted-users` for remote unsigned input paths and correct its comment only if needed. Evaluate that Korolev retains its Darwin remote builder and Darwin retains the trusted SSH user.
-- [ ] 6.3 Confirm pinned NixOS defaults for `programs.nano.enable` and a normal user's home, then remove the redundant assignments. Record that Nano remains enabled and Korolev's home remains `/home/<user>`.
+- [x] 6.1 Declare pinned registry, disabled legacy channels, and maintenance intent once. Map Darwin to Determinate automatic GC without a scheduled optimiser, and NixOS to native weekly GC and optimisation. Evaluate both hosts and record option values, unit names, and intentional differences from section 1.
+- [x] 6.2 Keep Darwin `trusted-users` for remote unsigned input paths and correct its comment only if needed. Evaluate that Korolev retains its Darwin remote builder and Darwin retains the trusted SSH user.
+- [x] 6.3 Confirm pinned NixOS defaults for `programs.nano.enable` and a normal user's home, then remove the redundant assignments. Record that Nano remains enabled and Korolev's home remains `/home/<user>`.
 - [ ] 6.4 Render Colima resources from the host declaration and architecture from `pkgs.stdenv.hostPlatform.qemuArch`. Update the config check to derive expected resources; record equal generated profile bytes and a changed value in a temporary probe.
 - [ ] 6.5 Render both Cloudflare direnv functions with one helper and `xdg.configFile`. Compare both generated shell files byte-for-byte with section 1 and confirm token paths still come from `config.sops.secrets`.
 - [ ] 6.6 Re-encrypt each tracked secret with the Mac recipient; decrypt a temporary copy with the Mac key and record success without exposing plaintext. Keep current ciphertext until the final two-recipient proof.

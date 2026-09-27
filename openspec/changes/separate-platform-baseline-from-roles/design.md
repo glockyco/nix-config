@@ -76,11 +76,11 @@ Alternative rejected: relocate the data directory as part of a module move. The 
 
 ### 6. Shared Nix policy has native platform adapters
 
-Create one policy declaration for pinned nixpkgs registry, disabled legacy channels, weekly garbage collection, and weekly store optimisation. Darwin maps it into Determinate Nix settings because its module disables nix-darwin `nix.settings` and ordinary `nix.registry` (`modules/darwin/nix.nix:12-26`). NixOS maps it into NixOS Nix options; its current `nix.settings` lacks those maintenance settings (`modules/nixos/nix.nix:16-32`). Check evaluated values against each platform's pinned option types. Preserve Darwin `trusted-users`: Korolev sends unsigned store paths to the remote builder (`modules/darwin/nix.nix:36-41`).
+Declare the pinned nixpkgs registry, disabled legacy channels, and maintenance intent once. Darwin maps the registry and an empty `nix-path` through Determinate Nix, which disables nix-darwin's `nix.settings`, `nix.registry`, `nix.gc`, and `nix.optimise`. The pinned Determinate module supports automatic garbage collection through `determinateNixd.garbageCollector.strategy`, but exposes no weekly schedule or scheduled store optimiser. Do not set `auto-optimise-store` on Darwin: pinned nix-darwin warns that it can corrupt the store. NixOS maps the shared intent to a pinned registry, disabled channels, and native weekly garbage-collection and optimisation timers. Check evaluated values and preserve Darwin `trusted-users`: Korolev sends unsigned store paths to the remote builder.
 
 Remove NixOS `programs.nano.enable` and the normal-user home assignment only after evaluating pinned module defaults and confirming unchanged `programs.nano` and `/home/<user>` (`modules/nixos/programs.nix:72-76`, `modules/nixos/system.nix:38-46`). The new NixOS Nix policy changes Korolev's live services; owner activation and timer inspection are separate gates.
 
-Alternative rejected: copy Darwin option syntax directly to NixOS. Determinate Nix and NixOS own different Nix settings and timer interfaces.
+Alternative rejected: copy Darwin option syntax directly to NixOS or add a custom Darwin launchd maintenance job. Determinate Nix owns Darwin store maintenance and does not expose the same timer interfaces.
 
 ### 7. Zen's macOS enablement belongs to Darwin, with no Windows byte change
 

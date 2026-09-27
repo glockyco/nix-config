@@ -35,11 +35,9 @@ in
     LC_MEASUREMENT = "de_AT.UTF-8";
   };
 
-  # `nixos-wsl` already declares this account, including `isNormalUser` and the
-  # `wheel` group that `sudo` needs. Only the values it leaves open belong here.
+  # `nixos-wsl` declares this normal user and its `wheel` group. NixOS derives
+  # `/home/${username}`; this host only selects the login shell.
   users.users.${username} = {
-    home = "/home/${username}";
-
     # `modules/home/shell.nix` configures zsh and generates no bash files, so a
     # bash login shell would read none of its own configuration.
     shell = pkgs.zsh;
