@@ -16,12 +16,12 @@ The owner scheduled this change after plan review. It runs at position 3, after 
 
 ## 3. Select platform roles explicitly
 
-- [ ] 3.1 Create `modules/roles/darwin/{desktop,postgresql,container-client,air-client}/default.nix` and `modules/roles/nixos/wsl-workstation/default.nix`. Extend the module-import check for these directories; prove one temporary unlisted sibling fails, then remove it.
-- [ ] 3.2 Reduce `modules/darwin/default.nix` and `modules/nixos/default.nix` to common platform imports. Move each role's system and Home Manager imports under its role. Record that the Mac imports four roles, Korolev imports `wsl-workstation`, and neither baseline imports a role.
-- [ ] 3.3 Move the desktop system and user modules without changing behavior. Compare both pinned-revision `toplevel.drvPath` values to section 1 after each cutover; record any `nvd diff` and remove unintended changes.
-- [ ] 3.4 Move the PostgreSQL service and its idempotent `install -d` activation into the Darwin PostgreSQL role. Confirm evaluated `services.postgresql.dataDir` remains `/var/lib/postgresql/17`, package remains PostgreSQL 17, and both pinned-revision derivation paths remain unchanged.
-- [ ] 3.5 Move Colima into `container-client`, Air integration into `air-client`, and WSL integration and rootless containers into `wsl-workstation`. Compare both pinned-revision paths after each behavior-preserving move.
-- [ ] 3.6 Evaluate a temporary Darwin host with only its baseline. Record that it has no desktop casks or Dock applications, PostgreSQL service, Colima profile, or Air aliases. Remove the probe.
+- [x] 3.1 Create `modules/roles/darwin/{desktop,postgresql,container-client,air-client}/default.nix` and `modules/roles/nixos/wsl-workstation/default.nix`. Extend the module-import check for these directories; prove one temporary unlisted sibling fails, then remove it.
+- [x] 3.2 Reduce `modules/darwin/default.nix` and `modules/nixos/default.nix` to common platform imports. Move each role's system and Home Manager imports under its role. Record that the Mac imports four roles, Korolev imports `wsl-workstation`, and neither baseline imports a role.
+- [x] 3.3 Move the desktop system and user modules without changing behavior. Compare both pinned-revision `toplevel.drvPath` values to section 1 after each cutover; record any `nvd diff` and remove unintended changes.
+- [x] 3.4 Move the PostgreSQL service and its idempotent `install -d` activation into the Darwin PostgreSQL role. Confirm evaluated `services.postgresql.dataDir` remains `/var/lib/postgresql/17`, package remains PostgreSQL 17, and both pinned-revision derivation paths remain unchanged.
+- [x] 3.5 Move Colima into `container-client`, Air integration into `air-client`, and WSL integration and rootless containers into `wsl-workstation`. Compare both pinned-revision paths after each behavior-preserving move.
+- [x] 3.6 Evaluate a temporary Darwin host with only its baseline. Record that it has no desktop casks or Dock applications, PostgreSQL service, Colima profile, or Air aliases. Remove the probe.
 - [ ] 3.7 Search shared modules for platform branches and machine-only options. Move each remaining case to its owner; record a clean search and both host evaluations.
 
 ## 4. Derive durable values from one host fact
@@ -35,7 +35,7 @@ The owner scheduled this change after plan review. It runs at position 3, after 
 
 ## 5. Keep Air working as one removable integration
 
-- [ ] 5.1 Move both existing Air SSH aliases, `air-batch-check` installation, the existing SMB mount agent, and `~/Air` link into the Air role's imports. Inspect evaluated SSH, launchd, and Home Manager outputs against section 1; record equal values.
+- [x] 5.1 Move both existing Air SSH aliases, `air-batch-check` installation, the existing SMB mount agent, and `~/Air` link into the Air role's imports. Inspect evaluated SSH, launchd, and Home Manager outputs against section 1; record equal values.
 - [ ] 5.2 Keep `AIR_BATCH_DOCKER`, the current remote Docker path interface, and Finder's current numbered `/Volumes` target. Run the package's scoped command fixtures and verify no `host.remote.air` option, stable mount, or new Docker-path derivation appears.
 - [ ] 5.3 Split the combined SSH assertion into Air-only `checks/air-batch-config-check.nix` and durable `checks/desktop-batch-config-check.nix`. Preserve all existing desktop host-pin and transport checks. Keep the Air package and tests in `packages/air-batch-check/`. Condition Air package/check wiring in `flake-modules/{packages,checks}.nix` on role selection; prove both checks run with the role and the desktop check remains without it.
 - [ ] 5.4 Remove the Air role temporarily with its package directory, Air-only assertion, flake wiring, and `macbook-air` peer entry. Evaluate durable host outputs and checks, including the desktop SSH gate, without Air references. Restore the temporary deletion and record the exact removal set for issue #17.

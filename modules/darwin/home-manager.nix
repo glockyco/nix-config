@@ -7,11 +7,7 @@
 {
   imports = [ inputs.home-manager.darwinModules.home-manager ];
 
-  # `../home` holds the portable user-scope modules, and `../home/darwin`
-  # holds the modules that depend on a macOS interface. Only this host imports
-  # the second list.
-  home-manager.users.${config.host.username}.imports = [
-    ../home
-    ../home/darwin
-  ];
+  # Every Darwin host receives portable Home Manager modules. Optional user
+  # modules are selected with their roles in the host configuration.
+  home-manager.users.${config.host.username}.imports = [ ../home ];
 }

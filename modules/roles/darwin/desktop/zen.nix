@@ -1,7 +1,7 @@
 _:
 
 let
-  shared = import ../shared;
+  shared = import ../../../shared;
 in
 
 {

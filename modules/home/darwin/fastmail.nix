@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }:
@@ -22,5 +23,5 @@ in
   # A JMAP client rather than a mail app: Fastmail speaks JMAP natively, so
   # this needs no IMAP app password, no local mail store and no sync daemon.
   # Output is JSON, which is what makes it useful to a coding agent.
-  home.packages = [ fastmail ];
+  home.packages = lib.mkOrder 500 [ fastmail ];
 }
