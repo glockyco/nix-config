@@ -1,6 +1,6 @@
 ## Context
 
-The current package overlay is hand-written at `flake.nix:137-144`, and current checks are declared in `flake.nix:281-792`. At implementation time, `key-fleet-by-host` supplies the generated overlay in `flake-modules/packages.nix`, with `packages/<name>/package.nix` and optional sibling `tests.nix`. `separate-platform-baseline-from-roles` places the power and Rosetta declarations in `modules/roles/darwin/desktop/default.nix`. PostgreSQL moves unchanged to `modules/roles/darwin/postgresql/default.nix`. This change uses those layouts rather than introducing a second convention.
+The generated package overlay lives in `flake-modules/packages.nix`, with `packages/<name>/package.nix` and optional sibling `tests.nix`. Checks live in `flake-modules/checks.nix`. The desktop role imports the power and Rosetta declarations from `modules/roles/darwin/desktop/{power,rosetta}.nix`. PostgreSQL remains in `modules/roles/darwin/postgresql/postgresql.nix`. Use these paths rather than introducing a second convention.
 
 Home Manager invokes `run` in `modules/home/darwin/neo2.nix:19-26`, `modules/home/darwin/karabiner.nix:55-58`, and `modules/home/darwin/apple-terminal.nix:16-18`. The hotkey block invokes `mktemp`, `defaults export`, and `plutil` outside it (`modules/home/darwin/keyboard-shortcuts.nix:68-77`). The remaining write defects and their current locations appear in `proposal.md`. Fastmail has an import-safe `main()` (`modules/home/darwin/fastmail.py:444-503`); the Terminal font client does not (`modules/home/darwin/apple-terminal.py:9,56-94`).
 
@@ -16,7 +16,7 @@ Home Manager invokes `run` in `modules/home/darwin/neo2.nix:19-26`, `modules/hom
 **Non-Goals:**
 
 - Change the declared layouts, Karabiner rules, handlers, shortcuts, font, power values, or PostgreSQL settings.
-- Rework OMP activation or the Air's mount agent. `modules/home/darwin/network-shares.nix:13-46` belongs to the removable Air role.
+- Rework OMP activation or the Air's mount agent. `modules/roles/darwin/air-client/network-shares.nix` belongs to the removable Air role.
 - Package the screenshot directory creation. Its `run mkdir -p` is already dry-run-safe and idempotent (`modules/home/darwin/screenshots.nix:15-17`).
 - Remove `|| true` from a `duti -d` or `duti -x` read with no handler. These reads represent an absent binding (`modules/home/darwin/default-apps.nix:303-345`).
 
@@ -66,11 +66,11 @@ Convert the `disabled` attribute set to a list of identifiers. Keep each binding
 
 ### 7. Probe Rosetta execution and compare power sources
 
-Probe Rosetta with `arch -arch x86_64 /usr/bin/true`. The current daemon probe does not establish that an `x86_64` binary runs, and installation failure is swallowed (`modules/darwin/rosetta.nix:4-10`). Attempt installation only after a failed execution probe; fail activation if `softwareupdate` fails. Preserve the declared `pmset -c sleep 0 displaysleep 10` and `-b sleep 1 displaysleep 15` values (`modules/darwin/power.nix:9-12`). Parse `pmset -g custom` for AC and battery. Write only a differing source.
+Probe Rosetta with `arch -arch x86_64 /usr/bin/true`. The current daemon probe does not establish that an `x86_64` binary runs, and installation failure is swallowed (`modules/roles/darwin/desktop/rosetta.nix:4-10`). Attempt installation only after a failed execution probe; fail activation if `softwareupdate` fails. Preserve the declared `pmset -c sleep 0 displaysleep 10` and `-b sleep 1 displaysleep 15` values (`modules/roles/darwin/desktop/power.nix:9-12`). Parse `pmset -g custom` for AC and battery. Write only a differing source.
 
 ### 8. Keep PostgreSQL's directory preparation
 
-The cluster remains at `/var/lib/postgresql/17`. Preserve the idempotent `/usr/bin/install -d -o ${config.system.primaryUser} -g staff -m 0700` step, which prepares the root-owned parent for the user agent (`modules/darwin/postgresql.nix:35-40`). Do not move data, remove the activation step, or require an `initdb` relocation proof. This step does not replace a cluster or change its contents.
+The cluster remains at `/var/lib/postgresql/17`. Preserve the idempotent `/usr/bin/install -d -o ${config.system.primaryUser} -g staff -m 0700` step, which prepares the root-owned parent for the user agent (`modules/roles/darwin/postgresql/postgresql.nix:35-40`). Do not move data, remove the activation step, or require an `initdb` relocation proof. This step does not replace a cluster or change its contents.
 
 **Alternative:** move the cluster under the user's home and let `initdb` make its directory. Reject it because the existing cluster contains research data and must keep its location. Do not add a redundant `test -d` guard to an already idempotent operation.
 
