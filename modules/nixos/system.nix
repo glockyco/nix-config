@@ -1,12 +1,12 @@
 {
   config,
+  lib,
   inputs,
-  pkgs,
   ...
 }:
 
 let
-  inherit (config.host) name username;
+  inherit (config.host) name;
 in
 {
   networking.hostName = name;
@@ -21,25 +21,15 @@ in
   # change.
   system.configurationRevision = inputs.self.rev or inputs.self.dirtyRev or null;
 
-  # macOS supplies the time zone and the number formats, so no portable module
-  # declares them. Without these values the host runs on UTC and reports
-  # 12-hour time and US measurement, which `en_US.UTF-8` selects.
-  time.timeZone = "Europe/Vienna";
+  time.timeZone = config.host.timeZone;
 
-  # `de_AT.UTF-8` reports `%T` for the time format and `1` for measurement,
-  # which is 24-hour and metric. Declaring the categories is enough, because
-  # the built locale set derives from them; `i18n.supportedLocales` is
-  # deprecated and stays unset.
-  i18n.extraLocaleSettings = {
-    LC_TIME = "de_AT.UTF-8";
-    LC_MEASUREMENT = "de_AT.UTF-8";
-  };
+  # The host declares explicit 24-hour and metric locale categories.
+  i18n.extraLocaleSettings =
+    lib.optionalAttrs (config.host.locale.timeCategory != null) {
+      LC_TIME = config.host.locale.timeCategory;
+    }
+    // lib.optionalAttrs (config.host.locale.measurementCategory != null) {
+      LC_MEASUREMENT = config.host.locale.measurementCategory;
+    };
 
-  # `nixos-wsl` declares this normal user and its `wheel` group. NixOS derives
-  # `/home/${username}`; this host only selects the login shell.
-  users.users.${username} = {
-    # `modules/home/shell.nix` configures zsh and generates no bash files, so a
-    # bash login shell would read none of its own configuration.
-    shell = pkgs.zsh;
-  };
 }

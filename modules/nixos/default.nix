@@ -3,12 +3,8 @@
   # host. User scope stays in `modules/home/`, which both hosts share, and
   # `modules/home/darwin/` stays out of this host's reach.
   imports = [
-    ./wsl.nix
     ./system.nix
-    ./tailscale.nix
     ./nix.nix
-    ./programs.nix
-    ./containers.nix
     ./home-manager.nix
   ];
 }

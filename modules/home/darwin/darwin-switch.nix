@@ -13,7 +13,7 @@ in
   # `darwin-rebuild switch` reports that it activated a generation, but not
   # what actually changed. This wraps it and diffs the closure afterwards, so a
   # switch shows which packages moved and how the closure size changed.
-  home.packages = [
+  home.packages = lib.mkOrder 600 [
     (pkgs.writeShellApplication {
       name = "darwin-switch";
       runtimeInputs = [ pkgs.nvd ];

@@ -5,7 +5,7 @@
   ...
 }:
 let
-  inherit (import ../shared) tailnetDnsDomain;
+  inherit (import ../../../shared) tailnetDnsDomain;
   cfg = config.services.tailscale;
   tailscaleSetAfterLogin = pkgs.tailscale-set-after-login.override { tailscale = cfg.package; };
   builderAuthorizedKeys = pkgs.writeText "macbook-pro-builder-authorized-keys" ''

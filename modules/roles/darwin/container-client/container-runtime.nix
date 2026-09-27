@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }:
@@ -34,7 +35,7 @@ let
 in
 
 {
-  home.packages = [
+  home.packages = lib.mkOrder 700 [
     pkgs.colima
     pkgs.docker-client
     containerRuntimeCheck

@@ -6,6 +6,7 @@
     ./host.nix
     ../../modules/fleet
     ../../modules/nixos
+    ../../modules/roles/nixos/wsl-workstation
   ];
 
   home-manager.users.${config.host.username} = {

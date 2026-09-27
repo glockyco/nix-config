@@ -9,16 +9,9 @@ let
   # that prompts can only be replaced, never relaxed -- keep that in mind
   # before adding another one here.
   secretiveAgent = "~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh";
-  airBatchCheck = pkgs.air-batch-check;
-  airHost = {
-    HostName = "macbook-air";
-    User = "joaichberger";
-  };
 
-  # The Windows desktop is an unmanaged tailnet peer. Its account is a local
-  # Windows user, so the name differs from this machine's, exactly as the Air's
-  # does. MagicDNS resolves the short name, so no address is recorded here: the
-  # desktop's tailnet address is not stable policy.
+  # The Windows desktop is an unmanaged tailnet peer. Its account differs
+  # from this machine's, and MagicDNS resolves the short name.
   desktopHost = {
     HostName = "desktop";
     User = "User";
@@ -36,8 +29,6 @@ let
 in
 
 {
-  home.packages = [ airBatchCheck ];
-
   # Enclave keys are served by Secretive; the YubiKey holds a resident FIDO2 key.
   # Neither private key is exportable.
   programs.ssh = {
@@ -71,24 +62,6 @@ in
         # minutes, instead of letting clients hang on it.
         ServerAliveInterval = 60;
         ServerAliveCountMax = 3;
-      };
-
-      # The old MacBook Air is a temporary tailnet peer. Its account name
-      # differs from this machine's, so without this block ssh defaults to
-      # `glockyco` and the Secure Enclave key -- which is in the Air's
-      # authorized_keys -- is rejected as an unknown user.
-      "air" = airHost;
-
-      # Unattended commands must exit with their remote process instead of
-      # inheriting the interactive one-hour control-master lifetime. Keep stdin
-      # available because rsync carries its protocol over the SSH streams.
-      "air-batch" = airHost // {
-        BatchMode = "yes";
-        RequestTTY = "no";
-        ControlMaster = "no";
-        ControlPath = "none";
-        ControlPersist = "no";
-        ConnectTimeout = 8;
       };
 
       # Secretive supplies the enrolled client key. Both desktop endpoints use

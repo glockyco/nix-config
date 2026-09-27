@@ -6,8 +6,9 @@
 
 let
   inherit (config.host) username;
-  inherit (import ../shared) binaryCaches;
-  nixPolicy = import ../shared/nix-policy.nix { nixpkgs = inputs.nixpkgs; };
+  shared = import ../shared;
+  inherit (shared) binaryCaches;
+  nixPolicy = shared.nixPolicy { nixpkgs = inputs.nixpkgs; };
 in
 {
   imports = [ inputs.determinate.darwinModules.default ];

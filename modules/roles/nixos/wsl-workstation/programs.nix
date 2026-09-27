@@ -6,7 +6,7 @@
 }:
 
 let
-  inherit (import ../shared) tailnetDnsDomain tailnetPeers;
+  inherit (import ../../../shared) tailnetDnsDomain tailnetPeers;
   builderHost =
     lib.findFirst (host: host.name != config.host.name && host.build.logicalCores != null)
       (throw "the SSH client requires a declared remote builder")

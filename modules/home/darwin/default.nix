@@ -8,7 +8,6 @@
   # `./catppuccin.nix` holds the theme ports for the programs in this directory.
   imports = [
     ./catppuccin.nix
-    ./container-runtime.nix
     ./darwin-switch.nix
     ./secrets.nix
     ./fastmail.nix
@@ -17,7 +16,6 @@
     ./apple-terminal.nix
     ./default-apps.nix
     ./ssh.nix
-    ./network-shares.nix
     ./neo2.nix
     ./karabiner.nix
     ./keyboard-shortcuts.nix
