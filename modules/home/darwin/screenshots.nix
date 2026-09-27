@@ -6,7 +6,7 @@
 }:
 
 let
-  screenshotDir = "${config.home.homeDirectory}/Pictures/Screenshots";
+  screenshotDir = config.host.paths.screenshots;
 in
 
 {

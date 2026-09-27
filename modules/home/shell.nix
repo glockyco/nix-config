@@ -1,18 +1,9 @@
-{ config, lib, ... }:
-
 {
   programs.zsh = {
     enable = true;
     enableCompletion = true;
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
-
-    # nix-homebrew prepends its prefix in /etc/zshrc. Put the Home Manager
-    # profile back first so public commands resolve to their curated wrappers.
-    initContent = lib.mkAfter ''
-      typeset -U path PATH
-      path=("${config.home.profileDirectory}/bin" "''${path[@]}")
-    '';
 
     # Large history keeps fzf Ctrl-R searches useful.
     history = {
@@ -33,8 +24,7 @@
     };
   };
 
-  # Powerline separators require the Nerd Font from modules/darwin/fonts.nix;
-  # otherwise arrows render as tofu.
+  # Powerline separators require a Nerd Font on the rendering terminal.
   programs.starship = {
     enable = true;
     presets = [ "catppuccin-powerline" ];

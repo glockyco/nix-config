@@ -9,33 +9,30 @@
     ../../modules/roles/nixos/wsl-workstation
   ];
 
-  home-manager.users.${config.host.username} = {
-    # This host holds no GitHub key, because it declares no secret and
-    # copies no key. `gh` therefore drives Git over HTTPS here, and its
-    # declared credential helper answers the prompt. `modules/home/gh.nix`
-    # keeps `ssh` for the Darwin host, which does hold a key.
-    programs.gh.settings.git_protocol = "https";
+  home-manager.users.${config.host.username} =
+    { config, lib, ... }:
+    let
+      root = config.programs.git.settings.ghq.root;
+      home = config.home.homeDirectory;
+      gitdir = if lib.hasPrefix "${home}/" root then "~${lib.removePrefix home root}" else root;
+    in
+    {
+      # This host holds no GitHub key; gh drives Git over HTTPS.
+      programs.gh.settings.git_protocol = "https";
 
-    programs.git = {
-      settings.user = {
-        name = "Johann Glock";
+      programs.git = {
+        settings.user = {
+          name = config.host.git.authorName;
+          email = config.host.git.defaultEmail;
+        };
 
-        # The employer address is the default on this machine, because most
-        # work here belongs to the employer.
-        email = "johann.glock@scch.at";
+        # ghq lays GitHub clones below its declared root.
+        includes = [
+          {
+            condition = "gitdir:${gitdir}/github.com/";
+            contents.user.email = config.host.git.githubNoReplyEmail;
+          }
+        ];
       };
-
-      # Every GitHub repository uses the no-reply address instead.
-      # `programs.git.settings.ghq.root` is `~/src`, and ghq lays a clone
-      # out as `~/src/<host>/<owner>/<repo>`, so this condition selects the
-      # complete GitHub host tree. Repositories under other hosts, or
-      # directly under `~/src`, keep the employer address above.
-      includes = [
-        {
-          condition = "gitdir:~/src/github.com/";
-          contents.user.email = "11704293+glockyco@users.noreply.github.com";
-        }
-      ];
     };
-  };
 }

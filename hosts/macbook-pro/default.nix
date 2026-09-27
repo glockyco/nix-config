@@ -10,17 +10,15 @@
     ../../modules/roles/darwin/air-client
   ];
 
-  home-manager.users.${config.host.username} = {
+  home-manager.users.${config.host.username} = { config, ... }: {
     programs.git.settings.user = {
-      name = "Johann Glock";
+      name = config.host.git.authorName;
 
-      # GitHub's noreply address associates commits with the account
-      # without exposing a real mailbox.
-      email = "11704293+glockyco@users.noreply.github.com";
+      # Use the GitHub no-reply address without exposing a mailbox.
+      email = config.host.git.defaultEmail;
     };
 
-    # `git` and `gh` both fall back to this, so the editor is named once
-    # rather than per program.
+    # `git` and `gh` share the same editor.
     home.sessionVariables.EDITOR = "zed --wait";
   };
 }

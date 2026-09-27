@@ -9,20 +9,15 @@ let
   containerRuntimeCheck = pkgs.container-runtime-check;
   profileFormat = pkgs.formats.yaml { };
   profile = {
-    cpu = 8;
-    disk = 150;
-    memory = 16;
-    arch = "aarch64";
+    cpu = config.host.darwin.containerProfile.cpu;
+    disk = config.host.darwin.containerProfile.disk;
+    memory = config.host.darwin.containerProfile.memory;
+    arch = pkgs.stdenv.hostPlatform.qemuArch;
     runtime = "docker";
     vmType = "vz";
     rosetta = true;
     mountType = "virtiofs";
-    mounts = [
-      {
-        location = config.home.homeDirectory;
-        writable = true;
-      }
-    ];
+    mounts = config.host.darwin.containerProfile.mounts;
     kubernetes.enabled = false;
     autoActivate = true;
     network = {
