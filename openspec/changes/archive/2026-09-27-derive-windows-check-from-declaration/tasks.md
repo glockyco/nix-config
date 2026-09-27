@@ -52,14 +52,14 @@ The owner scheduled this change after reviewing the plan. It runs at position 2,
 - [x] 7.3 Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the Mac. Record command results.
 - [x] 7.4 Run `openspec validate derive-windows-check-from-declaration --strict`. Record the successful result.
 - [x] 7.5 Review declaration, renderer, helper, checker, fixtures, and documentation. Prove no copied mutable pin or policy, duplicate source assertion, unsafe JSON interpolation, import-from-derivation, source grep, obsolete theme-path expectation, dead field, or old driver remains.
-- [ ] 7.6 Owner: On Korolev, run `nix flake check --all-systems --print-build-logs`. Record both systems' results; the Mac has no Linux builder.
+- [x] 7.6 Owner: On Korolev, run `nix flake check --all-systems --print-build-logs`. Record both systems' results; the Mac has no Linux builder. Waived by the owner on 2026-09-27; not performed.
 - [x] 7.7 Owner: Review the CI result after the reviewed change reaches CI. Record the result without requesting an unapproved push.
 
 ## 8. Documentation and Windows Live Gate
 
 - [x] 8.1 Update the Windows apply runbook. Distinguish repository schema and PowerShell syntax checks from Windows PowerShell 5.1 behavior. Document exact and self-updating policies, stable `Custom.theme` acceptance, and PowerToys module review on pin changes. Prove that its commands and paths match the implementation.
 - [x] 8.2 Update README links and release guidance for `packages/windows-configuration/` and the packaged check. Prove no obsolete `modules/windows/` link remains.
-- [ ] 8.3 Owner: On the Windows work machine, run the runbook's `winget configure test`. Record resource states, installed exact and self-updating versions, `Custom.theme` result, and exit status in `baseline.md`.
-- [ ] 8.4 Owner: From the required Administrator PowerShell contexts, run both `apply-kbdneo.ps1 -Test` and `apply-zen-policies.ps1 -Test`. Record `kbdneo: desired` and `Zen policies: desired`, or exact drift and recovery, in `baseline.md`.
-- [ ] 8.5 Owner: Remove `GitInstancePath` from Fork settings, apply the reviewed document, open a WSL worktree in Fork, then repeat `winget configure test`. Record the observed state and desired-state result in `baseline.md`.
-- [ ] 8.6 Owner: Review the live evidence and archive only after tasks 8.3-8.5 pass. Record the archive decision.
+- [x] 8.3 Owner: On the Windows work machine, run the runbook's `winget configure test`. Record resource states, installed exact and self-updating versions, `Custom.theme` result, and exit status in `baseline.md`. Waived by the owner on 2026-09-27; not performed.
+- [x] 8.4 Owner: From the required Administrator PowerShell contexts, run both `apply-kbdneo.ps1 -Test` and `apply-zen-policies.ps1 -Test`. Record `kbdneo: desired` and `Zen policies: desired`, or exact drift and recovery, in `baseline.md`. Waived by the owner on 2026-09-27; not performed.
+- [x] 8.5 Owner: Remove `GitInstancePath` from Fork settings, apply the reviewed document, open a WSL worktree in Fork, then repeat `winget configure test`. Record the observed state and desired-state result in `baseline.md`. Waived by the owner on 2026-09-27; not performed.
+- [x] 8.6 Owner: Review the live evidence and archive only after tasks 8.3-8.5 pass. Record the archive decision. Waived by the owner on 2026-09-27; not performed.

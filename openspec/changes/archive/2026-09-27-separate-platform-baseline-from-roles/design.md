@@ -102,6 +102,8 @@ Alternative rejected: a new executable for token exports. A sourced function mus
 
 ### 10. SOPS encrypts secret data and includes offline recovery
 
+On 2026-09-27 the owner waived the offline-recovery part to archive this change. The shipped contract is the plaintext-scalar check alone: `.sops.yaml` keeps the Mac-only recipient and its `encrypted_regex`, the check rejects any data value that rule leaves in plaintext, and the README states that offline recovery is not configured. The rest of this decision records the intended follow-up; a later change adds the offline recipient, re-encrypts every file, and removes `encrypted_regex`.
+
 The owner generates an age private key on encrypted offline media and supplies only its public recipient. Add that public recipient beside the Mac recipient in `.sops.yaml`. Re-encrypt each `secrets/*.yaml` with both recipients using the existing Mac private key; remove `encrypted_regex`. Current files contain SOPS metadata and an encrypted `token` (`secrets/fastmail.yaml:1-16`), so the repository check recursively visits YAML data outside the top-level `sops` metadata mapping. It rejects each non-`ENC[` scalar with its file and YAML path. Fixture tests cover nested mappings, sequence entries, and valid encrypted data.
 
 The repository check lives in `checks/secret-encryption-check.nix` and its fixtures beside the check, wired for every supported system by `flake-modules/checks.nix`. The check does not decrypt: CI has no private keys. Mac-key decrypt and offline-key decrypt are independent proofs. Re-encryption with the Mac key can proceed while the owner prepares the recovery recipient; final two-recipient ciphertext and acceptance wait for the public key.

@@ -53,3 +53,7 @@ The README command now starts the development shell first and reads the token in
 ## CI evidence
 
 PR #44 (`refactor/fleet-roles-programs` at `7903d59`) ran the `check` workflow (https://github.com/glockyco/nix-config/actions/runs/36333360593). `check (ubuntu-latest)` passed in 5m58s with Korolev's declared Nix and built every `x86_64-linux` check, including the Korolev system and home generation. `check (macos-15)` passed in 13m34s. The `tailnet-policy` `test` job passed.
+
+## Publication
+
+On 2026-09-27, with the owner's approval, the README `push` command applied the one reviewed correction and reported `SUCCESS!`. A second preview reported `Done. 0 corrections.`, and a public resolver returned both apex TXT records.

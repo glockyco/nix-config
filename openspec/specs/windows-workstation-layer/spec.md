@@ -8,13 +8,19 @@ Define a reviewable Windows workstation configuration layer with explicit owners
 
 ### Requirement: Rendered Windows configuration artifacts
 
-The repository SHALL render one Windows configuration document, one Administrator Zen policy script, and one Administrator native Neo driver script from the same Nix expressions. Together they SHALL be the single source for the Windows application set, the declared Windows settings, and the declared application configuration files. Nix activation on any host SHALL NOT write to a Windows path and SHALL NOT apply any artifact.
+The repository SHALL render one Windows configuration document, one Administrator Zen policy script, and one Administrator native Neo driver script from the same Nix expressions. Together they SHALL be the single source for the Windows application set, the declared Windows settings, and the declared application configuration files. Each application SHALL have one declaration that carries its identifier, version policy, policy-specific selector, scope, source, and release data, and every resource that installs or configures that application SHALL derive its metadata from that declaration. Evaluation of the output SHALL read no derivation output and SHALL need no network. Nix activation on any host SHALL NOT write to a Windows path and SHALL NOT apply any artifact.
 
 #### Scenario: Render the artifacts
 
 - **WHEN** the Windows configuration output is built from the locked repository
 - **THEN** the result contains one WinGet Configuration document, one Zen policy script, one native Neo driver script, and the review files that describe their settings
 - **AND** the build reads no mutable Windows state
+
+#### Scenario: Evaluate without network
+
+- **WHEN** the flake outputs are evaluated on a machine with no network
+- **THEN** the Windows configuration output evaluates
+- **AND** the pinned upstream theme files are fetched only when the output is built
 
 #### Scenario: Keep the operating-system boundary
 
@@ -24,7 +30,7 @@ The repository SHALL render one Windows configuration document, one Administrato
 
 ### Requirement: User scope with explicit machine exceptions
 
-Every document resource SHALL apply in the interactive user's own scope except the Zen package. The official Zen installer SHALL be the only document resource that requests elevation. One Administrator script SHALL own only the Zen policy file under Program Files. The other SHALL own only the native Neo DLLs and keyboard-layout registration. Both scripts SHALL refuse a non-administrator token and SHALL read no Administrator-profile path.
+Every document resource SHALL apply in the interactive user's own scope except the Zen package. The official Zen installer SHALL be the only document resource that requests elevation. One Administrator script SHALL own only the Zen policy file under Program Files. The other SHALL own only the native Neo DLLs and keyboard-layout registration. Both scripts SHALL refuse a non-administrator token and SHALL read no Administrator-profile path. The repository check SHALL be the single owner of these rules. Evaluation of the output SHALL NOT enforce them.
 
 #### Scenario: Apply user-scope resources
 
@@ -47,7 +53,8 @@ Every document resource SHALL apply in the interactive user's own scope except t
 
 - **WHEN** the document declares another machine-scope package, elevated resource, machine-scope registry value, or Windows feature
 - **OR** either Administrator script refers to an interactive-user profile path or a machine path outside its declared ownership
-- **THEN** the repository validation fails
+- **THEN** the repository check fails and names the resource or script
+- **AND** the Windows configuration output still renders, so the operator can inspect it
 
 ### Requirement: Pinned application set
 
@@ -268,17 +275,28 @@ The Windows layer SHALL declare nothing about the taskbar pinned-application lis
 
 ### Requirement: Validation before and after apply
 
-The repository SHALL validate the rendered document and privilege boundary without a Windows machine. The operator SHALL test the document and both Administrator scripts before their first apply and SHALL confirm each applied state after the apply.
+The repository SHALL validate the rendered document and privilege boundary without a Windows machine. The repository check SHALL validate the shipped document against the WinGet Configuration v3 document contract without rewriting it. The document SHALL carry the schema URL and bare-name dependency form that the WinGet parser recognizes. The operator SHALL test the document and both Administrator scripts before their first apply and SHALL confirm each applied state after the apply.
 
 #### Scenario: Validate without Windows
 
 - **WHEN** the repository checks run on a supported build platform
-- **THEN** they validate the document structure, the narrow script boundary, each application's version policy, and the absence of a centrally managed application
+- **THEN** they validate the shipped document against the document contract, every script against the PowerShell parser, the narrow script boundary, each application's version policy and selector, and the absence of a centrally managed application
 - **AND** they require no Windows machine and no network service
+
+#### Scenario: Preserve stable dark appearance acceptance
+
+- **WHEN** Windows records the declared dark modes, transparency, and wallpaper in `Custom.theme`
+- **THEN** the live test reports the dark-appearance resource in the desired state
+- **AND** the repository check requires no active theme-file path
+
+#### Scenario: Reject a dependency on an undeclared resource
+
+- **WHEN** a resource in the rendered document depends on a name that no resource in the document declares
+- **THEN** the repository check fails and names both resources
 
 #### Scenario: Preview and confirm on the machine
 
-- **WHEN** the operator tests the document and both Administrator scripts on `korolev`
+- **WHEN** the operator tests the document and both Administrator scripts on the Windows work machine
 - **THEN** each test reports drift without applying it
 - **AND** later test operations report that the applied state matches all three artifacts
 
@@ -308,3 +326,77 @@ The rendered Windows application set SHALL declare Brave as a self-updating, use
 - **WHEN** the relay browser declaration is removed and the Windows configuration is applied
 - **THEN** no NixOS generation or OMP wrapper change is required
 - **AND** the operator can remove the browser-owned relay profile and extension independently
+
+### Requirement: Check expectations derive from the declaration
+
+The Windows configuration output SHALL expose its declaration: the role set, the application list with each version policy and selector, the centrally managed application identifiers, and the review file names. The repository check SHALL read that declaration from the output. It SHALL derive version selectors, roles, elevation, and review-file names from it. The three primary artifact names SHALL come from the fixed Windows output contract. The check SHALL NOT copy mutable pins, palettes, module lists, theme hashes, or review file names. It SHALL keep only invariant rules as literals: schema, unique resource names, dependency existence, elevation and Administrator boundaries, and accepted role identity, policy scope, and ownership rules.
+
+#### Scenario: Change one pin
+
+- **WHEN** a maintainer changes the version or checksum of one exact-pinned application in the declaration and renders the output
+- **THEN** the repository check passes with no edit to the check
+- **AND** the rendered document carries the new pin
+
+#### Scenario: Declare a self-updating application
+
+- **WHEN** the declaration selects the self-updating policy without a version for Zed, Brave, or Ferdium
+- **THEN** the repository check expects `useLatest: true` and no rendered version
+- **AND** the check carries no application-specific exception
+
+#### Scenario: Declared application absent from the document
+
+- **WHEN** the declaration lists an application that the rendered document does not carry as exactly one resource with the same identifier, version policy, policy-specific selector, scope, and roles
+- **THEN** the repository check fails and names the application
+
+#### Scenario: Rendered version policy differs from the declaration
+
+- **WHEN** an exact resource carries a mismatched version or permits the latest version
+- **OR** a self-updating resource carries a version or does not require the latest version
+- **THEN** the repository check fails and names the resource
+
+#### Scenario: Review file set differs from the declaration
+
+- **WHEN** the rendered output carries a file that the declaration does not name, or omits one that it names
+- **THEN** the repository check fails and names the file
+
+#### Scenario: Reject a different named application
+
+- **WHEN** the declaration replaces the required Zen, Zed, Brave, or Ferdium identity or assigns a policy outside the accepted contract
+- **THEN** the repository check fails and names the role
+- **AND** the check does not copy a mutable release version or the application's profile data
+
+### Requirement: Every script parses
+
+The repository check SHALL parse every script that the Windows layer ships: each test and set script inside the document, both Administrator scripts, and the ReNeo launcher. The check SHALL use the PowerShell parser for that purpose and SHALL NOT match script source against substrings. The check SHALL assert the Administrator-script boundary on the parsed variable references and string values.
+
+#### Scenario: A script does not parse
+
+- **WHEN** a rendered script contains a syntax error
+- **THEN** the repository check fails and names the script and the parser message
+
+#### Scenario: A script refactor keeps the check green
+
+- **WHEN** a maintainer restructures a script without a change to the values it reads or writes
+- **THEN** the repository check passes with no edit to the check
+
+### Requirement: Checker errors and self-tests have separate paths
+
+The Windows checker SHALL expose an import-safe `main(argv: Sequence[str] | None = None) -> int` that owns `argparse`. When `argv` is `None`, it SHALL parse `sys.argv[1:]`. Its console script SHALL exit with the returned status. Its normal command SHALL NOT run self-tests. The package build SHALL run its tests from `tests/`. Expected invalid arguments, missing output files, and missing document resources SHALL produce one named finding on stderr and exit 1. These failures SHALL NOT print a traceback or `StopIteration`. Unexpected programming failures SHALL retain a traceback.
+
+#### Scenario: Reject a missing resource
+
+- **WHEN** the document omits a resource that its declaration requires
+- **THEN** the command prints one finding that names the missing resource and exits 1
+- **AND** it prints no traceback
+
+#### Scenario: Reject bad input
+
+- **WHEN** a caller omits an argument or names a missing output file
+- **THEN** the command prints one finding on stderr and exits 1
+- **AND** it prints no traceback
+
+#### Scenario: Build and invoke the checker
+
+- **WHEN** the checker package builds
+- **THEN** its tests run from `tests/`
+- **AND** a later normal checker invocation validates only its supplied output, without running those tests
