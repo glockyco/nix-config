@@ -48,7 +48,18 @@ let
         reachable = true;
       };
 
-  hostEntries = lib.mapAttrsToList normalizeHost managedHosts;
+  # A host record carries more than the policy needs, such as Git email
+  # addresses. Read only the identity and tailnet facts, so the email guard
+  # below inspects exactly what can reach the policy.
+  tailnetHosts = lib.mapAttrs (
+    _: host:
+    builtins.intersectAttrs {
+      name = null;
+      username = null;
+      tailnet = null;
+    } host
+  ) managedHosts;
+  hostEntries = lib.mapAttrsToList normalizeHost tailnetHosts;
   peerEntries = lib.mapAttrsToList normalizePeer peers;
   entries = hostEntries ++ peerEntries;
   tags = map (entry: entry.tag) entries;
@@ -93,7 +104,7 @@ assert tags != [ ];
 assert builtins.length tags == builtins.length (lib.unique tags);
 assert unreachableDestinations == [ ];
 assert unknownDestinations == [ ];
-assert !(lib.hasInfix "@" (builtins.toJSON { inherit managedHosts peers; }));
+assert !(lib.hasInfix "@" (builtins.toJSON { inherit tailnetHosts peers; }));
 assert !(lib.hasInfix "@" rendered);
 runCommand "tailnet-policy"
   {
