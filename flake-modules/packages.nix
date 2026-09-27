@@ -33,6 +33,16 @@ in
       hasDarwinHost = lib.any (host: host.system == system && host.kind == "darwin") (
         builtins.attrValues config.fleet.hosts
       );
+      # The temporary Air tools belong to the Air role. Export them only for a
+      # system where a host selects that role, so a host without the role
+      # publishes no Air command and no Air release gate.
+      hasAirClient = lib.any (
+        host:
+        host.system == system
+        && host.kind == "darwin"
+        && self.darwinConfigurations.${host.name}.config.home-manager.users.${host.username}.programs.ssh.settings
+        ? air
+      ) (builtins.attrValues config.fleet.hosts);
       # Export the overlay's own derivations, so an exported package and the
       # package a host installs are one value with one call site.
       packageNames = builtins.attrNames (
@@ -49,7 +59,7 @@ in
     {
       _module.args.pkgs = pkgs;
       packages =
-        supported
+        (if hasAirClient then supported else removeAttrs supported [ "air-batch-check" ])
         // {
           inherit (pkgs) openspec;
           tailnet-policy = tailnetPolicy;
