@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-26
 
-The owner scheduled this change after a plan review. Implement it at position 4, after `separate-platform-baseline-from-roles` is archived.
+The owner scheduled this change after a plan review. It runs at position 4, after `separate-platform-baseline-from-roles` is implemented and passes the Mac gates. Changes 1 through 5 archive in order, each after its owner gates pass.
 
 ## 1. Python Programs
 
