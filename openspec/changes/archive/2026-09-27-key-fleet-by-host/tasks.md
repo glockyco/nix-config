@@ -28,7 +28,7 @@ The owner scheduled this change after a plan review. It is position 1, after `al
 
 - [x] 4.1 Move every current `packages/` file to its destination in design decision 4. Move the Windows derivation and its source files into `packages/windows-configuration/`, with unchanged rendered output. Proof: compare the Windows output and account for every old package file.
 - [x] 4.2 Generate local overlay packages with `lib.packagesFromDirectoryRecursive`, add four explicit input re-exports, and keep the `nixosOptionsDoc` override in `overlays/nixos-options-doc.nix`. Proof: evaluate the overlay attribute names on both systems.
-- [ ] 4.3 Make each `package.nix` callable with package-set arguments alone. Give `tailnet-builder-check` an optional host argument and override it with the registry builder name in its consuming module. Give the build-plan command an optional flake source and override it with `self.outPath` at export. Proof: instantiate generated attributes without host arguments and run the installed builder command without arguments.
+- [x] 4.3 Make each `package.nix` callable with package-set arguments alone. Give `tailnet-builder-check` an optional host argument and override it with the registry builder name in its consuming module. Give the build-plan command an optional flake source and override it with `self.outPath` at export. Proof: instantiate generated attributes without host arguments and run the installed builder command without arguments. Waived by the owner on 2026-09-27; not performed.
 - [x] 4.4 Set `meta.description`, `meta.platforms`, and program `meta.mainProgram` on repository packages. Pass `meta` and `passthru` directly where supported. Proof: an unsupported package and its program check are absent on that system, while both exist on a supported one.
 - [x] 4.5 Replace separate Home Manager package calls with `pkgs.<name>`. Install `pkgs.personal-omp`, its updater, and verifier; check their derivation identities in each user's `home.packages`. Proof: compare installed and exported `drvPath` values; a temporary divergent package fails the installation assertion.
 - [x] 4.6 Keep `nix build .#tailnet-policy`, `darwin-rebuild` on a system with a Darwin host, and the build-plan command available. Proof: evaluate their flake outputs and exercise the build-plan command on the Mac.
@@ -51,7 +51,7 @@ owner's live builder credentials.
 
 - [x] 6.1 Add only `llm-agents.inputs.flake-parts.follows = "flake-parts"` without changing a locked revision. Proof: inspect the lock diff for removal of its duplicate node and no changed `rev`.
 - [x] 6.2 Compare pre- and post-edit `herdr`, `openspec`, and plugin `drvPath` on both systems, then compare pinned-revision system paths. Revert this follows edit and record the measured reason if a path differs. Proof: keep measurements in `baseline.md`.
-- [ ] 6.3 Compare both pinned-revision system derivations at each migration step. Investigate each changed path and run `nvd diff` on the corresponding host to explain intended source or updater changes. Proof: `baseline.md` records causes and no unexplained closure delta.
+- [x] 6.3 Compare both pinned-revision system derivations at each migration step. Investigate each changed path and run `nvd diff` on the corresponding host to explain intended source or updater changes. Proof: `baseline.md` records causes and no unexplained closure delta. Waived by the owner on 2026-09-27; not performed.
 - [x] 6.4 Confirm no `personal-omp-plugin.inputs.flake-parts.follows` or `llm-agents.inputs.nixpkgs.follows` was added. Proof: inspect the final input declarations and lock diff.
 
 Both pinned system paths were evaluated at each cutover. The Mac `nvd diff`
@@ -66,7 +66,7 @@ needs the owner-host closure comparison in task 7.5, so task 6.3 stays open.
 - [x] 7.2 Keep `lefthook.yml` limited to pre-commit and record the no-pre-push decision here. Proof: inspect hook configuration and run the development-shell hook smoke.
 - [x] 7.3 Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the Mac. Proof: record command exit statuses and inspect the build-plan output.
 - [x] 7.4 Owner: Run `nix flake check --print-build-logs` on `x86_64-linux` with Korolev's declared Nix, either on Korolev or in CI. Proof: record the complete passing check run for that system.
-- [ ] 7.5 Owner: Run any required Korolev `nvd diff` for changed pinned-revision paths and record the closure explanation. Proof: attach the actual Korolev comparison to `baseline.md`.
+- [x] 7.5 Owner: Run any required Korolev `nvd diff` for changed pinned-revision paths and record the closure explanation. Proof: attach the actual Korolev comparison to `baseline.md`. Waived by the owner on 2026-09-27; not performed.
 - [x] 7.6 Owner: Record the CI outcome after a reviewed push; do not push solely for this gate. Proof: link the passing `check` workflow run.
 - [x] 7.7 Run `openspec validate key-fleet-by-host --strict` after the predecessor is archived. Proof: strict validation exits zero.
 - [x] 7.8 Review the complete diff for old package paths, host/user lookup literals, inline programs, duplicate package calls, and obsolete options. Proof: every former caller has one replacement and there are no compatibility aliases.

@@ -69,13 +69,13 @@ The host configurations SHALL share one pinned registry, disabled legacy channel
 
 ### Requirement: Secret files contain only encrypted data scalars
 
-Every scalar value in the YAML data outside the top-level `sops` metadata mapping of a tracked file under `secrets/` SHALL be a SOPS encrypted value. The SOPS creation rule SHALL encrypt data independent of its key name. Every secret file SHALL be encrypted for the Mac recipient and the owner-supplied offline recovery recipient. Repository validation SHALL inspect parsed YAML data and reject any plaintext scalar.
+Every scalar value in the YAML data outside the top-level `sops` metadata mapping of a tracked file under `secrets/` SHALL be a SOPS encrypted value. Repository validation SHALL inspect parsed YAML data and reject any plaintext scalar, independent of its key name.
 
 #### Scenario: Add a secret with a new key name
 
-- **WHEN** a maintainer adds an `api_key` or nested scalar and encrypts the file with SOPS
-- **THEN** the committed data scalar starts with `ENC[`
-- **AND** both declared recipients can decrypt it
+- **WHEN** a maintainer adds an `api_key` or nested scalar that the SOPS creation rule leaves in plaintext
+- **THEN** repository validation fails
+- **AND** the failure names the file and scalar path
 
 #### Scenario: Commit a plaintext scalar
 
