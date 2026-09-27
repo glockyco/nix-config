@@ -1,5 +1,21 @@
 { config, inputs, ... }:
 
+let
+  cloudflareHelper = name: label: tokenPath: ''
+    use_cloudflare_${name}() {
+      local token_file=${tokenPath}
+
+      if [[ ! -r "$token_file" ]]; then
+        log_error "Cloudflare ${label} token is unavailable: $token_file"
+        return 1
+      fi
+
+      export CLOUDFLARE_API_TOKEN
+      CLOUDFLARE_API_TOKEN="$(< "$token_file")"
+    }
+  '';
+in
+
 {
   # Secrets are committed encrypted and decrypted on this machine at login.
   #
@@ -9,8 +25,7 @@
   # directory instead of /run/secrets.
   #
   # The private half of the age key lives at ~/.config/sops/age/keys.txt and is
-  # never committed. It is this machine's trust anchor: another machine gets
-  # its own key, and its public half is added to .sops.yaml.
+  # never committed. It is the only recipient in .sops.yaml.
   imports = [ inputs.sops-nix.homeManagerModules.sops ];
 
   sops = {
@@ -40,35 +55,11 @@
     };
   };
 
-  # Keep the deployment credential out of the global shell. direnv loads this
-  # helper automatically, but only projects that call it receive the token.
-  home.file.".config/direnv/lib/use_cloudflare_workers.sh".text = ''
-    use_cloudflare_workers() {
-      local token_file=${config.sops.secrets."cloudflare-workers-token".path}
-
-      if [[ ! -r "$token_file" ]]; then
-        log_error "Cloudflare Workers token is unavailable: $token_file"
-        return 1
-      fi
-
-      export CLOUDFLARE_API_TOKEN
-      CLOUDFLARE_API_TOKEN="$(< "$token_file")"
-    }
-  '';
-
-  # Keep the DNS credential opt-in too: previewing or applying a zone should
-  # never make a broad-scope token available to every project shell.
-  home.file.".config/direnv/lib/use_cloudflare_dns.sh".text = ''
-    use_cloudflare_dns() {
-      local token_file=${config.sops.secrets."cloudflare-dns-token".path}
-
-      if [[ ! -r "$token_file" ]]; then
-        log_error "Cloudflare DNS token is unavailable: $token_file"
-        return 1
-      fi
-
-      export CLOUDFLARE_API_TOKEN
-      CLOUDFLARE_API_TOKEN="$(< "$token_file")"
-    }
-  '';
+  # Each credential stays opt-in for projects that call its direnv function.
+  xdg.configFile."direnv/lib/use_cloudflare_workers.sh".text =
+    cloudflareHelper "workers" "Workers"
+      config.sops.secrets."cloudflare-workers-token".path;
+  xdg.configFile."direnv/lib/use_cloudflare_dns.sh".text =
+    cloudflareHelper "dns" "DNS"
+      config.sops.secrets."cloudflare-dns-token".path;
 }
