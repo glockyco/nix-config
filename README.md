@@ -110,7 +110,7 @@ CLOUDFLARE_API_TOKEN="$(< ~/.config/sops-nix/secrets/cloudflare-dns-token)" nix 
 CLOUDFLARE_API_TOKEN="$(< ~/.config/sops-nix/secrets/cloudflare-dns-token)" nix develop .. --command dnscontrol push
 ```
 
-Run `push` only after the preview shows the intended record changes and nothing else. A project that needs the token in its own shell calls the `use_cloudflare_dns` direnv function from its `.envrc`.
+Only the owner runs `push`, and only after the preview shows the intended record changes and nothing else. An agent may run `preview` but never `push`. A project that needs the token in its own shell calls the `use_cloudflare_dns` direnv function from its `.envrc`.
 
 ## Update
 

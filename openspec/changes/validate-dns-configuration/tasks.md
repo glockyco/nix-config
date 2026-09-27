@@ -16,7 +16,7 @@ The owner scheduled this change after plan review. It runs at position 5, after 
 ## 3. Integration and Publication
 
 - [x] 3.1 Update the README's DNS/release guidance to identify the offline check and the owner-only publication step. Prove the commands match the implemented check and preview workflow.
-- [ ] 3.2 Run strict OpenSpec validation and the local release gates (`nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`). Record results and prove the DNS check passes on the Mac.
+- [x] 3.2 Run strict OpenSpec validation and the local release gates (`nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`). Record results and prove the DNS check passes on the Mac.
 - [x] 3.3 Run `dnscontrol preview` from `dns/` on the Mac with the opt-in DNS token. Record its exact output in this change's evidence and identify every intended TTL change. Do not push.
 - [ ] 3.4 Owner: Run the Korolev release gate and record the Linux DNS check result, because this Mac has no Linux builder.
 - [ ] 3.5 Owner: Trigger or review CI after authorized publication of the branch, and record both platform job results.
