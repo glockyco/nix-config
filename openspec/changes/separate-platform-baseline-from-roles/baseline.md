@@ -47,3 +47,9 @@ Two consecutive `nix eval --impure --json -f /tmp/fleet-drv.nix` calls returned 
 - Determinate Nix has `nix.enable = false`, pinned `nixpkgs` registry, and trusted users `root` and `glockyco`. Korolev has its pinned registry, channels enabled, and `nix.gc.automatic = false` and `nix.optimise.automatic = false`.
 - PostgreSQL uses `/var/lib/postgresql/17` and version `17.11`.
 - SOPS uses `secrets/fastmail.yaml` and runtime files for `token`, `cloudflare-dns-token`, and `cloudflare-workers-token` under `/Users/glockyco/.config/sops-nix/secrets/`. No decrypted value entered this record.
+
+## Typed host declarations
+
+After adding host facts, `nix eval --impure --json -f /tmp/fleet-drv.nix` returned the two baseline derivations unchanged. `nix eval --impure --json -f /tmp/role-standalone-hosts.nix` evaluated only `modules/fleet/host.nix` and each `hosts/<name>/host.nix`; it returned `macbook-pro` as `aarch64-darwin`/`darwin`/`glockyco` and `korolev` as `x86_64-linux`/`nixos`/`user`.
+
+`nix eval --impure --json -f /tmp/role-host-probes.nix` returned `true` for both complete declarations and `false` for omitted `host.name`, `host.system`, `host.kind`, `host.username`, `host.git.authorName`, `host.git.defaultEmail`, `host.git.githubNoReplyEmail`, `host.darwin.applications[].rationale`, `host.darwin.containerProfile.{cpu,memory,disk}`, and mount location or writable flag. Duplicate non-null casks, application paths, and Dock positions each returned `false`. Zero CPU, memory, and disk each returned `false`. The probe did not modify a declaration or evaluate a full host configuration.

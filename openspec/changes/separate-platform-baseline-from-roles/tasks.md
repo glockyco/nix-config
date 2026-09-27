@@ -9,10 +9,10 @@ The owner scheduled this change after plan review. It runs at position 3, after 
 
 ## 2. Extend standalone typed host declarations
 
-- [ ] 2.1 Extend `modules/fleet/host.nix` with typed display identity, time zone, locale, checkout and screenshot paths, and Git identity. Set values only in `hosts/<name>/host.nix`. Probe each required option omission; record the failing option path and restored evaluations.
-- [ ] 2.2 Add typed `host.darwin.applications` records with optional cask and Dock position. Probe duplicate non-null casks, application paths, and positions; record each expected failure and remove each probe.
-- [ ] 2.3 Add positive Colima CPU, memory, and disk values and typed mounts to the Mac host declaration. Probe zero values; record the expected errors and restored evaluation.
-- [ ] 2.4 Keep `hosts/<name>/default.nix` for imports and per-machine Home Manager wiring. Confirm the registry evaluates each standalone `host.nix` without evaluating either full host configuration.
+- [x] 2.1 Extend `modules/fleet/host.nix` with typed display identity, time zone, locale, checkout and screenshot paths, and Git identity. Set values only in `hosts/<name>/host.nix`. Probe each required option omission; record the failing option path and restored evaluations.
+- [x] 2.2 Add typed `host.darwin.applications` records with optional cask and Dock position. Probe duplicate non-null casks, application paths, and positions; record each expected failure and remove each probe.
+- [x] 2.3 Add positive Colima CPU, memory, and disk values and typed mounts to the Mac host declaration. Probe zero values; record the expected errors and restored evaluation.
+- [x] 2.4 Keep `hosts/<name>/default.nix` for imports and per-machine Home Manager wiring. Confirm the registry evaluates each standalone `host.nix` without evaluating either full host configuration.
 
 ## 3. Select platform roles explicitly
 
