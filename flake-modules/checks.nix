@@ -115,14 +115,7 @@
             systemPath = hostConfig.system.path;
           };
         }
-        // lib.optionalAttrs (host.kind == "darwin") {
-          air-batch-configuration = pkgs.callPackage ../checks/air-batch-config-check.nix {
-            homeConfiguration = home;
-          };
-          container-runtime-configuration = pkgs.callPackage ../checks/container-runtime-config-check.nix {
-            containerRuntimeCheck = pkgs.container-runtime-check;
-            homeConfiguration = home;
-          };
+        // lib.optionalAttrs (host.kind == "darwin" && hostConfig.launchd.daemons ? tailnet-sshd) {
           tailnet =
             let
               authorizedKeysFile = "/var/lib/tailnet-sshd/authorized_keys/${host.username}";
@@ -141,6 +134,24 @@
             assert lib.hasInfix authorizedKeysFile activation;
             assert !(lib.elem "-e" sshdArguments);
             pkgs.runCommand "check-${host.name}-tailnet" { } "touch $out";
+        }
+        // lib.optionalAttrs (host.kind == "darwin" && home.programs.ssh.settings ? desktop) {
+          desktop-batch-configuration = pkgs.callPackage ../checks/desktop-batch-config-check.nix {
+            homeConfiguration = home;
+          };
+        }
+        // lib.optionalAttrs (host.kind == "darwin" && home.programs.ssh.settings ? air) {
+          air-batch-configuration = pkgs.callPackage ../checks/air-batch-config-check.nix {
+            homeConfiguration = home;
+          };
+        }
+        // lib.optionalAttrs (host.kind == "darwin" && home.xdg.configFile ? "colima/default/colima.yaml") {
+          container-runtime-configuration = pkgs.callPackage ../checks/container-runtime-config-check.nix {
+            containerRuntimeCheck = pkgs.container-runtime-check;
+            host = hostConfig.host;
+            platform = configuration.pkgs.stdenv.hostPlatform;
+            homeConfiguration = home;
+          };
         };
 
       perHost = lib.foldl' (checks: host: checks // host) { } (
@@ -236,7 +247,7 @@
           wslOpen = pkgs.wsl-open;
         };
       }
-      // lib.optionalAttrs (supports pkgs.air-batch-check) {
+      // lib.optionalAttrs (self'.packages ? air-batch-check) {
         airBatchCommand = pkgs.callPackage ../packages/air-batch-check/tests.nix {
           airBatchCheck = pkgs.air-batch-check;
         };
