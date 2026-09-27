@@ -16,7 +16,7 @@ D("glockyco.com", REG_NONE,
   CNAME("fm3._domainkey", "fm3.glockyco.com.dkim.fmhosted.com."),
 
   // Fastmail is the only authorized sender for the domain's mail.
-  TXT("@", "v=spf1 include:spf.messagingengine.com ~all"),
+  TXT("@", "v=spf1 include:spf.messagingengine.com ~all", TTL(3600)),
 
   // `quarantine` is the endpoint, not a stop on the way to `reject`.
   // Quarantine is where the protection arrives: a spoofed apex message lands
