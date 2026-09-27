@@ -33,13 +33,14 @@ in
       hasDarwinHost = lib.any (host: host.system == system && host.kind == "darwin") (
         builtins.attrValues config.fleet.hosts
       );
-      localPackages = lib.packagesFromDirectoryRecursive {
-        inherit (pkgs) callPackage;
-        directory = ../packages;
-      };
-      supported = lib.filterAttrs (
-        _: package: lib.meta.availableOn pkgs.stdenv.hostPlatform package
-      ) localPackages;
+      # Export the overlay's own derivations, so an exported package and the
+      # package a host installs are one value with one call site.
+      packageNames = builtins.attrNames (
+        lib.filterAttrs (_: type: type == "directory") (builtins.readDir ../packages)
+      );
+      supported = lib.filterAttrs (_: package: lib.meta.availableOn pkgs.stdenv.hostPlatform package) (
+        lib.genAttrs packageNames (name: pkgs.${name})
+      );
       tailnetPolicy = (pkgs.callPackage ../lib/tailnet-policy.nix { }) {
         managedHosts = config.fleet.hosts;
         peers = tailnetPeers;
