@@ -182,6 +182,7 @@
     {
       checks = {
 
+        dnsZone = pkgs.callPackage ../checks/dns-zone.nix { };
         hostDeclaration = pkgs.callPackage ../checks/host-declaration-check.nix { };
         secretEncryption = pkgs.callPackage ../checks/secret-encryption-check.nix { };
         tailnetPolicy = pkgs.callPackage ../checks/tailnet-policy-check.nix {
