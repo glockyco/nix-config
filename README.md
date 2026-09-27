@@ -102,14 +102,15 @@ The Mac's [SOPS user module](modules/home/darwin/secrets.nix) decrypts committed
 
 [`dns/dnsconfig.js`](dns/dnsconfig.js) declares the `glockyco.com` zone. `nix flake check` validates it on both systems without a token or provider access, and any DNSControl warning fails the check. Checks and activation never publish the zone.
 
-Publish only from the Mac, after a review of the preview. In `dns/`, inside the development shell, load the token with the `use_cloudflare_dns` direnv function, then run:
+Publish only from the Mac, after a review of the preview. Each command reads the decrypted DNS token for that one command and does not print it:
 
 ```sh
-dnscontrol preview
-dnscontrol push
+cd dns
+CLOUDFLARE_API_TOKEN="$(< ~/.config/sops-nix/secrets/cloudflare-dns-token)" nix develop .. --command dnscontrol preview
+CLOUDFLARE_API_TOKEN="$(< ~/.config/sops-nix/secrets/cloudflare-dns-token)" nix develop .. --command dnscontrol push
 ```
 
-Run `push` only after the preview shows the intended record changes and nothing else.
+Run `push` only after the preview shows the intended record changes and nothing else. A project that needs the token in its own shell calls the `use_cloudflare_dns` direnv function from its `.envrc`.
 
 ## Update
 

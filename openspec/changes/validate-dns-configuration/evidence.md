@@ -29,7 +29,7 @@ The check declares DNSControl as its own build input, so the development shell n
 
 ## Preview
 
-On 2026-09-27, `dnscontrol preview` ran from `dns/` in the Mac development shell. The token came from the SOPS path that `use_cloudflare_dns` reads and was never printed. It reported one correction:
+On 2026-09-27, the README command ran from `dns/` on the Mac: `CLOUDFLARE_API_TOKEN="$(< ~/.config/sops-nix/secrets/cloudflare-dns-token)" nix develop .. --command dnscontrol preview`. That path is the evaluated `sops.secrets."cloudflare-dns-token".path`, which `use_cloudflare_dns` also reads. The token was never printed. The preview reported one correction:
 
 ```text
 ******************** Domain: glockyco.com
