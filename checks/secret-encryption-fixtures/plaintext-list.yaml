@@ -1,0 +1,11 @@
+providers:
+  - api_key: ENC[AES256_GCM,data:fixture]
+  - api_key: plaintext
+    sops:
+      note: plaintext
+labels:
+  - ENC[AES256_GCM,data:fixture]
+  - plaintext
+sops:
+  age:
+    - recipient: age1fixture
