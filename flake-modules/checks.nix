@@ -64,8 +64,13 @@
               "${host.name}: installed OMP verifier differs from pkgs.personal-omp.verifyPersonalOmp";
             assert lib.assertMsg (installedPackage pkgs.openspec)
               "${host.name}: pinned OpenSpec is absent from home.packages";
-            assert lib.hasInfix "path=(\"/etc/profiles/per-user/${host.username}/bin\""
-              home.programs.zsh.initContent;
+            # Homebrew's shell setup prepends its prefix, so a host that
+            # enables Homebrew must put the user's profile, and the wrapper,
+            # back in front.
+            assert lib.assertMsg (
+              (hostConfig.homebrew.enable or false)
+              -> lib.hasInfix "path=(\"/etc/profiles/per-user/${host.username}/bin\"" home.programs.zsh.initContent
+            ) "${host.name}: Homebrew precedes the user's profile in zsh";
             pkgs.runCommand "check-${host.name}-personal-omp" { } "touch $out";
           login-shell =
             assert home.programs.zsh.enable;
