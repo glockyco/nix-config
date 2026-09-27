@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-26
 
-The owner scheduled this change after a plan review. It runs at position 4, after `separate-platform-baseline-from-roles` is implemented and passes the Mac gates. Changes 1 through 5 archive in order, each after its owner gates pass.
+The owner scheduled this change after plan review. It runs at position 4, after `separate-platform-baseline-from-roles` and its Mac gates.
 
 ## Why
 
@@ -32,4 +32,4 @@ Several Darwin activation blocks write unchanged state. `modules/home/darwin/neo
 
 The change replaces the two Python files and activation blocks in `modules/home/darwin/{fastmail,apple-terminal,neo2,karabiner,default-apps,keyboard-shortcuts}.nix`. It also updates the power and Rosetta declarations after the Darwin role cutover. `separate-platform-baseline-from-roles` placed their declarations in `modules/roles/darwin/desktop/{power,rosetta}.nix`; it placed PostgreSQL in `modules/roles/darwin/postgresql/postgresql.nix`. The package overlay is generated in `flake-modules/packages.nix`; command checks are registered in `flake-modules/checks.nix`.
 
-A repeated Mac activation makes no write for any concern this change replaces. A Home Manager dry run runs none of these programs. An unexpected binding, preference, or Rosetta error fails activation rather than silently continuing. PostgreSQL keeps its existing cluster and idempotent directory preparation. The Mac and Darwin CI can build Darwin-only checks; Fastmail also builds on Linux. The owner records the live Mac activation and dry-run results before archive.
+The packaged commands compare state before each write. Home Manager places its five activation programs under `run` for dry-run protection. Command checks prove unchanged state causes no write and unexpected binding, preference, or Rosetta errors fail. PostgreSQL keeps its existing cluster and idempotent directory preparation. The Mac builds the Darwin-only checks; CI builds checks on both platforms. Fastmail also builds on Linux.

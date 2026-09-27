@@ -124,7 +124,7 @@ The pinned system drvPaths after this change were unchanged:
 {"korolev":"/nix/store/gm6nyljbwwrlnylcdp6mg0ck2sh65baj-nixos-system-korolev-26.05.20260903.a5cc6f2.drv","macbook-pro":"/nix/store/5yif3pzimw7gk54pxnmz2i9868zrqd9c-darwin-system-26.05.c3e90c8.drv"}
 ```
 
-The Windows live gate remains an owner action. No Windows resource was applied from this Mac.
+No Windows resource was applied from this Mac. The Windows apply runbook describes the operator's local test before application; this record contains repository checks and CI evidence, not Windows execution results.
 
 ## CI evidence
 

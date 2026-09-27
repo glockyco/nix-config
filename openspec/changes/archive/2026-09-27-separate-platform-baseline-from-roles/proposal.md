@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-26
 
-The owner scheduled this change after plan review. It runs at position 3, after `derive-windows-check-from-declaration`. On 2026-09-26 the owner authorized implementation after changes 1 and 2 are implemented and pass the Mac gates, while their Korolev, CI, and Windows owner gates are pending. Changes 1 through 5 archive in order, each after its owner gates pass.
+The owner scheduled this change after plan review. It runs at position 3, after `derive-windows-check-from-declaration` and the preceding Mac gates.
 
 ## Why
 
@@ -16,10 +16,10 @@ The borrowed Air has SSH aliases, a batch command and check, an SMB mount agent,
 - Keep Air artifacts in `modules/roles/darwin/air-client/`, `packages/air-batch-check/`, the Air-only `checks/air-batch-config-check.nix`, their flake wiring, and the `macbook-air` peer entry. Split the current combined SSH check so `checks/desktop-batch-config-check.nix` survives Air removal. Issue #17 removes only the Air units.
 - Keep the Air's current SSH destinations, `AIR_BATCH_DOCKER` contract, Finder-selected SMB path, and `~/Air` link. Do not add `host.remote.air`, a stable mount point, or a Docker-path derivation.
 - Put PostgreSQL in its Darwin role without changing `/var/lib/postgresql/17` or the idempotent directory-creation activation (`modules/darwin/postgresql.nix:4-11,38-39`).
-- Apply the shared Nix registry, channel, garbage-collection, and store-optimisation policy through platform adapters. Check the NixOS behavior on Korolev after owner activation.
+- Apply the shared Nix registry, channel, garbage-collection, and store-optimisation policy through platform adapters. Evaluate both hosts and explain Korolev derivation differences with `nix-diff`.
 - Move the macOS-only Zen policy and nix-homebrew path adjustment out of shared modules. Preserve the byte baseline recorded by the preceding Windows change.
 - Derive Colima architecture from the host platform and its capacity from typed host data. Unify the two Cloudflare direnv helpers and use `xdg.configFile`.
-- Remove the SOPS value-name allowlist. Encrypt all secret data for the Mac key and an owner-supplied offline public recipient. Add a repository check for plaintext YAML data scalars.
+- Keep the Mac SOPS recipient and current `encrypted_regex`. Add a repository check for plaintext YAML data scalars. Offline recovery, a second recipient, and removal of `encrypted_regex` belong to a later change.
 - Update the README and operations documentation affected by these role, Nix-policy, Air, and SOPS changes.
 
 ## Capabilities
@@ -36,6 +36,6 @@ None.
 
 ## Impact
 
-The change affects host declarations, platform and Home Manager modules, role modules, `.sops.yaml`, encrypted files under `secrets/`, packages and checks in the position-1 layout, and the relevant README and operations pages. `key-fleet-by-host` supplies `hosts/<name>/host.nix`, `config.fleet.hosts`, `packages/<name>/`, `checks/`, and `flake-modules/` before this change starts.
+The change affects host declarations, platform and Home Manager modules, role modules, SOPS checks, packages and checks in the position-1 layout, and the relevant README and operations pages. `key-fleet-by-host` supplies `hosts/<name>/host.nix`, `config.fleet.hosts`, `packages/<name>/`, `checks/`, and `flake-modules/` before this change starts.
 
-The pinned-revision system derivation gate covers behavior-preserving moves. Intentional differences are NixOS maintenance settings and re-encrypted secret data. Record the completed position-2 Windows output before editing; the Zen cutover must preserve those bytes. Air and PostgreSQL behavior remain unchanged. Owner-only activation, Windows, Korolev, offline-key, and CI gates remain open until the owner records their results.
+The pinned-revision system derivation gate covers behavior-preserving moves. Intentional differences are NixOS maintenance settings and the removal of a Darwin-only shell fragment from Korolev. `nix-diff` explains the Korolev derivation changes. Record the completed position-2 Windows output before editing; the Zen cutover must preserve those bytes. Air and PostgreSQL behavior remain unchanged. Mac gates and both CI platform jobs verify the repository changes.

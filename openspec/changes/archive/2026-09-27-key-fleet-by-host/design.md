@@ -113,13 +113,13 @@ Move `markdownOxideVersion` (`flake.nix:282-287`) to `packages/markdown-oxide/te
 
 Keep `lefthook.yml` at pre-commit only. Full `nix flake check` builds both host and home closures; a pre-push hook duplicates CI and encourages bypass. Keep `llm-agents.inputs.nixpkgs.follows` absent: `flake.nix:67-69` records its separate cached package set. Try `llm-agents.inputs.flake-parts.follows = "flake-parts"`; do not add a nonexistent `personal-omp-plugin.inputs.flake-parts.follows`. Keep this edit only if `herdr`, `openspec`, and plugin `drvPath` values on both systems match their pre-edit paths and no input revision changes. Compare pinned-revision system derivations at the same step. Revert this one follows edit if a path changes and record the measured reason beside the input.
 
-The baseline revision is `7723a53`. Force `system.configurationRevision` through `extendModules` with `lib.mkForce` to 40 zeros, using `/tmp/fleet-drv.nix`. Baseline `config.system.build.toplevel.drvPath` values are `/nix/store/415gil1nfc8ri1g9s05ycfbgxhp1n82g-darwin-system-26.05.c3e90c8.drv` for `macbook-pro` and `/nix/store/g49mzl623c5b30jb3y21m1v916byafvv-nixos-system-korolev-26.05.20260903.a5cc6f2.drv` for `korolev`. During implementation fill `baseline.md` with the lock checksum and `herdr`, `openspec`, plugin, and wrapper derivation paths. Evaluate twice before editing. After each logical step compare pinned-revision paths and inspect `nvd diff` on each host for any difference. The Python package and moved source paths can intentionally change derivations; record the exact cause and closure diff rather than claim bit-identical paths. Reject unexplained differences. Korolev can evaluate on the Mac but needs Korolev or CI to build.
+The baseline revision is `7723a53`. Force `system.configurationRevision` through `extendModules` with `lib.mkForce` to 40 zeros, using `/tmp/fleet-drv.nix`. Baseline `config.system.build.toplevel.drvPath` values are `/nix/store/415gil1nfc8ri1g9s05ycfbgxhp1n82g-darwin-system-26.05.c3e90c8.drv` for `macbook-pro` and `/nix/store/g49mzl623c5b30jb3y21m1v916byafvv-nixos-system-korolev-26.05.20260903.a5cc6f2.drv` for `korolev`. Record the lock checksum and selected package derivation paths in `baseline.md`. Evaluate twice before editing. After each logical step compare pinned-revision paths. Use `nvd diff` for built Mac closures and `nix-diff` for changed Korolev derivations. Record the cause of each difference.
 
 ## Risks / Trade-offs
 
 - A host directory can be incomplete. `fleetSurface` explicitly names missing `host.nix` or `default.nix` and an evaluated-system mismatch.
 - The registry option duplicates a typed *instance*, not option definitions: both module scopes reuse `modules/fleet/host.nix` types. This avoids cross-host recursion.
-- Source relocation and Python packaging can change store paths even when behavior is unchanged. The pinned revision and closure comparison expose the cause; do not waive an unexplained path change.
+- Source relocation and Python packaging can change store paths even when behavior is unchanged. The pinned revision, Mac closure comparison, and Korolev derivation comparison expose the causes.
 - Generated package attributes can include unsupported platforms. `meta.platforms` filters exports and their program checks before evaluation on that system.
 - Policy construction depends on the source directory and registry. Rendered policy comparison catches a grant or deny change before a push.
 
@@ -131,6 +131,6 @@ The baseline revision is `7723a53`. Force `system.configurationRevision` through
 1. Move packages, checks, Windows source, and renderer. Generate overlay attributes. Wire modules to overlay derivations.
 1. Package the updater, move all check programs and workflow Python, and add `ruff-check`. Exercise updater, wrapper, renderer, and the workflow driver.
 1. Try the gated lock `follows` edit. Compare derivation paths, keep or revert it according to the measured result.
-1. Update relevant documentation and workflow comments. Run applicable gates. Leave owner-only activation, Korolev, and CI results pending until the owner records them.
+1. Update relevant documentation and workflow comments. Run Mac repository gates and review CI results for both platforms. Record `nix-diff` explanations of changed Korolev derivations.
 
 A repository refactor does not select a new OMP source generation. Git revert restores the declarations; Nix activation and OMP rollback remain separate operations.

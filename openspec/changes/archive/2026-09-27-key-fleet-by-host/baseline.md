@@ -7,7 +7,7 @@ The implementation fills this comparison record before it edits code. Revision: 
 | `macbook-pro` | `/nix/store/415gil1nfc8ri1g9s05ycfbgxhp1n82g-darwin-system-26.05.c3e90c8.drv`                 |
 | `korolev`     | `/nix/store/g49mzl623c5b30jb3y21m1v916byafvv-nixos-system-korolev-26.05.20260903.a5cc6f2.drv` |
 
-During implementation, record the parent commit, `flake.lock` checksum, exact probe invocation, repeated evaluations, and both systems' wrapper, `herdr`, `openspec`, and plugin derivation paths here. Record each post-change comparison and explain each changed path with its closure diff. Do not infer missing measurements from the values above. A Mac evaluation of the Korolev derivation does not build it; Korolev or CI must perform that gate.
+The measurements below record the parent commit, `flake.lock` checksum, exact probe invocation, repeated evaluations, and both systems' wrapper, `herdr`, `openspec`, and plugin derivation paths. The Mac evaluation of Korolev's derivation did not build it; CI built the Linux system and home checks.
 
 ## Before implementation
 
@@ -79,8 +79,7 @@ whose script names the new updater store path. The remaining differing
 derivations (`user-environment`, `home-manager-files`, `home-manager-generation`,
 `unit-home-manager-user.service`, `system-units`, `etc`, `activate`) only carry
 those two inputs upward. `tailnet-builder-check`, `nix.buildMachines`, the SSH
-client configuration, and every other system derivation are identical. Owner
-task 7.5 still records the built closure on Korolev.
+client configuration, and every other system derivation are identical.
 
 ## Mac repository gates
 

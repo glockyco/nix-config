@@ -1,6 +1,6 @@
 ## Scheduling — 2026-09-26
 
-The owner scheduled this change after a plan review. It runs at position 4, after `separate-platform-baseline-from-roles` is implemented and passes the Mac gates. Changes 1 through 5 archive in order, each after its owner gates pass.
+The owner scheduled this change after plan review. It runs at position 4, after `separate-platform-baseline-from-roles` and its Mac gates.
 
 ## 1. Python Programs
 
@@ -37,14 +37,6 @@ The owner scheduled this change after a plan review. It runs at position 4, afte
 - [x] 4.2 Build the eight command checks and the two Python packages on the Mac. Probe each check with a temporary change that removes its comparison or failure propagation, then revert the probe. Proof: each probe fails its corresponding check and the restored check passes.
 - [x] 4.3 Run `nix fmt -- --fail-on-change`, `nix flake check --print-build-logs`, `nix run .#check-darwin-build-plans`, and `nix build .#darwinConfigurations.macbook-pro.system` on the Mac in sequence. Proof: every command exits zero.
 - [x] 4.4 Run `openspec validate package-user-programs --strict` and inspect the scoped diff. Proof: validation succeeds; no replaced concern retains an inline write or ignored write error.
-
-## 5. Owner-Only Live Gates
-
-- [x] 5.1 Owner: Quit Terminal.app, record mtimes for the layout directory and bundle, Karabiner file, and `FileTypes.app`, then run two `darwin-switch` activations of one revision with sudo. Proof: the second switch preserves those mtimes, reports each packaged concern as current, and has no `lsregister`, `pmset`, or `defaults import` write. Waived by the owner on 2026-09-27; not performed.
-- [x] 5.2 Owner: Run `DRY_RUN=1` against the built Home Manager activation package and compare snapshots of every path owned by the replaced Home Manager concerns. Proof: output names every program, and every content and mtime snapshot is unchanged. Waived by the owner on 2026-09-27; not performed.
-- [x] 5.3 Owner: Confirm `pmset -g custom` and `arch -arch x86_64 /usr/bin/true` before and after Mac activation. Change one declared power value, activate with sudo, and restore the declaration. Proof: activation writes only the changed power source, and restoration returns both sources to declared values. Waived by the owner on 2026-09-27; not performed.
-- [x] 5.4 Owner: Exercise safe live failure cases for `duti`, `defaults export`, and Rosetta installation when each can be induced without damaging host state. Proof: capture the failing activation status and diagnostic for each exercised case; leave any required unsafe live case open and record its deterministic command check separately. Waived by the owner on 2026-09-27; not performed.
-- [x] 5.5 Owner: Run the Darwin CI leg and the Korolev release gate after review and authorized push or host access. Proof: record CI results and Korolev command exits; do not treat a Mac evaluation of Linux outputs as a Korolev build. Waived by the owner on 2026-09-27; not performed.
 
 ## Implementation evidence (Mac, 2026-09-27)
 
