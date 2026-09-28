@@ -3,6 +3,7 @@
   coreutils,
   gh,
   git,
+  herdr,
   lib,
   nix,
   personal-omp-plugin,
@@ -23,6 +24,8 @@ let
       plugin = toString personal-omp-plugin;
       git = lib.getExe git;
       gh = lib.getExe gh;
+      # The workstation's own Herdr, which restarts idle sessions after a selection.
+      herdr = lib.getExe herdr;
       nix =
         if stdenv.hostPlatform.isDarwin then "/nix/var/nix/profiles/default/bin/nix" else "${nix}/bin/nix";
       nixStore =

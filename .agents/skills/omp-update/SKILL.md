@@ -28,7 +28,8 @@ Read current declarations and installed inputs as directed by the procedure. Do 
    - **Patch conflict:** refresh and verify the maintained range in a separate worktree. Obtain explicit publication permission, publish the reviewed range, integrate its exact pins, complete applicable activation, and resume the update.
    - **Other preparation failure:** diagnose the reported phase and repair its cause. Never suppress checks or switch to an official executable fallback.
    - **Rejected after selection:** follow authorized source recovery and verify the recovered runtime. Recovery is not a successful upgrade.
-1. Run `verify-personal-omp` and complete the documented release smoke in a fresh wrapped session through Herdr. Follow the procedure's **Herdr prerequisite** before controlling panes. Include the applicable WSL browser check. An existing session can still run the old generation.
+1. Read the JSON report that `omp-dev-update` prints. After a selection change it has already restarted idle Herdr-managed sessions and removed unused generations. Every `sessions.skipped` entry still runs an older generation. That includes `invoking`, your own session.
+1. Run `verify-personal-omp` and complete the documented release smoke in a fresh wrapped session through Herdr. Follow the procedure's **Herdr prerequisite** before controlling panes. Include the applicable WSL browser check.
 1. Continue through all authorized steps. If an approval, credential interaction, or real prerequisite is unavailable, finish reachable safe work and state the exact blocker and next action.
 
 ## Preserve boundaries
@@ -45,7 +46,7 @@ State **updated**, **already current**, **recovered**, or **blocked**. Include:
 
 - Host, selected release, upstream commit, patch base and tip, and resulting runtime commit.
 - Observed verifier and fresh-session smoke results, including immutable plugin and current Herdr integration.
-- Previous-generation availability and any sessions still using an older generation.
+- Previous-generation availability. From the report: restarted panes, every skipped session with its pane and reason (name your own `invoking` session explicitly), and older generations kept in use with process counts. Tell the operator that `omp-dev-update --prune` removes those generations once the sessions are restarted.
 - Commits, publications, and activations actually performed; any remaining blocker and exact operator action.
 
 Keep evidence in the relevant change or session. Do not put release-specific facts into this skill or current-state manuals.

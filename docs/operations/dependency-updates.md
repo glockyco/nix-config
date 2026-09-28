@@ -81,7 +81,7 @@ If the host or command ownership is unsupported, report that prerequisite instea
 
 1. If a failure was already reported, inspect its phase and candidate before another attempt. Do not rerun a known failure merely to confirm it.
 1. Otherwise, run `omp-dev-update` through the installed command. It selects the latest stable upstream release using the installed pins.
-1. If preparation succeeds, run `verify-personal-omp` and complete [Release smoke](#release-smoke) in a fresh wrapped session through Herdr. Include the WSL browser check when applicable.
+1. If preparation succeeds, read the JSON report on standard output (see [Session follow-up and retention](#session-follow-up-and-retention)). Then run `verify-personal-omp` and complete [Release smoke](#release-smoke) in a fresh wrapped session through Herdr. Include the WSL browser check when applicable.
 1. If inputs are unchanged, verify the selected runtime and report **already current**. Do not manufacture a patch refresh, pin edit, or new generation.
 1. If preparation fails, use the reported phase and candidate location to select the repair path below. A failed candidate need not have `generation.json`; that file is written after successful preparation.
 1. If smoke fails after selection, report failed acceptance and follow authorized [OMP version recovery](#omp-version-recovery). Repeat verification after recovery. Do not report the recovered older release as a successful upgrade.
@@ -89,7 +89,21 @@ If the host or command ownership is unsupported, report that prerequisite instea
 The updater owns its process lock, candidate worktree, retained development environment, verification phases, and atomic promotion.
 Do not edit `current` or `previous`, remove a process-held lock, manually promote a candidate, or invent prepare-only or resume flags.
 An interrupted or rejected preparation leaves the previous selection available; inspect the selection before reporting its state.
-Retain previous generations while any session uses them.
+The updater keeps generations that running sessions use; see [Session follow-up and retention](#session-follow-up-and-retention).
+
+### Session follow-up and retention
+
+After an update or rollback changes the selection, the updater restarts idle OMP sessions that the local Herdr server manages and that still run an older generation. Each restart exits the session and resumes the same session file in its pane with `omp --resume`, so the session continues on the selected generation. The updater restarts a session only if Herdr reports it `idle` or `done`, its input editor is visibly empty, and it was launched as plain `omp`. Anything else stays running and untouched. OMP's own `/restart` resumes on the generation that is already running, so it does not upgrade a session.
+
+The updater then removes every generation except the current one, the previous one, and those a running process still uses, including failed candidates of earlier runs. It does not run Nix garbage collection. `omp-dev-update --prune` repeats only this cleanup, for example after sessions that were skipped have been restarted by hand.
+
+Standard output is one JSON object: the selected generation's metadata plus `sessions` and `generations`. An unchanged update prints the metadata alone, and `--prune` prints `generations` alone. Relay these fields to the operator:
+
+- `sessions.herdr`: `unavailable` means no session was restarted.
+- `sessions.skipped`: each entry names a pane, session file, generation, and `reason`. `invoking` is the session that ran the updater, usually the reporting agent itself. `working`, `blocked`, and `unknown` are busy or unclassified agents. `draft` means the editor holds unsent text. `editor-unrecognized` means the editor could not be located. `custom-arguments` means the session was launched with extra flags. `no-session-file`, `exit-timeout`, `relaunch-unconfirmed`, and `herdr-error` mean the restart could not complete. Each of these sessions needs a manual exit and `omp --resume`.
+- `sessions.restarted`: panes now running the selected generation.
+- `generations.inUse`: older generations kept for running processes, with process counts. After those processes end, `omp-dev-update --prune` removes them.
+- `generations.error`: cleanup failed after a successful selection. Report it; the selection stands.
 
 ### Repair a non-conflict failure
 
@@ -128,7 +142,7 @@ Only the updater prepares and selects the production generation. Verification wo
 
 Report **updated**, **already current**, **recovered**, or **blocked**, with the observed host and selected identities.
 Include the verifier result, fresh-session smoke, immutable plugin path, Herdr status, and previous-generation availability.
-Name the commits, publications, and activations actually performed, and distinguish any existing session still using an older generation.
+Name the commits, publications, and activations actually performed. From the report, list the restarted panes, every skipped session with its reason, and the generations kept in use. State explicitly when the reporting agent's own session (`invoking`) still runs the older generation.
 If no previous generation exists, report that limitation; never invent a successful rollback.
 For blockers, name the failed phase, candidate if present, current selection, missing prerequisite, and exact next operator action.
 Keep evidence with the change or session, not as historical release facts in this manual or skill.

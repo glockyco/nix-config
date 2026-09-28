@@ -13,6 +13,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+import unittest.mock
 
 import omp_dev_update as module
 
@@ -22,6 +23,51 @@ COMMAND = os.environ.get("OMP_DEV_UPDATE_TEST_COMMAND")
 CERTIFICATE = os.environ.get("OMP_DEV_UPDATE_TEST_CERTIFICATE")
 TOOLS = os.environ.get("OMP_DEV_UPDATE_TEST_TOOLS")
 LOCK_CHILD = Path(__file__).with_name("locking_child.py")
+
+FAKE_HERDR = r"""
+import json, sys
+from pathlib import Path
+
+state_path = Path(STATE)
+state = json.loads(state_path.read_text(encoding="utf-8"))
+args = sys.argv[1:]
+state["calls"].append(args)
+
+
+def done(result):
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    print(json.dumps({"result": result}))
+    sys.exit(0)
+
+
+if state.get("unavailable"):
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    sys.exit(1)
+panes = state["panes"]
+if args[:2] == ["agent", "list"]:
+    done({"agents": [pane["agent"] for pane in panes.values()]})
+if args[:2] == ["agent", "get"]:
+    done({"agent": panes[args[2]]["agent"]})
+if args[:2] == ["pane", "process-info"]:
+    done({"process_info": {"foreground_processes": [{"argv": panes[args[3]]["argv"]}]}})
+if args[:2] == ["pane", "read"]:
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    print(panes[args[2]]["screen"])
+    sys.exit(0)
+if args[:2] == ["agent", "prompt"]:
+    pane = panes[args[2]]
+    if pane.get("exits", True):
+        pane["argv"] = ["zsh"]
+    done({})
+if args[:2] == ["pane", "run"]:
+    pane = panes[args[2]]
+    if pane.get("relaunches", True):
+        generation = Path(CURRENT).resolve()
+        cli = f"{generation}/checkout/packages/coding-agent/scripts/../src/cli.ts"
+        pane["argv"] = ["bun", cli, "--extension", PLUGIN, "--plugin-dir", PLUGIN + "/lsp"]
+    done({})
+sys.exit(2)
+"""
 
 
 class Fixture(unittest.TestCase):
@@ -77,6 +123,7 @@ class Fixture(unittest.TestCase):
             "nix": str(self.nix),
             "nixStore": "/bin/false",
             "nixPackage": str(PROFILE),
+            "herdr": str(self.make_fake_herdr()),
         }
         self.release = ("v1.0.0", self.base)
         self.prepared = []
@@ -142,6 +189,52 @@ class Fixture(unittest.TestCase):
         )
         self.assertEqual(list((self.home / ".omp/agent").iterdir()), [self.protected])
         self.assertFalse((self.home / ".bun").exists())
+
+    def make_fake_herdr(self):
+        self.herdr_state_path = self.directory / "herdr-state.json"
+        self.herdr_state = {"calls": [], "panes": {}}
+        self.save_herdr_state()
+        script = self.tools / "bin/herdr"
+        constants = (
+            f"STATE = {str(self.herdr_state_path)!r}\n"
+            f"CURRENT = {str(self.home / '.local/share/omp-dev/current')!r}\n"
+            f"PLUGIN = {str(self.directory / 'plugin')!r}\n"
+        )
+        script.write_text(
+            f"#!{sys.executable}\n{constants}{FAKE_HERDR}", encoding="utf-8"
+        )
+        script.chmod(0o755)
+        return script
+
+    def save_herdr_state(self):
+        self.herdr_state_path.write_text(json.dumps(self.herdr_state), encoding="utf-8")
+
+    def load_herdr_state(self):
+        return json.loads(self.herdr_state_path.read_text(encoding="utf-8"))
+
+    def add_session(self, pane, generation, status="idle", editor="╰─", arguments=()):
+        """Register a Herdr-managed OMP session running `generation`."""
+        plugin = str(self.directory / "plugin")
+        cli = f"{generation}/checkout/packages/coding-agent/scripts/../src/cli.ts"
+        self.herdr_state["panes"][pane] = {
+            "agent": {
+                "agent": "omp",
+                "pane_id": pane,
+                "agent_status": status,
+                "agent_session": {"kind": "path", "value": f"/sessions/{pane}.jsonl"},
+            },
+            "argv": [
+                "bun",
+                cli,
+                "--extension",
+                plugin,
+                "--plugin-dir",
+                f"{plugin}/lsp",
+                *arguments,
+            ],
+            "screen": f"model bar\n╰──────┴──╯\n{editor}",
+        }
+        self.save_herdr_state()
 
 
 class EntryPointTests(Fixture):
@@ -306,10 +399,22 @@ class SourceUpdateTests(Fixture):
                 self.assertFalse((self.updater.candidate / "generation.json").exists())
                 self.assert_protected()
         self.failure = None
+        failed = [
+            path
+            for path in self.updater.generations.iterdir()
+            if path not in (current, previous)
+        ]
+        self.assertEqual(len(failed), len(module.PHASES))
+        # A session still running the displaced generation keeps it on disk.
+        self.updater.running_arguments = lambda: [f"bun {previous}/checkout/src/cli.ts"]
         self.updater.update()
         self.assertNotEqual(self.selected(), current)
         self.assertEqual(self.selected("previous"), current)
         self.assertTrue(previous.is_dir())
+        self.assertEqual(
+            sorted(self.updater.generations.iterdir()),
+            sorted([self.selected(), current, previous]),
+        )
 
     def test_missing_required_regression_preserves_selection(self):
         self.updater.update()
@@ -502,6 +607,214 @@ class SourceUpdateTests(Fixture):
         self.assertNotEqual(self.selected(), current)
         self.assertEqual(self.selected("previous"), current)
         self.assert_protected()
+
+
+class SessionFollowUpTests(Fixture):
+    """Cover idle-session restarts, skip reasons, the report, and retention."""
+
+    def setUp(self):
+        super().setUp()
+        self.updater.running_arguments = lambda: []
+        self.updater.update()
+        self.first = self.selected()
+        self.release_next()
+
+    def calls_for(self, pane):
+        return [call for call in self.load_herdr_state()["calls"] if pane in call[:4]]
+
+    def test_selection_restarts_only_idle_plain_sessions_with_empty_editors(self):
+        self.add_session("w1:p1", self.first)
+        self.add_session("w1:p2", self.first, status="done")
+        self.add_session("w1:p3", self.first, editor="╰─ half-written question")
+        self.add_session("w1:p4", self.first, status="working")
+        self.add_session("w1:p5", self.first, status="blocked")
+        self.add_session("w1:p6", self.first, arguments=("--approval-mode", "yolo"))
+        self.add_session("w1:p7", self.first)
+        self.add_session("w1:p8", self.first, editor="plain shell output")
+        with unittest.mock.patch.dict(os.environ, {"HERDR_PANE_ID": "w1:p7"}):
+            self.updater.update()
+        second = self.selected()
+        sessions = self.updater.report["sessions"]
+        self.assertEqual(sessions["herdr"], "available")
+        self.assertEqual(
+            sessions["restarted"],
+            [
+                {"pane": "w1:p1", "sessionFile": "/sessions/w1:p1.jsonl"},
+                {"pane": "w1:p2", "sessionFile": "/sessions/w1:p2.jsonl"},
+            ],
+        )
+        self.assertEqual(
+            {entry["pane"]: entry["reason"] for entry in sessions["skipped"]},
+            {
+                "w1:p3": "draft",
+                "w1:p4": "working",
+                "w1:p5": "blocked",
+                "w1:p6": "custom-arguments",
+                "w1:p7": "invoking",
+                "w1:p8": "editor-unrecognized",
+            },
+        )
+        for entry in sessions["skipped"]:
+            self.assertEqual(entry["generation"], self.first.name)
+        state = self.load_herdr_state()
+        for pane in ("w1:p1", "w1:p2"):
+            self.assertIn(
+                ["pane", "run", pane, f"omp --resume /sessions/{pane}.jsonl"],
+                state["calls"],
+            )
+            self.assertIn(f"{second}/checkout", " ".join(state["panes"][pane]["argv"]))
+        for pane in ("w1:p3", "w1:p4", "w1:p5", "w1:p6", "w1:p7", "w1:p8"):
+            self.assertFalse(
+                [
+                    call
+                    for call in self.calls_for(pane)
+                    if call[:2] in (["agent", "prompt"], ["pane", "run"])
+                ],
+                pane,
+            )
+
+    def test_sessions_that_do_not_exit_or_relaunch_are_reported(self):
+        self.add_session("w1:p1", self.first)
+        self.herdr_state["panes"]["w1:p1"]["exits"] = False
+        self.add_session("w1:p2", self.first)
+        self.herdr_state["panes"]["w1:p2"]["relaunches"] = False
+        self.save_herdr_state()
+        with (
+            unittest.mock.patch.object(module, "EXIT_WAIT", 0.2),
+            unittest.mock.patch.object(module, "RELAUNCH_WAIT", 0.2),
+            unittest.mock.patch.object(module, "POLL_INTERVAL", 0.05),
+        ):
+            self.updater.update()
+        reasons = {
+            entry["pane"]: entry["reason"]
+            for entry in self.updater.report["sessions"]["skipped"]
+        }
+        self.assertEqual(
+            reasons, {"w1:p1": "exit-timeout", "w1:p2": "relaunch-unconfirmed"}
+        )
+        self.assertFalse(
+            [call for call in self.calls_for("w1:p1") if call[:2] == ["pane", "run"]]
+        )
+
+    def test_unavailable_herdr_keeps_the_selection(self):
+        self.herdr_state["unavailable"] = True
+        self.save_herdr_state()
+        metadata = self.updater.update()
+        self.assertEqual(metadata["release"], "v1.1.0")
+        self.assertEqual(
+            self.updater.report["sessions"],
+            {"herdr": "unavailable", "restarted": [], "skipped": []},
+        )
+
+    def test_rollback_restarts_sessions_onto_the_restored_generation(self):
+        self.updater.update()
+        second = self.selected()
+        self.add_session("w1:p1", second)
+        self.updater.rollback()
+        self.assertEqual(self.selected(), self.first)
+        self.assertEqual(
+            self.updater.report["sessions"]["restarted"][0]["pane"], "w1:p1"
+        )
+        argv = " ".join(self.load_herdr_state()["panes"]["w1:p1"]["argv"])
+        self.assertIn(f"{self.first}/checkout", argv)
+
+    def test_unchanged_update_restarts_and_removes_nothing(self):
+        self.release = ("v1.0.0", self.base)
+        self.add_session("w1:p1", self.first)
+        stale = self.updater.generations / "stale-candidate"
+        stale.mkdir()
+        self.updater.report = None
+        self.updater.update()
+        self.assertIsNone(self.updater.report)
+        self.assertEqual(self.load_herdr_state()["calls"], [])
+        self.assertTrue(stale.is_dir())
+
+    def test_retention_keeps_selection_and_in_use_generations_then_prunes(self):
+        self.updater.update()
+        second = self.selected()
+        self.release_next_again()
+        self.updater.running_arguments = lambda: [
+            f"bun {self.first}/checkout/src/cli.ts",
+            f"bun --worker {self.first}/checkout/src/cli.ts",
+        ]
+        self.updater.update()
+        third = self.selected()
+        generations = self.updater.report["generations"]
+        self.assertEqual(generations["removed"], [])
+        self.assertEqual(
+            (generations["current"], generations["previous"]), (third.name, second.name)
+        )
+        self.assertEqual(
+            generations["inUse"], [{"generation": self.first.name, "processes": 2}]
+        )
+        self.updater.running_arguments = lambda: []
+        self.herdr_state = self.load_herdr_state() | {"calls": []}
+        self.save_herdr_state()
+        result = self.updater.prune()
+        self.assertEqual(result["generations"]["removed"], [self.first.name])
+        self.assertFalse(self.first.exists())
+        self.assertEqual((self.selected(), self.selected("previous")), (third, second))
+        worktrees = self.git("--git-dir", self.updater.repo, "worktree", "list")
+        self.assertNotIn(str(self.first), worktrees)
+        self.assertEqual(self.load_herdr_state()["calls"], [])
+
+    def test_failed_candidate_remains_until_the_next_successful_cleanup(self):
+        self.updater.update()
+        self.failure = "package-checks"
+        (self.patch / "another-fix").write_text("fix\n", encoding="utf-8")
+        self.config["patchTip"] = self.commit(self.patch, "another fix")
+        with self.assertRaises(module.UpdateError):
+            self.updater.update()
+        failed = self.updater.candidate
+        self.assertTrue(failed.is_dir())
+        self.failure = None
+        self.updater.update()
+        self.assertIn(failed.name, self.updater.report["generations"]["removed"])
+        self.assertFalse(failed.exists())
+
+    def test_main_prints_report_and_prune_result(self):
+        from contextlib import redirect_stderr, redirect_stdout
+
+        config_path = self.directory / "config.json"
+        config_path.write_text(json.dumps(self.config), encoding="utf-8")
+        self.add_session("w1:p1", self.first, status="working")
+        output, errors = io.StringIO(), io.StringIO()
+        with (
+            unittest.mock.patch.dict(os.environ, {"HOME": str(self.home)}),
+            unittest.mock.patch.object(
+                module.Updater, "latest_release", lambda _self: self.release
+            ),
+            unittest.mock.patch.object(
+                module.Updater, "prepare", lambda _self, *_args: self.prepare(*_args)
+            ),
+            unittest.mock.patch.object(
+                module.Updater, "running_arguments", lambda _self: []
+            ),
+            redirect_stdout(output),
+            redirect_stderr(errors),
+        ):
+            self.assertEqual(module.main(["--config", str(config_path)]), 0)
+        report = json.loads(output.getvalue())
+        self.assertEqual(report["release"], "v1.1.0")
+        self.assertEqual(report["sessions"]["skipped"][0]["reason"], "working")
+        self.assertIn("left w1:p1", errors.getvalue())
+        output = io.StringIO()
+        with (
+            unittest.mock.patch.dict(os.environ, {"HOME": str(self.home)}),
+            unittest.mock.patch.object(
+                module.Updater, "running_arguments", lambda _self: []
+            ),
+            redirect_stdout(output),
+            redirect_stderr(io.StringIO()),
+        ):
+            self.assertEqual(module.main(["--config", str(config_path), "--prune"]), 0)
+        self.assertEqual(set(json.loads(output.getvalue())), {"generations"})
+
+    def release_next_again(self):
+        (self.upstream / "third").write_text("third release\n", encoding="utf-8")
+        commit = self.commit(self.upstream, "third release")
+        self.git("-C", self.upstream, "tag", "-a", "v1.2.0", "-m", "Stable release")
+        self.release = ("v1.2.0", commit)
 
 
 class NativeComponentTests(Fixture):
