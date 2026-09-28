@@ -105,7 +105,7 @@ A temporary peer SHALL serve only its declared short-term purpose. Durable build
 
 ### Requirement: Tailnet SSH access to the Darwin host
 
-The Darwin host SHALL accept SSH through a standard OpenSSH daemon bound only to its tailnet address. It SHALL disable Tailscale SSH and Apple's wildcard Remote Login listener. The Linux Nix daemon SHALL authenticate with a dedicated root-owned client key and verify the server against its declared OpenSSH public host key. The Darwin authorization file SHALL be a regular root-owned file outside the Nix store, and its canonical parent directories SHALL satisfy OpenSSH strict-mode permissions. SSH SHALL propagate the remote command's exit status without a wrapper.
+The Darwin host SHALL accept SSH through a standard OpenSSH daemon bound only to its tailnet address. It SHALL disable Tailscale SSH and Apple's wildcard Remote Login listener. The Linux Nix daemon SHALL authenticate with a dedicated root-owned client key and verify the server against its declared OpenSSH public host key. The Linux host's interactive user SHALL authenticate with a separate user-owned client key declared as its own labeled authorization entry. The builder key SHALL permit command execution but not forwarding or PTY allocation. The user key SHALL permit command execution and PTY allocation but not forwarding or tunnels. The Darwin authorization file SHALL be a regular root-owned file outside the Nix store, and its canonical parent directories SHALL satisfy OpenSSH strict-mode permissions. SSH SHALL propagate the remote command's exit status without a wrapper.
 
 #### Scenario: Build client connects
 
@@ -113,6 +113,19 @@ The Darwin host SHALL accept SSH through a standard OpenSSH daemon bound only to
 - **THEN** the dedicated key authenticates as the Darwin host's declared user without a prompt
 - **AND** the server reads it from a regular root-owned authorization file whose canonical path does not enter the Nix store
 - **AND** the key permits command execution but not forwarding or PTY allocation
+
+#### Scenario: Linux user opens an interactive shell
+
+- **WHEN** the Linux host's interactive user connects to the Darwin host's interactive endpoint
+- **THEN** the user-owned key authenticates as the Darwin host's declared user without a password prompt
+- **AND** the session receives a terminal, so commands that prompt for local administrator credentials can run
+- **AND** port forwarding, agent forwarding, and tunnels are refused
+
+#### Scenario: Revoke the user key
+
+- **WHEN** the owner removes the user key's entry and activates the Darwin host
+- **THEN** that key fails to authenticate
+- **AND** the builder key still authenticates remote builds
 
 #### Scenario: An unapproved key connects
 

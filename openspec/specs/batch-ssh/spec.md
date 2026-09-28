@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Provides a deterministic SSH endpoint for unattended commands to each remote destination that automation drives, currently the MacBook Air and the Windows desktop, while preserving the separate interactive connection policy.
+Provides a deterministic SSH endpoint for unattended commands to each remote destination that automation drives, currently the MacBook Air, the Windows desktop, and, from the WSL host, the MacBook Pro, while preserving the separate interactive connection policy.
 
 ## Requirements
 
 ### Requirement: Dedicated batch endpoint
 
-The workstation SHALL provide a named SSH endpoint for unattended commands to each remote destination that automation drives, currently the MacBook Air and the Windows desktop. Each endpoint SHALL identify the same remote host and account as its interactive counterpart, and SHALL be named after that counterpart so the pair is discoverable from the declaration.
+The workstation SHALL provide a named SSH endpoint for unattended commands to each remote destination that automation drives, currently the MacBook Air, the Windows desktop, and, from the WSL host, the MacBook Pro. Each endpoint SHALL identify the same remote host and account as its interactive counterpart, and SHALL be named after that counterpart so the pair is discoverable from the declaration.
 
 #### Scenario: Batch endpoint resolves the Air
 
@@ -20,6 +20,12 @@ The workstation SHALL provide a named SSH endpoint for unattended commands to ea
 - **WHEN** automation connects through the desktop's batch endpoint
 - **THEN** the command runs under the configured Windows account on the desktop
 - **AND** it resolves the desktop by its tailnet name rather than a recorded address
+
+#### Scenario: Batch endpoint resolves the MacBook Pro
+
+- **WHEN** automation on the WSL host connects through `macbook-pro-batch`
+- **THEN** the command runs under the MacBook Pro's declared user with the WSL user's own key
+- **AND** it resolves the Mac by its tailnet name and verifies the declared host key
 
 ### Requirement: Non-interactive command lifecycle
 
