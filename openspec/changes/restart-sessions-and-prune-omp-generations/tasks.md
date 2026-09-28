@@ -13,5 +13,5 @@
 
 ## 3. Live acceptance
 
-- [ ] 3.1 After merge and activation on Korolev, prepare disposable Herdr OMP sessions on a superseded generation: two idle, one with a draft, one working. Run `omp-dev-update --rollback` from another OMP pane, then run `omp-dev-update --rollback` again. Confirm that the idle sessions resumed their session files on the selected generation, that the draft, working, and invoking panes were reported and untouched, and that retention kept only current, previous, and in-use generations.
+- [x] 3.1 After merge and activation on Korolev, prepare disposable Herdr OMP sessions on a superseded generation: two idle, one with a draft, one working. Run `omp-dev-update --rollback` from another OMP pane, then run `omp-dev-update --rollback` again. Confirm that the idle sessions resumed their session files on the selected generation, that the draft, working, and invoking panes were reported and untouched, and that retention kept only current, previous, and in-use generations.
 - [ ] 3.2 On the Mac, run `omp-dev-update --prune` and confirm the same retention and report. Record the results in `evidence.md` and archive.
