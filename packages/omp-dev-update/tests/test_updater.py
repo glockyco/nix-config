@@ -25,7 +25,7 @@ TOOLS = os.environ.get("OMP_DEV_UPDATE_TEST_TOOLS")
 LOCK_CHILD = Path(__file__).with_name("locking_child.py")
 
 FAKE_HERDR = r"""
-import json, sys
+import json, shlex, sys
 from pathlib import Path
 
 state_path = Path(STATE)
@@ -64,7 +64,7 @@ if args[:2] == ["pane", "run"]:
     if pane.get("relaunches", True):
         generation = Path(CURRENT).resolve()
         cli = f"{generation}/checkout/packages/coding-agent/scripts/../src/cli.ts"
-        pane["argv"] = ["bun", cli, "--extension", PLUGIN, "--plugin-dir", PLUGIN + "/lsp"]
+        pane["argv"] = ["bun", cli, "--extension", PLUGIN, "--plugin-dir", PLUGIN + "/lsp", *shlex.split(args[3])[1:]]
     done({})
 sys.exit(2)
 """
@@ -631,6 +631,8 @@ class SessionFollowUpTests(Fixture):
         self.add_session("w1:p6", self.first, arguments=("--approval-mode", "yolo"))
         self.add_session("w1:p7", self.first)
         self.add_session("w1:p8", self.first, editor="plain shell output")
+        self.add_session("w1:p9", self.first, arguments=("--resume", "01a0ce69"))
+        self.add_session("w1:q1", self.first, arguments=("--resume", "--approval-mode"))
         with unittest.mock.patch.dict(os.environ, {"HERDR_PANE_ID": "w1:p7"}):
             self.updater.update()
         second = self.selected()
@@ -641,6 +643,7 @@ class SessionFollowUpTests(Fixture):
             [
                 {"pane": "w1:p1", "sessionFile": "/sessions/w1:p1.jsonl"},
                 {"pane": "w1:p2", "sessionFile": "/sessions/w1:p2.jsonl"},
+                {"pane": "w1:p9", "sessionFile": "/sessions/w1:p9.jsonl"},
             ],
         )
         self.assertEqual(
@@ -652,6 +655,7 @@ class SessionFollowUpTests(Fixture):
                 "w1:p6": "custom-arguments",
                 "w1:p7": "invoking",
                 "w1:p8": "editor-unrecognized",
+                "w1:q1": "custom-arguments",
             },
         )
         for entry in sessions["skipped"]:
@@ -706,7 +710,7 @@ class SessionFollowUpTests(Fixture):
             {"herdr": "unavailable", "restarted": [], "skipped": []},
         )
 
-    def test_rollback_restarts_sessions_onto_the_restored_generation(self):
+    def test_rollbacks_restart_sessions_including_previously_resumed_ones(self):
         self.updater.update()
         second = self.selected()
         self.add_session("w1:p1", second)
@@ -715,8 +719,14 @@ class SessionFollowUpTests(Fixture):
         self.assertEqual(
             self.updater.report["sessions"]["restarted"][0]["pane"], "w1:p1"
         )
-        argv = " ".join(self.load_herdr_state()["panes"]["w1:p1"]["argv"])
-        self.assertIn(f"{self.first}/checkout", argv)
+        argv = self.load_herdr_state()["panes"]["w1:p1"]["argv"]
+        self.assertIn(f"{self.first}/checkout", " ".join(argv))
+        self.assertEqual(argv[-2:], ["--resume", "/sessions/w1:p1.jsonl"])
+        # The relaunch itself carries --resume; it must stay restartable.
+        self.updater.rollback()
+        self.assertEqual(self.updater.report["sessions"]["skipped"], [])
+        argv = self.load_herdr_state()["panes"]["w1:p1"]["argv"]
+        self.assertIn(f"{second}/checkout", " ".join(argv))
 
     def test_unchanged_update_restarts_and_removes_nothing(self):
         self.release = ("v1.0.0", self.base)

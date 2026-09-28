@@ -38,9 +38,9 @@ Resuming by session file avoids ID-prefix ambiguity. The editor check fails clos
 
 Alternative: patch `/restart` to re-execute the wrapper. The owner rejected new OMP patches, and every patch refresh would have to carry it.
 
-### Restart only sessions launched as plain `omp`
+### Restart only sessions launched as plain `omp` or by resuming
 
-After the wrapper's `--extension` and `--plugin-dir` pairs, any remaining argv makes the session ineligible. Relaunching correctly requires OMP's flag table. For example, `--resume` takes an optional value, and a positional prompt would be sent again. Dropping arguments would silently change behavior such as `--approval-mode`. A session started with `--resume` or `--continue` also counts as custom. The operator restarts those after reading the report.
+After the wrapper's `--extension` and `--plugin-dir` pairs, the only accepted arguments are one session selection: `--continue`, `-c`, `--resume`, or `-r`, optionally with a value that does not start with `-`, or `--resume=`/`-r=`. The relaunch resumes the session file Herdr reports, which replaces that selection. Every restart itself launches `omp --resume <file>`, and the operator often resumes sessions by hand, so rejecting the selection would make those sessions permanently ineligible. Acceptance on 2026-09-28 showed exactly that before this rule. Any other argument makes the session ineligible. Relaunching it correctly would require OMP's flag table, a positional prompt would be sent again, and dropping it would silently change behavior such as `--approval-mode`. The operator restarts those after reading the report.
 
 ### Detect superseded sessions from the process
 

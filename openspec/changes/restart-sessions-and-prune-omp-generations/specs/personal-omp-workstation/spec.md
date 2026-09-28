@@ -2,7 +2,7 @@
 
 ### Requirement: Idle sessions follow a selection change
 
-After `omp-dev-update` changes the selected generation through an update or a rollback, it SHALL restart each OMP session that the local Herdr server manages, that Herdr reports as idle, and whose process runs a generation other than the selected one. A restart SHALL end the session through OMP's normal exit and SHALL resume the same session file in the same pane through the wrapped `omp` command, so the resumed session runs the selected generation. The updater SHALL restart only a session whose input editor it confirms to be empty and that was launched without operator arguments beyond the wrapper's own. It SHALL NOT restart a session that Herdr reports as working, blocked, or unknown, the session that invoked the updater, or a session Herdr does not manage. A restart failure SHALL NOT change the selection or the command's exit status. The updater SHALL NOT modify OMP.
+After `omp-dev-update` changes the selected generation through an update or a rollback, it SHALL restart each OMP session that the local Herdr server manages, that Herdr reports as idle, and whose process runs a generation other than the selected one. A restart SHALL end the session through OMP's normal exit and SHALL resume the same session file in the same pane through the wrapped `omp` command, so the resumed session runs the selected generation. The updater SHALL restart only a session whose input editor it confirms to be empty and that was launched without operator arguments beyond the wrapper's own, other than one `--resume` or `--continue` selection of its session. It SHALL NOT restart a session that Herdr reports as working, blocked, or unknown, the session that invoked the updater, or a session Herdr does not manage. A restart failure SHALL NOT change the selection or the command's exit status. The updater SHALL NOT modify OMP.
 
 #### Scenario: Restart idle sessions after an update
 
@@ -22,7 +22,7 @@ After `omp-dev-update` changes the selected generation through an update or a ro
 
 #### Scenario: Preserve custom launch arguments
 
-- **WHEN** a superseded idle session was launched with arguments beyond the wrapper's plugin arguments
+- **WHEN** a superseded idle session was launched with arguments beyond the wrapper's plugin arguments and one session selection
 - **THEN** the updater does not restart it and reports it
 
 #### Scenario: Leave the invoking session running
