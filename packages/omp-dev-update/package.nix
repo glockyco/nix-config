@@ -17,8 +17,8 @@ let
       upstreamUrl = "https://github.com/can1357/oh-my-pi.git";
       githubRepo = "can1357/oh-my-pi";
       patchUrl = "https://github.com/glockyco/oh-my-pi.git";
-      patchBase = "e4151593ace2781d1dc2f06d760301f88af3e9dc";
-      patchTip = "a5aa9db020e13eeb0428edfaa2c848838fe1cefa";
+      patchBase = "401778d0cd30020ce0f9198f751b13c68850562f";
+      patchTip = "f7a1316114080eb8d930a118a0c19e0157ebb20c";
       system = stdenv.hostPlatform.system;
       plugin = toString personal-omp-plugin;
       git = lib.getExe git;
