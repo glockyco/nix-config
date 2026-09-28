@@ -1000,7 +1000,7 @@ class Updater:
         status = self.herdr("agent", "get", pane)["agent"].get("agent_status")
         if status not in ("idle", "done"):
             return status if status in ("working", "blocked") else "unknown"
-        if operator_arguments(argv, self.config["plugin"]) != []:
+        if not restartable_launch(operator_arguments(argv, self.config["plugin"])):
             return "custom-arguments"
         if not session_file:
             return "no-session-file"
@@ -1108,6 +1108,25 @@ def operator_arguments(argv, plugin):
         return None
     wrapper = ["--extension", plugin, "--plugin-dir", f"{plugin}/lsp"]
     return rest[len(wrapper) :] if rest[: len(wrapper)] == wrapper else None
+
+
+def restartable_launch(arguments):
+    """Report whether a session's own arguments at most selected the session.
+
+    The restart resumes the session file Herdr reports, which replaces an
+    earlier `--resume`/`--continue` selection. Any other argument could change
+    behavior on relaunch and is not reconstructed.
+    """
+    if arguments is None:
+        return False
+    if not arguments:
+        return True
+    head, rest = arguments[0], arguments[1:]
+    if head in ("--continue", "-c") or head.startswith(("--resume=", "-r=")):
+        return not rest
+    if head in ("--resume", "-r"):
+        return not rest or (len(rest) == 1 and not rest[0].startswith("-"))
+    return False
 
 
 def editor_contents(screen):
