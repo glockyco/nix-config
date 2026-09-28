@@ -55,7 +55,7 @@ The WSL host SHALL activate a new generation with the supported NixOS command. A
 
 ### Requirement: WSL host network isolation
 
-The WSL host SHALL expose no network service reachable from another host and SHALL remain unreachable from every other tailnet node by policy and by its own shields-up setting. Temporary annotation servers SHALL bind only to loopback and SHALL be reachable by the local Windows browser through WSL local connectivity. They SHALL NOT publish through Tailscale or require firewall openings. The host SHALL hold its tailnet device identity and one root-owned SSH client key dedicated to the Darwin builder. The private key SHALL remain outside the repository and Nix store. Its existing client access to the Darwin host for remote builds and SSH SHALL remain available. No other host SHALL drive it.
+The WSL host SHALL expose no network service reachable from another host and SHALL remain unreachable from every other tailnet node by policy and by its own shields-up setting. Temporary annotation servers SHALL bind only to loopback and SHALL be reachable by the local Windows browser through WSL local connectivity. They SHALL NOT publish through Tailscale or require firewall openings. The host SHALL hold its tailnet device identity, one root-owned SSH client key dedicated to the Darwin builder, and its interactive user's own SSH client key. Private keys SHALL remain outside the repository and Nix store. Root SHALL resolve the Darwin host to the builder key, and the interactive user SHALL resolve it to the user key. Its client access to the Darwin host for remote builds and SSH SHALL remain available. No other host SHALL drive it.
 
 #### Scenario: Inspect the running host
 
@@ -75,6 +75,12 @@ The WSL host SHALL expose no network service reachable from another host and SHA
 - **WHEN** the WSL host opens a remote build session to the Darwin host
 - **THEN** tailnet policy permits the network connection and OpenSSH authenticates the dedicated builder key
 - **AND** the client key is readable only by root, and only its public key and private-key path enter the configuration
+
+#### Scenario: The WSL user opens a shell on the Darwin host
+
+- **WHEN** the WSL host's interactive user runs `ssh macbook-pro`
+- **THEN** the client offers only the user's own key and verifies the declared Darwin host key
+- **AND** it never selects the root-owned builder key
 
 #### Scenario: Open and end a local annotation review
 

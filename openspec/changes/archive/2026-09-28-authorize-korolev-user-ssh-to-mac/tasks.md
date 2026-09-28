@@ -8,5 +8,5 @@
 ## 2. Validate and activate
 
 - [x] 2.1 Run `openspec validate authorize-korolev-user-ssh-to-mac --strict`, `nix fmt -- --fail-on-change`, and `nix flake check`. Commit the change atomically.
-- [ ] 2.2 After merge, activate Korolev and the Mac. As `user`, confirm that `ssh macbook-pro` receives a terminal, that `ssh macbook-pro-batch 'exit 23'` returns 23, and that port forwarding is refused. Confirm that the Darwin remote builder check still passes.
-- [ ] 2.3 Record the commands and observed results in `evidence.md`, then archive the change.
+- [x] 2.2 After merge, activate Korolev and the Mac. As `user`, confirm that `ssh macbook-pro` receives a terminal, that `ssh macbook-pro-batch 'exit 23'` returns 23, and that port forwarding is refused. Confirm that the Darwin remote builder check still passes.
+- [x] 2.3 Record the commands and observed results in `evidence.md`, then archive the change.
