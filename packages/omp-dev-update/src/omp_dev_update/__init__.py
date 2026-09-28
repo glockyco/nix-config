@@ -973,7 +973,7 @@ class Updater:
             session = agent.get("agent_session") or {}
             session_file = (
                 session.get("value") if session.get("kind") == "path" else None
-            )
+            ) or resumed_session_file(operator_arguments(argv, self.config["plugin"]))
             try:
                 reason = self.restart_session(
                     pane, argv, session_file, selected, invoking
@@ -1108,6 +1108,25 @@ def operator_arguments(argv, plugin):
         return None
     wrapper = ["--extension", plugin, "--plugin-dir", f"{plugin}/lsp"]
     return rest[len(wrapper) :] if rest[: len(wrapper)] == wrapper else None
+
+
+def resumed_session_file(arguments):
+    """Return the existing session file that the arguments resume, if any.
+
+    Herdr reports a session's file only some seconds after OMP starts; a
+    session relaunched with `--resume <file>` already names it.
+    """
+    if not arguments:
+        return None
+    head = arguments[0]
+    if head in ("--resume", "-r") and len(arguments) == 2:
+        value = arguments[1]
+    elif head.startswith(("--resume=", "-r=")) and len(arguments) == 1:
+        value = head.split("=", 1)[1]
+    else:
+        return None
+    path = Path(value)
+    return value if path.is_absolute() and path.is_file() else None
 
 
 def restartable_launch(arguments):
