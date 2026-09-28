@@ -37,3 +37,13 @@ After the apply, `winget configure test` reported drift only on `package browser
 ## After sign-in on 2026-09-25
 
 The operator signed out, signed in, and accepted the ReNeo `RunAs` prompt. `GetKeyboardLayoutList` returned `04070407,f0c00407,04070c07`. One `reneo.exe` ran; its elevated token hid the executable path from the standard session, and no Desktop copy had a startup entry. A fresh Word automation process with QWERTZ active returned `EditCopy`, `EditPaste`, `SmartFind`, `LeftPara`, `Underline`, `FormatFont`, `PrintPreviewAndPrint`, `ResetPara`, and `EditRedoOrRepeat` for `Ctrl+C`, `V`, `F`, `L`, `U`, `D`, `P`, `Q`, and `Y`. The operator confirmed that `Ctrl+C` and `Ctrl+V` work in Word.
+
+## Operator acceptance on 2026-09-28
+
+The Windows state was the one applied from `de56a74`. Its rebased equivalent on `main` is `7f7f1ed`, which renders the same input-method and ReNeo settings from declaration data. Word 16.0.20326, ReNeo 1.6.0 (the pinned `Rojetto.ReNeo.neo2`). The operator reported these results:
+
+- With QWERTZ active, copy and paste with `Ctrl+C` and `Ctrl+V` work in Word and Excel.
+- After switching to native Neo with `Win+Space`, Word's standard `Ctrl` shortcuts still work.
+- In Notepad with QWERTZ active, ReNeo supplies Neo layer 1 (physical `A` gives `u`) and layer 3 (`Q W E R T` gives `… _ [ ] ^`, `A S D F` gives `\ / { }`). Layer 4 on physical `A S D F G` moves the cursor as Home, ←, ↓, →, End, and layers 5 and 6 give Greek and math symbols.
+- In Notepad started as Administrator, the same layers work.
+- The UAC credential prompt behaved as specified: with QWERTZ active it accepted plain QWERTZ input, and with native Neo active it accepted the native Neo base layout. ReNeo layers do not reach the secure desktop.
