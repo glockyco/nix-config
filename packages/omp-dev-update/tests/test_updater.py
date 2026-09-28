@@ -700,6 +700,24 @@ class SessionFollowUpTests(Fixture):
             [call for call in self.calls_for("w1:p1") if call[:2] == ["pane", "run"]]
         )
 
+    def test_resume_argument_supplies_a_session_file_herdr_has_not_reported(self):
+        session_file = self.directory / "resumed.jsonl"
+        session_file.write_text("{}\n", encoding="utf-8")
+        self.add_session("w1:p1", self.first, arguments=("--resume", str(session_file)))
+        self.add_session("w1:p2", self.first, arguments=("--resume", "01a0ce69"))
+        for pane in ("w1:p1", "w1:p2"):
+            del self.herdr_state["panes"][pane]["agent"]["agent_session"]
+        self.save_herdr_state()
+        self.updater.update()
+        sessions = self.updater.report["sessions"]
+        self.assertEqual(
+            sessions["restarted"], [{"pane": "w1:p1", "sessionFile": str(session_file)}]
+        )
+        self.assertEqual(
+            [(entry["pane"], entry["reason"]) for entry in sessions["skipped"]],
+            [("w1:p2", "no-session-file")],
+        )
+
     def test_unavailable_herdr_keeps_the_selection(self):
         self.herdr_state["unavailable"] = True
         self.save_herdr_state()

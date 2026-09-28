@@ -34,7 +34,7 @@ For each candidate, the updater:
 1. runs `omp --resume <session-file>` with `herdr pane run`;
 1. polls until the pane's foreground names the selected generation, for up to 60 seconds.
 
-Resuming by session file avoids ID-prefix ambiguity. The editor check fails closed. A missing or changed editor line means the session is skipped, so an OMP interface change can only reduce restarts, never lose input.
+Resuming by session file avoids ID-prefix ambiguity. Herdr reports a session's file some seconds after OMP starts. Until then, a session launched with `--resume <absolute path>` to an existing file uses that path. Acceptance saw two just-restarted sessions skipped as `no-session-file` by an immediately repeated rollback. The editor check fails closed. A missing or changed editor line means the session is skipped, so an OMP interface change can only reduce restarts, never lose input.
 
 Alternative: patch `/restart` to re-execute the wrapper. The owner rejected new OMP patches, and every patch refresh would have to carry it.
 
