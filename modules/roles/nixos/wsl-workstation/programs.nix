@@ -12,6 +12,9 @@ let
       (throw "the SSH client requires a declared remote builder")
       (builtins.attrValues config.fleet.hosts);
   builderTailnetName = "${builderHost.name}.${tailnetDnsDomain}";
+  # The user-owned key, never the root-owned Mac builder credential, so the
+  # desktop and the Mac can each revoke this host without touching remote builds.
+  userIdentityFile = "/home/${config.host.username}/.ssh/id_ed25519";
 
   # The desktop's Windows account owns its own name, so it cannot be derived
   # from this host's user. The peer declaration is the source for the node name.
@@ -20,10 +23,6 @@ let
     {
       name = "desktop";
       account = "User";
-
-      # A user-owned key, never the root-owned Mac builder credential, so the
-      # desktop can revoke this host without touching remote builds.
-      identityFile = "/home/${config.host.username}/.ssh/id_ed25519";
     };
   desktopTailnetName = "${desktopHost.name}.${tailnetDnsDomain}";
   tailnetBuilderCheck = pkgs.tailnet-builder-check.override { hostName = builderHost.name; };
@@ -93,7 +92,7 @@ in
     Host ${desktopHost.name} ${desktopHost.name}-batch
       HostName ${desktopTailnetName}
       User ${desktopHost.account}
-      IdentityFile ${desktopHost.identityFile}
+      IdentityFile ${userIdentityFile}
       IdentitiesOnly yes
       StrictHostKeyChecking yes
       PasswordAuthentication no
@@ -109,7 +108,10 @@ in
       ControlMaster no
       ControlPath none
 
-    Host ${builder.hostName}
+    # Root, and therefore the Nix daemon, resolves the builder name to the
+    # root-only builder key. IdentityFile values accumulate across blocks, so
+    # the user endpoints below exclude root rather than rely on block order.
+    Match originalhost ${builder.hostName} localuser root
       HostName ${builderTailnetName}
       User ${builder.sshUser}
       IdentityFile ${builder.sshKey}
@@ -120,6 +122,25 @@ in
       ConnectTimeout 8
       ControlMaster no
       ControlPath none
+
+    Match originalhost ${builder.hostName},${builder.hostName}-batch !localuser root
+      HostName ${builderTailnetName}
+      User ${builder.sshUser}
+      IdentityFile ${userIdentityFile}
+      IdentitiesOnly yes
+      StrictHostKeyChecking yes
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      UpdateHostKeys no
+
+    Match originalhost ${builder.hostName}-batch !localuser root
+      BatchMode yes
+      RequestTTY no
+      ConnectTimeout 8
+      ControlMaster no
+      ControlPath none
+
+    Match all
   '';
 
   # `modules/home/shell.nix` configures zsh for the user. Enabling it here

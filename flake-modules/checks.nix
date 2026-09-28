@@ -119,6 +119,11 @@
             personalOmp = pkgs.personal-omp;
             systemPath = hostConfig.system.path;
           };
+          builder-ssh-configuration = pkgs.callPackage ../checks/builder-ssh-config-check.nix {
+            sshConfig = hostConfig.environment.etc."ssh/ssh_config".source;
+            builder = builtins.head hostConfig.nix.buildMachines;
+            userIdentityFile = "${user.home}/.ssh/id_ed25519";
+          };
         }
         // lib.optionalAttrs (host.kind == "darwin" && hostConfig.launchd.daemons ? tailnet-sshd) {
           tailnet =

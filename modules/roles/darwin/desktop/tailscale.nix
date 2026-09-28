@@ -8,8 +8,13 @@ let
   inherit (import ../../../shared) tailnetDnsDomain;
   cfg = config.services.tailscale;
   tailscaleSetAfterLogin = pkgs.tailscale-set-after-login.override { tailscale = cfg.package; };
-  builderAuthorizedKeys = pkgs.writeText "macbook-pro-builder-authorized-keys" ''
+  # The builder key runs build commands only; `restrict` denies it a terminal.
+  # Korolev's user key administers the Mac and needs a terminal for sudo
+  # prompts. The daemon denies forwarding and tunnels to both keys. Remove a
+  # line and reactivate to revoke that key alone.
+  authorizedKeys = pkgs.writeText "macbook-pro-tailnet-authorized-keys" ''
     restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICv/rjs4XMaAm1F3k7J+SAmJ/Sf40O6ZLEh5sX/pTP8b korolev-builder
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINTT3Y5IkPl+gxlkheeP5SVFrcpHi3SGNpDgLbnW8qw8 korolev
   '';
   authorizedKeysDirectory = "/var/lib/tailnet-sshd/authorized_keys";
   authorizedKeysFile = "${authorizedKeysDirectory}/${config.host.username}";
@@ -45,7 +50,7 @@ in
       /usr/bin/install -d -o root -g wheel -m 0755 \
         /var/lib/tailnet-sshd ${authorizedKeysDirectory}
       /usr/bin/install -o root -g wheel -m 0444 \
-        ${builderAuthorizedKeys} ${authorizedKeysFile}
+        ${authorizedKeys} ${authorizedKeysFile}
     '';
 
     environment.etc."ssh/sshd_config_tailnet".text = ''
