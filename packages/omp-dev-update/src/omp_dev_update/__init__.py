@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 import urllib.request
 import uuid
 from urllib.parse import quote
@@ -65,6 +66,11 @@ NATIVE_REGISTRY = "https://registry.npmjs.org"
 NATIVE_PACKAGE = "@oh-my-pi/pi-natives"
 NATIVE_PREDICATE = "https://slsa.dev/provenance/v1"
 NATIVE_TIMEOUT = 300
+HERDR_TIMEOUT = 30
+EXIT_WAIT = 30
+RELAUNCH_WAIT = 60
+POLL_INTERVAL = 0.5
+EDITOR_LINE = re.compile(r"^\s*╰─(?!─)(.*)$")
 
 
 class UpdateError(Exception):
@@ -160,6 +166,7 @@ def load_config(path):
         "nix",
         "nixStore",
         "nixPackage",
+        "herdr",
     }
     if not isinstance(data, dict) or set(data) != fields:
         raise UpdateError("Invalid updater configuration fields")
@@ -178,7 +185,7 @@ def load_config(path):
     for field in ("upstreamUrl", "patchUrl"):
         if not data[field].startswith(("https://", "/")):
             raise UpdateError(f"Invalid {field}")
-    for field in ("plugin", "git", "gh", "nix", "nixStore"):
+    for field in ("plugin", "git", "gh", "nix", "nixStore", "herdr"):
         if not Path(data[field]).is_absolute():
             raise UpdateError(f"Expected an absolute {field} path")
     if data["system"] == "x86_64-linux" and not data["nixPackage"].startswith(
@@ -199,6 +206,7 @@ class Updater:
         self.repo = self.root / "repository.git"
         self.phase = "initialization"
         self.candidate = None
+        self.report = None
         self.lock_fd = None
         self.release_provider = release_provider or self.latest_release
         self.prepare_phase = prepare_phase or self.prepare
@@ -862,8 +870,10 @@ class Updater:
                 self.prepare_phase(phase, self.candidate, env)
             self.atomic_json(self.candidate / "generation.json", metadata)
             self.set_phase("promotion")
-            self.promote(str(self.candidate.relative_to(self.root)))
+            relative = str(self.candidate.relative_to(self.root))
+            self.promote(relative)
             print(f"omp-dev-update: selected {self.candidate}", file=sys.stderr)
+            self.report = self.after_selection(relative)
             return metadata
 
     def rollback(self):
@@ -877,7 +887,285 @@ class Updater:
             metadata = self.generation_metadata(previous)
             self.promote(previous)
             print(f"omp-dev-update: selected {self.root / previous}", file=sys.stderr)
+            self.report = self.after_selection(previous)
             return metadata
+
+    def prune(self):
+        with self.locked():
+            self.set_phase("retention")
+            report = self.retain()
+            print_retention(report)
+            return {"generations": report}
+
+    def after_selection(self, selected):
+        """Move idle sessions to the new selection, then drop unused generations.
+
+        The selection is already durable, so neither step can fail the command:
+        each reports what it could not do instead.
+        """
+        self.set_phase("sessions")
+        sessions = self.restart_sessions(Path(selected).name)
+        print_sessions(sessions)
+        self.set_phase("retention")
+        try:
+            generations = self.retain()
+        except (UpdateError, OSError, subprocess.TimeoutExpired) as error:
+            generations = {"error": str(error)}
+        print_retention(generations)
+        return {"sessions": sessions, "generations": generations}
+
+    def generation_named(self, text):
+        """Return the generation directory name that a process argument names."""
+        match = re.search(
+            re.escape(f"{self.generations}/") + r"([A-Za-z0-9._-]+)/", text
+        )
+        return match.group(1) if match else None
+
+    def herdr(self, *args):
+        """Run one Herdr CLI call and return its decoded JSON result."""
+        output = self.run(
+            [self.config["herdr"], *args], capture=True, timeout=HERDR_TIMEOUT
+        )
+        return json.loads(output)["result"]
+
+    def pane_generation(self, pane):
+        """Return the generation and argv of the pane's foreground OMP, if any."""
+        info = self.herdr("pane", "process-info", "--pane", pane)["process_info"]
+        for process in info.get("foreground_processes", []):
+            argv = process.get("argv") or []
+            generation = self.generation_named(" ".join(argv))
+            if generation:
+                return generation, argv
+        return None, None
+
+    def wait_for_pane(self, pane, accept, deadline):
+        """Poll the pane's foreground generation until `accept` holds or time runs out."""
+        end = time.monotonic() + deadline
+        while True:
+            try:
+                if accept(self.pane_generation(pane)[0]):
+                    return True
+            except (UpdateError, subprocess.TimeoutExpired, ValueError, KeyError):
+                pass
+            if time.monotonic() >= end:
+                return False
+            time.sleep(POLL_INTERVAL)
+
+    def restart_sessions(self, selected):
+        """Restart idle Herdr-managed OMP sessions that run a superseded generation."""
+        report = {"herdr": "available", "restarted": [], "skipped": []}
+        try:
+            agents = self.herdr("agent", "list")["agents"]
+        except (UpdateError, OSError, subprocess.TimeoutExpired, ValueError, KeyError):
+            report["herdr"] = "unavailable"
+            return report
+        invoking = os.environ.get("HERDR_PANE_ID")
+        for agent in agents:
+            if agent.get("agent") != "omp" or not agent.get("pane_id"):
+                continue
+            pane = agent["pane_id"]
+            try:
+                generation, argv = self.pane_generation(pane)
+            except (UpdateError, subprocess.TimeoutExpired, ValueError, KeyError):
+                continue
+            if generation is None or generation == selected:
+                continue
+            session = agent.get("agent_session") or {}
+            session_file = (
+                session.get("value") if session.get("kind") == "path" else None
+            )
+            try:
+                reason = self.restart_session(
+                    pane, argv, session_file, selected, invoking
+                )
+            except (UpdateError, subprocess.TimeoutExpired, ValueError, KeyError):
+                reason = "herdr-error"
+            if reason is None:
+                report["restarted"].append({"pane": pane, "sessionFile": session_file})
+            else:
+                report["skipped"].append(
+                    {
+                        "pane": pane,
+                        "sessionFile": session_file,
+                        "generation": generation,
+                        "reason": reason,
+                    }
+                )
+        return report
+
+    def restart_session(self, pane, argv, session_file, selected, invoking):
+        """Exit and resume one session; return a skip reason, or None on success."""
+        if pane == invoking:
+            return "invoking"
+        status = self.herdr("agent", "get", pane)["agent"].get("agent_status")
+        if status not in ("idle", "done"):
+            return status if status in ("working", "blocked") else "unknown"
+        if operator_arguments(argv, self.config["plugin"]) != []:
+            return "custom-arguments"
+        if not session_file:
+            return "no-session-file"
+        screen = self.run(
+            [self.config["herdr"], "pane", "read", pane, "--source", "visible"],
+            capture=True,
+            timeout=HERDR_TIMEOUT,
+        )
+        editor = editor_contents(screen)
+        if editor is None:
+            return "editor-unrecognized"
+        if editor:
+            return "draft"
+        try:
+            # The prompt exits the agent, so Herdr may report that it never
+            # settled; the pane's process decides whether the exit happened.
+            self.run(
+                [self.config["herdr"], "agent", "prompt", pane, "/exit"],
+                capture=True,
+                timeout=HERDR_TIMEOUT,
+            )
+        except UpdateError:
+            pass
+        if not self.wait_for_pane(
+            pane, lambda generation: generation is None, EXIT_WAIT
+        ):
+            return "exit-timeout"
+        self.run(
+            [
+                self.config["herdr"],
+                "pane",
+                "run",
+                pane,
+                shlex.join(["omp", "--resume", session_file]),
+            ],
+            capture=True,
+            timeout=HERDR_TIMEOUT,
+        )
+        if not self.wait_for_pane(
+            pane, lambda generation: generation == selected, RELAUNCH_WAIT
+        ):
+            return "relaunch-unconfirmed"
+        return None
+
+    def running_arguments(self):
+        """Return the argument strings of every visible process."""
+        proc = Path("/proc")
+        if proc.is_dir():
+            arguments = []
+            for entry in proc.iterdir():
+                if not entry.name.isdigit():
+                    continue
+                try:
+                    raw = (entry / "cmdline").read_bytes()
+                except OSError:
+                    continue
+                arguments.append(raw.replace(b"\0", b" ").decode("utf-8", "replace"))
+            return arguments
+        return self.run(["/bin/ps", "-axo", "args="], capture=True).splitlines()
+
+    def retain(self):
+        """Remove generations that are neither selected, previous, nor in use."""
+        current = self.link_target("current")
+        previous = self.link_target("previous")
+        keep = {Path(target).name for target in (current, previous) if target}
+        usage = {}
+        for arguments in self.running_arguments():
+            for name in set(
+                re.findall(
+                    re.escape(f"{self.generations}/") + r"([A-Za-z0-9._-]+)/", arguments
+                )
+            ):
+                usage[name] = usage.get(name, 0) + 1
+        removed = []
+        if self.generations.is_dir():
+            for entry in sorted(self.generations.iterdir()):
+                if entry.name in keep or entry.name in usage or entry.is_symlink():
+                    continue
+                if not entry.is_dir():
+                    continue
+                shutil.rmtree(entry, onexc=make_writable_and_retry)
+                removed.append(entry.name)
+        if removed and self.repo.is_dir():
+            self.git("worktree", "prune")
+        return {
+            "removed": removed,
+            "current": Path(current).name if current else None,
+            "previous": Path(previous).name if previous else None,
+            "inUse": [
+                {"generation": name, "processes": count}
+                for name, count in sorted(usage.items())
+                if (self.generations / name).is_dir()
+                and name != (Path(current).name if current else None)
+            ],
+        }
+
+
+def operator_arguments(argv, plugin):
+    """Return the arguments after the wrapper's plugin pairs, or None if unrecognized."""
+    for index, argument in enumerate(argv):
+        if argument.endswith("/src/cli.ts"):
+            rest = list(argv[index + 1 :])
+            break
+    else:
+        return None
+    wrapper = ["--extension", plugin, "--plugin-dir", f"{plugin}/lsp"]
+    return rest[len(wrapper) :] if rest[: len(wrapper)] == wrapper else None
+
+
+def editor_contents(screen):
+    """Return the text in OMP's input editor, or None when no editor line is visible.
+
+    The editor's last line starts with `╰─` followed by a space or the end of the
+    line; box borders continue with more `─`.
+    """
+    contents = None
+    for line in screen.splitlines():
+        match = EDITOR_LINE.match(line)
+        if match:
+            contents = match.group(1).strip()
+    return contents
+
+
+def make_writable_and_retry(function, path, _error):
+    """Let `shutil.rmtree` remove read-only entries such as installed packages."""
+    parent = os.path.dirname(path)
+    for target in (parent, path):
+        try:
+            os.chmod(target, 0o700, follow_symlinks=False)
+        except (NotImplementedError, OSError):
+            pass
+    function(path)
+
+
+def print_sessions(report):
+    if report["herdr"] == "unavailable":
+        print(
+            "omp-dev-update: Herdr unavailable; no session restarted", file=sys.stderr
+        )
+        return
+    for entry in report["restarted"]:
+        print(f"omp-dev-update: restarted {entry['pane']}", file=sys.stderr)
+    for entry in report["skipped"]:
+        print(
+            f"omp-dev-update: left {entry['pane']} on {entry['generation']} "
+            f"({entry['reason']}); restart it manually",
+            file=sys.stderr,
+        )
+
+
+def print_retention(report):
+    if "error" in report:
+        print(
+            f"omp-dev-update: generation cleanup failed: {report['error']}",
+            file=sys.stderr,
+        )
+        return
+    for name in report["removed"]:
+        print(f"omp-dev-update: removed generation {name}", file=sys.stderr)
+    for entry in report["inUse"]:
+        print(
+            f"omp-dev-update: kept {entry['generation']} "
+            f"({entry['processes']} running processes)",
+            file=sys.stderr,
+        )
 
 
 def interrupted(signum, _frame):
@@ -900,20 +1188,30 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="Print the selected generation metadata as JSON.",
     )
+    action.add_argument(
+        "--prune",
+        action="store_true",
+        help="Remove generations that are not selected, previous, or in use.",
+    )
     args = parser.parse_args(argv)
     updater = None
     for signum in (signal.SIGTERM, signal.SIGHUP):
         signal.signal(signum, interrupted)
     try:
         updater = Updater(load_config(Path(args.config)))
-        metadata = (
-            updater.status()
-            if args.status
-            else updater.rollback()
-            if args.rollback
-            else updater.update()
-        )
-        print(json.dumps(metadata, sort_keys=True))
+        if args.prune:
+            result = updater.prune()
+        else:
+            result = (
+                updater.status()
+                if args.status
+                else updater.rollback()
+                if args.rollback
+                else updater.update()
+            )
+            if updater.report is not None:
+                result = result | updater.report
+        print(json.dumps(result, sort_keys=True))
         return 0
     except (
         UpdateError,
