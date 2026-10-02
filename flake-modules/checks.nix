@@ -114,6 +114,11 @@
             assert !hostConfig.virtualisation.podman.dockerSocket.enable;
             assert !hostConfig.virtualisation.docker.enable;
             assert !hostConfig.virtualisation.libvirtd.enable;
+            assert
+              hostConfig.virtualisation.containers.containersConf.settings.engine.compose_providers == [
+                "${pkgs.docker-compose}/bin/docker-compose"
+              ];
+            assert !hostConfig.virtualisation.containers.containersConf.settings.engine.compose_warning_logs;
             pkgs.runCommand "check-${host.name}-container-runtime" { } "touch $out";
           omp-browser-runtime = pkgs.callPackage ../checks/omp-browser-runtime-check.nix {
             personalOmp = pkgs.personal-omp;

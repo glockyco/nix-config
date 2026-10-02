@@ -110,3 +110,37 @@ container-runtime-check
 
 A smaller disk requires this destructive recreation. An increased disk limit does not.
 If this procedure started Colima only for acceptance, finish with `colima stop`.
+
+## Korolev
+
+Korolev runs rootless Podman inside WSL; `docker` is Podman.
+`docker compose` runs the official Docker Compose that the [declaration](../../modules/roles/nixos/wsl-workstation/containers.nix) pins, against the user's socket-activated Podman API socket.
+Container root is the WSL user, so files a container writes into a bind mount belong to that user.
+
+After activation, check the provider, a failing dependency, and bind-mount ownership in a disposable project:
+
+```sh
+docker compose version
+dir=$(mktemp -d) && cd "$dir"
+cat > compose.yaml <<'EOF'
+services:
+  dependency:
+    image: docker.io/library/busybox
+    command: ["sh", "-c", "exit ${DEPENDENCY_EXIT:-0}"]
+  job:
+    image: docker.io/library/busybox
+    volumes: [".:/work"]
+    command: ["touch", "/work/written"]
+    depends_on:
+      dependency:
+        condition: service_completed_successfully
+EOF
+DEPENDENCY_EXIT=1 docker compose run --rm job; echo "exit $?"
+docker compose run --rm job && stat -c %U written
+docker compose down
+cd - && rm -rf "$dir"
+test ! -e /run/docker.sock
+```
+
+`docker compose version` must print the pinned version without a provider banner.
+The failing dependency must stop the job with a nonzero exit, and `written` must belong to the WSL user.
