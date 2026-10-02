@@ -5,10 +5,10 @@
 
 ## 2. Document
 
-- [ ] 2.1 Add a Korolev section with the bounded Compose procedure to `docs/operations/container-runtime.md`, and verify every command against the activated host.
+- [x] 2.1 Add a Korolev section with the bounded Compose procedure to `docs/operations/container-runtime.md`, and verify every command against the activated host.
 
 ## 3. Validate and activate
 
 - [x] 3.1 Validate the OpenSpec change and run the repository's Nix formatting and flake gates.
-- [ ] 3.2 Review and commit the change; activate the committed Korolev configuration under the README release procedure, keeping the previous generation.
-- [ ] 3.3 On the activated host, run the documented procedure: `docker compose version` reports 5.4.0 without a banner, a failing dependency stops `docker compose run` with a nonzero status, and bind-mounted files belong to the user; verify that no `/run/docker.sock` exists.
+- [x] 3.2 Review and commit the change; activate the committed Korolev configuration under the README release procedure, keeping the previous generation.
+- [x] 3.3 On the activated host, run the documented procedure: `docker compose version` reports 5.4.0 without a banner, a failing dependency stops `docker compose run` with a nonzero status, and bind-mounted files belong to the user; verify that no `/run/docker.sock` exists.
