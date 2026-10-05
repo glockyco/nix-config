@@ -1,30 +1,48 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-sed "1s|^#!/usr/bin/env bash$|#!$OMP_BASH_BIN|" "$HERDR_STUB" > "$TMPDIR/herdr-stub.sh"
-chmod +x "$TMPDIR/herdr-stub.sh"
-HERDR_STUB="$TMPDIR/herdr-stub.sh"
+# Reconcile against the pinned Herdr itself. A stub only repeats the output
+# format it was written for, so it cannot notice when a Herdr update changes
+# how integration status is reported.
 
-export HERDR_BIN="$HERDR_STUB"
-export OMP_AGENT_DIR="$TMPDIR/missing/agent"
-export CALLS="$TMPDIR/missing.calls"
+extension() {
+  printf '%s\n' "$HOME/.omp/agent/extensions/herdr-omp-agent-state.ts"
+}
+
+expect_omp() {
+  local report line
+  report="$("$HERDR" integration status)"
+  line="$(grep '^omp:' <<<"$report" || true)"
+  if [[ $line != "omp: $1 "* ]]; then
+    printf 'expected the OMP integration to be %s, Herdr reported: %s\n' "$1" "$line" >&2
+    exit 1
+  fi
+}
+
+# A user who has never launched OMP has no agent root yet.
+export HOME="$TMPDIR/missing"
+mkdir -p "$HOME"
+expect_omp "not installed"
 "$HERDR_RECONCILE"
-test "$(cat "$CALLS")" = "integration install omp"
-test -f "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
+expect_omp current
 
-export OMP_AGENT_DIR="$TMPDIR/current/agent"
-mkdir -p "$OMP_AGENT_DIR/extensions"
-touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
-export CALLS="$TMPDIR/current.calls"
-STATUS= "$HERDR_RECONCILE"
-test "$(cat "$CALLS")" = "integration status --outdated-only"
+# An extension generated for an older integration version.
+export HOME="$TMPDIR/stale"
+mkdir -p "$HOME/.omp/agent"
+"$HERDR" integration install omp
+sed -i 's|^// HERDR_INTEGRATION_VERSION=[0-9]*$|// HERDR_INTEGRATION_VERSION=1|' "$(extension)"
+expect_omp outdated
+"$HERDR_RECONCILE"
+expect_omp current
 
-export OMP_AGENT_DIR="$TMPDIR/stale/agent"
-mkdir -p "$OMP_AGENT_DIR/extensions"
-touch "$OMP_AGENT_DIR/extensions/herdr-omp-agent-state.ts"
-export CALLS="$TMPDIR/stale.calls"
-STATUS='omp: outdated (v7)' "$HERDR_RECONCILE"
-test "$(cat "$CALLS")" = "integration status --outdated-only
-integration install omp"
+# A current extension stays exactly as Herdr generated it.
+export HOME="$TMPDIR/current"
+mkdir -p "$HOME/.omp/agent"
+"$HERDR" integration install omp
+touch -d @1 "$(extension)"
+generated="$(sha256sum <"$(extension)")"
+"$HERDR_RECONCILE"
+test "$(sha256sum <"$(extension)")" = "$generated"
+test "$(stat -c %Y "$(extension)")" = 1
 
 touch "$out"

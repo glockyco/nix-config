@@ -46,8 +46,7 @@ in
   ) "${pkgs.runtimeShell} ${./verification.sh}";
 
   herdrOmpReconciliation = pkgs.runCommand "check-herdr-omp-reconciliation" {
-    HERDR_STUB = ./herdr-stub.sh;
-    OMP_BASH_BIN = "${pkgs.bash}/bin/bash";
+    HERDR = pkgs.lib.getExe pkgs.herdr;
     HERDR_RECONCILE = pkgs.lib.getExe personalOmp.reconcileHerdrOmp;
   } "${pkgs.runtimeShell} ${./reconciliation.sh}";
 }
