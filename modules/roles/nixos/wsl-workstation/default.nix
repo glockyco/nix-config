@@ -11,6 +11,7 @@
     ./programs.nix
     ./containers.nix
     ./builders.nix
+    ./fonts.nix
   ];
 
   users.users.${config.host.username}.shell = pkgs.zsh;
