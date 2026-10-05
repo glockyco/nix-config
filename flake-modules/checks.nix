@@ -125,6 +125,9 @@
               map (package: package.drvPath) hostConfig.fonts.packages
             )) "${host.name}: JetBrains Mono is absent from fonts.packages";
             assert hostConfig.fonts.fontconfig.enable;
+            assert lib.assertMsg (
+              hostConfig.fonts.fontconfig.defaultFonts.monospace == [ "JetBrains Mono" ]
+            ) "${host.name}: monospace does not default to JetBrains Mono";
             pkgs.runCommand "check-${host.name}-fonts" { } "touch $out";
           omp-browser-runtime = pkgs.callPackage ../checks/omp-browser-runtime-check.nix {
             personalOmp = pkgs.personal-omp;
