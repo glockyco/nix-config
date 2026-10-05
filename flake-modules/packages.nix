@@ -41,7 +41,7 @@ in
         host.system == system
         && host.kind == "darwin"
         && self.darwinConfigurations.${host.name}.config.home-manager.users.${host.username}.programs.ssh.settings
-        ? air
+          ? air
       ) (builtins.attrValues config.fleet.hosts);
       # Export the overlay's own derivations, so an exported package and the
       # package a host installs are one value with one call site.
