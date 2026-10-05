@@ -46,21 +46,17 @@ let
     text = ''
       : "''${HOME:?HOME must be set}"
 
-      herdr_bin="''${HERDR_BIN:-${lib.getExe herdr}}"
-      agent_dir="''${OMP_AGENT_DIR:-$HOME/.omp/agent}"
-      extension="$agent_dir/extensions/herdr-omp-agent-state.ts"
+      herdr_bin=${lib.getExe herdr}
 
       # Herdr owns the generated extension, but its installer requires the OMP
       # agent root to exist even for a user who has never launched OMP.
-      mkdir -p "$agent_dir"
+      mkdir -p "$HOME/.omp/agent"
 
-      if [ ! -f "$extension" ]; then
-        "$herdr_bin" integration install omp
-        exit 0
-      fi
-
-      status="$($herdr_bin integration status --outdated-only)"
-      if printf '%s\n' "$status" | grep -q '^omp:'; then
+      # The full report gives each target one `<target>: <state>` line. Herdr
+      # 0.9 reports --outdated-only as a summary on stderr instead, so matching
+      # that output on stdout left a stale integration in place.
+      status="$("$herdr_bin" integration status)"
+      if ! grep -q '^omp: current' <<<"$status"; then
         "$herdr_bin" integration install omp
       fi
     '';
