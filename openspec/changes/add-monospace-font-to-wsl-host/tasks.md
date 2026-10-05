@@ -6,5 +6,5 @@
 ## 2. Validate and activate
 
 - [x] 2.1 Validate the OpenSpec change strictly and run the repository's formatting and flake gates.
-- [ ] 2.2 Review and commit; activate the committed Korolev configuration under the README release procedure, keeping the previous generation.
-- [ ] 2.3 On the activated host, check that `fc-match "JetBrains Mono"` and `fc-match monospace` resolve to JetBrains Mono, that no system unit failed, and that `vhs` renders a one-line tape in JetBrains Mono.
+- [x] 2.2 Review and commit; activate the committed Korolev configuration under the README release procedure, keeping the previous generation.
+- [x] 2.3 On the activated host, check that `fc-match "JetBrains Mono"` and `fc-match monospace` resolve to JetBrains Mono, that no system unit failed, and that `vhs` renders a one-line tape in JetBrains Mono.
