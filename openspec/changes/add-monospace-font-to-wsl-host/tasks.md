@@ -1,7 +1,7 @@
 ## 1. Declare the font
 
-- [x] 1.1 Set `fonts.packages = [ pkgs.jetbrains-mono ]` in the WSL workstation role, with a comment naming the Linux renderers it serves; verify that the evaluated Korolev configuration lists the package.
-- [x] 1.2 Assert the package in Korolev's evaluation checks in `flake-modules/checks.nix`, and verify that the check fails when the declaration is removed.
+- [x] 1.1 Set `fonts.packages = [ pkgs.jetbrains-mono ]` in the WSL workstation role, with a comment naming the Linux renderers it serves, and set `fonts.fontconfig.defaultFonts.monospace` to JetBrains Mono, since the NixOS default DejaVu Sans Mono is not installed; verify that the evaluated Korolev configuration lists both.
+- [x] 1.2 Assert the package and the monospace default in Korolev's evaluation checks in `flake-modules/checks.nix`, and verify that the check fails when either is removed.
 
 ## 2. Validate and activate
 
