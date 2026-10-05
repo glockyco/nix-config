@@ -120,6 +120,12 @@
               ];
             assert !hostConfig.virtualisation.containers.containersConf.settings.engine.compose_warning_logs;
             pkgs.runCommand "check-${host.name}-container-runtime" { } "touch $out";
+          fonts =
+            assert lib.assertMsg (builtins.elem pkgs.jetbrains-mono.drvPath (
+              map (package: package.drvPath) hostConfig.fonts.packages
+            )) "${host.name}: JetBrains Mono is absent from fonts.packages";
+            assert hostConfig.fonts.fontconfig.enable;
+            pkgs.runCommand "check-${host.name}-fonts" { } "touch $out";
           omp-browser-runtime = pkgs.callPackage ../checks/omp-browser-runtime-check.nix {
             personalOmp = pkgs.personal-omp;
             systemPath = hostConfig.system.path;
