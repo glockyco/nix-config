@@ -73,8 +73,8 @@ Run the applicable [release gates](../../README.md#develop), review and commit t
 Do not activate unrelated or unreviewed changes. Read activation output and resolve the installed updater again before retrying.
 Building a package does not install its pins. Publishing a fork branch does not activate either host.
 
-If administrator interaction is unavailable, report the exact host command from the README and the current selection.
-Do not ask for passwords or private-key contents. Resume after the operator provides the activation result.
+Run authorized activation yourself, as [Activate](../../README.md#activate) describes: when `sudo` prompts, the owner types the password into your pseudo-terminal.
+Do not ask for passwords or private-key contents. Only if no owner can enter the password, report the exact host command and the current selection, then resume after the operator provides the activation result.
 If the host or command ownership is unsupported, report that prerequisite instead of installing another OMP distribution.
 
 ### Prepare and accept the runtime
