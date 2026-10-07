@@ -17,7 +17,7 @@ Korolev's NixOS/WSL login shell SHALL provide a managed `open [target]` command 
 
 ### Requirement: Target dispatch
 
-With no target, `open` SHALL dispatch the current directory. With one existing Linux file or directory, it SHALL dispatch that exact target. With one absolute URI, it SHALL dispatch the URI to the Windows desktop's registered handler. Dispatch SHALL return after the Windows shell accepts or rejects the request. It SHALL NOT wait for the graphical application to exit.
+With no target, `open` SHALL dispatch the current directory. With one existing Linux file or directory, it SHALL dispatch that exact target. With one absolute URI, it SHALL dispatch the URI to the Windows desktop's registered handler, including a URI with a query string or percent-escapes. Dispatch SHALL return after the Windows shell accepts or rejects the request. It SHALL NOT wait for the graphical application to exit.
 
 #### Scenario: Open the current directory
 
@@ -33,6 +33,12 @@ With no target, `open` SHALL dispatch the current directory. With one existing L
 
 - **WHEN** the user passes an absolute URI with a registered Windows handler
 - **THEN** the registered Windows application receives that URI
+
+#### Scenario: Open a URI with a query string
+
+- **WHEN** the user passes an absolute URI whose query string holds `&` and percent-escapes
+- **THEN** the registered Windows application receives that URI unchanged
+- **AND** no file manager window opens instead
 
 #### Scenario: Reject an invalid target
 
