@@ -88,6 +88,8 @@ For all **exact** rows, installation targets the reviewed version; drift is repo
 
 npm packages live under `%LOCALAPPDATA%\Programs\npm`; their native `.cmd` wrappers are under `node_modules\.bin`, which the resource adds to user PATH after Node. Installation uses the reviewed complete integrity lock with `npm ci`, not only direct-package hashes. Node's real ZIP directory provides its adjacent `npm.cmd`. WinGet CLI resources enforce `--scope user` in the installer command and skip automatic runtime dependency installs; missing user installers never fall back to machine scope. Official PowerShell/GitHub ZIPs check hashes before extraction and native versions afterwards, retaining prior directories for recovery. Check the Intune-owned VC++ runtime where required (uv, fd, delta and Typst); do not install competing runtimes. Native failures become terminating errors containing the original exit code because the DSC script host must not swallow an isolated `exit`.
 
+Svelte's `svelteserver.cmd` has no `--version` mode. Its convergence check verifies the locked installed `svelte-language-server/package.json` version and native wrapper presence, not an unsupported version command that opens IPC. Representative LSP initialization remains a separate live project gate.
+
 For Nerd Font faces, a differing installed TTF does not reliably reveal Nerd Font release ordering. The installer therefore refuses to overwrite different existing content automatically. Back up and identify that installed release, then perform explicit reviewed recovery of only the declared faces; never remove unrelated user fonts.
 
 ## Preview, Neo prerequisite, apply and Zen policies

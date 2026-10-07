@@ -80,6 +80,9 @@ function Invoke-InstallerFixture {
       $target = [string]$args[0]
       $arguments = @($args | Select-Object -Skip 1)
       $global:LASTEXITCODE = 0
+      if ([IO.Path]::GetFileNameWithoutExtension($target) -eq 'svelteserver' -and '--version' -in $arguments) {
+        throw "resource $($Resource.name): svelteserver has no --version mode; verify its manifest and wrapper instead"
+      }
       if ($target -eq 'winget') {
         $scope = [Array]::IndexOf($arguments, '--scope')
         Assert-Contract ($scope -ge 0 -and $arguments[$scope + 1] -eq $Resource.metadata.application.scope) "resource $($Resource.name): double observed wrong installer scope"
