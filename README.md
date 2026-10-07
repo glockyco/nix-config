@@ -130,7 +130,7 @@ Inspect credential source names and destination mode metadata locally, not decry
 
 Review [home/.chezmoiremove](home/.chezmoiremove) too: it retires the old XDG Git configuration now replaced by `.gitconfig`, the HM direnv hook, and Linux-only generated HM environment/fontconfig/tray configuration. Back up their resolved contents and symlink metadata before applying; removal unlinks a destination, never its store target. Inert HM cache/marker scaffolding remains for the integrator's final post-acceptance cleanup.
 
-On the Mac, explicitly unload the captured old Home Manager mount/SOPS user agents before removing their backed-up definitions; inspect their actual labels rather than guessing. The new Air mount definition is system-owned and only one mount agent may remain. Then, as the ordinary user:
+On the Mac, after backups and **before the first system switch**, explicitly unload the captured old Home Manager mount agent so it cannot race the new native Air agent. Unload the captured SOPS agent before credential apply as well; use their actual recorded labels, not guesses. Retain their backed-up definitions for recovery and remove the obsolete live definitions under the reviewed cutover procedure. After switching, confirm only one mount agent remains. Then, as the ordinary user:
 
 ```sh
 chezmoi apply
