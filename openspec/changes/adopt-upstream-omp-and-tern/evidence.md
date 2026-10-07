@@ -86,3 +86,11 @@ Both hosts: `curl -fsSL https://omp.sh/install | HOME=<tmp>/home PI_INSTALL_DIR=
 ## Desktop (task 6.8)
 
 Through `desktop-batch` (PowerShell 7.6.6, user `User`): `omp update` moved the standalone binary from 18.1.12 to 18.8.0 at `%LOCALAPPDATA%\omp\omp.exe`; OMP's shell is Git Bash (`C:\Program Files\Git\bin\bash.exe`). The marketplace commands installed `personal@glockyco` `0.2.0`. In disposable repositories under `%TEMP%`, with a space in the path: `/personal:opsx-explore` expanded and ran `openspec list --json` (OpenSpec 1.12.0 from Bun), and the release prompt read both skills from `C:\Users\User\.omp\plugins\cache\plugins\glockyco___personal___0.2.0\…` and previewed the commit verbatim; the repository stayed unchanged and the directories were removed. No SSH, network or language-server change was made.
+
+## Owner checks in Tern for Windows (tasks 6.2, 6.4 on Korolev)
+
+In a WSL tab of Tern for Windows 0.6.0, in the disposable repository `/tmp/acceptance gate`, the owner checked:
+
+- Links (6.2): `https://example.com/` was clickable. Plain Linux paths, a path with `:12`, a path with spaces and `/mnt/s/Common` were not clickable. Tern for Windows does not detect Linux paths in WSL output; its log earlier showed file links from WSL sessions resolving as `C:\home\user\…`. No terminal flags or patches were added to change this.
+- Image and redraw (6.2): the official `omp` displayed `gradient.png` inline, and the session redrew correctly while the window was resized narrow and wide.
+- Plannotator (6.4): `/plannotator-annotate "notes with spaces.md"` opened the review in the Windows browser; one submitted comment reached the session once; `/plannotator-last` and `/plannotator-cancel` worked. Afterwards no Plannotator process or listener remained, and the repository was unchanged (`git status` empty, fixture commit unchanged).
