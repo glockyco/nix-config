@@ -35,11 +35,7 @@ in
       # system where a host selects that role, so a host without the role
       # publishes no Air command and no Air release gate.
       hasAirClient = lib.any (
-        host:
-        host.system == system
-        && host.kind == "darwin"
-        && self.darwinConfigurations.${host.name}.config.home-manager.users.${host.username}.programs.ssh.settings
-          ? air
+        host: host.system == system && host.kind == "darwin" && host.roles.airClient
       ) (builtins.attrValues config.fleet.hosts);
       # Export the overlay's own derivations, so an exported package and the
       # package a host installs are one value with one call site.
@@ -57,11 +53,25 @@ in
     {
       _module.args.pkgs = pkgs;
       packages =
-        (if hasAirClient then supported else removeAttrs supported [ "air-batch-check" ])
+        (
+          if hasAirClient then
+            supported
+          else
+            removeAttrs supported [
+              "air-batch-check"
+              "air-share-mount"
+            ]
+        )
         // {
           inherit (pkgs) openspec;
           tailnet-policy = tailnetPolicy;
         }
+        # Export the applied source for daemon-free configuration consumers.
+        // lib.listToAttrs (
+          map (
+            host: lib.nameValuePair "${host.name}-chezmoi-rendered" self.checks.${system}."${host.name}-chezmoi"
+          ) (builtins.attrValues (lib.filterAttrs (_: host: host.system == system) config.fleet.hosts))
+        )
         // lib.optionalAttrs hasDarwinHost {
           inherit (inputs.nix-darwin.packages.${system}) darwin-rebuild;
           check-darwin-build-plans = pkgs.check-darwin-build-plans.override {

@@ -1,0 +1,14 @@
+{{- $host := index .hosts .host -}}
+{{- $platform := index $host.platforms .chezmoi.os -}}
+{{ if and (eq .chezmoi.os "darwin") $host.roles.desktop -}}
+{{- $resources := include (joinPath .resourcesDir "manifest.json") | fromJson -}}
+#!/bin/sh
+set -eu
+# filter identity: {{ $resources.zed.helper }}
+declaration=$(mktemp)
+trap 'rm -f "$declaration"' EXIT HUP INT TERM
+cat > "$declaration" <<'ZED_DECLARATION'
+{{ template "zed-settings.json.tmpl" . }}
+ZED_DECLARATION
+zed-configuration --declaration "$declaration"
+{{ end -}}

@@ -235,3 +235,45 @@ class FastmailReportTests(unittest.TestCase):
                     ],
                     expected_counts,
                 )
+
+
+class CredentialTests(unittest.TestCase):
+    def test_default_private_credential_path_and_missing_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory, ".config/credentials/fastmail-token")
+            stderr = io.StringIO()
+            with (
+                mock.patch.dict(fastmail.os.environ, {"HOME": directory}, clear=True),
+                mock.patch.object(fastmail, "Session") as session,
+                contextlib.redirect_stderr(stderr),
+            ):
+                self.assertEqual(fastmail.main(["mailboxes"]), 1)
+            session.assert_not_called()
+            self.assertIn(f"cannot read token from {path}:", stderr.getvalue())
+
+    def test_default_and_override_read_locally_without_logging_token(self):
+        with tempfile.TemporaryDirectory() as directory:
+            default = Path(directory, ".config/credentials/fastmail-token")
+            default.parent.mkdir(parents=True)
+            default.write_text("fixture-credential\n")
+            override = Path(directory, "override")
+            override.write_text("fixture-override\n")
+            for extra, expected in (
+                ({}, "fixture-credential"),
+                ({"FASTMAIL_TOKEN_FILE": str(override)}, "fixture-override"),
+            ):
+                stdout, stderr = io.StringIO(), io.StringIO()
+                with (
+                    mock.patch.dict(
+                        fastmail.os.environ, {"HOME": directory, **extra}, clear=True
+                    ),
+                    mock.patch.object(fastmail, "Session") as session,
+                    mock.patch.object(fastmail, "cmd_mailboxes", return_value=[]),
+                    contextlib.redirect_stdout(stdout),
+                    contextlib.redirect_stderr(stderr),
+                ):
+                    self.assertEqual(fastmail.main(["mailboxes"]), 0)
+                session.assert_called_once_with(expected)
+                self.assertEqual(json.loads(stdout.getvalue()), [])
+                self.assertEqual(stderr.getvalue(), "")
+                self.assertNotIn(expected, stdout.getvalue())

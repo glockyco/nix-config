@@ -1,19 +1,17 @@
+let
+  data = (builtins.fromTOML (builtins.readFile ../../home/.chezmoidata/zed.toml)).zed;
+in
 {
-  fontFamily ? "JetBrainsMonoNL Nerd Font",
+  fontFamily ? data.fontFamily,
 }:
 
-{
+data.settings
+// {
   buffer_font_family = fontFamily;
-  buffer_font_size = 14;
   terminal.font_family = fontFamily;
   theme = {
-    dark = "Catppuccin Mocha";
-    light = "Catppuccin Mocha";
+    dark = data.themeName;
+    light = data.themeName;
   };
 
-  vim_mode = true;
-  base_keymap = "VSCode";
-  ui_font_size = 16;
-  show_edit_predictions = false;
-  diff_view_style = "unified";
 }

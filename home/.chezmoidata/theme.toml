@@ -1,0 +1,67 @@
+[theme]
+flavor = "mocha"
+accent = "mauve"
+
+[theme.palette]
+rosewater = "#f5e0dc"
+flamingo = "#f2cdcd"
+pink = "#f5c2e7"
+mauve = "#cba6f7"
+red = "#f38ba8"
+maroon = "#eba0ac"
+peach = "#fab387"
+yellow = "#f9e2af"
+green = "#a6e3a1"
+teal = "#94e2d5"
+sky = "#89dceb"
+sapphire = "#74c7ec"
+blue = "#89b4fa"
+lavender = "#b4befe"
+text = "#cdd6f4"
+subtext1 = "#bac2de"
+subtext0 = "#a6adc8"
+overlay2 = "#9399b2"
+overlay1 = "#7f849c"
+overlay0 = "#6c7086"
+surface2 = "#585b70"
+surface1 = "#45475a"
+surface0 = "#313244"
+base = "#1e1e2e"
+mantle = "#181825"
+crust = "#11111b"
+
+[theme.sources."bat"]
+repository = "https://github.com/catppuccin/bat"
+revision = "6810349b28055dce54076712fc05fc68da4b8ec0"
+
+[theme.sources."delta"]
+repository = "https://github.com/catppuccin/delta"
+revision = "011516f5d14f66b771b3e716f29c77231e008c74"
+
+[theme.sources."eza"]
+repository = "https://github.com/catppuccin/eza"
+revision = "70f805f6cc27fa5b91750b75afb4296a0ec7fec9"
+
+[theme.sources."fzf"]
+repository = "https://github.com/catppuccin/fzf"
+revision = "7508f8141286fb95249100a2b5325960320dcf32"
+
+[theme.sources."ghostty"]
+repository = "https://github.com/catppuccin/ghostty"
+revision = "b0b03ccee7ae8f16b13bd4fdfe267616defdb2b7"
+
+[theme.sources."zed"]
+repository = "https://github.com/catppuccin/zed"
+revision = "6fd105a51a0a0ba96579c86df0f58193a51001a3"
+
+[theme.sources."zsh-syntax-highlighting"]
+repository = "https://github.com/catppuccin/zsh-syntax-highlighting"
+revision = "7926c3d3e17d26b3779851a2255b95ee650bd928"
+
+[theme.sources."palette"]
+repository = "https://github.com/catppuccin/palette"
+revision = "07d02aa110ef9eb7e7427afca5c73ba9cf7f8ebd"
+
+[theme.sources.starship]
+repository = "https://github.com/starship/starship"
+revision = "v1.25.1"

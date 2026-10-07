@@ -22,6 +22,13 @@ Chezmoi SHALL own managed user files and user setup from the repository's home s
 - **THEN** no Darwin-only user file, setup helper or Mac credential is applied
 - **AND** shared shell, Git and CLI configuration remains available
 
+#### Scenario: Retain secondary workstation tools
+
+- **WHEN** the Mac and WSL user configurations are built
+- **THEN** Herdr remains in each system-declared user package set
+- **AND** the Mac retains Ghostty's host-owned cask/Dock entry and chezmoi-owned settings/Catppuccin theme
+- **AND** Herdr's OMP integration remains an explicit owner operation (`herdr integration install omp`); neither activation nor chezmoi manages `~/.omp`
+
 ### Requirement: Local source and machine selection
 
 Each machine's chezmoi configuration SHALL record its checkout as sourceDir and an explicit data.host selection. The repository SHALL designate home as its source root. User destination directories SHALL remain outside the source directory; applying user configuration SHALL not require a second checkout or a host-name inference.

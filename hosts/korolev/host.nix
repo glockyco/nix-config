@@ -1,11 +1,13 @@
 let
-  githubNoReplyEmail = "11704293+glockyco@users.noreply.github.com";
+  facts = (builtins.fromTOML (builtins.readFile ../../home/.chezmoidata/hosts.toml)).hosts.korolev;
+  platform = facts.platforms.linux;
 in
 {
   host = {
     system = "x86_64-linux";
     kind = "nixos";
-    username = "user";
+    username = platform.username;
+    homeDirectory = platform.home;
     displayName = null;
     timeZone = "Europe/Vienna";
     locale = {
@@ -13,14 +15,12 @@ in
       measurementCategory = "de_AT.UTF-8";
     };
     paths = {
-      configurationCheckout = null;
+      configurationCheckout = platform.checkout;
+      repositoryRoot = platform.ghqRoot;
       screenshots = null;
     };
-    git = {
-      authorName = "Johann Glock";
-      defaultEmail = "johann.glock@scch.at";
-      githubNoReplyEmail = githubNoReplyEmail;
-    };
+    git = facts.git;
+    roles = facts.roles;
     tailnet = {
       tag = "tag:korolev";
       reachable = false;

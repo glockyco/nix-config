@@ -443,14 +443,17 @@ def cmd_dmarc(session: Session, args) -> object:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    default_token = os.environ.get("FASTMAIL_TOKEN_FILE", "")
+    default_token = os.environ.get(
+        "FASTMAIL_TOKEN_FILE",
+        os.path.expanduser("~/.config/credentials/fastmail-token"),
+    )
     parser = argparse.ArgumentParser(
         prog="fastmail", description="Query Fastmail over JMAP. Output is JSON."
     )
     parser.add_argument(
         "--token-file",
         default=default_token,
-        help="file holding the API token (default: $FASTMAIL_TOKEN_FILE)",
+        help="file holding the API token (default: ~/.config/credentials/fastmail-token; FASTMAIL_TOKEN_FILE overrides)",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

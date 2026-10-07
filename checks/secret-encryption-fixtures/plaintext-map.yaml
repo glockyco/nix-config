@@ -1,6 +1,0 @@
-service:
-  credentials:
-    token: plaintext
-sops:
-  age:
-    - recipient: age1fixture

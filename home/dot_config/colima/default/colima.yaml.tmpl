@@ -1,0 +1,26 @@
+{{- $host := index .hosts .host -}}
+{{- $platform := index $host.platforms .chezmoi.os -}}
+{{ if and (eq .chezmoi.os "darwin") $host.roles.containerClient -}}
+{{- $resources := include (joinPath .resourcesDir "manifest.json") | fromJson -}}
+cpu: {{ $host.container.cpu }}
+memory: {{ $host.container.memory }}
+disk: {{ $host.container.disk }}
+arch: {{ $resources.colima.arch }}
+runtime: docker
+vmType: vz
+rosetta: true
+mountType: virtiofs
+mounts:
+{{ range $host.container.mounts }}
+  - location: {{ .location | quote }}
+    writable: {{ .writable }}
+{{ end -}}
+kubernetes:
+  enabled: false
+autoActivate: true
+network:
+  address: false
+  mode: shared
+  hostAddresses: false
+forwardAgent: false
+{{ end -}}

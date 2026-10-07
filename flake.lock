@@ -102,26 +102,6 @@
         "type": "github"
       }
     },
-    "catppuccin": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1789553013,
-        "narHash": "sha256-W5dvgFOuVs24X3G5tUb8C2IHU7ICXNvyGPiWWFjfbuo=",
-        "owner": "catppuccin",
-        "repo": "nix",
-        "rev": "89b3eacf59d6b5eefbc2d69c3a4eb5aaf66d63bc",
-        "type": "github"
-      },
-      "original": {
-        "owner": "catppuccin",
-        "repo": "nix",
-        "type": "github"
-      }
-    },
     "determinate": {
       "inputs": {
         "determinate-nixd-aarch64-darwin": "determinate-nixd-aarch64-darwin",
@@ -295,25 +275,6 @@
       "original": {
         "type": "tarball",
         "url": "https://flakehub.com/f/cachix/git-hooks.nix/0.1.941"
-      }
-    },
-    "home-manager": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1790996401,
-        "narHash": "sha256-f+kOxEmOUnQazVAmGg0i8hzwgd1kX/geY+k/Dpheye8=",
-        "rev": "db7d5e2332710f5abb088f6b5de927d7f9511b35",
-        "revCount": 6838,
-        "type": "tarball",
-        "url": "https://api.flakehub.com/f/pinned/nix-community/home-manager/0.2605.6838%2Brev-db7d5e2332710f5abb088f6b5de927d7f9511b35/01a0ffcd-4637-7ac2-a3cd-7961468dc915/source.tar.gz"
-      },
-      "original": {
-        "type": "tarball",
-        "url": "https://flakehub.com/f/nix-community/home-manager/0.2605"
       }
     },
     "karabiner-complex-modifications": {
@@ -596,10 +557,8 @@
     },
     "root": {
       "inputs": {
-        "catppuccin": "catppuccin",
         "determinate": "determinate",
         "flake-parts": "flake-parts_2",
-        "home-manager": "home-manager",
         "karabiner-complex-modifications": "karabiner-complex-modifications",
         "llm-agents": "llm-agents",
         "nix-darwin": "nix-darwin",
@@ -609,28 +568,7 @@
         "nixpkgs": "nixpkgs_3",
         "personal-omp-plugin": "personal-omp-plugin",
         "plannotator-packages": "plannotator-packages",
-        "sops-nix": "sops-nix",
         "treefmt-nix": "treefmt-nix_3"
-      }
-    },
-    "sops-nix": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1790498116,
-        "narHash": "sha256-rs9meAYxW3zzrh43yaW7htrqCD+X9+pupDPHN86fumI=",
-        "owner": "Mic92",
-        "repo": "sops-nix",
-        "rev": "5efb5a6f4f5ab192817d28557dd4d650fa14d866",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Mic92",
-        "repo": "sops-nix",
-        "type": "github"
       }
     },
     "systems": {

@@ -9,6 +9,7 @@
     ./homebrew.nix
     ./rectangle.nix
     ./zen.nix
+    ./chezmoi-resources.nix
   ];
   assertions = [
     {
@@ -21,5 +22,5 @@
     }
   ];
 
-  home-manager.users.${config.host.username}.imports = [ ../../../home/darwin ];
+  host.importedRoles.desktop = true;
 }

@@ -1,9 +1,9 @@
 # Container Runtime
 
 Use this procedure for the Mac's first Colima start, runtime acceptance, or recovery.
-First complete [activation](../../README.md#activate). Activation installs files but never starts or deletes the virtual machine.
+First complete [system switch and user apply](../../README.md#initialize-and-apply-user-files). Nix installs the clients/resources; chezmoi writes the profile/environment. Neither step starts or deletes the virtual machine.
 The desktop activation probes x86_64 execution before installing Rosetta. A failed Rosetta installation stops activation. Resolve that failure before the AMD64 container acceptance check; activation still does not start Colima.
-The [profile declaration](../../modules/roles/darwin/container-client/container-runtime.nix) owns configuration, not images, containers, volumes, credentials, logs, or disks. The Mac's [host facts](../../hosts/macbook-pro/host.nix) set the profile capacity and mounts.
+The chezmoi profile owns only reviewed configuration, not images, containers, volumes, credentials, logs or disks. [Shared host facts](../../home/.chezmoidata/hosts.toml) own capacity and mounts; the Nix [container role](../../modules/roles/darwin/container-client/container-runtime.nix) derives architecture into `/etc/chezmoi-resources/manifest.json`. Runtime state remains application-owned.
 
 ## Start and verify
 
@@ -20,7 +20,7 @@ container-runtime-check
 
 The disk limit in the declaration is sparse, not an immediate allocation.
 The context must be `colima`. The engine must report Linux on ARM64 with the name `colima`.
-Do not use `colima start --edit`. Change the declaration through review and activation instead.
+Do not use `colima start --edit`. Change the shared declaration through review, system switch and ordinary-user chezmoi apply instead.
 
 The [acceptance command](../../packages/container-runtime-check/package.nix) uses fixed time limits and removes its two unique Compose projects.
 It verifies Compose discovery, ARM64 and Rosetta AMD64 execution, PostgreSQL health, service operations, mounts, volumes, and project isolation.
@@ -68,7 +68,7 @@ Keep the previous generation until acceptance and the [release gates](../../READ
 
 For a Nix rollback, follow [Recover](../../README.md#recover).
 Stop Colima first if the generations declare incompatible profile values.
-Nix rollback restores immutable clients and the profile declaration, not Docker data.
+Nix rollback restores immutable clients/resources, not the chezmoi-written profile or Docker data. Select the compatible previous chezmoi source revision and apply/verify it separately as the user.
 
 ## Failed start
 

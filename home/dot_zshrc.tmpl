@@ -1,0 +1,46 @@
+{{- $host := index .hosts .host -}}
+{{- $platform := index $host.platforms .chezmoi.os -}}
+# /etc/zshrc owns completion, autosuggestions, syntax highlighting, direnv
+# and nix-index. This file never initializes those plugins a second time.
+typeset -U path PATH
+{{ if eq .chezmoi.os "darwin" -}}
+# Restore user tools after nix-homebrew's system zshrc prepends Homebrew.
+path=("/etc/profiles/per-user/{{ $platform.username }}/bin" "${path[@]}")
+{{ if $host.roles.desktop -}}
+{{ range $host.applications -}}
+{{ if and (hasKey . "appPath") (eq (base .appPath) "Tern.app") -}}
+path=("/etc/profiles/per-user/{{ $platform.username }}/bin" "{{ .appPath }}/Contents/MacOS" "${path[@]}")
+{{ end -}}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE={{ .portable.history.size }}
+SAVEHIST={{ .portable.history.save }}
+setopt APPEND_HISTORY SHARE_HISTORY HIST_IGNORE_ALL_DUPS HIST_IGNORE_SPACE
+setopt HIST_SAVE_NO_DUPS HIST_REDUCE_BLANKS EXTENDED_HISTORY
+
+export FZF_DEFAULT_COMMAND={{ .portable.fzf.defaultCommand | quote }}
+export FZF_CTRL_T_COMMAND={{ .portable.fzf.fileWidgetCommand | quote }}
+export FZF_ALT_C_COMMAND={{ .portable.fzf.changeDirWidgetCommand | quote }}
+export FZF_DEFAULT_OPTS_FILE="$HOME/.config/fzf/catppuccin-mocha.rc"
+# Completion has already run in /etc/zshrc. Interactive does not imply a tty.
+if [[ -t 0 ]]; then
+  source <(fzf --zsh)
+fi
+
+eval "$(starship init zsh)"
+eval "$(zoxide init zsh)"
+source "$HOME/.config/zsh/catppuccin-mocha.zsh"
+
+alias eza='eza --icons auto --git'
+alias ls='eza'
+alias ll='eza -l'
+alias la='eza -a'
+alias lla='eza -la'
+alias lt='eza --tree'
+{{ if and (eq .chezmoi.os "linux") $host.roles.wslWorkstation }}
+if [[ -t 0 ]]; then
+  export GPG_TTY=$(tty)
+fi
+{{ end -}}

@@ -1,0 +1,31 @@
+[ssh]
+tailnetDnsDomain = "tail8768af.ts.net"
+secretiveAgent = "~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
+userIdentityFile = "~/.ssh/id_ed25519"
+yubikeyIdentityFile = "~/.ssh/id_ed25519_sk"
+
+[ssh.batch]
+BatchMode = "yes"
+RequestTTY = "no"
+ControlMaster = "no"
+ControlPath = "none"
+ControlPersist = "no"
+ConnectTimeout = 8
+
+[ssh.interactive]
+AddKeysToAgent = "no"
+ControlMaster = "auto"
+ControlPath = "~/.ssh/master-%C"
+ControlPersist = "1h"
+HashKnownHosts = "yes"
+ServerAliveInterval = 60
+ServerAliveCountMax = 3
+
+[ssh.desktop]
+hostName = "desktop"
+user = "User"
+publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN/+XoGCH3MVvNQuvVfjmidMk5mEa+gqs84C00s6DiEt"
+fingerprint = "SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw"
+
+[ssh.hostKeys.macbook-pro]
+publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKVMJe00KQ0ozyXyJ+PB5BllhI5tckDKKCVpJnM2Kw+3"

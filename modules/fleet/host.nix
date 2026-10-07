@@ -39,6 +39,46 @@ in
       description = "Interactive user managed by the host configuration.";
     };
 
+    homeDirectory = mkOption {
+      type = absolutePath;
+      description = "Interactive user's home from shared platform facts.";
+    };
+
+    roles =
+      lib.genAttrs
+        [
+          "desktop"
+          "postgresql"
+          "containerClient"
+          "airClient"
+          "wslWorkstation"
+        ]
+        (
+          role:
+          mkOption {
+            type = types.bool;
+            default = false;
+            description = "Shared selection of the ${role} role.";
+          }
+        );
+
+    importedRoles =
+      lib.genAttrs
+        [
+          "desktop"
+          "postgresql"
+          "containerClient"
+          "airClient"
+          "wslWorkstation"
+        ]
+        (
+          role:
+          mkOption {
+            type = types.bool;
+            default = false;
+            description = "Whether an explicit import enables the ${role} role.";
+          }
+        );
     displayName = mkOption {
       type = nullableString;
       default = null;
@@ -88,6 +128,11 @@ in
         type = types.nullOr absolutePath;
         default = null;
         description = "Absolute screenshot directory, when configured.";
+      };
+
+      repositoryRoot = mkOption {
+        type = absolutePath;
+        description = "Root for ghq checkouts from shared platform facts.";
       };
     };
 

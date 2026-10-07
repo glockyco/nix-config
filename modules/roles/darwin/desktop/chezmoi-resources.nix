@@ -1,0 +1,457 @@
+{
+  config,
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
+
+let
+  zed = "dev.zed.Zed";
+  pdfExpert = "com.readdle.PDFExpert-Mac";
+  thunderbird = "org.mozilla.thunderbird";
+
+  thunderbirdHandlers = [
+    "mailto"
+    "news"
+    "feed"
+    "net.thunderbird"
+  ];
+
+  # Every file type Zed should own, keyed by extension. One flat list suffices;
+  # three measured facts remove the per-extension case analysis this module used
+  # to need.
+  #
+  # 1. macOS has no UTI for most source extensions. It synthesises a per-file
+  #    `dyn.*` identifier, and LaunchServices refuses to record a handler
+  #    against one (`duti` fails with -50). `fileTypesApp` below exports a real
+  #    `local.filetype.<ext>` UTI for every entry, which removes that failure.
+  # 2. Where macOS already has a type, the system declaration wins and ours is
+  #    inert: a probe bundle exporting types for `py`, `csv` and `java` left
+  #    `mdls -name kMDItemContentType` at `public.python-script`,
+  #    `public.comma-separated-values-text` and `com.sun.java-source`. So
+  #    declaring an extension that already has a type is harmless.
+  # 3. `duti -s <app> <ext>` resolves the extension to whichever UTI macOS
+  #    reports, which covers case 2. The app need not declare the type: Zed
+  #    claims `public.plain-text`, every type here conforms to
+  #    `public.source-code`, and LaunchServices matches by conformance. Binding
+  #    `public.swift-source` through the bare `swift` extension works even
+  #    though Zed's `Info.plist` never mentions Swift.
+  #
+  # Each entry therefore gets one declaration and two bindings -- the declared
+  # UTI and the bare extension -- and exactly one of them lands. Adding a type
+  # is one line, with no measurement.
+  #
+  # Names without an extension (`Dockerfile`, `Makefile`, `.gitignore`,
+  # `.editorconfig`) cannot be handled at all: macOS resolves them to
+  # `public.data`, and binding that would hand Zed every unrecognised file on
+  # the system. `plist` is out for a related reason: macOS resolves even a
+  # well-formed XML property list to the abstract `com.apple.property-list`,
+  # which reports "no default handler" and keeps none after `duti -s`.
+  #
+  # Types left with other apps on purpose, because the other app is the better
+  # tool: `html` (browser), crash and panic reports (Console),
+  # playlists (Music), `rtf` (TextEdit), `.rss` feeds (Thunderbird),
+  # `mobileconfig` and friends (Profile Helper), AppleScript (Script Editor).
+  #
+  # To list types that still escape Zed, including ones no entry here covers:
+  #
+  #   lsregister -dump | grep -oE 'uti: +[a-zA-Z0-9._+-]+' | sed 's/uti: *//' |
+  #     sort -u | while read -r u; do echo "$(duti -d "$u" 2>/dev/null)  $u"; done |
+  #     grep -v dev.zed.Zed
+  #
+  # Two behaviours to expect when this list grows. macOS asks the user to
+  # confirm each handler change, so the activation that first binds a type
+  # raises one dialog for it -- adding fifty types means fifty dialogs, once.
+  # And LaunchServices records the binding asynchronously: `duti -d` right after
+  # `duti -s` still reports the old handler, so wait a few seconds before
+  # reading a binding back.
+  fileTypes = {
+    # C and friends
+    c = "C source";
+    h = "C header";
+    cc = "C++ source";
+    cpp = "C++ source";
+    cxx = "C++ source";
+    hh = "C++ header";
+    hpp = "C++ header";
+    hxx = "C++ header";
+    inl = "C++ inline header";
+    cu = "CUDA source";
+    cuh = "CUDA header";
+    ino = "Arduino sketch";
+    m = "Objective-C source";
+    mm = "Objective-C++ source";
+    s = "Assembly source";
+
+    # .NET
+    cs = "C# source";
+    csproj = "C# project";
+    sln = "Visual Studio solution";
+    razor = "Razor component";
+    cshtml = "Razor page";
+    vb = "Visual Basic source";
+    fs = "F# source";
+    fsproj = "F# project";
+
+    # JVM
+    java = "Java source";
+    kt = "Kotlin source";
+    kts = "Kotlin script";
+    groovy = "Groovy source";
+    gradle = "Gradle build script";
+    scala = "Scala source";
+    sbt = "Scala build script";
+    clj = "Clojure source";
+    cljs = "ClojureScript source";
+
+    # Web
+    js = "JavaScript source";
+    mjs = "JavaScript module";
+    cjs = "CommonJS module";
+    jsx = "JavaScript JSX source";
+    ts = "TypeScript source"; # also MPEG-2 transport stream; Zed wins for both
+    mts = "TypeScript module"; # also AVCHD video; Zed wins for both
+    cts = "TypeScript CommonJS module";
+    tsx = "TypeScript JSX source";
+    vue = "Vue component";
+    svelte = "Svelte component";
+    astro = "Astro component";
+    css = "CSS stylesheet";
+    scss = "SCSS stylesheet";
+    sass = "Sass stylesheet";
+    less = "Less stylesheet";
+    postcss = "PostCSS stylesheet";
+
+    # Markup and structured data. `html` and `xhtml` stay out on purpose: a
+    # browser is the better handler. `svg` needs no entry -- it conforms to
+    # `public.xml`, so the root binding below already sends it to Zed.
+    xsd = "XML schema";
+    xsl = "XSLT stylesheet";
+    xslt = "XSLT stylesheet";
+    jsp = "JSP page";
+    json5 = "JSON5 document";
+    jsonc = "JSON document with comments";
+    jsonl = "JSON Lines document";
+    ndjson = "Newline-delimited JSON document";
+    geojson = "GeoJSON document";
+    toml = "TOML document";
+    ini = "INI configuration";
+    conf = "Configuration file";
+    cfg = "Configuration file";
+    properties = "Java properties";
+    env = "Environment file";
+    lock = "Lock file";
+
+    # Prose and typesetting
+    mdx = "MDX document";
+    rst = "reStructuredText document";
+    adoc = "AsciiDoc document";
+    org = "Org document";
+    typ = "Typst source";
+    tex = "TeX source";
+    latex = "LaTeX source";
+    sty = "TeX style";
+    cls = "TeX class";
+    bib = "BibTeX bibliography";
+    bibtex = "BibTeX bibliography";
+    biblatex = "BibLaTeX bibliography";
+
+    # Scripting
+    sh = "Shell script";
+    bash = "Bash script";
+    zsh = "Zsh script";
+    ksh = "Ksh script";
+    csh = "Csh script";
+    tcsh = "Tcsh script";
+    fish = "Fish script";
+    nu = "Nushell script";
+    ps1 = "PowerShell script";
+    bat = "Batch script";
+    cmd = "Batch script";
+    pl = "Perl source";
+    pm = "Perl module";
+    php = "PHP source";
+    py = "Python source";
+    pyi = "Python stub";
+    pyx = "Cython source";
+    rb = "Ruby source";
+    erb = "ERB template";
+    lua = "Lua source";
+    vim = "Vim script";
+    el = "Emacs Lisp source";
+    scm = "Scheme source";
+    rkt = "Racket source";
+
+    # Compiled languages
+    rs = "Rust source";
+    go = "Go source";
+    mod = "Go module file";
+    work = "Go workspace file";
+    swift = "Swift source";
+    zig = "Zig source";
+    nim = "Nim source";
+    d = "D source";
+    hs = "Haskell source";
+    ml = "OCaml source";
+    erl = "Erlang source";
+    ex = "Elixir source";
+    exs = "Elixir script";
+    jl = "Julia source";
+    dart = "Dart source";
+
+    # Languages macOS types but leaves with TextEdit
+    ada = "Ada source";
+    f = "Fortran source";
+    f77 = "Fortran 77 source";
+    f90 = "Fortran 90 source";
+    f95 = "Fortran 95 source";
+    pas = "Pascal source";
+    l = "Lex source";
+    y = "Yacc source";
+    defs = "MIG definitions";
+    iig = "IOKit interface definitions";
+    r = "Rez source"; # also R source; Zed suits both
+    swiftinterface = "Swift module interface";
+
+    # Queries and schemas
+    sql = "SQL source";
+    graphql = "GraphQL document";
+    gql = "GraphQL document";
+    sparql = "SPARQL query";
+    prisma = "Prisma schema";
+    proto = "Protocol Buffers schema";
+
+    # Infrastructure
+    nix = "Nix expression";
+    dhall = "Dhall expression";
+    hcl = "HCL document";
+    tf = "Terraform configuration";
+    tfvars = "Terraform variables";
+    just = "Justfile";
+    mk = "Makefile fragment";
+    cmake = "CMake script";
+
+    # Templates
+    vm = "Velocity template";
+    ftl = "FreeMarker template";
+    mustache = "Mustache template";
+    hbs = "Handlebars template";
+    jinja = "Jinja template";
+    j2 = "Jinja template";
+    twig = "Twig template";
+
+    # Plain data
+    log = "Log file";
+    csv = "Comma-separated values";
+    tsv = "Tab-separated values";
+    diff = "Diff";
+    patch = "Patch";
+  };
+
+  utiOf = ext: "local.filetype.${ext}";
+
+  typeDeclaration = ext: description: ''
+    <dict>
+      <key>UTTypeIdentifier</key><string>${utiOf ext}</string>
+      <key>UTTypeDescription</key><string>${description}</string>
+      <key>UTTypeConformsTo</key>
+      <array><string>public.source-code</string></array>
+      <key>UTTypeTagSpecification</key>
+      <dict><key>public.filename-extension</key><array><string>${ext}</string></array></dict>
+    </dict>'';
+
+  fileTypesApp = pkgs.runCommand "file-types-app" { } ''
+    mkdir -p "$out/FileTypes.app/Contents"
+    cat > "$out/FileTypes.app/Contents/Info.plist" <<'PLIST'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+      <key>CFBundleIdentifier</key><string>local.filetypes</string>
+      <key>CFBundleName</key><string>FileTypes</string>
+      <key>CFBundlePackageType</key><string>APPL</string>
+      <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+      <key>CFBundleShortVersionString</key><string>1.0</string>
+      <key>UTExportedTypeDeclarations</key>
+      <array>
+    ${lib.concatStringsSep "\n" (lib.mapAttrsToList typeDeclaration fileTypes)}
+      </array>
+    </dict>
+    </plist>
+    PLIST
+  '';
+
+  # Type roots, for files whose extension is not in the list above. A root
+  # binding loses to any per-type default, so it is a fallback, not a
+  # replacement for an entry in `fileTypes`.
+  utis = [
+    "public.text"
+    "public.plain-text"
+    "public.utf8-plain-text"
+    "public.source-code"
+    "public.shell-script"
+    "public.script"
+    "public.xml"
+    "public.json"
+    "public.yaml"
+    "net.daringfireball.markdown"
+  ];
+
+  # The package reads each handler before binding it. An extension with no
+  # handler falls back to its declared UTI, as the old activation did.
+  bindings =
+    (map (uti: {
+      app = zed;
+      inherit uti;
+    }) utis)
+    ++ (map (extension: {
+      app = zed;
+      inherit extension;
+      uti = utiOf extension;
+    }) (builtins.attrNames fileTypes))
+    ++ [
+      {
+        app = pdfExpert;
+        uti = "com.adobe.pdf";
+      }
+    ]
+    ++ (map (scheme: {
+      app = thunderbird;
+      inherit scheme;
+    }) thunderbirdHandlers);
+
+  declaration = (pkgs.formats.json { }).generate "default-applications.json" {
+    bundle = {
+      source = "${fileTypesApp}/FileTypes.app";
+      destination = "${config.users.users.${config.host.username}.home}/Applications/FileTypes.app";
+    };
+    inherit bindings;
+  };
+  neo2Source = "${inputs.karabiner-complex-modifications}/public/json/neo2.json";
+  neo2 = builtins.fromJSON (builtins.readFile neo2Source);
+  enabledRules = [
+    "Neo2 mod 3 and layer 4. Rule applied to all keyboards."
+    "Neo2 layer 6"
+    "Toggle caps_lock by pressing left_shift + right_shift at the same time"
+  ];
+  ruleByDescription = import ../../../../lib/karabiner-rule.nix {
+    rules = neo2.rules;
+    source = neo2Source;
+  };
+  karabinerDeclaration = (pkgs.formats.json { }).generate "karabiner-managed.json" {
+    global.show_in_menu_bar = true;
+    profiles = [
+      {
+        name = "Neo2";
+        selected = true;
+        virtual_hid_keyboard.keyboard_type_v2 = "iso";
+        complex_modifications.rules = map ruleByDescription enabledRules;
+      }
+    ];
+  };
+  # Shortcuts switched off in System Settings. The ids are Apple's undocumented
+  # symbolic hotkey table, so each records what it was bound to. "unassigned"
+  # means it had no key, and is kept so macOS does not hand it one later.
+  # Regenerate by listing the ids whose `enabled` is false in
+  # `~/Library/Preferences/com.apple.symbolichotkeys.plist`.
+  disabled = [
+    "15" # Opt+Cmd+8
+    "17" # Opt+Cmd+=
+    "19" # Opt+Cmd+-
+    "21" # Ctrl+Opt+Cmd+8
+    "23" # unassigned
+    "25" # Ctrl+Opt+Cmd+.
+    "26" # Ctrl+Opt+Cmd+,
+    "52" # Opt+Cmd+D
+    "59" # Cmd+F5
+    "64" # Spotlight search window, freed for LaunchBar
+    "160" # unassigned
+    "175" # unassigned
+    "176" # Siri: either Command key twice
+    "179" # unassigned
+    "190" # Q
+    "215" # unassigned
+    "216" # unassigned
+    "217" # unassigned
+    "218" # unassigned
+    "219" # unassigned
+    "223" # unassigned
+    "224" # unassigned
+    "225" # unassigned
+    "226" # unassigned
+    "227" # unassigned
+    "228" # unassigned
+    "229" # unassigned
+    "230" # unassigned
+    "231" # unassigned
+    "232" # unassigned
+    "233" # Cmd+M
+    "235" # unassigned
+    "237" # Ctrl+F
+    "238" # Ctrl+C
+    "239" # Ctrl+R
+    "240" # Ctrl+Left
+    "241" # Ctrl+Right
+    "242" # Ctrl+Up
+    "243" # Ctrl+Down
+    "244" # unassigned
+    "245" # unassigned
+    "246" # unassigned
+    "247" # unassigned
+    "248" # Shift+Ctrl+Left
+    "249" # Shift+Ctrl+Right
+    "250" # Shift+Ctrl+Up
+    "251" # Shift+Ctrl+Down
+    "256" # unassigned
+    "257" # unassigned
+    "258" # unassigned
+    "260" # Cmd+Esc
+  ];
+in
+{
+  environment.etc = {
+    "chezmoi-resources/neo-layouts.bundle".source = "${pkgs.neo-keyboard-layouts}/neo-layouts.bundle";
+    "chezmoi-resources/karabiner-managed.json".source = karabinerDeclaration;
+    "chezmoi-resources/default-applications.json".source = declaration;
+    "chezmoi-resources/FileTypes.app".source = "${fileTypesApp}/FileTypes.app";
+  };
+  chezmoi.resources = {
+    neo = {
+      helper = lib.getExe pkgs.neo-keyboard-layout-install;
+      source = "${pkgs.neo-keyboard-layouts}/neo-layouts.bundle";
+    };
+    karabiner = {
+      helper = lib.getExe pkgs.karabiner-configuration;
+      declaration = toString karabinerDeclaration;
+    };
+    defaultApplications = {
+      helper = lib.getExe pkgs.default-applications;
+      declaration = toString declaration;
+    };
+    symbolicHotkeys = {
+      helper = lib.getExe pkgs.symbolic-hotkeys;
+      inherit disabled;
+    };
+    appleTerminalFont = {
+      helper = lib.getExe pkgs.apple-terminal-font;
+      font = "JetBrainsMonoNLNFM-Regular";
+    };
+    zed = {
+      helper = lib.getExe pkgs.zed-configuration;
+      settings =
+        ((import ../../../shared).zedSettings { })
+        // (builtins.fromTOML (builtins.readFile ../../../../home/.chezmoidata/zed.toml))
+          .zed.platforms.darwin;
+    };
+  };
+  users.users.${config.host.username}.packages = [
+    pkgs.neo-keyboard-layout-install
+    pkgs.karabiner-configuration
+    pkgs.default-applications
+    pkgs.symbolic-hotkeys
+    pkgs.apple-terminal-font
+    pkgs.zed-configuration
+    pkgs.fastmail
+  ];
+}

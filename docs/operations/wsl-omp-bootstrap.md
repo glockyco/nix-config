@@ -1,7 +1,7 @@
 # Provision and recover korolev
 
 Use this procedure for a new NixOS WSL import, Windows setup, or builder recovery.
-Windows owns native applications and employer policy. NixOS owns Linux system and user configuration.
+Windows owns native applications and employer policy. NixOS owns Linux system configuration, system-declared user packages and shell plugins; chezmoi owns portable Linux user files.
 OMP comes from the official installer and owns authentication, sessions, databases, its plugin cache, browser downloads, profiles, and caches.
 Keep repositories in the Linux home directory, not `/mnt/c`.
 
@@ -99,7 +99,7 @@ git config user.email
 The email must be `11704293+glockyco@users.noreply.github.com`. Every repository below `~/src/github.com/` uses this address. Repositories below `~/src/gitlab.scch.at/` and other locations use the global employer address unless the repository declares a local override.
 Use the reviewed, published revision. An older checkout can activate successfully while dropping newer configuration.
 Follow [Develop](../../README.md#develop) and [Activate](../../README.md#activate), then install OMP and the personal plugin as described under [OMP](../../README.md#omp).
-Activation does not install or invoke OMP.
+Activation does not install or invoke OMP, and does not apply user files. After the system switch, initialize chezmoi from this checkout with `chezmoi init --source "$PWD" --promptString host=korolev`, review the ordinary diff, then run `chezmoi apply` and `chezmoi verify` as the user. Mac credentials are excluded; SSH/GPG identities, gh hosts.yml, shell history and OMP state remain unmanaged.
 Confirm the activated host:
 
 ```sh
@@ -121,8 +121,7 @@ gh api user --jq '.login'
 git ls-remote https://github.com/glockyco/nix-config HEAD
 ```
 
-`gh auth login` can report `read-only file system` after authentication when it writes the Nix-owned `config.yml`.
-The token remains in writable `hosts.yml`, and the host already declares HTTPS. Accept this only if the verification commands succeed.
+Chezmoi's `config.yml` is a regular user-writable file; `hosts.yml` remains gh-owned authentication state. The declaration restores HTTPS on apply. A read-only-file error now indicates a cutover conflict, not an expected steady-state result; inspect the backed-up path/symlink manifest instead of suppressing it.
 
 ### Enroll HTTPS Git credentials in WSL
 
@@ -469,6 +468,6 @@ wsl --distribution '<previous-distribution>'
 ```
 
 After its removal, use retained NixOS generations.
-Nix rollback restores system and user configuration together, not OMP or its writable state.
+Nix rollback restores system configuration and the system-declared user packages, not chezmoi destinations, OMP or writable runtime state. Select the previous reviewed chezmoi source revision and apply/verify it separately as the ordinary user; initial-cutover rejection additionally restores the captured Home Manager files/symlinks/permissions and original chezmoi state from local backups.
 Use [OMP recovery](dependency-updates.md#omp-recovery) for OMP and the plugin.
 Do not delete `~/.omp`, edit `/etc/nixos`, or run `nix flake update` as recovery.

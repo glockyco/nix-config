@@ -1,0 +1,4 @@
+{{- $host := index .hosts .host -}}
+{{ if and (eq .chezmoi.os "darwin") $host.roles.airClient -}}
+{{ .air.home }}
+{{ end -}}

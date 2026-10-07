@@ -1,0 +1,9 @@
+use_cloudflare_dns() {
+  local token_file="$HOME/{{ .credentials.directory }}/cloudflare-dns-token"
+  if [[ ! -r "$token_file" ]]; then
+    log_error "Cloudflare DNS token is unavailable: $token_file"
+    return 1
+  fi
+  export CLOUDFLARE_API_TOKEN
+  CLOUDFLARE_API_TOKEN="$(< "$token_file")"
+}

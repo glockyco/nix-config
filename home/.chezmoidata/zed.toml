@@ -1,0 +1,14 @@
+[zed]
+fontFamily = "JetBrainsMonoNL Nerd Font"
+themeName = "Catppuccin Mocha"
+
+[zed.settings]
+buffer_font_size = 14
+vim_mode = true
+base_keymap = "VSCode"
+ui_font_size = 16
+show_edit_predictions = false
+diff_view_style = "unified"
+
+[zed.platforms.darwin.auto_install_extensions]
+latex = true

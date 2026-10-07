@@ -35,17 +35,52 @@
             else
               self.nixosConfigurations.${host.name};
           hostConfig = configuration.config;
-          home = hostConfig.home-manager.users.${host.username};
+          resources = hostConfig.chezmoi.resources or { };
           settings =
             if host.kind == "darwin" then hostConfig.determinateNix.customSettings else hostConfig.nix.settings;
-          installed = map (package: package.drvPath) home.home.packages;
+          installed = map (package: package.drvPath) user.packages;
           installedPackage = package: builtins.elem package.drvPath installed;
           user = hostConfig.users.users.${host.username};
           shell = user.shell;
+          darwinSwitch = pkgs.darwin-switch.override {
+            configurationCheckout = host.paths.configurationCheckout;
+            darwinRebuild = inputs.nix-darwin.packages.${system}.darwin-rebuild;
+          };
+          renderedHome = pkgs.callPackage ../checks/chezmoi-render-check.nix {
+            inherit host resources;
+            userPackages = user.packages;
+          };
+          sharedFacts =
+            (builtins.fromTOML (builtins.readFile ../home/.chezmoidata/hosts.toml)).hosts.${host.name};
+          platformFacts = sharedFacts.platforms.${if host.kind == "darwin" then "darwin" else "linux"};
         in
         {
           system = hostConfig.system.build.toplevel;
-          home = home.home.activationPackage;
+          chezmoi = renderedHome;
+          shared-facts =
+            assert host.username == platformFacts.username;
+            assert user.home == platformFacts.home;
+            assert host.homeDirectory == platformFacts.home;
+            assert host.paths.repositoryRoot == platformFacts.ghqRoot;
+            assert host.paths.configurationCheckout == platformFacts.checkout;
+            assert host.git == sharedFacts.git;
+            assert host.roles == sharedFacts.roles;
+            assert hostConfig.host.roles == hostConfig.host.importedRoles;
+            assert host.kind != "darwin" || host.paths.screenshots == (sharedFacts.paths.screenshots or null);
+            assert
+              host.kind != "darwin"
+              ||
+                host.darwin.applications == map (
+                  application:
+                  {
+                    cask = null;
+                    appPath = null;
+                    dockPosition = null;
+                  }
+                  // application
+                ) (sharedFacts.applications or [ ]);
+            assert !host.roles.containerClient || host.darwin.containerProfile == sharedFacts.container;
+            pkgs.runCommand "check-${host.name}-shared-facts" { } "touch $out";
           nix-settings = pkgs.callPackage ../checks/host-nix-settings-check.nix {
             inherit binaryCaches;
             hostName = host.name;
@@ -58,33 +93,60 @@
           # still owns the ordinary tools they call.
           agent-tools =
             let
-              bothHosts = with pkgs; [
-                uv
-                herdr
-                openspec
-                plannotator
-                markdown-oxide
-                nixd
-                pyright
-                svelte-language-server
-                texlab
-                typescript-language-server
+              shared = import ../modules/shared/user-packages.nix { inherit pkgs; };
+              native = lib.optionals (host.kind == "darwin") [
+                pkgs.openssh
+                pkgs.roslyn-language-server
+                darwinSwitch
               ];
-              missing = builtins.filter (package: !installedPackage package) bothHosts;
-              roslyn = installedPackage pkgs.roslyn-language-server;
+              desktop = lib.optionals host.roles.desktop [
+                pkgs.neo-keyboard-layout-install
+                pkgs.karabiner-configuration
+                pkgs.zed-configuration
+                pkgs.default-applications
+                pkgs.symbolic-hotkeys
+                pkgs.apple-terminal-font
+                pkgs.fastmail
+              ];
+              container = lib.optionals host.roles.containerClient [
+                pkgs.colima
+                pkgs.docker-client
+                pkgs.container-runtime-check
+              ];
+              air = lib.optionals host.roles.airClient [
+                pkgs.air-batch-check
+                pkgs.air-share-mount
+              ];
+              wsl = lib.optionals host.roles.wslWorkstation [
+                pkgs.wsl-open
+                pkgs.git-credential-manager
+                pkgs.gnupg
+                pkgs.pass
+              ];
+              required = shared ++ native ++ desktop ++ container ++ air ++ wsl;
+              missing = builtins.filter (package: !installedPackage package) required;
+              unavailable = builtins.filter (package: !supports package) required;
+              helpers = lib.filterAttrs (_: concern: concern ? helper) resources;
             in
             assert lib.assertMsg (missing == [ ])
-              "${host.name}: home.packages lacks ${lib.concatMapStringsSep ", " lib.getName missing}";
+              "${host.name}: users.users packages lack ${lib.concatMapStringsSep ", " lib.getName missing}";
             assert lib.assertMsg (
-              roslyn == (host.kind == "darwin")
+              unavailable == [ ]
+            ) "${host.name}: installed package unavailable on ${system}";
+            assert lib.assertMsg (
+              installedPackage pkgs.roslyn-language-server == (host.kind == "darwin")
             ) "${host.name}: Roslyn belongs to the Mac only";
-            # Homebrew's shell setup prepends its prefix, so a host that
-            # enables Homebrew must put the user's profile back in front.
             assert lib.assertMsg (
-              (hostConfig.homebrew.enable or false)
-              -> lib.hasInfix "path=(\"/etc/profiles/per-user/${host.username}/bin\"" home.programs.zsh.initContent
-            ) "${host.name}: Homebrew precedes the user's profile in zsh";
-            # The executable must report the version its package declares.
+              builtins.length installed == builtins.length (lib.unique installed)
+            ) "${host.name}: duplicated user package derivation";
+            assert builtins.all (
+              concern: builtins.any (package: lib.hasPrefix "${package}/" concern.helper) user.packages
+            ) (builtins.attrValues helpers);
+            assert
+              host.kind != "darwin"
+              || builtins.elem pkgs.git.drvPath (
+                map (package: package.drvPath) hostConfig.environment.systemPackages
+              );
             pkgs.runCommand "check-${host.name}-agent-tools" { nativeBuildInputs = [ pkgs.openspec ]; } ''
               reported="$(HOME="$TMPDIR" openspec --version)"
               if [ "$reported" != "${pkgs.openspec.version}" ]; then
@@ -94,8 +156,27 @@
               touch "$out"
             '';
           login-shell =
-            assert home.programs.zsh.enable;
-            assert home.home.homeDirectory == user.home;
+            assert hostConfig.programs.zsh.enable;
+            assert hostConfig.programs.zsh.enableCompletion;
+            assert hostConfig.programs.direnv.enable;
+            assert hostConfig.programs.direnv.nix-direnv.enable;
+            assert (
+              if host.kind == "darwin" then
+                hostConfig.programs.nix-index.enable
+              else
+                hostConfig.programs.nix-index.enableZshIntegration
+            );
+            assert shell.drvPath == pkgs.zsh.drvPath;
+            assert (
+              if host.kind == "darwin" then
+                hostConfig.programs.zsh.enableAutosuggestions
+                && hostConfig.programs.zsh.enableSyntaxHighlighting
+                && !hostConfig.programs.zsh.enableFzfCompletion
+                && !hostConfig.programs.zsh.enableFzfGit
+                && !hostConfig.programs.zsh.enableFzfHistory
+              else
+                hostConfig.programs.zsh.autosuggestions.enable && hostConfig.programs.zsh.syntaxHighlighting.enable
+            );
             assert (
               if host.kind == "nixos" then
                 shell.pname == "zsh"
@@ -181,7 +262,6 @@
           builder-ssh-configuration = pkgs.callPackage ../checks/builder-ssh-config-check.nix {
             sshConfig = hostConfig.environment.etc."ssh/ssh_config".source;
             builder = builtins.head hostConfig.nix.buildMachines;
-            userIdentityFile = "${user.home}/.ssh/id_ed25519";
           };
         }
         // lib.optionalAttrs (host.kind == "darwin" && hostConfig.launchd.daemons ? tailnet-sshd) {
@@ -204,22 +284,66 @@
             assert !(lib.elem "-e" sshdArguments);
             pkgs.runCommand "check-${host.name}-tailnet" { } "touch $out";
         }
-        // lib.optionalAttrs (host.kind == "darwin" && home.programs.ssh.settings ? desktop) {
+        // lib.optionalAttrs (host.kind == "darwin") {
+          darwin-switch-command = pkgs.callPackage ../packages/darwin-switch/tests.nix {
+            darwin-switch = darwinSwitch;
+          };
+        }
+        // lib.optionalAttrs (host.roles.desktop || host.roles.wslWorkstation) {
           desktop-batch-configuration = pkgs.callPackage ../checks/desktop-batch-config-check.nix {
-            homeConfiguration = home;
+            inherit host renderedHome;
           };
         }
-        // lib.optionalAttrs (host.kind == "darwin" && home.programs.ssh.settings ? air) {
+        // lib.optionalAttrs (host.kind == "darwin" && host.roles.airClient) {
           air-batch-configuration = pkgs.callPackage ../checks/air-batch-config-check.nix {
-            homeConfiguration = home;
+            inherit host renderedHome;
           };
+          air-agent =
+            let
+              agent = hostConfig.launchd.user.agents.mount-air-share.serviceConfig;
+              airFacts = (builtins.fromTOML (builtins.readFile ../home/.chezmoidata/air.toml)).air;
+            in
+            assert agent.StartInterval == 60;
+            assert agent.RunAtLoad;
+            assert agent.LimitLoadToSessionType == "Aqua";
+            assert agent.StandardOutPath == "${user.home}/Library/Logs/mount-air-share.log";
+            assert agent.StandardErrorPath == "${user.home}/Library/Logs/mount-air-share.log";
+            assert !((hostConfig.launchd.agents or { }) ? mount-air-share);
+            assert
+              agent.ProgramArguments == [
+                (lib.getExe pkgs.air-share-mount)
+                airFacts.home
+                "smb://${airFacts.user}@${airFacts.hostName}/${airFacts.shareName}"
+                airFacts.hostName
+              ];
+            pkgs.runCommand "check-${host.name}-air-agent" { } ''
+              test "$(readlink ${renderedHome}/home/Air)" = "${airFacts.home}"
+              touch "$out"
+            '';
         }
-        // lib.optionalAttrs (host.kind == "darwin" && home.xdg.configFile ? "colima/default/colima.yaml") {
+        // lib.optionalAttrs (host.kind == "nixos" && host.roles.wslWorkstation) {
+          mac-batch-configuration =
+            pkgs.runCommand "check-${host.name}-mac-batch-configuration"
+              {
+                nativeBuildInputs = [
+                  pkgs.python3
+                  pkgs.openssh
+                ];
+              }
+              ''
+                python ${../checks/chezmoi-ssh-check.py} ${renderedHome} ${host.name} ${
+                  (builtins.head (
+                    builtins.filter (peer: peer.kind == "darwin") (builtins.attrValues config.fleet.hosts)
+                  )).name
+                }
+                touch "$out"
+              '';
+        }
+        // lib.optionalAttrs (host.kind == "darwin" && host.roles.containerClient) {
           container-runtime-configuration = pkgs.callPackage ../checks/container-runtime-config-check.nix {
             containerRuntimeCheck = pkgs.container-runtime-check;
-            host = hostConfig.host;
+            inherit host hostConfig renderedHome;
             platform = configuration.pkgs.stdenv.hostPlatform;
-            homeConfiguration = home;
           };
         };
 
@@ -248,6 +372,9 @@
 
         dnsZone = pkgs.callPackage ../checks/dns-zone.nix { };
         hostDeclaration = pkgs.callPackage ../checks/host-declaration-check.nix { };
+        chezmoiFactTypes = pkgs.callPackage ../checks/chezmoi-facts-check.nix {
+          hosts = config.fleet.hosts;
+        };
         secretEncryption = pkgs.callPackage ../checks/secret-encryption-check.nix { };
         tailnetPolicy = pkgs.callPackage ../checks/tailnet-policy-check.nix {
           managedHosts = config.fleet.hosts;
@@ -322,11 +449,13 @@
         defaultApplicationsCommand = pkgs.callPackage ../packages/default-applications/tests.nix { };
         powerSettingsCommand = pkgs.callPackage ../packages/power-settings/tests.nix { };
         rosettaCommand = pkgs.callPackage ../packages/rosetta/tests.nix { };
+        zedConfigurationCommand = pkgs.callPackage ../packages/zed-configuration/tests.nix { };
       }
       // lib.optionalAttrs (self'.packages ? air-batch-check) {
         airBatchCommand = pkgs.callPackage ../packages/air-batch-check/tests.nix {
           airBatchCheck = pkgs.air-batch-check;
         };
+        airShareMountCommand = pkgs.callPackage ../packages/air-share-mount/tests.nix { };
       }
       // lib.optionalAttrs (supports pkgs.container-runtime-check) {
         containerRuntimeCommand = pkgs.callPackage ../packages/container-runtime-check/tests.nix {

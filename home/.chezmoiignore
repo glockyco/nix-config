@@ -1,0 +1,55 @@
+{{- $machine := index .hosts .host -}}
+{{ if ne .chezmoi.os "darwin" }}
+Library
+Library/**
+Applications
+Applications/**
+Air
+.config/zed
+.config/zed/**
+.config/ghostty
+.config/ghostty/**
+.config/karabiner
+.config/karabiner/**
+.config/colima
+.config/colima/**
+.config/credentials
+.config/credentials/**
+.config/direnv/lib/use_cloudflare_*.sh
+darwin-*
+{{ else }}
+{{ if not $machine.roles.desktop }}
+Library
+Library/**
+Applications
+Applications/**
+.config/zed
+.config/zed/**
+.config/ghostty
+.config/ghostty/**
+.config/karabiner
+.config/karabiner/**
+.config/credentials
+.config/credentials/**
+.config/direnv/lib/use_cloudflare_*.sh
+darwin-desktop-*
+{{ end }}
+{{ if not $machine.roles.containerClient }}
+.config/colima
+.config/colima/**
+{{ end }}
+{{ if not $machine.roles.airClient }}
+Air
+{{ end }}
+{{ end }}
+{{ if .checkMode }}
+.config/credentials
+.config/credentials/**
+{{ end }}
+{{ if not (and (eq .chezmoi.os "linux") $machine.roles.wslWorkstation) }}
+.config/git/github.gitconfig
+.ssh/builder-known-hosts
+{{ end }}
+{{ if not (or (and (eq .chezmoi.os "darwin") $machine.roles.desktop) (and (eq .chezmoi.os "linux") $machine.roles.wslWorkstation)) }}
+.ssh/desktop-known-hosts
+{{ end }}
