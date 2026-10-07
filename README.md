@@ -102,7 +102,7 @@ For local containers on the Mac, use the [container lifecycle and recovery proce
 
 ## OMP
 
-Each host runs upstream OMP from the official installer in binary mode, installed to `~/.local/bin`, which the shell puts on `PATH`. Tern is the terminal for interactive sessions. Install OMP, then the personal plugin from the [`glockyco` marketplace](https://github.com/glockyco/omp-agent-setup):
+Each host runs upstream OMP from the official installer in binary mode, installed to `~/.local/bin`, which the shell puts on `PATH`. Tern is the primary terminal for interactive sessions; Ghostty (on the Mac) and Herdr stay installed as secondary tools. Herdr's OMP integration is not managed by activation: install it with `herdr integration install omp` when you want Herdr to track OMP sessions. Install OMP, then the personal plugin from the [`glockyco` marketplace](https://github.com/glockyco/omp-agent-setup):
 
 ```sh
 curl -fsSL https://omp.sh/install | sh -s -- --binary

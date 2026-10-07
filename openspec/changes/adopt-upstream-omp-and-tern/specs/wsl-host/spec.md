@@ -78,8 +78,8 @@ The WSL host SHALL declare Numtide's substituter and trusted public key in its s
 #### Scenario: Build the Nix-managed OMP integration
 
 - **WHEN** the WSL host builds its ordinary workflow environment
-- **THEN** Nix can fetch cached OpenSpec outputs
-- **AND** Nix does not compile or fetch an OMP executable package, Herdr, or runtime personal-plugin package
+- **THEN** Nix can fetch cached Herdr and OpenSpec outputs
+- **AND** Nix does not compile or fetch an OMP executable package or runtime personal-plugin package
 - **AND** the default NixOS substituter remains configured
 
 #### Scenario: Build as an unprivileged user
