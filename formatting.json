@@ -17,7 +17,6 @@
     "secrets/*",
     "home/encrypted_*",
     "home/**/encrypted_*",
-    "home/.chezmoitemplates/windows-apps/zed-catppuccin.json",
     "home/.chezmoitemplates/windows-apps/zen/**"
   ],
   "formatters": [
