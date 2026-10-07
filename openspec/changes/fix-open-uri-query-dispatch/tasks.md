@@ -6,5 +6,5 @@
 ## 2. Validate and activate
 
 - [x] 2.1 Validate the change with `openspec validate fix-open-uri-query-dispatch --strict` and run the README gates `nix fmt -- --fail-on-change` and `nix flake check --print-build-logs`.
-- [ ] 2.2 Review, commit, merge, and activate the committed Korolev configuration under the README release procedure, keeping the previous generation.
-- [ ] 2.3 From a fresh Korolev login shell, run `open 'https://example.com/?x=1&y=2'` and `open` with a URI longer than 300 characters holding percent-escapes. Each opens the default browser and no Documents window, counted through the Explorer window list. `open .` still opens the directory in Explorer.
+- [x] 2.2 Review, commit, merge, and activate the committed Korolev configuration under the README release procedure, keeping the previous generation.
+- [x] 2.3 From a fresh Korolev login shell, run `open 'https://example.com/?x=1&y=2'` and `open` with a URI longer than 300 characters holding percent-escapes. Each opens the default browser and no Documents window, counted through the Explorer window list. `open .` still opens the directory in Explorer.
