@@ -25,23 +25,28 @@ writeShellApplication {
         printf 'open: could not translate WSL path: %s\n' "$target" >&2
         exit 69
       fi
+      dispatcher=explorer.exe
+      dispatch_arguments=("$windows_target")
     elif [[ "$target" =~ ^[A-Za-z][A-Za-z0-9+.-]*: ]]; then
-      windows_target="$target"
+      # Explorer opens Documents instead of the handler for any URI with a
+      # query string, so URIs go to the shell's URL protocol handler.
+      dispatcher=rundll32.exe
+      dispatch_arguments=('url.dll,FileProtocolHandler' "$target")
     else
       printf 'open: target does not exist and is not an absolute URI: %s\n' "$target" >&2
       exit 66
     fi
 
-    explorer_executable="$(command -v explorer.exe || true)"
-    if [[ -z "$explorer_executable" || ! -x "$explorer_executable" ]]; then
-      printf '%s\n' 'open: Windows executable interoperation is unavailable (explorer.exe not found)' >&2
+    dispatcher_executable="$(command -v "$dispatcher" || true)"
+    if [[ -z "$dispatcher_executable" || ! -x "$dispatcher_executable" ]]; then
+      printf 'open: Windows executable interoperation is unavailable (%s not found)\n' "$dispatcher" >&2
       exit 69
     fi
 
-    # Explorer hands the request to the Windows shell and has no documented
-    # success exit code. Preserve only shell-level execution failures.
+    # Neither dispatcher has a documented success exit code; both hand the
+    # request to the Windows shell. Preserve only shell-level execution failures.
     set +o errexit
-    "$explorer_executable" "$windows_target"
+    "$dispatcher_executable" "''${dispatch_arguments[@]}"
     status=$?
     set -o errexit
     if (( status == 126 || status == 127 )); then
