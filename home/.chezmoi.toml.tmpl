@@ -24,8 +24,8 @@ sourceDir = {{ $source | quote }}
 mode = "file"
 {{ if eq .chezmoi.os "darwin" -}}
 encryption = "age"
-[age]
 useBuiltinAge = true
+[age]
 identity = {{ joinPath .chezmoi.homeDir $credentials.identity | quote }}
 recipient = {{ $credentials.recipient | quote }}
 {{ end }}

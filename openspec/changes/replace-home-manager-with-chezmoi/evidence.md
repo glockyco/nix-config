@@ -130,3 +130,30 @@ chezmoi verify
 From the committed baseline, the common candidate file-to-regular replacements are `.zshenv`, `.zshrc`, `.config/bat/config`, `.config/bat/themes/Catppuccin Mocha.tmTheme`, `.config/eza/theme.yml`, `.config/gh/config.yml`, and `.config/starship.toml`. Mac adds `.ssh/config`, `.config/colima/default/colima.yaml`, `.config/ghostty/config`, `.config/ghostty/themes/catppuccin-mocha`, `.config/zed/themes/catppuccin.json`, and the two `Library/Application Support/BraveSoftware/Brave-Browser/External Extensions/{jinjaccalgkegednnccohejagnlnfdag,nngceckbapebfimnlniiiahkandclblb}.json` files. These are candidates from generated configuration, not an observed live symlink manifest: force only those confirmed by task 1.2. Air stays a symlink and app-owned Zed/Karabiner JSON stays a merge; neither merits blanket force. `.gitconfig`, managed pin files, theme helper files and the new credential files are new destinations, not old HM force candidates. Old XDG Git and other `.chezmoiremove` paths are reviewed removals, not force replacements.
 
 Run all live gates in tasks 7–8, including actual Tern/UI/keyboard/handler/SSH/provider checks, repeat-apply mtimes and two-owner recovery. Use secret-excluding diff/dry-run only for preview, never for the real apply. `chezmoi verify` locally decrypts secrets and must stay in the owner-controlled Mac terminal. A system switch or passing build does not prove those gates. Optional Air unavailability must be recorded explicitly. Retain generations/backups until recovery and acceptance pass; do not publish, merge or archive prematurely.
+
+## PR #63 pre-activation review fixes
+
+The four review regressions were demonstrated against the still-unfixed source before restoring the intended implementation:
+
+- Karabiner's new unit fixture failed for both an absent and an existing managed profile: the previously selected unmanaged profile remained selected. The merge now deselects other profiles only when the managed declaration is selected; unit, packaged-command and real-source fixtures preserve their unrelated UI state.
+- The synthetic encryption check failed with `external age must not be invoked by chezmoi` and exit status 97 when a failing `age` executable was first on PATH. Both the init template and synthetic config now set `useBuiltinAge = true` at top level, before `[age]`. The stub remains first on PATH throughout chezmoi apply/verify/reapply and synthetic consumer rendering.
+- The Mac real-source check failed with `apply widened private Brave ancestor permissions: Library`. Both manifests now live beneath `private_Library/private_Application Support/private_BraveSoftware/private_Brave-Browser/private_External Extensions`; target paths are unchanged. The fixture precreates every ancestor at 0700 and requires every mode to remain 0700 after apply. Destination-based ignore rules stay unchanged apart from a clarifying comment.
+- After the ancestor fix, the Mac real-source check failed with `Tern CLI or local-bin precedence lost in zsh -l -c`. The declared bundle PATH now loads in `.zshenv` under the same Darwin/desktop guard. Interactive `.zshrc` re-prepends remain ahead of Homebrew, with `~/.local/bin` first. Both non-interactive and interactive login shells resolve a disposable declared bundle's `tern` and assert local-bin precedence.
+
+After all four fixes, these requested gates ran sequentially and exited 0:
+
+```sh
+nix fmt -- --fail-on-change
+openspec validate replace-home-manager-with-chezmoi --strict
+nix flake check --print-build-logs
+nix flake check --all-systems --print-build-logs
+```
+
+Formatting reported 0 changes; strict OpenSpec validation passed. As at the prior checkpoint, installed Nix's all-systems flake check evaluated Darwin but did not build foreign-system checks (`running 0 flake checks` after local checks were already built). The following additional command then exited 0 and actually built the complete Darwin check collection on the configured Mac builder, including the updated source render, Karabiner command and synthetic encryption checks:
+
+```sh
+nix build --no-link --print-build-logs --impure --expr \
+  'builtins.attrValues (builtins.getFlake "git+file:///home/user/src/github.com/glockyco/nix-config-chezmoi").checks.aarch64-darwin'
+```
+
+The passing Mac source check output was `/nix/store/vj2v53bj8ywjmxxhbgbmq7s4yby0r8ip-check-macbook-pro-chezmoi`; its derivation was `/nix/store/pjjlnm148h5q8h892krnqm6s0rqg5l0c-check-macbook-pro-chezmoi.drv`. This evidence entry was added after the gates; it does not claim live activation or production secret access. No host activation, real-home apply, production decryption, push or publication was performed.
