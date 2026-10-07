@@ -13,6 +13,7 @@
     ./secrets.nix
     ./fastmail.nix
     ./ghostty.nix
+    ./tern.nix
     ./brave.nix
     ./apple-terminal.nix
     ./default-apps.nix
