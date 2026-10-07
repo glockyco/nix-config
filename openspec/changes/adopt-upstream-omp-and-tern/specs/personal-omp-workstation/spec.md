@@ -47,14 +47,14 @@ OMP executable updates SHALL use `omp update` as an explicit operation on the re
 
 ### Requirement: Tern terminal delivery
 
-Tern SHALL be the Mac terminal for interactive OMP sessions, replacing Ghostty and Herdr. The Mac SHALL retain Tern's manually installed, self-updating bundle, its CLI PATH entry, and its Dock pin. The repository SHALL deliver no Ghostty package, theme, configuration, or Dock pin and no Herdr package, activation integration, restart hook, or generated extension. Korolev's WSL OMP release proof SHALL also run in Tern for Windows.
+Tern SHALL be the primary terminal for interactive OMP sessions on the Mac. The Mac SHALL retain Tern's manually installed, self-updating bundle, its CLI PATH entry, and its Dock pin. Ghostty and Herdr SHALL remain available as secondary tools: the Mac keeps Ghostty's application, theme, configuration, and Dock pin, and both hosts keep the Herdr package. Activation SHALL NOT create, reconcile, or restart through Herdr's OMP integration; the owner installs it on demand with Herdr's supported integration command. Korolev's WSL OMP release proof SHALL also run in Tern for Windows.
 
 #### Scenario: Activate the Mac terminal cutover
 
 - **WHEN** the reviewed Mac configuration activates after upstream OMP and the plugin pass pre-cutover verification
-- **THEN** the declared terminal application and Dock entry are Tern
+- **THEN** Tern is the primary terminal and keeps its Dock entry
 - **AND** `tern` resolves to the installed bundle's CLI without an obsolete Homebrew link
-- **AND** Ghostty and Herdr are absent from current delivery and OMP discovery
+- **AND** Ghostty and Herdr remain installed, and activation does not touch Herdr's OMP integration
 
 ## MODIFIED Requirements
 
@@ -119,7 +119,7 @@ A Nix generation rollback SHALL restore the prior Nix-managed package/configurat
 
 ### Requirement: Bootstrap-era deployment removal
 
-After migration acceptance, the workstation SHALL contain no OMP wrapper, patched-source updater, patch pins, verifier, Herdr integration, repository OMP update skill, obsolete command shim, global package link, executable fallback, or superseded `restart-sessions-and-prune-omp-generations` change. Official OMP and plugin installation/update SHALL remain explicit operations outside activation.
+After migration acceptance, the workstation SHALL contain no OMP wrapper, patched-source updater, patch pins, verifier, activation-managed Herdr integration, repository OMP update skill, obsolete command shim, global package link, executable fallback, or superseded `restart-sessions-and-prune-omp-generations` change. Official OMP and plugin installation/update SHALL remain explicit operations outside activation.
 
 #### Scenario: Inspect the final workstation closure
 

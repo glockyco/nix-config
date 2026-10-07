@@ -5,8 +5,11 @@
   # installer, plugin manager); these are the ordinary tools they call.
   # The plugin selects a language server only when its executable resolves, so
   # a host without one simply never starts it. Texlab comes with `tex.nix`.
+  # Herdr stays available as a secondary multiplexer beside Tern; its OMP
+  # integration is installed on demand with `herdr integration install omp`.
   home.packages = [
     pkgs.uv
+    pkgs.herdr
     pkgs.openspec
     pkgs.plannotator
     pkgs.markdown-oxide

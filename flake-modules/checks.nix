@@ -60,6 +60,7 @@
             let
               bothHosts = with pkgs; [
                 uv
+                herdr
                 openspec
                 plannotator
                 markdown-oxide
