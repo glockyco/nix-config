@@ -5,6 +5,14 @@ typeset -U path PATH
 path=("$HOME/.local/bin" "${path[@]}")
 {{ if eq .chezmoi.os "darwin" -}}
 export EDITOR={{ $platform.editor | quote }}
+{{ if $host.roles.desktop -}}
+{{ range $host.applications -}}
+{{ if and (hasKey . "appPath") (eq (base .appPath) "Tern.app") -}}
+# SSH commands and non-interactive login shells do not read .zshrc.
+path=("$HOME/.local/bin" "{{ .appPath }}/Contents/MacOS" "${path[@]}")
+{{ end -}}
+{{ end -}}
+{{ end -}}
 {{ if $host.roles.containerClient -}}
 export COLIMA_HOME="$HOME/.config/colima"
 export COLIMA_SAVE_CONFIG=false

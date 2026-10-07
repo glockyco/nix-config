@@ -217,33 +217,36 @@ def assert_portable(fixture, facts):
         # shell resolution with a unique executable in a disposable declared
         # bundle; live availability/behavior remains the Tern acceptance gate.
         tern_bundle = fixture.work / "Tern.app"
-        command = tern_bundle / "Contents/MacOS/chezmoi-tern-path-fixture"
+        command = tern_bundle / "Contents/MacOS/tern"
         command.parent.mkdir(parents=True, exist_ok=True)
         command.write_text("#!/bin/sh\nexit 0\n")
         command.chmod(0o755)
         changed_host = copy.deepcopy(host)
         changed_host["applications"][tern_index]["appPath"] = str(tern_bundle)
-        target = str(fixture.target / ".zshrc")
+        targets = [str(fixture.target / name) for name in (".zshenv", ".zshrc")]
         try:
             fixture.run(
                 "apply",
                 "--exclude=scripts",
-                target,
+                *targets,
                 overrides={"hosts": {fixture.host: changed_host}},
             )
-            resolved = subprocess.run(
-                ["zsh", "-l", "-i", "-c", "command -v chezmoi-tern-path-fixture"],
-                stdin=subprocess.DEVNULL,
-                capture_output=True,
-                text=True,
-                env=env,
-            )
-            require(
-                resolved.returncode == 0 and resolved.stdout.strip() == str(command),
-                "Tern CLI does not resolve from its declared bundle",
-            )
+            for flags in (["-l", "-c"], ["-l", "-i", "-c"]):
+                resolved = subprocess.run(
+                    ["zsh", *flags, 'command -v tern; print -r -- "$path[1]"'],
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    text=True,
+                    env=env,
+                )
+                require(
+                    resolved.returncode == 0
+                    and resolved.stdout.splitlines()
+                    == [str(command), str(fixture.target / ".local/bin")],
+                    f"Tern CLI or local-bin precedence lost in zsh {' '.join(flags)}",
+                )
         finally:
-            fixture.run("apply", "--exclude=scripts", target)
+            fixture.run("apply", "--exclude=scripts", *targets)
 
 
 def assert_git_worktrees(fixture, facts):
@@ -338,6 +341,11 @@ def assert_modify_files(fixture, manifest):
         "Karabiner unrelated profile lost",
     )
     declaration = json.loads(Path(manifest["karabiner"]["declaration"]).read_text())
+    require(
+        [p["name"] for p in karabiner["profiles"] if p.get("selected")]
+        == [p["name"] for p in declaration["profiles"] if p["selected"]],
+        "Karabiner managed selection did not deselect unrelated profiles",
+    )
     for desired in declaration["profiles"]:
         profile = next(
             profile
@@ -393,6 +401,13 @@ def assert_init(fixture):
     require(
         configured["data"]["host"] == fixture.host, "init did not persist explicit host"
     )
+    if fixture.target_os == "darwin":
+        require(
+            configured.get("encryption") == "age"
+            and configured.get("useBuiltinAge") is True
+            and "useBuiltinAge" not in configured["age"],
+            "init did not select top-level built-in age",
+        )
     initialized = subprocess.run(
         command, env=fixture.env, capture_output=True, text=True
     )
@@ -727,7 +742,7 @@ def main():
                         "profiles": [
                             {
                                 "name": "Unmanaged fixture",
-                                "selected": False,
+                                "selected": True,
                                 "complex_modifications": {"rules": []},
                             },
                             {
@@ -760,8 +775,27 @@ def main():
             path = fixture.target / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.symlink_to(legacy_source)
+        brave_ancestors = []
+        host = facts["hosts"][fixture.host]
+        if fixture.target_os == "darwin" and host["roles"]["desktop"]:
+            parent = fixture.target
+            for name in (
+                "Library",
+                "Application Support",
+                "BraveSoftware",
+                "Brave-Browser",
+                "External Extensions",
+            ):
+                parent = parent / name
+                parent.mkdir(mode=0o700)
+                brave_ancestors.append(parent)
         fixture.run("apply", "--exclude=scripts")
         fixture.run("verify", "--exclude=scripts")
+        for parent in brave_ancestors:
+            require(
+                stat.S_IMODE(parent.stat().st_mode) == 0o700,
+                f"apply widened private Brave ancestor permissions: {parent.name}",
+            )
         require(
             all(
                 not (fixture.target / relative).exists()

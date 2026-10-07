@@ -20,6 +20,12 @@ runCommand "check-karabiner-configuration-command" { nativeBuildInputs = [ pytho
   assert absent.returncode == 0, absent.stderr
   current = json.loads(absent.stdout)
   current["ui_state"] = {"preserve": True}
+  current["profiles"].insert(0, {"name": "Unmanaged", "selected": True, "ui_state": 42})
+  merged = run(json.dumps(current))
+  assert merged.returncode == 0, merged.stderr
+  current = json.loads(merged.stdout)
+  assert current["profiles"][0] == {"name": "Unmanaged", "selected": False, "ui_state": 42}
+  assert [p["name"] for p in current["profiles"] if p["selected"]] == ["Neo2"]
   original = json.dumps(current, separators=(",", ":")) + "\n"
   repeated = run(original)
   assert repeated.returncode == 0 and repeated.stdout == original, repeated

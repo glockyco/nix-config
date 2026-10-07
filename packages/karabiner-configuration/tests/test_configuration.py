@@ -66,6 +66,28 @@ class ConfigurationTests(unittest.TestCase):
     def test_absent_profile_initializes(self):
         self.assertEqual(configuration.merge({}, DECLARATION), DECLARATION)
 
+    def test_managed_selection_deselects_unmanaged_profiles(self):
+        for managed_present in (False, True):
+            with self.subTest(managed_present=managed_present):
+                other = {"name": "Other", "selected": True, "ui": [1]}
+                current = {"profiles": [other]}
+                if managed_present:
+                    current["profiles"].append({"name": "Neo2", "selected": False})
+                result = configuration.merge(current, DECLARATION)
+                self.assertEqual(result["profiles"][0], other | {"selected": False})
+                self.assertEqual(
+                    [p["name"] for p in result["profiles"] if p["selected"]], ["Neo2"]
+                )
+                self.assertTrue(other["selected"])
+                self.assertEqual(configuration.merge(result, DECLARATION), result)
+
+    def test_unselected_managed_profile_keeps_other_selection(self):
+        declaration = json.loads(json.dumps(DECLARATION))
+        declaration["profiles"][0]["selected"] = False
+        other = {"name": "Other", "selected": True}
+        result = configuration.merge({"profiles": [other]}, declaration)
+        self.assertEqual(result["profiles"][0], other)
+
     def test_malformed_schema_and_ambiguous_profile_fail(self):
         for current in (
             {"profiles": "bad"},

@@ -27,6 +27,10 @@ def merge(current: dict, declaration: dict) -> dict:
         profile = {"name": desired["name"]}
         profiles.append(profile)
     profile["selected"] = desired["selected"]
+    if desired["selected"]:
+        for other in profiles:
+            if other is not profile:
+                other["selected"] = False
     keyboard = profile.setdefault("virtual_hid_keyboard", {})
     complex_settings = profile.setdefault("complex_modifications", {})
     if not isinstance(keyboard, dict) or not isinstance(complex_settings, dict):

@@ -34,11 +34,21 @@ runCommand "check-secret-encryption"
     cat > "$TMPDIR/age.toml" <<EOF
     sourceDir = "$PWD/source"
     encryption = "age"
-    [age]
     useBuiltinAge = true
+    [age]
     identity = "$TMPDIR/identity"
     recipient = "$recipient"
     EOF
+    # Chezmoi must decrypt with its built-in implementation, not system age.
+    mkdir "$TMPDIR/failing-age"
+    cat > "$TMPDIR/failing-age/age" <<'SH'
+    #!/bin/sh
+    echo "external age must not be invoked by chezmoi" >&2
+    exit 97
+    SH
+    chmod +x "$TMPDIR/failing-age/age"
+    age_path="$PATH"
+    export PATH="$TMPDIR/failing-age:$PATH"
     chezmoi --config "$TMPDIR/age.toml" --no-tty apply
     for name in fastmail-token cloudflare-dns-token cloudflare-workers-token; do
       cmp "$TMPDIR/plaintext" "$HOME/.config/credentials/$name"
@@ -64,6 +74,7 @@ runCommand "check-secret-encryption"
       mv "$TMPDIR/credential" "$HOME/.config/credentials/cloudflare-$scope-token"
       unset CLOUDFLARE_API_TOKEN
     done
+    export PATH="$age_path"
     # Both supported encodings are validated against actual synthetic age output.
     age -a -r "$recipient" -o "$TMPDIR/armored.age" "$TMPDIR/plaintext"
     python - "$TMPDIR/armored.age" ${./secret-encryption-check.py} <<'PY'

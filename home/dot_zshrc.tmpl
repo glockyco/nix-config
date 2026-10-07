@@ -5,11 +5,11 @@
 typeset -U path PATH
 {{ if eq .chezmoi.os "darwin" -}}
 # Restore user tools after nix-homebrew's system zshrc prepends Homebrew.
-path=("/etc/profiles/per-user/{{ $platform.username }}/bin" "${path[@]}")
+path=("$HOME/.local/bin" "/etc/profiles/per-user/{{ $platform.username }}/bin" "${path[@]}")
 {{ if $host.roles.desktop -}}
 {{ range $host.applications -}}
 {{ if and (hasKey . "appPath") (eq (base .appPath) "Tern.app") -}}
-path=("/etc/profiles/per-user/{{ $platform.username }}/bin" "{{ .appPath }}/Contents/MacOS" "${path[@]}")
+path=("$HOME/.local/bin" "/etc/profiles/per-user/{{ $platform.username }}/bin" "{{ .appPath }}/Contents/MacOS" "${path[@]}")
 {{ end -}}
 {{ end -}}
 {{ end -}}
