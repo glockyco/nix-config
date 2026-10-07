@@ -2,7 +2,7 @@
 
 ### Requirement: Explicit update ownership
 
-The central dependency automation control plane SHALL own Nix inputs. Renovate SHALL own GitHub Actions and supported ecosystem dependencies outside Nix. Nix SHALL supply ordinary OpenSpec, Plannotator, and host-appropriate language tools, not OMP, its runtime personal plugin, Herdr, or a source updater. The official installer SHALL own initial standalone OMP delivery; `omp update` SHALL own executable updates; OMP's plugin manager SHALL own personal-plugin installation/upgrades using the commands defined by `publish-plugin-through-omp-plugin-manager`. Plannotator source advancement SHALL remain explicitly requested and commit-pinned. Renovate's beta Nix manager SHALL remain disabled. The target repository SHALL NOT store the updater App private key or run a competing Nix scheduler.
+The central dependency automation control plane SHALL own Nix inputs. Renovate SHALL own GitHub Actions and supported ecosystem dependencies outside Nix. Nix SHALL supply ordinary OpenSpec, Plannotator, Herdr, and host-appropriate language tools, not OMP, its runtime personal plugin, or a source updater. The official installer SHALL own initial standalone OMP delivery; `omp update` SHALL own executable updates; OMP's plugin manager SHALL own personal-plugin installation/upgrades using the commands defined by `publish-plugin-through-omp-plugin-manager`. Plannotator source advancement SHALL remain explicitly requested and commit-pinned. Renovate's beta Nix manager SHALL remain disabled. The target repository SHALL NOT store the updater App private key or run a competing Nix scheduler.
 
 #### Scenario: Inspect updater configuration
 

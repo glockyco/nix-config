@@ -2,11 +2,11 @@
 
 ## Why
 
-The owner has verified that the maintained clickable-link patches are unnecessary in Tern. Upstream OMP and its plugin manager can therefore replace the workstation's patched source generations, wrapper, verifier, and Herdr integration while preserving personal behavior and user-owned state.
+The owner has verified that the maintained clickable-link patches are unnecessary in Tern. Upstream OMP and its plugin manager can therefore replace the workstation's patched source generations, wrapper, verifier, and activation-managed Herdr integration while preserving personal behavior and user-owned state.
 
 ## What Changes
 
-- **BREAKING**: Install upstream standalone OMP through the official installer on macbook-pro and Korolev's WSL environment; update with `omp update`. Remove `packages/personal-omp/`, `packages/omp-dev-update/`, patch pins, `modules/home/omp.nix`, the repository `omp-update` skill, all Herdr delivery/integration/restart machinery, obsolete outputs/checks, and the unarchived `restart-sessions-and-prune-omp-generations` change.
+- **BREAKING**: Install upstream standalone OMP through the official installer on macbook-pro and Korolev's WSL environment; update with `omp update`. Remove `packages/personal-omp/`, `packages/omp-dev-update/`, patch pins, `modules/home/omp.nix`, the repository `omp-update` skill, the activation-managed Herdr integration and restart machinery, obsolete outputs/checks, and the unarchived `restart-sessions-and-prune-omp-generations` change.
 - **BREAKING**: Replace the runtime Nix-pinned personal plugin with the user-scope install and upgrade commands defined by prerequisite change `publish-plugin-through-omp-plugin-manager` in `omp-agent-setup` (expected `personal@glockyco` and `omp plugin upgrade`). Retain only build-time plugin input uses needed by OpenSpec checks.
 - Move OpenSpec, Plannotator, and language servers into ordinary Home Manager `home.packages`; keep the full Mac matrix and omit Roslyn on WSL. Home Manager removal belongs to the next change.
 - Make Tern the primary terminal on the Mac while keeping Ghostty and the Herdr package available as secondary tools; retain Tern's bundle CLI path and Dock declaration. Remove the unused OMP agent-server setting from both Mac and rendered Windows Zed settings without changing unrelated editor settings.
