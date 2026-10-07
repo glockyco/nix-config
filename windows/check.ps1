@@ -33,6 +33,12 @@ try {
   if (-not $SkipFixtures) {
     . (Join-Path $PSScriptRoot 'tests/fixtures.ps1')
     Invoke-NativeFixtures $document $managed $PSScriptRoot
+    $repositoryRoot = Split-Path -Parent $PSScriptRoot
+    foreach ($fixture in @('chezmoi-core.ps1', 'chezmoi-apps.ps1')) {
+      $fixturePath = Join-Path $PSScriptRoot "tests/$fixture"
+      Assert-Contract (Test-Path -LiteralPath $fixturePath -PathType Leaf) "fixture ${fixture}: required Windows chezmoi fixture is missing"
+      & $fixturePath -RepositoryRoot $repositoryRoot
+    }
   }
   Write-Output 'windows/check.ps1: native document invariants and script parsing passed'
 } catch {

@@ -1,0 +1,10 @@
+{{ if and (eq .chezmoi.os "windows") (eq .host "korolev") -}}
+{{- $platform := (index .hosts .host).platforms.windows -}}
+$ErrorActionPreference = 'Stop'
+{{ template "windows-apps/functions.ps1" . }}
+$directory = '{{ joinPath .chezmoi.homeDir $platform.ternDirectory | replace "'" "''" }}'
+if (-not (Test-Path -LiteralPath (Join-Path $directory 'tern.exe') -PathType Leaf)) { throw "Install Tern manually at $directory before adding its stable user PATH; Tern state and OMP configuration are not managed here" }
+$current = [string](Get-AppUserPath)
+$desired = Get-TernUserPath $current $directory
+if ($desired -cne $current) { Set-AppUserPath $desired }
+{{ end -}}

@@ -1,0 +1,20 @@
+{{- $platform := (index .hosts .host).platforms.windows -}}
+$zedDesired = @'
+{{ template "zed-settings.json.tmpl" . }}
+'@ | ConvertFrom-Json
+$forkDesired = [PSCustomObject]@{ GitInstancePath = '{{ joinPath .chezmoi.homeDir $platform.gitDirectory $platform.gitExecutable | replace "'" "''" }}' }
+$powerToysDesired = @'
+{{ include (joinPath .chezmoi.sourceDir ".chezmoitemplates/windows-apps/power-toys-settings.json") }}
+'@ | ConvertFrom-Json
+$reneoDesired = @'
+{{ include (joinPath .chezmoi.sourceDir ".chezmoitemplates/windows-apps/reneo-settings.json") }}
+'@ | ConvertFrom-Json
+$altSnapDesired = @'
+{{ include (joinPath .chezmoi.sourceDir ".chezmoitemplates/windows-apps/altsnap-settings.json") }}
+'@ | ConvertFrom-Json
+$reneoDirectory = 'Microsoft/WinGet/Packages/Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe/ReNeo'
+$heldFiles = @(
+  [PSCustomObject]@{ Path = (Join-Path $env:LOCALAPPDATA 'Fork/settings.json'); Process = 'Fork'; Desired = $forkDesired; Kind = 'fork' },
+  [PSCustomObject]@{ Path = (Join-Path $env:LOCALAPPDATA 'Microsoft/PowerToys/settings.json'); Process = 'PowerToys*'; Desired = $powerToysDesired; Kind = 'power-toys' },
+  [PSCustomObject]@{ Path = (Join-Path $env:APPDATA 'AltSnap/AltSnap.ini'); Process = 'AltSnap'; Desired = $altSnapDesired; Kind = 'ini' }
+)

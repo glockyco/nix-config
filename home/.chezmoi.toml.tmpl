@@ -17,7 +17,13 @@
 {{- end -}}
 {{- $source := .chezmoi.sourceDir | dir -}}
 {{- $destination := printf "%s" .chezmoi.destDir -}}
-{{- if or (eq $source $destination) (hasPrefix (printf "%s/" $source) $destination) -}}
+{{- $sourceComparison := $source | replace "\\" "/" | trimSuffix "/" -}}
+{{- $destinationComparison := $destination | replace "\\" "/" | trimSuffix "/" -}}
+{{- if eq .chezmoi.os "windows" -}}
+{{- $sourceComparison = lower $sourceComparison -}}
+{{- $destinationComparison = lower $destinationComparison -}}
+{{- end -}}
+{{- if or (eq $sourceComparison $destinationComparison) (hasPrefix (printf "%s/" $sourceComparison) $destinationComparison) -}}
 {{- fail "Destination must not be inside the source checkout" -}}
 {{- end -}}
 sourceDir = {{ $source | quote }}

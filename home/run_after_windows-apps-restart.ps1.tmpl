@@ -1,0 +1,13 @@
+{{ if and (eq .chezmoi.os "windows") (eq .host "korolev") -}}
+$ErrorActionPreference = 'Stop'
+{{ template "windows-apps/functions.ps1" . }}
+{{ template "windows-apps/zen.ps1.tmpl" . }}
+$restartState = Join-Path $env:LOCALAPPDATA 'WindowsConfiguration/chezmoi-app-restarts.json'
+if (Test-Path -LiteralPath $restartState) {
+  # PS5.1 emits JSON arrays as one pipeline object; @() would nest that array.
+  [string[]]$restart = [IO.File]::ReadAllText($restartState) | ConvertFrom-Json
+  Restart-AppAfterWrite -Paths $restart
+  Remove-Item -LiteralPath $restartState -ErrorAction Stop
+}
+Apply-ZenWrites @(Get-ZenWrites $zenProfilesIni $zenFiles $zenPreference)
+{{ end -}}

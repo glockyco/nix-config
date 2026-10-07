@@ -149,6 +149,19 @@ checkout = "/home/user/src/github.com/glockyco/nix-config"
 ghqRoot = "/home/user/src"
 ghProtocol = "https"
 
+[hosts.korolev.platforms.windows]
+username = "jglock"
+home = 'C:\Users\jglock'
+checkout = 'C:\Users\jglock\src\github.com\glockyco\nix-config'
+ghqRoot = "C:/Users/jglock/src"
+ghProtocol = "https"
+ternDirectory = "AppData/Local/Programs/Tern"
+gitDirectory = "AppData/Local/Programs/Git"
+gitExecutable = "cmd/git.exe"
+# Observed Git 2.55.0.5 / GCM 2.9.1. Review and change this single fact to
+# ucrt64/bin/git-credential-manager.exe after a Git >=2.56 update; no fallback.
+gcmHelper = "mingw64/bin/git-credential-manager.exe"
+
 [hosts.korolev.paths]
 
 [hosts.korolev.roles]

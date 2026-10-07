@@ -1,5 +1,6 @@
 [zed]
 fontFamily = "JetBrainsMonoNL Nerd Font"
+windowsFontFamily = "JetBrainsMonoNL NF"
 themeName = "Catppuccin Mocha"
 
 [zed.settings]
@@ -12,3 +13,7 @@ diff_view_style = "unified"
 
 [zed.platforms.darwin.auto_install_extensions]
 latex = true
+
+# Native Windows does not select a Nix server or a WSL transport.
+[zed.platforms.windows.languages.Nix]
+language_servers = []

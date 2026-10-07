@@ -1,0 +1,35 @@
+{{- if and (eq .chezmoi.os "windows") (hasKey (index .hosts .host).platforms "windows") -}}
+{{- $platform := index (index .hosts .host).platforms "windows" -}}
+{{- $document := include (joinPath (.chezmoi.sourceDir | dir) "windows/configuration.winget") -}}
+#!/usr/bin/env pwsh
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+# document SHA-256: {{ $document | sha256sum }}
+$expectedHash = '{{ $document | sha256sum }}'
+$checkout = '{{ $platform.checkout | replace "'" "''" }}'
+$sourceDirectory = '{{ .chezmoi.sourceDir | replace "'" "''" }}'
+function ConvertTo-CheckoutPath([string]$Path) {
+  [IO.Path]::GetFullPath($Path).Replace('\', '/').TrimEnd('/')
+}
+$rootOutput = @(& git -C $sourceDirectory rev-parse --show-toplevel)
+if ($LASTEXITCODE -ne 0) { throw "git checkout-root discovery failed with exit code $LASTEXITCODE" }
+if ($rootOutput.Count -ne 1) { throw 'Git must return exactly one checkout root' }
+$gitRoot = ConvertTo-CheckoutPath ([string]$rootOutput[0])
+if (-not $gitRoot.Equals((ConvertTo-CheckoutPath $checkout), [StringComparison]::OrdinalIgnoreCase)) {
+  throw 'Git checkout root disagrees with hosts.korolev.platforms.windows.checkout'
+}
+$rootMarker = Join-Path $gitRoot '.chezmoiroot'
+if (-not (Test-Path -LiteralPath $rootMarker -PathType Leaf) -or [IO.File]::ReadAllText($rootMarker).Trim() -ne 'home') {
+  throw 'Checkout .chezmoiroot must select home'
+}
+$effectiveSource = ConvertTo-CheckoutPath (Join-Path $gitRoot 'home')
+if (-not $effectiveSource.Equals((ConvertTo-CheckoutPath $sourceDirectory), [StringComparison]::OrdinalIgnoreCase)) {
+  throw 'Effective chezmoi source directory disagrees with the checkout .chezmoiroot'
+}
+$documentPath = Join-Path $gitRoot 'windows/configuration.winget'
+if (-not (Test-Path -LiteralPath $documentPath -PathType Leaf)) { throw 'Native checkout Windows document is missing' }
+$actualHash = (Get-FileHash -LiteralPath $documentPath -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($actualHash -ne $expectedHash) { throw 'Windows document changed after rendering; render a fresh chezmoi diff before apply' }
+& winget configure --file $documentPath --accept-configuration-agreements
+if ($LASTEXITCODE -ne 0) { throw "winget configure failed with exit code $LASTEXITCODE" }
+{{ end -}}

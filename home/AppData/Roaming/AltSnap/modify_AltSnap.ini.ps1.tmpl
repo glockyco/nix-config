@@ -1,0 +1,10 @@
+{{ if and (eq .chezmoi.os "windows") (eq .host "korolev") -}}
+$ErrorActionPreference = 'Stop'
+{{ template "windows-apps/functions.ps1" . }}
+{{ template "windows-apps/jsonc.ps1" . }}
+{{ template "windows-apps/declarations.ps1.tmpl" . }}
+[Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
+$text = [Console]::In.ReadToEnd()
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+[Console]::Write((Get-AppIni $text $altSnapDesired))
+{{ end -}}

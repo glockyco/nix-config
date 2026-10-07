@@ -63,7 +63,8 @@ function Invoke-NativeFixtures {
       @{ Name = 'installer scope execution'; Finding = 'resource .+: installer must enforce'; Edit = { param($d) $r = $d.resources | Where-Object { $_.metadata.application.id -eq 'twpayne.chezmoi' }; $r.properties.setScript = $r.properties.setScript.Replace("'--scope', 'user'", "'--scope', 'machine'") } },
       @{ Name = 'installer metadata version'; Finding = 'resource .+: installer version differs'; Edit = { param($d) ($d.resources | Where-Object { $_.metadata.application.id -eq 'twpayne.chezmoi' }).metadata.application.version = '0.0.1' } },
       @{ Name = 'npm integrity mismatch'; Finding = 'resource .+: npm metadata/lock selector differs'; Edit = { param($d) ($d.resources | Where-Object { $_.metadata.application.source -eq 'npm' }).metadata.npmPackages.pyright.integrity = 'sha512-Zml4dHVyZQ==' } },
-      @{ Name = 'launcher syntax'; Finding = 'embedded start-reneo-elevated.ps1'; Edit = { param($d) $r = $d.resources | Where-Object name -eq 'reneo elevation launcher'; $r.properties.testScript = "`$desired = @'`nReNeo`nif (`n'@" } }
+      @{ Name = 'migrated user writer'; Finding = 'resource zed settings: migrated user files belong only to chezmoi'; Edit = { param($d) $r = Copy-FixtureObject $d.resources[0]; $r.name = 'zed settings'; $d.resources += $r } },
+      @{ Name = 'AltSnap INI writer'; Finding = 'resource package window tool: AltSnap INI belongs only to chezmoi'; Edit = { param($d) ($d.resources | Where-Object name -eq 'package window tool').properties.setScript += "`nWritePrivateProfileString 'General' 'Aero' '1'" } }
     )
     foreach ($case in $cases) {
       $changed = Copy-FixtureObject $Document

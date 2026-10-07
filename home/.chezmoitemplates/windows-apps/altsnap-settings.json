@@ -1,0 +1,9 @@
+{
+  "General": {
+    "Aero": "1",
+    "AeroHoffset": "50",
+    "AeroVoffset": "50",
+    "AutoSnap": "2",
+    "SmartAero": "1"
+  }
+}

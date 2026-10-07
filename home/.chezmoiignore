@@ -1,4 +1,5 @@
 {{- $machine := index .hosts .host -}}
+{{- $windows := and (eq .chezmoi.os "windows") (hasKey $machine.platforms "windows") -}}
 # Patterns name destinations: private_Library still maps to Library.
 {{ if ne .chezmoi.os "darwin" }}
 Library
@@ -47,10 +48,36 @@ Air
 .config/credentials
 .config/credentials/**
 {{ end }}
-{{ if not (and (eq .chezmoi.os "linux") $machine.roles.wslWorkstation) }}
+{{ if not (or (and (eq .chezmoi.os "linux") $machine.roles.wslWorkstation) $windows) }}
 .config/git/github.gitconfig
+{{ end }}
+{{ if not (and (eq .chezmoi.os "linux") $machine.roles.wslWorkstation) }}
 .ssh/builder-known-hosts
 {{ end }}
-{{ if not (or (and (eq .chezmoi.os "darwin") $machine.roles.desktop) (and (eq .chezmoi.os "linux") $machine.roles.wslWorkstation)) }}
+{{ if not (or (and (eq .chezmoi.os "darwin") $machine.roles.desktop) (and (eq .chezmoi.os "linux") $machine.roles.wslWorkstation) $windows) }}
 .ssh/desktop-known-hosts
+{{ end }}
+{{ if eq .chezmoi.os "windows" }}
+.zshenv
+.zshrc
+.config/zsh
+.config/zsh/**
+.config/gh
+.config/gh/**
+.config/direnv
+.config/direnv/**
+.config/starship.toml
+.config/eza
+.config/eza/**
+.config/fzf
+.config/fzf/**
+.config/bat
+.config/bat/**
+bat-cache*
+{{ end }}
+{{ if not $windows }}
+AppData
+AppData/**
+.ssh/macbook-pro-known-hosts
+windows-*
 {{ end }}

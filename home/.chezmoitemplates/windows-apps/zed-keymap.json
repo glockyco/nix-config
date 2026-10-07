@@ -1,0 +1,74 @@
+[
+  {
+    "bindings": {
+      "ctrl-[": null,
+      "ctrl-]": null,
+      "ctrl-^": null,
+      "ctrl-a": null,
+      "ctrl-b": null,
+      "ctrl-c": null,
+      "ctrl-d": null,
+      "ctrl-e": null,
+      "ctrl-f": null,
+      "ctrl-g": null,
+      "ctrl-h": null,
+      "ctrl-i": null,
+      "ctrl-j": null,
+      "ctrl-k": null,
+      "ctrl-l": null,
+      "ctrl-m": null,
+      "ctrl-n": null,
+      "ctrl-o": null,
+      "ctrl-p": null,
+      "ctrl-q": null,
+      "ctrl-r": null,
+      "ctrl-s": null,
+      "ctrl-t": null,
+      "ctrl-u": null,
+      "ctrl-v": null,
+      "ctrl-w": null,
+      "ctrl-x": null,
+      "ctrl-y": null,
+      "ctrl-z": null
+    },
+    "context": "Editor && mode == full"
+  },
+  {
+    "bindings": {
+      "ctrl-a": "editor::SelectAll",
+      "ctrl-b": "workspace::ToggleLeftDock",
+      "ctrl-c": "editor::Copy",
+      "ctrl-d": [
+        "editor::SelectNext",
+        {
+          "replace_newest": false
+        }
+      ],
+      "ctrl-e": "file_finder::Toggle",
+      "ctrl-f": "buffer_search::Deploy",
+      "ctrl-g": "go_to_line::Toggle",
+      "ctrl-h": "buffer_search::DeployReplace",
+      "ctrl-i": "editor::ShowSignatureHelp",
+      "ctrl-j": "workspace::ToggleBottomDock",
+      "ctrl-l": "editor::SelectLine",
+      "ctrl-n": "workspace::NewFile",
+      "ctrl-o": "workspace::OpenFiles",
+      "ctrl-p": "file_finder::Toggle",
+      "ctrl-q": "zed::Quit",
+      "ctrl-r": "projects::OpenRecent",
+      "ctrl-s": "workspace::Save",
+      "ctrl-t": "project_symbols::Toggle",
+      "ctrl-v": "editor::Paste",
+      "ctrl-w": [
+        "pane::CloseActiveItem",
+        {
+          "close_pinned": false
+        }
+      ],
+      "ctrl-x": "editor::Cut",
+      "ctrl-y": "editor::Redo",
+      "ctrl-z": "editor::Undo"
+    },
+    "context": "Editor && mode == full"
+  }
+]

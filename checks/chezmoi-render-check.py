@@ -713,6 +713,7 @@ def main():
             overrides = {
                 "chezmoi": fixture.overrides["chezmoi"] | {"os": excluded_os},
                 "checkMode": False,
+                **({"host": "korolev"} if excluded_os == "windows" else {}),
             }
             selected = fixture.run(
                 "execute-template", input=ignore, overrides=overrides

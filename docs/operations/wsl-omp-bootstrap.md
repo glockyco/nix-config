@@ -1,12 +1,12 @@
 # Provision and recover korolev
 
-Use this procedure for a new NixOS WSL import, Windows setup, or builder recovery.
-Windows owns native applications and employer policy. NixOS owns Linux system configuration, system-declared user packages and shell plugins; chezmoi owns portable Linux user files.
+Use this procedure for a new secondary NixOS WSL import or Linux builder recovery. Native Windows bootstrap and user apply live in [Korolev native Windows operations](korolev-windows.md).
+Windows owns native applications and employer policy. NixOS owns Linux system configuration, system-declared user packages and shell plugins; chezmoi owns user files independently on each platform.
 OMP comes from the official installer and owns authentication, sessions, databases, its plugin cache, browser downloads, profiles, and caches.
-Keep repositories in the Linux home directory, not `/mnt/c`.
+Keep secondary Linux repositories in the Linux home directory, not `/mnt/c`; native Windows repositories use the separate Windows `~/src`.
 
 **Account boundary:** Import, activation, generation rollback, and distribution rollback use the standard Windows account.
-The Windows document also uses that account. Only the Zen installer, Zen policy script, and native Neo driver installation require Administrator credentials.
+The Windows document and chezmoi also use that account. Only the approved Zen/Tailscale installers, Zen policy script and native Neo driver installation require separate Administrator credentials.
 The policy script owns only Zen's policy file under Program Files.
 The driver script owns only the native Neo DLLs and keyboard-layout registration.
 ReNeo separately requests those credentials at each sign-in for its runtime process.
@@ -14,7 +14,7 @@ Do not copy another host's credentials or bypass employer policy.
 
 ## Import the host
 
-Install Windows Terminal Stable and enable WSL 2 through Microsoft-supported or employer-managed channels.
+Enable WSL 2 through Microsoft-supported or employer-managed channels. Use the accepted terminal; this procedure does not install or manage Windows Terminal.
 Confirm the Windows prerequisites:
 
 ```powershell
@@ -144,7 +144,7 @@ git -C /path/to/overleaf-checkout config --local --unset-all credential.helper
 git -C /path/to/overleaf-checkout fetch origin
 ```
 
-If pinentry asks for a passphrase, enter the GPG key passphrase. If Git asks for an Overleaf password, paste the Git authentication token. Do not put either secret in a command, Git URL, or repository. The remote uses the `git` username. Fork's `wslgit` bridge uses the same Git configuration, but cannot display curses pinentry itself.
+If pinentry asks for a passphrase, enter the GPG key passphrase. If Git asks for an Overleaf password, paste the Git authentication token. Do not put either secret in a command, Git URL, or repository. The remote uses the `git` username. These are secondary Linux credentials, not Windows GCM; native Fork uses its separate Windows-local Git configuration.
 
 Verify access without a terminal prompt:
 
@@ -269,178 +269,13 @@ Exercise disconnected-builder recovery only with the local Mac recovery terminal
 Require failure within the configured connection timeout, restore connectivity, and run a fresh builder check.
 If recovery fails, roll back locally. Nix rollback neither restores keys nor changes Tailscale enrollment.
 
-## Apply the Windows layer
+## Native Windows setup
 
-Close all Windows Terminal windows after import, then reopen Terminal so its WSL generator discovers `NixOS`.
-The artifact selects that generated profile without replacing the profile list.
-Build the reviewed [Windows artifact](../../packages/windows-configuration/package.nix) in NixOS.
-The [packaged repository check](../../packages/windows-configuration-check/package.nix) validates the shipped WinGet v3 document, declared policy, and PowerShell 7 syntax.
-It does not prove that scripts run under Windows PowerShell 5.1 or that Windows accepts each resource.
-Run the NixOS repository gate before copying the output:
+Windows is the primary workstation; this page retains the secondary WSL import, Linux activation and builder procedures. Use the separate native checkout at `C:\Users\jglock\src\github.com\glockyco\nix-config`, not the Linux checkout for Windows user setup.
 
-```sh
-nix flake check --print-build-logs
-```
+Follow [Korolev native Windows operations](korolev-windows.md) for standard-user Git/chezmoi bootstrap, native checks, Neo restart prerequisite, `chezmoi diff/apply/verify`, explicit Zen/Tailscale installer prompts and narrow Administrator operations. There is no Nix-built Windows artifact or Windows generation rollback.
 
-Continue only when `windowsConfiguration` passes. Keep the Windows tests below as a separate acceptance gate.
-Use an absent destination under writable `C:\Temp`. Do not merge the artifact into a stale copy.
-
-```sh
-nix build .#windows-configuration
-cp -rL result /mnt/c/Temp/windows-configuration
-```
-
-In standard PowerShell, enable WinGet Configuration and set the paths:
-
-```powershell
-winget configure --enable
-$configuration = 'C:\Temp\windows-configuration\configuration.winget'
-$kbdNeo = 'C:\Temp\windows-configuration\apply-kbdneo.ps1'
-$zenPolicies = 'C:\Temp\windows-configuration\apply-zen-policies.ps1'
-```
-
-Test all artifacts before the first apply:
-
-```powershell
-winget configure test --file $configuration --accept-configuration-agreements --disable-interactivity --suppress-initial-details
-powershell -NoProfile -ExecutionPolicy Bypass -File $kbdNeo -Test
-powershell -NoProfile -ExecutionPolicy Bypass -File $zenPolicies -Test
-```
-
-Exit status `1` means drift, not an acceptable resource error. Require an elevation shield only on `package browser`.
-Zed, Brave, and Ferdium use the self-updating policy with `useLatest: true` and no exact version.
-Their vendor channels own routine updates, while WinGet owns installation and repair.
-The test accepts each installed version when it is equal to or newer than WinGet's catalog version.
-Every other declared application uses an exact version with `useLatest: false`.
-If Zed, Brave, or Ferdium reports package drift, inspect the installed and catalog versions before applying.
-Do not disable vendor updates or downgrade a newer installation.
-Ferdium owns its profile, services, credentials, sessions, cache, update preference, and startup preference.
-Do not manage these values in the Windows configuration.
-A fresh Ferdium profile enables automatic updates and disables launch at sign-in by default.
-The dark-appearance test accepts Windows' generated `Custom.theme` path when dark modes, transparency, and wallpaper match.
-It does not require one fixed active theme-file path.
-When the PowerToys version pin changes, inspect every enabled-module key against that installed release.
-The repository check does not claim to verify that upstream module list.
-
-Open 64-bit PowerShell with **Run as administrator**, using the separate local `Administrator` credential:
-
-```powershell
-$kbdNeo = 'C:\Temp\windows-configuration\apply-kbdneo.ps1'
-powershell -NoProfile -ExecutionPolicy Bypass -File $kbdNeo
-powershell -NoProfile -ExecutionPolicy Bypass -File $kbdNeo -Test
-```
-
-Require `kbdneo: desired` after installation. Restart Windows before the document registers the layout.
-After restart, reset the paths in standard PowerShell and apply the document there:
-
-```powershell
-winget configure --file $configuration --accept-configuration-agreements --disable-interactivity --suppress-initial-details
-```
-
-Enter the separate Administrator credential only when the Zen installer requests it.
-Do not run the document as Administrator: that account has a different profile and cannot use the interactive user's DSC package.
-Sign out and sign in after the first apply. This applies the UI language, the German QWERTZ default input method, and ReNeo's elevation launcher.
-Enter the Administrator credential at its prompt, including at subsequent sign-ins. That prompt accepts QWERTZ input.
-If sign-out must wait, start the launcher from standard PowerShell:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\WindowsConfiguration\start-reneo-elevated.ps1"
-```
-
-German QWERTZ is the default input method, and native Neo is the second German input method.
-Do not make native Neo the default: Office derives character shortcuts such as `Ctrl+]` from the first loaded layout, and native Neo puts those characters on letter keys.
-While QWERTZ is active, elevated ReNeo supplies every Neo layer in ordinary and elevated applications. UAC prompts accept QWERTZ input.
-To type native Neo in UAC, select `Deutsch (Neo)` with `Win+Space` before the prompt appears.
-ReNeo detects a changed layout at the first key press after the foreground window changes. After `Win+Space`, change windows once or use ReNeo's reload command.
-The native driver then supplies UAC's base layout, and ReNeo supplies higher layers in ordinary and elevated applications.
-In Administrator PowerShell, apply only the Zen policy file:
-
-```powershell
-$zenPolicies = 'C:\Temp\windows-configuration\apply-zen-policies.ps1'
-powershell -NoProfile -ExecutionPolicy Bypass -File $zenPolicies
-```
-
-Repeat all three tests from the standard session. Require the described state, `kbdneo: desired`, and `Zen policies: desired`.
-Reapply each artifact in its original account context and require no changes.
-
-**CAUTION: DSC has no generation or transactional rollback.** An interrupted apply can leave earlier resources changed.
-After failure, inspect the reported error and applied state before revising and reapplying the artifact.
-A repository revert neither restores old files nor uninstalls applications unless the declaration explicitly requests that state.
-NixOS rollback affects only Linux state.
-
-### Manual Windows settings
-
-- Use **Settings > Apps > Default apps** for associations. Windows protects them with a generated `UserChoice` hash.
-  Bind `.pdf` to Adobe Acrobat. Bind these extensions to Zed:
-  `.nix`, `.md`, `.json`, `.yaml`, `.yml`, `.toml`, `.sh`, `.ps1`, `.py`, `.js`, `.ts`, `.tsx`, `.rs`, `.go`, `.diff`, `.patch`, `.txt`.
-  Keep the LaTeX previewer decision unresolved.
-- Keep taskbar pins under user control. Supported taskbar layout policy would replace or control the user's pin list.
-- Keep **Country or region** set to Austria. Widgets uses that region for German hosted cards and weather, without an independent content-language control.
-- Set **Settings > System > Display > Night light** to sunset-to-sunrise at 50% strength.
-  Its undocumented CloudStore binary format is outside the declaration.
-- Leave employer-managed applications to device management. Do not add a competing installer or configuration owner.
-
-### Configure and verify the browser relay
-
-Confirm Brave installation in standard PowerShell with `winget list --id Brave.Brave --exact`.
-From NixOS, install OMP's unpacked extension into Windows LocalAppData:
-
-```sh
-windows_local_app_data="$(
-  powershell.exe -NoProfile -Command \
-    '[Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)' |
-    tr -d '\r'
-)"
-relay_extension="$(wslpath "$windows_local_app_data")/OMP/browser-relay-extension"
-omp browser-relay install --dir "$relay_extension"
-wslpath -w "$relay_extension"
-```
-
-Open Brave manually with a dedicated `OMP Relay` profile.
-At `brave://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the printed Windows path.
-Do not install the extension in an employer-managed browser profile or add Brave or the relay to startup.
-Keep only the intended page open. From an OMP session in NixOS, request:
-
-```text
-Use the browser relay, not the managed browser. Adopt the current Brave tab, report its title and URL, capture a screenshot, and leave the page unchanged.
-```
-
-Require a title, URL, and screenshot that match the visible tab. Close Brave afterward.
-The extension and profile remain mutable OMP/browser state. Use them only for tasks that require an authenticated Windows browser.
-After the next Windows restart, before starting Brave or OMP, check from standard PowerShell:
-
-```powershell
-Get-Process brave -ErrorAction SilentlyContinue
-wsl --distribution NixOS -- pgrep -af 'omp browser-relay'
-```
-
-Require no process output. `pgrep` status `1` means the relay is off, even after NixOS starts.
-
-### Verify native integration
-
-In Zed, use `projects: open wsl`, select `NixOS`, and open `/home/user/src/github.com/glockyco/nix-config`.
-Do not open the UNC path as a local folder: that gives Linux ACP agents a Windows working directory.
-The Windows configuration owns `%APPDATA%\Zed\keymap.json` completely.
-Make keymap changes in the repository because the next apply replaces edits from Zed's keymap editor.
-
-Open a disposable text file in a full editor and verify the Windows-first control layer:
-
-1. In normal, visual, and insert modes, confirm `Ctrl+C`, `Ctrl+V`, `Ctrl+A`, `Ctrl+Z`, and `Ctrl+F` use their standard editor actions.
-1. Confirm `Ctrl+K Ctrl+S` opens the keymap editor and bare `Ctrl+K` does not start Vim digraph input.
-1. Open a second disposable file and confirm `Ctrl+W` closes its editor item without waiting for a Vim pane command.
-1. Use an unmodified Vim edit such as `dw`, then use `Escape` to return to normal mode.
-1. In Zed's integrated WSL terminal, run `sleep 30`, press `Ctrl+C`, and require an immediate shell prompt.
-
-Confirm these live boundaries after sign-in:
-
-- Zed starts `nixd` inside NixOS without SSH. Fork uses the declared `wslgit` bridge.
-- Windows Terminal opens NixOS at the Linux home, with working font glyphs.
-- Neo works through ReNeo over QWERTZ in ordinary and elevated applications, and native Neo works in UAC after `Win+Space`.
-- Word keeps `Ctrl+C` for copy and `Ctrl+V` for paste while QWERTZ or native Neo is active.
-- Command Palette launches applications and switches windows. Its PowerToys parent remains the sole startup owner.
-  After a PowerToys pin change, compare the enabled and disabled module lists with the installed version.
-- AltSnap modifier-drag moves windows and performs 50/50 edge or corner snapping.
-- Zen shows the declared theme. Windows and PowerToys use English, with ISO dates and the regional Widgets exception above.
+The same runbook owns [native Zed/Fork/Git and Mac LaTeX](korolev-windows.md#native-projects-and-mac-latex), [Tern/OMP/plugin/annotation](korolev-windows.md#explicit-tern-omp-plugin-and-annotation-flows), and [local backup/drift repair/recovery](korolev-windows.md#manual-preferences-and-nontransactional-recovery). Windows user files have one chezmoi owner; application profiles, credentials and runtime databases remain unmanaged. Open Windows repositories locally in Zed and Fork; do not restore the old WSL Git bridge or WSL editor transport.
 
 ## Recover Linux state
 

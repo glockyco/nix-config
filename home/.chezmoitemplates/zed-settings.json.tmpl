@@ -1,8 +1,12 @@
-{{- $settings := dict "buffer_font_family" .zed.fontFamily "terminal" (dict "font_family" .zed.fontFamily) "theme" (dict "dark" .zed.themeName "light" .zed.themeName) -}}
+{{- $font := .zed.fontFamily -}}
+{{- if eq .chezmoi.os "windows" -}}{{- $font = .zed.windowsFontFamily -}}{{- end -}}
+{{- $settings := dict "buffer_font_family" $font "terminal" (dict "font_family" $font) "theme" (dict "dark" .zed.themeName "light" .zed.themeName) -}}
 {{- range $key, $value := .zed.settings -}}
 {{- $_ := set $settings $key $value -}}
 {{- end -}}
-{{- range $key, $value := .zed.platforms.darwin -}}
+{{- if hasKey .zed.platforms .chezmoi.os -}}
+{{- range $key, $value := index .zed.platforms .chezmoi.os -}}
 {{- $_ := set $settings $key $value -}}
+{{- end -}}
 {{- end -}}
 {{ $settings | toPrettyJson }}
