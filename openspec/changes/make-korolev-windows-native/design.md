@@ -2,7 +2,7 @@
 
 ## Context
 
-See `proposal.md` for motivation. This is fleet change 3, after plugin-manager publishing, upstream OMP/Tern, and chezmoi replacement are archived. Current files are migration evidence, not permission to retain Home Manager, wrappers, Herdr or Zed's OMP agent server. Change 4 must wait for native-session and network acceptance here.
+See `proposal.md` for motivation. This is fleet change 3. It starts once plugin-manager publishing is archived and upstream OMP/Tern and the chezmoi replacement are merged and live on Korolev; their remaining Mac gates do not depend on this change and may close later. Change 3's own Mac steps (enrolling the native Windows key on the Mac and the Mac-source SSH checks) run in the same owner-attended Mac session as change 2's Mac cutover. Current files are migration evidence, not permission to retain Home Manager, wrappers or Zed's OMP agent server; Herdr stays installed on WSL as a secondary tool. Change 4 must wait for native-session and network acceptance here.
 
 Verified repository evidence:
 
@@ -117,7 +117,7 @@ Reject skipping hooks on Windows, maintaining a second formatter list, copying L
 
 ## Migration Plan
 
-1. Require predecessor archives; capture one reviewed output and local backups of change-owned Windows files, Fork setting, relevant PATH/environment, SSH/firewall configuration and node identities; keep previous WSL/Mac generations. No credential/profile/database export.
+1. Require change 0 archived and changes 1 and 2 merged and live on Korolev; capture one reviewed output and local backups of change-owned Windows files, Fork setting, relevant PATH/environment, SSH/firewall configuration and node identities; keep previous WSL/Mac generations. No credential/profile/database export.
 1. Land hand-maintained source, chezmoi migration, native fixtures/gates and network declarations as reviewed units; remove obsolete sources and Zen in-flight directory only when replacements exist. Run strict spec validation and native/host gates before owner-authorized publication.
 1. Bootstrap native checkout as `JGlock`, complete explicit Neo/Zen operations with owner-assisted Administrator/UAC, then standard-user chezmoi diff/apply/test/verify. Install Tern/OMP/plugin/Plannotator explicitly; owner completes provider/Stencil/GitHub logins.
 1. Deploy the reviewed policy through owner-authorized push/merge; migrate node with local recovery open, reconcile Windows SSH services/firewall/public keys/pins and WSL daemon-free DNS. Re-run Mac activation only if the new Windows-user authorization is needed, with owner-entered sudo.
