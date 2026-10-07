@@ -129,6 +129,31 @@
               hostConfig.fonts.fontconfig.defaultFonts.monospace == [ "JetBrains Mono" ]
             ) "${host.name}: monospace does not default to JetBrains Mono";
             pkgs.runCommand "check-${host.name}-fonts" { } "touch $out";
+          scch-share =
+            let
+              share = hostConfig.fileSystems."/mnt/s";
+              mountUnit = hostConfig.systemd.units."mnt-s.mount";
+              group = hostConfig.users.groups.${user.group};
+            in
+            assert lib.assertMsg (
+              hostConfig.fileSystems ? "/mnt/s" && share.device == ''\\scch.at\SCCH'' && share.fsType == "drvfs"
+            ) "${host.name}: /mnt/s does not mount the SCCH share through drvfs";
+            assert lib.assertMsg (lib.all (option: builtins.elem option share.options) [
+              "ro"
+              "uid=${toString user.uid}"
+              "gid=${toString group.gid}"
+              "noauto"
+              "x-systemd.automount"
+              "nofail"
+            ]) "${host.name}: /mnt/s is not a read-only automount owned by ${host.username}";
+            assert lib.assertMsg
+              (
+                hostConfig.systemd.units ? "mnt-s.mount"
+                && mountUnit.overrideStrategy == "asDropin"
+                && lib.hasInfix "StartLimitIntervalSec=0" mountUnit.text
+              )
+              "${host.name}: mnt-s.mount keeps the start limit that turns an unreachable share into an empty directory";
+            pkgs.runCommand "check-${host.name}-scch-share" { } "touch $out";
           omp-browser-runtime = pkgs.callPackage ../checks/omp-browser-runtime-check.nix {
             personalOmp = pkgs.personal-omp;
             systemPath = hostConfig.system.path;

@@ -33,6 +33,10 @@ The desktop access change records [acceptance evidence](openspec/changes/archive
 
 After activating both hosts, `ssh macbook-pro` from Korolev's user opens a shell on the Mac with that user's own key. The session has a terminal, so `darwin-switch` can prompt for the Mac password; run it without `sudo`, because it calls `sudo` itself and a root evaluation cannot read the user-owned checkout. Use `ssh macbook-pro-batch 'exit 23'` for unattended commands; it has the same transport settings as `desktop-batch`. Root and the Nix daemon resolve the same name to the root-only builder key, which cannot open a terminal. The Mac's tailnet daemon refuses forwarding and tunnels for both keys. To revoke the user key alone, remove its line in [the Mac's SSH declaration](modules/roles/darwin/desktop/tailscale.nix) and activate the Mac.
 
+### SCCH share on Korolev
+
+Korolev mounts the SCCH share `\\scch.at\SCCH`, which Windows maps as `S:`, read-only at `/mnt/s`; a path below `S:\` appears at the same relative path below `/mnt/s`. The first access mounts the share through WSL's Windows file bridge with the signed-in Windows session's credentials, so the configuration holds none. Files belong to Korolev's user, and Linux writes fail; change the share from Windows. Boot and activation never wait for the share. While it is unreachable, for example off the corporate network or VPN, every access fails with an error, after up to about 22 seconds, instead of showing an empty directory; the first access after reconnecting mounts it.
+
 ## Develop
 
 With Nix and flakes installed, enter the pinned environment. It installs the commit hook; `direnv allow` uses the same shell.
