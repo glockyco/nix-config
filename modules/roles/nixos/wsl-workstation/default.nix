@@ -6,7 +6,6 @@
 {
   imports = [
     ./wsl.nix
-    ./tailscale.nix
     ./programs.nix
     ./containers.nix
     ./builders.nix

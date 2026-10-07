@@ -28,7 +28,7 @@ Windows source is `windows/configuration.winget` (JSON-compatible YAML), `window
 
 ## Network
 
-Tailscale connects the MacBook Pro, Korolev, the personal Windows desktop, and the temporary MacBook Air. The MacBook Pro, the desktop, and the Air can initiate connections to one another. Korolev can initiate connections to the other three but does not accept inbound connections.
+Tailscale connects the MacBook Pro, native Windows Korolev, the personal Windows desktop, and the temporary MacBook Air. All declared reachable nodes receive all-port tailnet grants, including Korolev like the desktop; membership is not account authorization or an SSH-only service policy. Windows owns Korolev's one `tag:korolev` identity. Secondary NAT-networked WSL has no tailscaled, SSH listener, open service port or port proxy.
 
 ### Desktop SSH and file access
 
@@ -40,9 +40,15 @@ Graphical access uses Windows App from this Mac against `desktop.tail8768af.ts.n
 
 The desktop access change records [acceptance evidence](openspec/changes/archive/2026-09-06-enable-native-windows-remote-work/evidence.md) and [completed deployment gates](openspec/changes/archive/2026-09-06-enable-native-windows-remote-work/tasks.md). The verified standalone Windows OpenSSH server supports hybrid post-quantum key exchange. Its [manual update and recovery procedure](docs/operations/dependency-updates.md#desktop-openssh-maintenance) preserves host keys and tailnet restrictions; client cryptography warnings remain enabled.
 
+### Native Korolev SSH and recovery
+
+The [owner-attended remote-access runbook](docs/operations/korolev-remote-access.md) transfers the old WSL node to Windows and explicitly installs/configures OpenSSH Server for the standard AD account `scch\jglock`. Separate labeled Mac and desktop public keys and console-verified host pins control access. Native PowerShell, SSH and SFTP are approved; Korolev gains no RDP/SMB service. The listener and effective firewall must permit only current Windows tailnet addresses, with no wildcard/LAN fallback or broad installer rule.
+
+Keep local Windows Administrator recovery and the previous accepted WSL generation. Stop/log out/revoke the old Linux node, activate daemon-free WSL, then enroll Windows once; never copy device state/private keys or run duplicate nodes. Owner-typed provider login, Administrator/UAC, Linux sudo, Mac sudo and publication approval remain separate. Reconcile changed tailnet addresses while sshd is stopped, then validate config/firewall and probe allowed and independently reachable denied paths. For rollback stop/revoke Windows first before restoring/re-enrolling one Linux node. The runbook covers reboot, DNS/root-builder acceptance and selective key revocation.
+
 ### Mac SSH from Korolev
 
-After activating both hosts, `ssh macbook-pro` from Korolev's user opens a shell on the Mac with that user's own key. The session has a terminal, so `darwin-switch` can prompt for the Mac password; run it without `sudo`, because it calls `sudo` itself and a root evaluation cannot read the user-owned checkout. Use `ssh macbook-pro-batch 'exit 23'` for unattended commands; it has the same transport settings as `desktop-batch`. Root and the Nix daemon resolve the same name to the root-only builder key, which cannot open a terminal. The Mac's tailnet daemon refuses forwarding and tunnels for both keys. To revoke the user key alone, remove its line in [the Mac's SSH declaration](modules/roles/darwin/desktop/tailscale.nix) and activate the Mac.
+After native user-key enrollment, `ssh macbook-pro` from Windows Korolev opens a shell on the Mac with its separate Windows-user key. WSL retains its own user key; neither uses the root builder key. The interactive session has a terminal, so `darwin-switch` can prompt for the owner-typed Mac password; run it without `sudo`, because it calls `sudo` itself and root evaluation cannot read the user-owned checkout. Use `ssh macbook-pro-batch 'exit 23'` for unattended commands with strict pins, preserved stdin, no PTY/persistence and bounded timeout. Root and the WSL Nix daemon resolve the same name to the root-only builder key, which cannot open a terminal. The Mac keeps its tailnet-only SSH listener and refuses forwarding/tunnels for these keys. Revoke an individual user authorization in [the Mac's SSH declaration](modules/roles/darwin/desktop/tailscale.nix), then activate the Mac with owner-typed sudo while retaining local recovery.
 
 ### SCCH share on Korolev
 
@@ -182,7 +188,7 @@ After OMP or plugin behavior changes, also complete the [release smoke](docs/ope
 
 In a fresh local OMP session, use `/plannotator-annotate <path>` to annotate a document or `/plannotator-last` to annotate the last response. Submitted annotations return as feedback, without editing the source or approving implementation. Use `/plannotator-cancel` if a closed browser tab leaves a review pending.
 
-For a new Windows machine, follow [WSL and Windows provisioning](docs/operations/wsl-omp-bootstrap.md). It covers image import, credentials, the separate Windows apply, and recovery. Run one WSL distribution at a time; confirm `systemctl is-active user@1000.service` reports `active` before activation.
+For a new Windows machine, follow [Windows and WSL provisioning](docs/operations/wsl-omp-bootstrap.md) and the separate [native node/SSH cutover and recovery](docs/operations/korolev-remote-access.md). Windows user apply never configures SSH services; those need explicit local Administrator approval. Run one WSL distribution at a time; confirm `systemctl is-active user@1000.service` reports `active` before Linux activation.
 
 For local containers on the Mac, use the [container lifecycle and recovery procedure](docs/operations/container-runtime.md). Activation does not start or delete the VM.
 

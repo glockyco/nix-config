@@ -171,35 +171,11 @@ Require the title `Example Domain` and a screenshot of the same page, without a 
 Repeat after OMP updates, OMP recovery, or activation changes to the browser ABI.
 NixOS supplies the [loader and libraries](../../modules/roles/nixos/wsl-workstation/programs.nix), not Chromium downloads or browser profiles.
 
-## Join the tailnet and provision the builder
+## Windows tailnet transport and WSL builder
 
-Use tailnet `glockyco.github`, ID `TEHFqtX6D121CNTRL`, with MagicDNS enabled.
-Its DNS domain is in the [shared declaration](../../modules/shared/default.nix).
-After first activation, restart NixOS from Windows so WSL releases resolver ownership:
+Windows owns the single reachable `korolev` / `tag:korolev` identity on tailnet `glockyco.github`, ID `TEHFqtX6D121CNTRL`. Follow the [owner-attended node migration and native OpenSSH runbook](korolev-remote-access.md); do not enroll Linux Tailscale or expose a WSL listener. MagicDNS uses the [shared domain](../../modules/shared/default.nix).
 
-```powershell
-wsl --terminate NixOS
-```
-
-Reopen NixOS and confirm Windows DNS tunneling remains the global upstream:
-
-```sh
-resolvectl status
-getent ahosts github.com
-```
-
-Require the [declared resolver](../../modules/roles/nixos/wsl-workstation/wsl.nix), `10.255.255.254`.
-If employer-internal services are used from WSL, also resolve a known employer hostname. Otherwise, that check is not applicable.
-Join once with the declared tag and complete the displayed browser login:
-
-```sh
-sudo tailscale up --advertise-tags=tag:korolev
-tailscale status
-tailscale debug prefs
-getent ahosts macbook-pro
-```
-
-Require `tag:korolev`, `ShieldsUp: true`, and a Mac address within `100.64.0.0/10`.
+WSL retains NAT, systemd-resolved and Windows DNS tunneling at the [declared upstream](../../modules/roles/nixos/wsl-workstation/wsl.nix), `10.255.255.254`. After cutover and an **owner-coordinated** `wsl --terminate NixOS`, reopen NixOS and verify `resolvectl status`, public DNS, applicable employer DNS and `getent ahosts macbook-pro.tail8768af.ts.net` as both user and root. No duplicate daemon or guessed DNS fallback is allowed.
 
 The Nix daemon uses root's dedicated key, not the interactive user's credentials.
 Keep the private key outside Git and the Nix store. Activation must never generate or replace it.
@@ -249,12 +225,12 @@ sudo ssh -G macbook-pro
 sudo ssh macbook-pro 'command -v nix-daemon'
 sudo ssh macbook-pro 'exit 23'
 printf 'SSH status: %s\n' "$?"
-tailnet-builder-check
+sudo tailnet-builder-check
 ```
 
 Compare effective settings with the [client declaration](../../modules/roles/nixos/wsl-workstation/programs.nix), including strict checking, the dedicated identity, and bounded batch connections.
 Require `/nix/var/nix/profiles/default/bin/nix-daemon`, status `23`, and a fresh builder result naming `arm64`, `macbook-pro`, and `passed`.
-The builder check also reports the measured Tailscale path.
+The builder check also reports the measured path using the quoted Windows `tailscale.exe` at `/mnt/c/Program Files/Tailscale/tailscale.exe`; relayed DERP replies pass. Before owner-attended cutover the live Linux tunnel can still build, but this new diagnostic fails if Windows Tailscale is absent/unenrolled. After cutover, repeat DNS/root-daemon proof after WSL restart and Windows reboot; live routing failures block acceptance.
 For authentication failures, collect native Mac logs without changing the daemon's log level:
 
 ```sh

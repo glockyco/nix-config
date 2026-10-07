@@ -2,7 +2,7 @@
   hostName ? null,
   lib,
   nix,
-  tailscale,
+  windowsTailscalePath ? "/mnt/c/Program Files/Tailscale/tailscale.exe",
   writeShellApplication,
   writeText,
 }:
@@ -35,13 +35,11 @@ writeShellApplication {
   };
   name = "tailnet-builder-check";
 
-  runtimeInputs = [
-    nix
-    tailscale
-  ];
+  runtimeInputs = [ nix ];
 
   text = ''
     expected_host=${lib.escapeShellArg (if hostName == null then "" else hostName)}
+    windows_tailscale=${lib.escapeShellArg windowsTailscalePath}
 
     # A unique derivation prevents a cached output from satisfying this live
     # proof. --rebuild cannot check a Darwin derivation on the Linux client.
@@ -79,9 +77,12 @@ writeShellApplication {
     # direct path exists and fails when only a relayed one does. A relayed route
     # is a supported path here: a source behind a restrictive network reaches the
     # fleet through DERP. Require a reply, not a direct path.
-    if ! ping_output=$(tailscale ping --c 1 --until-direct=false "$expected_host" 2>&1); then
+    if ping_output=$("$windows_tailscale" ping --c 1 --until-direct=false "$expected_host" 2>&1); then
+      :
+    else
+      status=$?
       printf '%s\n' "$ping_output" >&2
-      exit 1
+      exit "$status"
     fi
     printf '%s\n' "$ping_output"
     printf '%s\n' 'tailnet-builder-check: passed'

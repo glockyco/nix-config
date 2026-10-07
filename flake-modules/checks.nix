@@ -189,6 +189,7 @@
             pkgs.runCommand "check-${host.name}-login-shell" { } "touch $out";
         }
         // lib.optionalAttrs (host.kind == "nixos") {
+          tailnet-builder-behavior = pkgs.callPackage ../packages/tailnet-builder-check/tests.nix { };
           isolation =
             let
               builders = builtins.filter (peer: peer.name != host.name && peer.build.logicalCores != null) (
@@ -200,10 +201,13 @@
             assert hostConfig.networking.firewall.allowedTCPPorts == [ ];
             assert hostConfig.networking.firewall.allowedUDPPorts == [ ];
             assert !(hostConfig ? sops);
-            assert hostConfig.services.tailscale.enable;
-            assert !hostConfig.services.tailscale.openFirewall;
-            assert hostConfig.services.tailscale.disableTaildrop;
-            assert hostConfig.services.tailscale.extraSetFlags == [ "--shields-up" ];
+            assert !hostConfig.services.tailscale.enable;
+            assert !(hostConfig.systemd.services ? tailscaled);
+            assert !(hostConfig.systemd.services ? tailscaled-set);
+            assert hostConfig.networking.firewall.allowedTCPPortRanges == [ ];
+            assert hostConfig.networking.firewall.allowedUDPPortRanges == [ ];
+            assert hostConfig.services.resolved.enable;
+            assert hostConfig.networking.nameservers == [ "10.255.255.254" ];
             assert hostConfig.nix.distributedBuilds;
             assert builtins.length buildMachines == builtins.length builders;
             assert
@@ -386,6 +390,10 @@
           peers = tailnetPeers;
           inherit tailnetPolicyRenderer;
         };
+        tailnetRemoteAccessReview = pkgs.runCommand "check-korolev-remote-access" { } ''
+          ${pkgs.python3}/bin/python ${../checks/tailnet-policy-remote-access.py} ${../docs/operations/korolev-remote-access.md}
+          touch "$out"
+        '';
         openspecContracts = inputs.personal-omp-plugin.lib.openspecCheck {
           inherit pkgs;
           src = ../.;
