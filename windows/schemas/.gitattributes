@@ -1,0 +1,4 @@
+# Keep the validation schema digest stable before native Git user setup.
+* text eol=lf
+# Preserve the exact reviewed upstream schema bytes, including line endings.
+upstream/** -text

@@ -1,0 +1,23 @@
+{
+  "auditedOn": "2026-09-02",
+  "revisedOn": "2026-10-07",
+  "gitScopeEvidence": "Git.Git removed only for the HKCU per-user installation: Intune Patch My PC update-only Git detection and requirements inspect HKLM (AppWorkload.log owner audit 2026-10-07). No Intune policy changed.",
+  "identifiers": [
+    "7zip.7zip",
+    "Adobe.Acrobat.Reader.32-bit",
+    "Docker.DockerDesktop",
+    "Google.Chrome",
+    "IrfanSkiljan.IrfanView",
+    "JGraph.Draw",
+    "Microsoft.VCRedist.2015+.x64",
+    "Microsoft.VCRedist.2015+.x86",
+    "Microsoft.VisualStudioCode",
+    "Mozilla.Firefox",
+    "Notepad++.Notepad++",
+    "Oracle.JavaRuntimeEnvironment",
+    "Oracle.JDK",
+    "Oracle.VirtualBox",
+    "PuTTY.PuTTY",
+    "WinSCP.WinSCP"
+  ]
+}

@@ -75,7 +75,7 @@ Every declared Nix system SHALL retain a pinned development shell. Native Window
 
 ### Requirement: Each gate runs its host's Nix implementation
 
-Each Linux/Darwin CI gate SHALL use the Nix implementation declared by that host. Windows CI SHALL use native Windows tools for WinGet validation, PowerShell tests and applicable shared formatting, not Nix or a WSL-only substitute. Windows checks SHALL be required alongside Linux, Darwin and live policy checks before main deployment can be accepted.
+Each Linux/Darwin CI gate SHALL use the Nix implementation declared by that host. Windows CI SHALL use native Windows tools for official DSC document-schema validation, read-only WinGet show parsing, PowerShell tests and applicable shared formatting, not Nix or a WSL-only substitute. Windows checks SHALL be required alongside Linux, Darwin and live policy checks before main deployment can be accepted.
 
 #### Scenario: An output evaluates on one implementation only
 
