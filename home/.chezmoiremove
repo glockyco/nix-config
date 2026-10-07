@@ -1,6 +1,15 @@
 # Superseded active configurations; review against the local cutover backup manifest.
 .config/git/config
 .config/direnv/lib/hm-nix-direnv.sh
+# The nix-index-database system module bundles its database with nix-locate.
+.cache/nix-index/files
+.cache/.keep
+.local/state/.keep
+{{ if eq .chezmoi.os "darwin" }}
+# nix-darwin installs fonts system-wide; this is Home Manager's copy and marker.
+Library/Fonts/.home-manager-fonts-version
+Library/Fonts/HomeManager
+{{ end }}
 {{ if eq .chezmoi.os "linux" }}
 .config/environment.d/10-home-manager.conf
 .config/fontconfig/conf.d/10-hm-fonts.conf
