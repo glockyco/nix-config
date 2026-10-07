@@ -231,9 +231,18 @@ def assert_portable(fixture, facts):
                 *targets,
                 overrides={"hosts": {fixture.host: changed_host}},
             )
+            # The build host's /etc/zprofile is not this repository's: stock
+            # macOS runs path_helper there and reorders PATH. nix-darwin's
+            # replacement does not, so probe only the rendered user files.
             for flags in (["-l", "-c"], ["-l", "-i", "-c"]):
                 resolved = subprocess.run(
-                    ["zsh", *flags, 'command -v tern; print -r -- "$path[1]"'],
+                    [
+                        "zsh",
+                        "-o",
+                        "no_global_rcs",
+                        *flags,
+                        'command -v tern; print -r -- "$path[1]"',
+                    ],
                     stdin=subprocess.DEVNULL,
                     capture_output=True,
                     text=True,
