@@ -164,10 +164,10 @@ Do not force terminal image, keyboard, width, or redraw environment variables to
 In a fresh OMP session, request:
 
 ```text
-Use OMP's managed browser, not the browser relay. Open https://example.com, report the document heading, capture a screenshot, and close the browser.
+Use OMP's managed browser, not the browser relay. Open https://example.com, report the page title, capture a screenshot, and close the browser.
 ```
 
-Require `Example Domain` and a screenshot of the same page, without a missing-library error.
+Require the title `Example Domain` and a screenshot of the same page, without a missing-library error.
 Repeat after OMP updates, OMP recovery, or activation changes to the browser ABI.
 NixOS supplies the [loader and libraries](../../modules/roles/nixos/wsl-workstation/programs.nix), not Chromium downloads or browser profiles.
 
