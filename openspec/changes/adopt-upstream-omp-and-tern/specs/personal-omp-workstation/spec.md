@@ -166,8 +166,8 @@ Both supported hosts SHALL consume one portable user-scope module set for the sh
 
 ### Requirement: Supported Herdr integration reconciliation
 
-**Reason**: Tern replaces Herdr and needs no generated Herdr extension.
-**Migration**: Remove the activation/package/check wiring and explicitly uninstall the owned generated integration after replacement smoke, preserving unrelated user state.
+**Reason**: Tern is the primary terminal, and activation no longer couples Nix generations to OMP's mutable extension directory.
+**Migration**: Remove the activation and check wiring. Herdr stays installed as a secondary tool; the owner installs its OMP integration on demand with `herdr integration install omp`, and activation neither creates nor removes it.
 
 ### Requirement: Explicit platform verification
 

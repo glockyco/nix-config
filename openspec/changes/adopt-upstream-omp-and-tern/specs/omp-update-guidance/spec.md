@@ -101,7 +101,7 @@ The guidance SHALL report update failure or rejected acceptance honestly and ins
 
 ### Requirement: Herdr prerequisites use the command environment
 
-**Reason**: Herdr and its generated OMP integration are removed in favor of Tern.
+**Reason**: Real-session acceptance moves to Tern; Herdr remains a secondary tool whose OMP integration the owner manages.
 **Migration**: Run fresh real-session acceptance in Tern without marker fabrication, automatic pane control, or a Herdr prerequisite.
 
 ### Requirement: Discoverable repository update guidance

@@ -32,5 +32,5 @@ Review servers SHALL listen on loopback only and SHALL open the local browser on
 
 ### Requirement: Local browser and network boundary
 
-**Reason**: The Herdr/wrapped-session scenario describes a retired terminal/runtime.
+**Reason**: The scenario describes sessions in Herdr under the retired wrapped runtime.
 **Migration**: Preserve the complete loopback/local-browser/remote-invocation boundary and both platform scenarios under Local annotation browser boundary, using upstream OMP in Tern.
