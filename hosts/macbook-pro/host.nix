@@ -30,12 +30,6 @@ in
           rationale = "The vendor package supplies the signed DriverKit extension.";
         }
         {
-          cask = "ghostty";
-          appPath = "/Applications/Ghostty.app";
-          dockPosition = 5;
-          rationale = "The terminal bundle matches the declared Neo2 rules.";
-        }
-        {
           cask = "fork";
           appPath = "/Applications/Fork.app";
           dockPosition = 10;

@@ -1,8 +1,5 @@
 {
-  closureInfo,
   coreutils,
-  gnugrep,
-  personalOmp,
   runCommand,
   systemPath,
 }:
@@ -36,14 +33,10 @@ let
     "libxcb.so.1"
     "libxkbcommon.so.0"
   ];
-  wrapperClosure = closureInfo { rootPaths = [ personalOmp ]; };
 in
 runCommand "check-omp-browser-runtime"
   {
-    nativeBuildInputs = [
-      coreutils
-      gnugrep
-    ];
+    nativeBuildInputs = [ coreutils ];
   }
   ''
     library_path=${systemPath}/share/nix-ld/lib
@@ -54,11 +47,6 @@ runCommand "check-omp-browser-runtime"
         exit 1
       fi
     done
-
-    if grep -E '/[^/]*(chrome|chromium)[^/]*/' ${wrapperClosure}/store-paths; then
-      echo 'The OMP wrapper closure contains a Nix-packaged browser' >&2
-      exit 1
-    fi
 
     touch "$out"
   ''

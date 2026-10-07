@@ -2,7 +2,7 @@
 
 Use this procedure for a new NixOS WSL import, Windows setup, or builder recovery.
 Windows owns native applications and employer policy. NixOS owns Linux system and user configuration.
-`omp-dev-update` owns the patched OMP source generation. OMP owns authentication, sessions, databases, browser downloads, profiles, and caches.
+OMP comes from the official installer and owns authentication, sessions, databases, its plugin cache, browser downloads, profiles, and caches.
 Keep repositories in the Linux home directory, not `/mnt/c`.
 
 **Account boundary:** Import, activation, generation rollback, and distribution rollback use the standard Windows account.
@@ -98,8 +98,8 @@ git config user.email
 
 The email must be `11704293+glockyco@users.noreply.github.com`. Every repository below `~/src/github.com/` uses this address. Repositories below `~/src/gitlab.scch.at/` and other locations use the global employer address unless the repository declares a local override.
 Use the reviewed, published revision. An older checkout can activate successfully while dropping newer configuration.
-Follow [Develop](../../README.md#develop) and [Activate](../../README.md#activate), then initialize OMP with `omp-dev-update` as described under [Update](../../README.md#update).
-Activation reconciles Herdr but does not install or invoke OMP.
+Follow [Develop](../../README.md#develop) and [Activate](../../README.md#activate), then install OMP and the personal plugin as described under [OMP](../../README.md#omp).
+Activation does not install or invoke OMP.
 Confirm the activated host:
 
 ```sh
@@ -155,14 +155,14 @@ GIT_TERMINAL_PROMPT=0 git -C /path/to/overleaf-checkout ls-remote origin HEAD
 
 After a WSL restart or GPG agent cache expiry, open a WSL terminal and run `gpg-connect-agent updatestartuptty /bye` before the lookup. Unlock the key at the terminal prompt, then use Fork. The token remains encrypted on disk and does not need to be entered again until it expires or is revoked. Do not use Git's plaintext `store` helper.
 
-Run the [wrapped-session release smoke](dependency-updates.md#release-smoke) in a disposable WSL repository through Windows Terminal Stable.
+Run the [release smoke](dependency-updates.md#release-smoke) in a disposable WSL repository in a Tern session that runs NixOS.
 Record the tested Terminal, Windows, WSL, and NixOS versions, host architecture, and locked repository revision.
 Then run the browser smoke below.
 Do not force terminal image, keyboard, width, or redraw environment variables to make acceptance pass.
 
 ## Managed-browser smoke
 
-In a fresh wrapped OMP session, request:
+In a fresh OMP session, request:
 
 ```text
 Use OMP's managed browser, not the browser relay. Open https://example.com, report the document heading, capture a screenshot, and close the browser.
@@ -434,7 +434,7 @@ Open a disposable text file in a full editor and verify the Windows-first contro
 
 Confirm these live boundaries after sign-in:
 
-- Zed starts `nixd` and wrapped `omp acp` inside NixOS without SSH. Fork uses the declared `wslgit` bridge.
+- Zed starts `nixd` inside NixOS without SSH. Fork uses the declared `wslgit` bridge.
 - Windows Terminal opens NixOS at the Linux home, with working font glyphs.
 - Neo works through ReNeo over QWERTZ in ordinary and elevated applications, and native Neo works in UAC after `Win+Space`.
 - Word keeps `Ctrl+C` for copy and `Ctrl+V` for paste while QWERTZ or native Neo is active.
@@ -469,7 +469,6 @@ wsl --distribution '<previous-distribution>'
 ```
 
 After its removal, use retained NixOS generations.
-Nix rollback restores system and user configuration together, not OMP's executable or writable state.
-Use [OMP version recovery](dependency-updates.md#omp-version-recovery) for that executable.
+Nix rollback restores system and user configuration together, not OMP or its writable state.
+Use [OMP recovery](dependency-updates.md#omp-recovery) for OMP and the plugin.
 Do not delete `~/.omp`, edit `/etc/nixos`, or run `nix flake update` as recovery.
-Herdr alone owns `~/.omp/agent/extensions/herdr-omp-agent-state.ts`.

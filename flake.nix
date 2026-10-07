@@ -74,7 +74,8 @@
     # Pin Plannotator releases independently; retain the vendor's own transitive inputs.
     plannotator-packages.url = "github:numtide/llm-agents.nix/b1c9a31450a814e50cddc3ab683b05c1dff7bb01";
 
-    # Personal OMP behavior has its own release cadence and immutable plugin output.
+    # Build-time only: the fleet OpenSpec check and the plugin's adapter-freshness
+    # check. Hosts install the runtime plugin with OMP's plugin manager instead.
     personal-omp-plugin = {
       url = "github:glockyco/omp-agent-setup";
       inputs.nixpkgs.follows = "nixpkgs";

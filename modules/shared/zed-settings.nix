@@ -1,6 +1,4 @@
 {
-  ompCommand,
-  ompArgs ? [ "acp" ],
   fontFamily ? "JetBrainsMonoNL Nerd Font",
 }:
 
@@ -18,11 +16,4 @@
   ui_font_size = 16;
   show_edit_predictions = false;
   diff_view_style = "unified";
-
-  agent_servers.omp = {
-    type = "custom";
-    command = ompCommand;
-    args = ompArgs;
-    env = { };
-  };
 }

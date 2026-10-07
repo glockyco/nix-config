@@ -14,7 +14,6 @@
     ./gh.nix
     ./ghq.nix
     ./packages.nix
-    ./omp.nix
     ./typst.nix
     ./tex.nix
   ];

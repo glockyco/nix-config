@@ -16,9 +16,7 @@ in
       directory = ../packages;
     }
     // {
-      inherit (inputs.llm-agents.packages.${final.stdenv.hostPlatform.system}) herdr openspec;
-      personal-omp-plugin =
-        inputs.personal-omp-plugin.packages.${final.stdenv.hostPlatform.system}.default;
+      inherit (inputs.llm-agents.packages.${final.stdenv.hostPlatform.system}) openspec;
       plannotator = inputs.plannotator-packages.packages.${final.stdenv.hostPlatform.system}.plannotator;
       nixosOptionsDoc = final.callPackage ../overlays/nixos-options-doc.nix {
         nixosOptionsDoc = prev.nixosOptionsDoc;
