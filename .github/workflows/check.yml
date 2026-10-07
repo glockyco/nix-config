@@ -57,3 +57,29 @@ jobs:
           "$RUNNER_TEMP/host-nix/bin/nix" \
             --extra-experimental-features 'nix-command flakes' \
             flake check --print-build-logs
+
+  windows:
+    name: check (windows-latest)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Runner-only, hash-locked test dependencies. No workstation resources,
+      # configuration apply, production profiles, credentials or enrollment.
+      - name: Provision locked native test dependencies
+        shell: powershell
+        run: .\windows\dev\ci-provision.ps1
+
+      - name: Native gates on Windows PowerShell 5.1
+        shell: powershell
+        run: .\windows\dev\ci.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE
+
+      - name: Native gates on locked PowerShell 7
+        shell: powershell
+        run: |
+          & "$env:RUNNER_TEMP\native-check\powershell\pwsh.exe" `
+            -NoProfile -NonInteractive -ExecutionPolicy Bypass `
+            -File .\windows\dev\ci.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE
+          if ($LASTEXITCODE -ne 0) { throw "PowerShell 7 native gate exited $LASTEXITCODE" }
