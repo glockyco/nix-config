@@ -19,6 +19,7 @@ let
     "64" # Spotlight search window, freed for LaunchBar
     "160" # unassigned
     "175" # unassigned
+    "176" # Siri: either Command key twice
     "179" # unassigned
     "190" # Q
     "215" # unassigned
