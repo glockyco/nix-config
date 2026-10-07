@@ -86,11 +86,15 @@ let
       }
     ];
 
-    tests = map (tag: {
-      src = tag;
-      proto = "tcp";
-      deny = denyTargets;
-    }) reachableTags;
+    tests = map (
+      tag:
+      {
+        src = tag;
+        proto = "tcp";
+        accept = map (destination: "${destination}:22") reachableTags;
+      }
+      // lib.optionalAttrs (denyTargets != [ ]) { deny = denyTargets; }
+    ) tags;
   };
 
   ruleDestinations = lib.concatMap (rule: rule.dst or [ ]) policy.grants;

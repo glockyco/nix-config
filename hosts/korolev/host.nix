@@ -23,7 +23,8 @@ in
     roles = facts.roles;
     tailnet = {
       tag = "tag:korolev";
-      reachable = false;
+      # The reachable machine identity belongs to native Windows, not WSL.
+      reachable = true;
     };
   };
 }

@@ -63,8 +63,18 @@ let
       fixture-peer = removeAttrs fixturePeer [ "purpose" ];
     };
   });
+  unknownGrant = force (render {
+    grantDestinations = [ "tag:unknown" ];
+  });
+  completeUnreachable = force (render {
+    managedHosts = managedHosts // {
+      fixture-managed = unreachableFixture;
+    };
+  });
 in
 assert completePeer.success;
+assert completeUnreachable.success;
+assert !unknownGrant.success;
 assert !unreachableGrant.success;
 assert !emailAddress.success;
 assert !missingLifecycle.success;

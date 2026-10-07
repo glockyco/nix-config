@@ -21,8 +21,8 @@ in
     # Restore Windows execution even when WSL's startup registration is absent.
     interop.register = true;
 
-    # systemd-resolved owns the file so Tailscale can install its split DNS
-    # domain without WSL replacing the file at the next start.
+    # systemd-resolved keeps Windows DNS tunneling as its upstream without WSL
+    # replacing the file. Windows Tailscale owns MagicDNS; WSL has no daemon.
     wslConf.network.generateResolvConf = false;
 
     # Native Windows integrations invoke `cp` and `git` through `wsl.exe`
@@ -34,8 +34,8 @@ in
     ];
   };
 
-  # Keep Windows DNS tunneling as the upstream resolver. Tailscale adds only
-  # its split MagicDNS domain to systemd-resolved.
+  # Windows DNS tunneling carries public, employer and Windows-owned MagicDNS.
+  # Keep NAT networking; do not add a second Tailscale resolver or identity.
   services.resolved.enable = true;
   networking.nameservers = [ "10.255.255.254" ];
 

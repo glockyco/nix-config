@@ -23,6 +23,21 @@ let
     inherit managedHosts;
     peers = fixturePeers;
   };
+  unreachableHosts = managedHosts // {
+    fixture-unreachable.tailnet = {
+      tag = "tag:fixture-unreachable";
+      reachable = false;
+    };
+  };
+  unreachablePolicy = tailnetPolicyRenderer {
+    managedHosts = unreachableHosts;
+    inherit peers;
+  };
+  withoutAirPeers = builtins.removeAttrs peers [ "macbook-air" ];
+  withoutAirPolicy = tailnetPolicyRenderer {
+    inherit managedHosts;
+    peers = withoutAirPeers;
+  };
   hostTags = map (host: host.tailnet.tag) (builtins.attrValues managedHosts);
   reachableHostTags = map (host: host.tailnet.tag) (
     builtins.filter (host: host.tailnet.reachable) (builtins.attrValues managedHosts)
@@ -51,8 +66,11 @@ runCommand "check-tailnet-policy"
         and (.grants[0].src == ["*"] and .grants[0].ip == ["*"])
         and ((.grants[0].dst | sort) == ($reachable | sort))
         and all(.grants[].dst[]; . as $tag | ($unreachable | index($tag)) == null)
-        and (([.tests[].src] | sort) == ($reachable | sort))
-        and all(.tests[]; .proto == "tcp" and .deny == $deny)
+        and (([.tests[].src] | sort) == ($tags | sort))
+        and all(.tests[];
+          .proto == "tcp"
+          and ((.accept | sort) == ([$reachable[] + ":22"] | sort))
+          and (if ($deny | length) == 0 then (has("deny") | not) else .deny == $deny end))
         and ([.. | strings] | all(contains("@") | not))
       ' "$1" >/dev/null
     }
@@ -67,6 +85,26 @@ runCommand "check-tailnet-policy"
       ${lib.escapeShellArg (expectedReachable fixturePeers)} \
       ${lib.escapeShellArg expectedUnreachable} \
       ${lib.escapeShellArg expectedDeny}
+    check_policy ${unreachablePolicy}/policy.hujson \
+      ${
+        lib.escapeShellArg (builtins.toJSON (hostTags ++ peerTags peers ++ [ "tag:fixture-unreachable" ]))
+      } \
+      ${lib.escapeShellArg (expectedReachable peers)} \
+      ${lib.escapeShellArg (builtins.toJSON (unreachableHostTags ++ [ "tag:fixture-unreachable" ]))} \
+      ${lib.escapeShellArg (
+        builtins.toJSON ((map (tag: "${tag}:22") unreachableHostTags) ++ [ "tag:fixture-unreachable:22" ])
+      )}
+    check_policy ${withoutAirPolicy}/policy.hujson \
+      ${lib.escapeShellArg (expectedTags withoutAirPeers)} \
+      ${lib.escapeShellArg (expectedReachable withoutAirPeers)} \
+      ${lib.escapeShellArg expectedUnreachable} \
+      ${lib.escapeShellArg expectedDeny}
+    if jq -e '.. | strings | select(contains("tag:macbook-air"))' \
+      ${withoutAirPolicy}/policy.hujson >/dev/null
+    then
+      echo 'Durable policy retained the removed Air' >&2
+      exit 1
+    fi
 
     if ! jq -e '.. | strings | select(contains("tag:fixture-peer"))' \
       ${fixturePolicy}/policy.hujson >/dev/null
