@@ -38,13 +38,18 @@ in
         {
           cask = "fork";
           appPath = "/Applications/Fork.app";
-          dockPosition = 9;
+          dockPosition = 10;
           rationale = "The proprietary Git client comes from its Homebrew cask.";
+        }
+        {
+          appPath = "/Applications/Tern.app";
+          dockPosition = 6;
+          rationale = "Stencil's closed beta installs by hand and updates itself.";
         }
         {
           cask = "zen";
           appPath = "/Applications/Zen.app";
-          dockPosition = 6;
+          dockPosition = 7;
           rationale = "The browser follows vendor security updates.";
         }
         {
@@ -72,7 +77,7 @@ in
         {
           cask = "zed";
           appPath = "/Applications/Zed.app";
-          dockPosition = 7;
+          dockPosition = 8;
           rationale = "The editor receives updates from its vendor.";
         }
         {
@@ -104,7 +109,7 @@ in
         {
           cask = "pdf-expert";
           appPath = "/Applications/PDF Expert.app";
-          dockPosition = 8;
+          dockPosition = 9;
           rationale = "The vendor supplies the signed, self-updating bundle.";
         }
         {
