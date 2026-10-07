@@ -152,6 +152,9 @@ function Invoke-NativeFixtures {
     }
     foreach ($resource in @($Document.resources | Where-Object { $_.metadata.application.source -eq 'npm' })) {
       foreach ($scenario in @('desired', 'missing', 'newer', 'native-failure', 'install-failure', 'npm-version-drift', 'npm-wrapper-missing', 'npm-lock-drift', 'npm-native-version-drift', 'node-machine')) { Invoke-InstallerFixture $resource $scenario $root }
+      $unsupportedVersion = Copy-FixtureObject $resource
+      $unsupportedVersion.properties.testScript = $unsupportedVersion.properties.testScript.Replace("'typescript-language-server','openspec'", "'typescript-language-server','svelteserver','openspec'")
+      Assert-FixtureRejection 'Svelte unsupported version mode' { Invoke-InstallerFixture $unsupportedVersion 'desired' $root } 'svelteserver has no --version mode'
     }
     # The public entrypoint must return nonzero and preserve names, independently of helper throws.
     $engine = (Get-Process -Id $PID).Path
