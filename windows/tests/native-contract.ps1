@@ -264,6 +264,10 @@ function Test-WindowsDocument {
   foreach ($resource in $Document.resources) {
     $label = "resource $($resource.name)"
     Assert-Contract ($resource.name -is [string] -and $resource.name -match '\S' -and $resource.type -match '^[^/]+/[^/]+$' -and $null -ne $resource.properties) "${label}: missing name/type/properties"
+    Assert-Contract ($resource.name -notin @('fork wslgit', 'zed catppuccin theme', 'zen catppuccin theme', 'reneo elevation launcher', 'zed keymap', 'zed settings', 'reneo settings', 'power toys settings')) "${label}: migrated user files belong only to chezmoi"
+    if ($resource.name -eq 'package window tool') {
+      Assert-Contract ($resource.properties.testScript -notmatch '(?i)AltSnap\.ini' -and $resource.properties.setScript -notmatch '(?i)WritePrivateProfileString|AeroHoffset|AeroVoffset') "${label}: AltSnap INI belongs only to chezmoi"
+    }
     Assert-Contract (-not $names.ContainsKey($resource.name)) "${label}: duplicate name"
     $names[$resource.name] = $resource.type
   }

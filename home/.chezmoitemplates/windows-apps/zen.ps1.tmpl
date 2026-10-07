@@ -1,0 +1,16 @@
+$zenPreference = @'
+{{ .windowsApps.zen.preference | toJson }}
+'@ | ConvertFrom-Json
+$zenFiles = @(
+{{- range $name, $file := .windowsApps.zen.files }}
+  [PSCustomObject]@{ Name = '{{ $name }}'; Text = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{{ include (joinPath $.chezmoi.sourceDir ".chezmoitemplates/windows-apps/zen" $name) | b64enc }}')); Sha256 = '{{ $file.sha256 }}' },
+{{- end }}
+  $null
+) | Where-Object { $null -ne $_ }
+foreach ($file in $zenFiles) {
+  $hash = [Security.Cryptography.SHA256]::Create()
+  try { $actual = [BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes($file.Text))).Replace('-', '').ToLowerInvariant() }
+  finally { $hash.Dispose() }
+  if ($actual -cne $file.Sha256) { throw "Pinned Zen asset checksum mismatch: $($file.Name)" }
+}
+$zenProfilesIni = Join-Path $env:APPDATA 'zen/profiles.ini'

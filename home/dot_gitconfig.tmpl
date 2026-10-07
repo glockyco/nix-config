@@ -1,5 +1,6 @@
 {{- $host := index .hosts .host -}}
 {{- $platform := index $host.platforms .chezmoi.os -}}
+{{- $windows := and (eq .chezmoi.os "windows") (hasKey $host.platforms "windows") -}}
 [user]
     name = {{ $host.git.authorName | quote }}
     email = {{ $host.git.defaultEmail | quote }}
@@ -25,18 +26,26 @@
     path = ~/.config/delta/catppuccin.gitconfig
 [ghq]
     root = {{ $platform.ghqRoot | quote }}
-{{ if and (eq .chezmoi.os "linux") $host.roles.wslWorkstation }}
+{{ if or (and (eq .chezmoi.os "linux") $host.roles.wslWorkstation) $windows }}
 [includeIf "gitdir:{{ $platform.ghqRoot }}/github.com/"]
     path = ~/.config/git/github.gitconfig
+{{ if $windows -}}
+[credential]
+    helper =
+    helper = {{ printf "!\"%s/%s/%s\"" ($platform.home | replace "\\" "/") $platform.gitDirectory $platform.gcmHelper | quote }}
+{{ else -}}
 [credential]
     helper = manager
     credentialStore = gpg
+{{ end -}}
 [credential "https://git.overleaf.com"]
     provider = generic
 {{ end -}}
+{{ if ne .chezmoi.os "windows" -}}
 [credential "https://github.com"]
     helper =
     helper = !gh auth git-credential
 [credential "https://gist.github.com"]
     helper =
     helper = !gh auth git-credential
+{{ end -}}

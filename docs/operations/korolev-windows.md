@@ -4,24 +4,24 @@
 
 Windows is the target primary workstation; NixOS-WSL remains a secondary CLI/build environment. Use a native checkout at `C:\Users\JGlock\src\github.com\glockyco\nix-config`, not the separate Linux checkout at `/home/user/src/github.com/glockyco/nix-config`. Windows is not a Nix flake system. This procedure requires no Nix-built Windows output.
 
-This source unit does **not** complete the later chezmoi user-file migration or claim native provisioning/session/network acceptance. The hand-maintained document still contains surviving user-file resources until that migration removes them. Do not introduce a second writer in `home/` before the corresponding document writer is removed. Renderer code is temporarily retained for the remaining cutover work, not a second permanent Windows source. Implementation evidence belongs to the OpenSpec change, not this current-state manual.
+WinGet Configuration owns packages and Windows settings; chezmoi owns Windows user files and user setup from `home/`. Each destination has one owner. Source/fixture checks do not claim native provisioning, application/session or network acceptance. Implementation evidence belongs to the OpenSpec change, not this current-state manual.
 
 Existing live state supplied by the owner on 2026-10-07: per-user Git 2.55.0.5 is at `%LOCALAPPDATA%\Programs\Git` on user PATH; Tern 0.6.0 is at `%LOCALAPPDATA%\Programs\Tern` on user PATH with a Start-menu shortcut; official OMP 18.8.0 is at `%LOCALAPPDATA%\omp\omp.exe` on user PATH with personal plugin 0.2.0, per-user Git Bash selected and owner login complete. Zed's `agent_servers.omp` entry is removed. Do not redo those installations. These facts do not claim native LSP/annotation/network acceptance. The remaining catalog/release selections were verified read-only; further provisioning, UAC, restart and application acceptance are owner-attended.
 
 ## Source and privilege owners
 
-| Source or state                               | Owner and boundary                                                                                                                                                                                                                                 |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `windows/configuration.winget`                | Hand-maintained JSON-compatible YAML (actual JSON). WinGet Configuration owns declared installs and Windows settings; surviving user-file resources are transitional. Application metadata beside each resource is the selector/version authority. |
-| `windows/managed-applications.json`           | Dated Intune exclusion audit, not another application/pin list.                                                                                                                                                                                    |
-| `windows/apply-kbdneo.ps1`                    | Explicit 64-bit Administrator operation: checksum-pinned native Neo DLLs and keyboard registration `b0000407` only.                                                                                                                                |
-| `windows/apply-zen-policies.ps1`              | Explicit Administrator operation: Zen policy file under Program Files only.                                                                                                                                                                        |
-| `windows/check.ps1` and fixtures              | Native validation/parser/ownership checks; never live apply.                                                                                                                                                                                       |
-| `home/` and shared TOML                       | Existing portable chezmoi source; Windows user-file ownership is the later clean cutover, not implemented by this documentation unit.                                                                                                              |
-| OMP/plugin/Tern/Plannotator                   | Explicit upstream user installations described below, not Nix activation or automatic configuration apply.                                                                                                                                         |
-| Profiles, credentials, sessions, repositories | Application/user owned. Never copy authentication databases, private keys, browser profiles or another platform's OMP state.                                                                                                                       |
+| Source or state                               | Owner and boundary                                                                                                                                                                                                            |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `windows/configuration.winget`                | Hand-maintained JSON-compatible YAML (actual JSON). WinGet Configuration owns declared installs and Windows settings, never migrated user files. Application metadata beside each resource is the selector/version authority. |
+| `windows/managed-applications.json`           | Dated Intune exclusion audit, not another application/pin list.                                                                                                                                                               |
+| `windows/apply-kbdneo.ps1`                    | Explicit 64-bit Administrator operation: checksum-pinned native Neo DLLs and keyboard registration `b0000407` only.                                                                                                           |
+| `windows/apply-zen-policies.ps1`              | Explicit Administrator operation: Zen policy file under Program Files only.                                                                                                                                                   |
+| `windows/check.ps1` and fixtures              | Native validation/parser/ownership checks; never live apply.                                                                                                                                                                  |
+| `home/` and shared TOML                       | Chezmoi owns portable Git/gh/SSH and Windows app declarations, pinned assets and user setup; undeclared app state remains app-owned.                                                                                          |
+| OMP/plugin/Tern/Plannotator                   | Explicit upstream user installations described below, not Nix activation or automatic configuration apply.                                                                                                                    |
+| Profiles, credentials, sessions, repositories | Application/user owned. Never copy authentication databases, private keys, browser profiles or another platform's OMP state.                                                                                                  |
 
-Run the document, user setup and any eventual chezmoi apply as standard `JGlock` (`scch\jglock`), never as Administrator and never against the Administrator HOME/HKCU. Only Zen and Tailscale are machine-scope package exceptions; the owner supplies the separate Administrator credential for their approved installer prompts. Intune-owned runtime dependencies are prerequisites to inspect, not additional installers. OpenSSH capability/service/firewall setup is a separately approved manual operation, not a third general-purpose Administrator script or a document resource. Do not bypass employer restrictions.
+Run the document, user setup and chezmoi as standard `jglock` (`scch\jglock`), never as Administrator and never against the Administrator HOME/HKCU. Only Zen and Tailscale are machine-scope package exceptions; the owner supplies the separate Administrator credential for their approved installer prompts. Intune-owned runtime dependencies are prerequisites to inspect, not additional installers. OpenSSH capability/service/firewall setup is a separately approved manual operation, not a third general-purpose Administrator script or a document resource. Do not bypass employer restrictions.
 
 Git alone is removed from the managed exclusion set: the audited Patch My PC “Update für Git 2.51.0.2” detection and requirements in `C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\AppWorkload.log` target HKLM, while the observed Git install is HKCU/per-user. That update package does not own this installation. Docker Desktop and every other audited excluded ID remain excluded; this does not modify Intune policy. Re-audit if central ownership changes.
 
@@ -37,14 +37,7 @@ winget configure show --file .\windows\configuration.winget
 
 Windows PowerShell 5.1 covers scripts executed by that host; PowerShell 7 covers native tooling. The default check validates the vendored official DSC schema and discovered resource-type allowlist, runs isolated positive/negative fixtures and parses document scripts, both Administrator scripts and native scripts. Findings name the resource/script and return nonzero. Read-only WinGet show must exit zero; missing dependencies fail rather than skip. `winget configure validate` is not the gate: WinGet 1.29.380 returns 1 for valid native DSC resources because its public-module warnings count as findings, including on the untouched baseline. [Implementation evidence](../../openspec/changes/make-korolev-windows-native/evidence.md) records the upstream reason and actual discovery versions. Never suppress the warning or call exit 1 a pass. These checks install no workstation resource and require no login; Linux PowerShell 7 evidence is not Windows PowerShell 5.1/WinGet evidence.
 
-The checker supports `-DocumentPath` for a selected document and `-AdditionalScriptPath` as a PowerShell `string[]` for actual rendered scripts in an isolated fixture tree. For the later chezmoi/ReNeo migration, pass every rendered PowerShell script, not unrendered template text:
-
-```powershell
-& .\windows\check.ps1 -DocumentPath .\windows\configuration.winget -AdditionalScriptPath @('C:\fixture\rendered\one.ps1', 'C:\fixture\rendered\two.ps1')
-if ($LASTEXITCODE -ne 0) { throw 'Native Windows check failed' }
-```
-
-The paths above illustrate the interface; replace them with the real fixture output paths. Run this invocation in both required PowerShell hosts. `-SkipFixtures` permits focused parser/invariant inspection only; it is not the complete acceptance gate. Checks derive mutable pins/checksums from source, not this prose. Complete repository release gates remain in [README](../../README.md#develop), run sequentially by the integration owner.
+The default checker also renders Windows chezmoi scripts, AST-parses their actual PowerShell output, and runs isolated init/apply/verify, Git/SSH and app-state fixtures with process/WinGet doubles. It requires chezmoi 2.73.0, Git and OpenSSH on PATH; it never applies workstation resources to the real profile. `-DocumentPath` selects a document and `-AdditionalScriptPath` accepts a PowerShell `string[]` of additional rendered scripts. `-SkipFixtures` permits focused parser/invariant inspection only, not acceptance. Complete repository release gates remain in [README](../../README.md#develop), run sequentially.
 
 The Windows PowerShell invocation uses a process-only execution-policy setting for the reviewed repository fixtures; it changes no persistent policy and cannot override managed policy. Do not modify employer policy to make a check pass. If managed execution restrictions still reject the scripts, record that prerequisite rather than bypassing it.
 
@@ -101,7 +94,28 @@ For Nerd Font faces, a differing installed TTF does not reliably reveal Nerd Fon
 
 Before writes, retain permission-preserving local backups outside the checkout of affected user settings, PATH/environment, Fork Git references, chezmoi config/state and narrowly owned machine files/registry entries. Record absent paths and versions. Keep previous accepted Nix generations for Linux recovery. Do not export credentials or whole runtime profiles into the repository.
 
-Do not execute the whole-document apply below while the transitional Fork/Zed/Zen/ReNeo/PowerToys/AltSnap user-file writers remain. Complete their single-owner chezmoi migration first; validation and the explicit Neo/Zen test procedures are safe review steps before that cutover.
+### Bootstrap the standard-user native checkout
+
+In a fresh standard-user PowerShell session, install only the bootstrap prerequisites from the approved source, then clone Windows-local storage. Do not reuse the Linux checkout through UNC or `/mnt/c` for user setup:
+
+```powershell
+winget install --id Git.Git --exact --source winget --scope user --accept-source-agreements --accept-package-agreements
+winget install --id twpayne.chezmoi --exact --source winget --scope user --version 2.73.0 --accept-source-agreements --accept-package-agreements
+```
+
+Open a fresh standard-user shell so PATH reflects those installs, then:
+
+```powershell
+$checkout = Join-Path $HOME 'src\github.com\glockyco\nix-config'
+git clone https://github.com/glockyco/nix-config.git $checkout
+Set-Location $checkout
+chezmoi init --source $checkout
+chezmoi source-path
+chezmoi data
+chezmoi diff
+```
+
+Select `korolev` at init. Confirm persisted `sourceDir` is this native checkout (not its `home` child), `data.host=korolev`, Windows profile facts and ghq root `~/src`. The repository's `.chezmoiroot` selects `home/`. Init and diff do not authorize apply; review source revision, backups and Neo prerequisite first. On an existing checkout, inspect it instead of cloning over it. Never print decrypted credential previews.
 
 In standard PowerShell, from the native checkout:
 
@@ -129,10 +143,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File $kbdNeo -Test
 Require `kbdneo: desired`. Coordinate a real Windows restart **before** registering input tip `0407:b0000407`. Return to standard `JGlock` PowerShell, reset the source paths and, after review/approval, apply:
 
 ```powershell
-winget configure --file $configuration --accept-configuration-agreements --disable-interactivity --suppress-initial-details
+chezmoi diff
+chezmoi apply
+chezmoi verify
 ```
 
-The owner supplies the separate Administrator credential only at approved Zen/Tailscale installer prompts. Never elevate the whole document. Tailscale installation does not authorize enrollment; use the separately approved network cutover procedure before any Windows node login.
+The Windows-only content-hashed `run_onchange_before_` checks the persisted checkout against Git's root and runs its document before user files. The owner supplies the separate Administrator credential only at approved Zen/Tailscale installer prompts. Never elevate the whole apply. Tailscale installation does not authorize enrollment; use the separately approved network cutover procedure before any Windows node login.
 
 After Zen installation, open Administrator PowerShell, set `$zenPolicies` to the absolute source path, and run only:
 
@@ -185,7 +201,13 @@ Restart and repeat real Tern/annotation/cancel/LSP smokes. Retain accepted binar
 
 ## Native projects and Mac LaTeX
 
-Native Markdown/Python/TypeScript/Svelte and Typst use Windows tools directly. Test initialization, diagnostics/navigation and a representative Typst build, including `.cmd` resolution and paths with spaces. Node/Python availability does not give this repository ownership of project SDKs, virtual environments, root markers, compiler flags or builds. Open native repositories in Zed as local Windows projects; the later settings migration removes WSL transport/nixd/OMP agent integration rather than replacing it with another launcher. Fork's target native Git/GCM migration also belongs to that later clean cutover; do not manually introduce competing settings writers here.
+Native Markdown/Python/TypeScript/Svelte and Typst use Windows tools directly. Test initialization, diagnostics/navigation and a representative Typst build, including `.cmd` resolution and paths with spaces. Node/Python availability does not give this repository ownership of project SDKs, virtual environments, root markers, compiler flags or builds. Open native repositories in Zed as local Windows projects. Chezmoi merges declared settings without discarding JSONC comments or unrelated UI state, enforces the Windows-first keymap and installs the pinned theme. There is no WSL transport, nixd or OMP agent server. Make keymap changes in source: the next apply replaces local keymap edits. Verify Ctrl+C/V/A/Z/F in Vim modes, Ctrl+K Ctrl+S, Ctrl+W, ordinary Vim editing and terminal Ctrl+C in the actual editor.
+
+Fork's declared `GitInstancePath` points at `%LOCALAPPDATA%\Programs\Git`, preserving unrelated settings. Global Git uses the work email; `~/src/github.com/` selects the GitHub no-reply identity and repository-local email wins. Shared defaults include Git LFS, delta, `main`, pull/push policy, `autocrlf=input`, HTTPS and native GCM with Overleaf's generic provider. GCM's reviewed relative path is `mingw64/bin/git-credential-manager.exe` for Git 2.55; Git >=2.56 moves to `ucrt64/bin`. Review and update the shared fact after a Git upgrade rather than probing a fallback chain. Credentials, gh `hosts.yml` and private SSH keys are never managed. Confirm effective Git identity and native HTTPS/GCM operations in disposable worktrees before accepting Fork.
+
+PowerToys declared module keys, ReNeo launcher/config and AltSnap INI values have chezmoi ownership; app-held files use stop/write/restart setup. Zen themes and its single `user.js` preference apply only to real profiles found through `profiles.ini`; create a profile in Zen first, never fabricate one. Cookies/history and unrelated preferences remain untouched. Keep local backups and close applications for recovery. Remove only change-owned old wslgit payload/environment references after live native Fork acceptance, not during fixture validation.
+
+An absent Zen `profiles.ini` skips theme setup during fresh bootstrap; after creating a real profile, ordinary apply discovers it. A present malformed profile declaration or missing declared directory fails rather than writing guessed paths. Dynamic Zen setup rechecks on every apply; ordinary `chezmoi verify` covers regular declared destinations, not the dynamically discovered profile writes. Inspect Zen after apply as part of live acceptance.
 
 LaTeX compilation and TexLab run on the **Mac's existing full TeX closure**. Keep a separate local Mac clone of the project; exchange committed work through Git, or transfer disposable inputs with approved SSH/SFTP while preserving originals. Use the Mac's approved `macbook-pro` interactive or `macbook-pro-batch` endpoint to run the **project's documented** build command in that clone. Run TexLab with the Mac editor/agent against that Mac worktree; retrieve/view the resulting PDF through the approved transfer workflow. Verify a representative actual Mac editor/TexLab/build session before declaring acceptance. Project root/build settings remain project-owned. Do not install native MiKTeX/TexLab, wire Windows Zed to WSL LaTeX, or add native nixd/Roslyn/C#/Unity servers. Retained WSL TeX and other CLI packages are secondary tools and are not removed by this source unit; use their own Linux Git/build workflow, not Fork/wslgit bridging.
 
@@ -197,4 +219,18 @@ Use Windows Settings for default associations, taskbar pins and Night light (sun
 
 Restore only backed-up, change-owned user files/PATH/Fork references and compatible reviewed source, preserving post-cutover UI edits, repositories, profiles, credentials and OMP history. Restore narrowly owned Neo DLL/registration or Zen policy backups from local Administrator recovery as appropriate; keyboard changes require a coordinated restart and input verification. Package repair is a separately reviewed supported installer operation, never an implicit downgrade. Repeat native checks, WinGet test, both narrow script tests and actual app/session acceptance. Keep backups/accepted binaries/generations until all applicable live gates pass.
 
-Target later chezmoi operation is ordinary-user `chezmoi diff`, `chezmoi apply`, `chezmoi verify` from the persisted native checkout; a content-hashed before-script runs WinGet only when source changes. That migration is not implemented here. Its unchanged script ledger is not a live-drift detector or a backup: use independent WinGet test and an explicit approved selected-script rerun for repair. Never run Administrator-profile chezmoi apply. Network/node/SSH recovery remains separately approved, with local Administrator recovery and no private-key/device-state copying.
+If an interrupted app-held file apply leaves `%LOCALAPPDATA%\WindowsConfiguration\chezmoi-app-restarts.json`, preserve that transient restart journal. Review and explicitly rerun only the after-hook to restart recorded applications before inspecting partial file state:
+
+```powershell
+$repair = Join-Path $env:TEMP 'chezmoi-apps-restart.ps1'
+chezmoi execute-template --file (Join-Path $checkout 'home\run_after_windows-apps-restart.ps1.tmpl') --output $repair
+if ($LASTEXITCODE -ne 0) { throw 'Could not render selected app recovery script' }
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File $repair
+if ($LASTEXITCODE -ne 0) { throw 'App recovery script failed; retain journal and inspect' }
+Remove-Item -LiteralPath $repair
+chezmoi diff
+```
+
+This selected hook also rechecks real Zen profiles; review it before running. It never runs the Administrator scripts or package document. Then repair/reapply owned files and verify; do not discard the journal or force unrelated setup to conceal interrupted state.
+
+Ordinary-user maintenance is `chezmoi diff`, `chezmoi apply`, `chezmoi verify` from the persisted native checkout. An unchanged document hash does not rerun WinGet; the script ledger is neither a live-drift detector nor a backup. Run independent `winget configure test --file $configuration` to inspect package/settings drift. After explicit review and approval, repair that drift by running the selected document directly with `winget configure --file $configuration --accept-configuration-agreements --disable-interactivity --suppress-initial-details`, then repeat tests and chezmoi verify. Do not force all setup scripts or delete chezmoi's state database to repair one resource. Changed owned user files converge through ordinary apply; restore only compatible owned backups/source if rejecting that change. Never run Administrator-profile chezmoi apply. Network/node/SSH recovery remains separately approved, with local Administrator recovery and no private-key/device-state copying.

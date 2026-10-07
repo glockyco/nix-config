@@ -1,0 +1,27 @@
+{{ if and (eq .chezmoi.os "windows") (eq .host "korolev") -}}
+$ErrorActionPreference = 'Stop'
+{{ template "windows-apps/functions.ps1" . }}
+{{ template "windows-apps/jsonc.ps1" . }}
+{{ template "windows-apps/declarations.ps1.tmpl" . }}
+{{ template "windows-apps/zen.ps1.tmpl" . }}
+$restartState = Join-Path $env:LOCALAPPDATA 'WindowsConfiguration/chezmoi-app-restarts.json'
+if (Test-Path -LiteralPath $restartState) { throw "An interrupted app apply has restart state at $restartState. Run chezmoi's windows-apps-restart after script explicitly to restart, then inspect/diff/reapply." }
+# Validate every input before stopping an app or allowing chezmoi to write files.
+$null = Get-AppJson (Read-AppText (Join-Path $env:APPDATA 'Zed/settings.json')) $zedDesired 'zed'
+$null = Get-AppJson (Read-AppText (Join-Path $env:LOCALAPPDATA ($reneoDirectory + '/config.json'))) $reneoDesired 'reneo'
+$null = @(Get-ZenWrites $zenProfilesIni $zenFiles $zenPreference)
+$pending = @()
+foreach ($file in $heldFiles) {
+  $text = Read-AppText $file.Path
+  $desired = if ($file.Kind -eq 'ini') { Get-AppIni $text $file.Desired } else { Get-AppJson $text $file.Desired $file.Kind }
+  if (-not (Test-AppText $file.Path $desired)) { $pending += $file }
+}
+$restart = @()
+try {
+  foreach ($file in $pending) { $restart += @(Stop-AppForWrite $file.Process) }
+  if ($restart.Count -gt 0) { Write-AppText $restartState (ConvertTo-Json -InputObject @($restart | Select-Object -Unique)) }
+} catch {
+  Restart-AppAfterWrite $restart
+  throw
+}
+{{ end -}}

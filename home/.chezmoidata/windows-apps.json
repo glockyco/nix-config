@@ -1,0 +1,44 @@
+{
+  "windowsApps": {
+    "zed": {
+      "repository": "https://github.com/catppuccin/zed",
+      "commit": "b54cb81708d06912d50e6bb9fd2fd2103b9dda25",
+      "url": "https://raw.githubusercontent.com/catppuccin/zed/b54cb81708d06912d50e6bb9fd2fd2103b9dda25/themes/catppuccin-mauve.json",
+      "path": "zed-catppuccin-mauve.asset",
+      "sha256": "2dccb9fb3ff888e646407b4f84d400304553e0d9a9688ac75d0f9fcd3f8bdf6a",
+      "license": {
+        "path": "zed-LICENSE",
+        "url": "https://raw.githubusercontent.com/catppuccin/zed/b54cb81708d06912d50e6bb9fd2fd2103b9dda25/LICENSE",
+        "sha256": "814096d2c34cc216c624738a49356f32b7237733b4f7edb0685f4e50ef5074ba"
+      }
+    },
+    "zen": {
+      "accent": "Mauve",
+      "commit": "c855685442c6040c4dda9c8d3ddc7b708de1cbaa",
+      "files": {
+        "userChrome.css": {
+          "sha256": "98ba97510bf2ecd8636686238242cb0f2e43552e2bb93c520818ed89da92189b",
+          "url": "https://raw.githubusercontent.com/catppuccin/zen-browser/c855685442c6040c4dda9c8d3ddc7b708de1cbaa/themes/Mocha/Mauve/userChrome.css"
+        },
+        "userContent.css": {
+          "sha256": "297a3c45e624792892482ab45552625b2765e6d44947e878fe5c5731eb7cd44a",
+          "url": "https://raw.githubusercontent.com/catppuccin/zen-browser/c855685442c6040c4dda9c8d3ddc7b708de1cbaa/themes/Mocha/Mauve/userContent.css"
+        },
+        "zen-logo.svg": {
+          "sha256": "b41be8bf6c8659c532a0b1b984488696073adb31aec7a089211d4f4a7ecd9a83",
+          "url": "https://raw.githubusercontent.com/catppuccin/zen-browser/c855685442c6040c4dda9c8d3ddc7b708de1cbaa/themes/Mocha/Mauve/zen-logo-mocha.svg"
+        }
+      },
+      "flavor": "Mocha",
+      "preference": {
+        "name": "toolkit.legacyUserProfileCustomizations.stylesheets",
+        "value": true
+      },
+      "license": {
+        "path": "zen-LICENSE",
+        "url": "https://raw.githubusercontent.com/catppuccin/zen-browser/c855685442c6040c4dda9c8d3ddc7b708de1cbaa/LICENSE",
+        "sha256": "814096d2c34cc216c624738a49356f32b7237733b4f7edb0685f4e50ef5074ba"
+      }
+    }
+  }
+}

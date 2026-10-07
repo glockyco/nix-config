@@ -1,38 +1,39 @@
 {{- $host := index .hosts .host -}}
 {{- $mac := eq .chezmoi.os "darwin" -}}
 {{- $linux := eq .chezmoi.os "linux" -}}
+{{- $windows := and (eq .chezmoi.os "windows") (hasKey $host.platforms "windows") -}}
 # Endpoint blocks precede defaults because OpenSSH uses the first value.
-{{ if or (and $mac $host.roles.desktop) (and $linux $host.roles.wslWorkstation) -}}
+{{ if or (and $mac $host.roles.desktop) (and $linux $host.roles.wslWorkstation) $windows -}}
 Host desktop-batch
-{{ range $key, $value := .ssh.batch }}    {{ $key }} {{ $value }}
-{{ end }}
+{{ range $key, $value := .ssh.batch }}{{ if not (and $windows (hasPrefix "Control" $key)) }}    {{ $key }} {{ $value }}
+{{ end }}{{ end }}
 Host desktop desktop-batch
-    HostName {{ .ssh.desktop.hostName }}{{ if $linux }}.{{ .ssh.tailnetDnsDomain }}{{ end }}
+    HostName {{ .ssh.desktop.hostName }}{{ if or $linux $windows }}.{{ .ssh.tailnetDnsDomain }}{{ end }}
     User {{ .ssh.desktop.user }}
     StrictHostKeyChecking yes
-    UserKnownHostsFile "{{ .chezmoi.homeDir }}/.ssh/desktop-known-hosts"
-    GlobalKnownHostsFile /dev/null
+    UserKnownHostsFile "{{ .chezmoi.homeDir | replace "\\" "/" }}/.ssh/desktop-known-hosts"
+    GlobalKnownHostsFile {{ if $windows }}NUL{{ else }}/dev/null{{ end }}
     UpdateHostKeys no
     PasswordAuthentication no
     KbdInteractiveAuthentication no
-{{ if $linux }}    IdentityFile {{ .ssh.userIdentityFile }}
+{{ if or $linux $windows }}    IdentityFile {{ .ssh.userIdentityFile }}
     IdentitiesOnly yes
 {{ end }}
 {{ end -}}
-{{ if and $linux $host.roles.wslWorkstation -}}
+{{ if or (and $linux $host.roles.wslWorkstation) $windows -}}
 {{ range $name, $pin := .ssh.hostKeys -}}
 {{ $destination := index $.hosts $name -}}
 Host {{ $name }}-batch
-{{ range $key, $value := $.ssh.batch }}    {{ $key }} {{ $value }}
-{{ end }}
+{{ range $key, $value := $.ssh.batch }}{{ if not (and $windows (hasPrefix "Control" $key)) }}    {{ $key }} {{ $value }}
+{{ end }}{{ end }}
 Host {{ $name }} {{ $name }}-batch
     HostName {{ $name }}.{{ $.ssh.tailnetDnsDomain }}
     User {{ $destination.platforms.darwin.username }}
     IdentityFile {{ $.ssh.userIdentityFile }}
     IdentitiesOnly yes
     StrictHostKeyChecking yes
-    UserKnownHostsFile "{{ $.chezmoi.homeDir }}/.ssh/builder-known-hosts"
-    GlobalKnownHostsFile /dev/null
+    UserKnownHostsFile "{{ $.chezmoi.homeDir | replace "\\" "/" }}/.ssh/{{ if $windows }}{{ $name }}{{ else }}builder{{ end }}-known-hosts"
+    GlobalKnownHostsFile {{ if $windows }}NUL{{ else }}/dev/null{{ end }}
     UpdateHostKeys no
     PasswordAuthentication no
     KbdInteractiveAuthentication no
@@ -61,4 +62,10 @@ Host *
     IdentityAgent {{ .ssh.secretiveAgent }}
 {{ range $key, $value := .ssh.interactive }}    {{ $key }} {{ $value }}
 {{ end }}
+{{ end -}}
+{{ if $windows -}}
+# Windows OpenSSH has no Unix multiplexing socket support.
+Host *
+{{ range $key, $value := .ssh.interactive }}{{ if not (hasPrefix "Control" $key) }}    {{ $key }} {{ $value }}
+{{ end }}{{ end }}
 {{ end -}}

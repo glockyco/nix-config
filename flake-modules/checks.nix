@@ -386,9 +386,6 @@
           peers = tailnetPeers;
           inherit tailnetPolicyRenderer;
         };
-        windowsConfiguration = pkgs.callPackage ../checks/windows-configuration.nix {
-          windowsConfiguration = pkgs.windows-configuration;
-        };
         openspecContracts = inputs.personal-omp-plugin.lib.openspecCheck {
           inherit pkgs;
           src = ../.;

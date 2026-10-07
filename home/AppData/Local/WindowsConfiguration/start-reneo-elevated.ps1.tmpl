@@ -1,0 +1,2 @@
+{{ if and (eq .chezmoi.os "windows") (eq .host "korolev") -}}
+{{ include (joinPath .chezmoi.sourceDir ".chezmoitemplates/windows-apps/start-reneo-elevated.ps1") }}{{ end -}}
