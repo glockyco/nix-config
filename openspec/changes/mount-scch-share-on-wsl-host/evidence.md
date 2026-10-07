@@ -17,3 +17,7 @@ Korolev was activated from `fbbc64b` (merged through PR #57) on 2026-10-07.
 - The directory, its entry, and the entry's `cache` and `output` subdirectories belong to `user:users` (1000:100).
 - `touch` and `mkdir` below `/mnt/s/BigDataOrion/sea` failed with `Read-only file system`. The Windows listing was unchanged afterwards.
 - `systemctl is-system-running` reported `running`, and no unit had failed.
+
+## Unreachable share
+
+2026-10-07, VPN disconnected, after `sudo systemctl stop mnt-s.mount` unmounted the share while `mnt-s.automount` stayed active. Five consecutive `ls /mnt/s` calls each failed with exit 2 (`No such device`; the mount unit logged `fsconfig() failed: Host is down.`) in 639, 585, 603, 644 and 697 ms. `mnt-s.automount` remained `active` and nothing was mounted. After the owner reconnected the VPN, the next `ls /mnt/s` succeeded in 1133 ms and mounted the share.
