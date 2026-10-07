@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -14,7 +13,18 @@
     ./fonts.nix
   ];
 
-  users.users.${config.host.username}.shell = pkgs.zsh;
+  host.importedRoles.wslWorkstation = true;
+
+  users.users.${config.host.username} = {
+    shell = pkgs.zsh;
+    home = config.host.homeDirectory;
+    packages = [
+      pkgs.wsl-open
+      pkgs.git-credential-manager
+      pkgs.gnupg
+      pkgs.pass
+    ];
+  };
 
   programs.gnupg.agent = {
     enable = true;
@@ -25,24 +35,4 @@
     };
   };
 
-  home-manager.users.${config.host.username} = {
-    home.packages = [
-      pkgs.wsl-open
-      pkgs.git-credential-manager
-      pkgs.gnupg
-      pkgs.pass
-    ];
-
-    programs.zsh.initContent = lib.mkAfter ''
-      if [[ -t 0 ]]; then
-        export GPG_TTY=$(tty)
-      fi
-    '';
-
-    programs.git.settings.credential = {
-      helper = "${pkgs.git-credential-manager}/bin/git-credential-manager";
-      credentialStore = "gpg";
-      "https://git.overleaf.com".provider = "generic";
-    };
-  };
 }

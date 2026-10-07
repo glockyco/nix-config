@@ -1,0 +1,6 @@
+{{- $host := index .hosts .host -}}
+{{- $platform := index $host.platforms .chezmoi.os -}}
+version: "1"
+git_protocol: {{ $platform.ghProtocol }}
+editor: ""
+aliases: {}

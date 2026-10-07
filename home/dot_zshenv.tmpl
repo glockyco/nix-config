@@ -1,0 +1,13 @@
+{{- $host := index .hosts .host -}}
+{{- $platform := index $host.platforms .chezmoi.os -}}
+# Upstream OMP's installer owns ~/.local/bin; no shell installs tools.
+typeset -U path PATH
+path=("$HOME/.local/bin" "${path[@]}")
+{{ if eq .chezmoi.os "darwin" -}}
+export EDITOR={{ $platform.editor | quote }}
+{{ if $host.roles.containerClient -}}
+export COLIMA_HOME="$HOME/.config/colima"
+export COLIMA_SAVE_CONFIG=false
+export DOCKER_CONTEXT=colima
+{{ end -}}
+{{ end -}}

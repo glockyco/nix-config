@@ -1,0 +1,159 @@
+[hosts.macbook-pro.git]
+authorName = "Johann Glock"
+defaultEmail = "11704293+glockyco@users.noreply.github.com"
+githubNoReplyEmail = "11704293+glockyco@users.noreply.github.com"
+
+[hosts.macbook-pro.platforms.darwin]
+username = "glockyco"
+home = "/Users/glockyco"
+checkout = "/Users/glockyco/.config/nix-darwin"
+ghqRoot = "/Users/glockyco/src"
+editor = "zed --wait"
+ghProtocol = "ssh"
+
+[hosts.macbook-pro.paths]
+screenshots = "/Users/glockyco/Pictures/Screenshots"
+
+[hosts.macbook-pro.roles]
+desktop = true
+postgresql = true
+containerClient = true
+airClient = true
+wslWorkstation = false
+
+[hosts.macbook-pro.container]
+cpu = 8
+memory = 16
+disk = 150
+
+[[hosts.macbook-pro.container.mounts]]
+location = "/Users/glockyco"
+writable = true
+
+[[hosts.macbook-pro.applications]]
+cask = "karabiner-elements"
+rationale = "The vendor package supplies the signed DriverKit extension."
+
+[[hosts.macbook-pro.applications]]
+cask = "ghostty"
+appPath = "/Applications/Ghostty.app"
+dockPosition = 5
+rationale = "Secondary terminal beside Tern; the bundle matches the declared Neo2 rules."
+
+[[hosts.macbook-pro.applications]]
+cask = "fork"
+appPath = "/Applications/Fork.app"
+dockPosition = 10
+rationale = "The proprietary Git client comes from its Homebrew cask."
+
+[[hosts.macbook-pro.applications]]
+appPath = "/Applications/Tern.app"
+dockPosition = 6
+rationale = "Stencil's closed beta installs by hand and updates itself."
+
+[[hosts.macbook-pro.applications]]
+cask = "zen"
+appPath = "/Applications/Zen.app"
+dockPosition = 7
+rationale = "The browser follows vendor security updates."
+
+[[hosts.macbook-pro.applications]]
+cask = "brave-browser"
+rationale = "Brave hosts the Chrome-only browser relay."
+
+[[hosts.macbook-pro.applications]]
+cask = "thunderbird"
+rationale = "Mozilla supplies the signed binary and updater."
+
+[[hosts.macbook-pro.applications]]
+cask = "secretive"
+rationale = "The signed bundle supports Secure Enclave and Touch ID."
+
+[[hosts.macbook-pro.applications]]
+cask = "windows-app"
+rationale = "The signed client connects to the Windows desktop."
+
+[[hosts.macbook-pro.applications]]
+cask = "bitwarden"
+appPath = "/Applications/Bitwarden.app"
+dockPosition = 1
+rationale = "The cask includes its Safari extension."
+
+[[hosts.macbook-pro.applications]]
+cask = "zed"
+appPath = "/Applications/Zed.app"
+dockPosition = 8
+rationale = "The editor receives updates from its vendor."
+
+[[hosts.macbook-pro.applications]]
+cask = "discord"
+rationale = "Install the communication client."
+
+[[hosts.macbook-pro.applications]]
+cask = "ferdium"
+appPath = "/Applications/Ferdium.app"
+dockPosition = 2
+rationale = "The app hosts communication services."
+
+[[hosts.macbook-pro.applications]]
+cask = "microsoft-teams"
+appPath = "/Applications/Microsoft Teams.app"
+dockPosition = 4
+rationale = "The standalone app exposes the complete Teams settings."
+
+[[hosts.macbook-pro.applications]]
+cask = "signal"
+appPath = "/Applications/Signal.app"
+dockPosition = 3
+rationale = "Signal has no web client for Ferdium."
+
+[[hosts.macbook-pro.applications]]
+cask = "ticktick"
+rationale = "Install the task client."
+
+[[hosts.macbook-pro.applications]]
+cask = "pdf-expert"
+appPath = "/Applications/PDF Expert.app"
+dockPosition = 9
+rationale = "The vendor supplies the signed, self-updating bundle."
+
+[[hosts.macbook-pro.applications]]
+cask = "skim"
+rationale = "The PDF previewer supports SyncTeX."
+
+[[hosts.macbook-pro.applications]]
+cask = "rectangle-pro"
+rationale = "The window manager retains its Hookshot bundle ID."
+
+[[hosts.macbook-pro.applications]]
+cask = "crossover"
+rationale = "Install the Windows application compatibility layer."
+
+[[hosts.macbook-pro.applications]]
+cask = "unity-hub"
+rationale = "The vendor Hub owns editor installation and licensing."
+
+[[hosts.macbook-pro.applications]]
+cask = "launchbar"
+rationale = "Install the manually configured keyboard launcher."
+
+[hosts.korolev.git]
+authorName = "Johann Glock"
+defaultEmail = "johann.glock@scch.at"
+githubNoReplyEmail = "11704293+glockyco@users.noreply.github.com"
+
+[hosts.korolev.platforms.linux]
+username = "user"
+home = "/home/user"
+checkout = "/home/user/src/github.com/glockyco/nix-config"
+ghqRoot = "/home/user/src"
+ghProtocol = "https"
+
+[hosts.korolev.paths]
+
+[hosts.korolev.roles]
+desktop = false
+postgresql = false
+containerClient = false
+airClient = false
+wslWorkstation = true

@@ -1,0 +1,9 @@
+{{- $host := index .hosts .host -}}
+{{- $platform := index $host.platforms .chezmoi.os -}}
+{{ if and (eq .chezmoi.os "darwin") $host.roles.desktop -}}
+{{- $resources := include (joinPath .resourcesDir "manifest.json") | fromJson -}}
+#!/bin/sh
+set -eu
+# resource/helper identity: {{ $resources.symbolicHotkeys | toJson | sha256sum }}
+symbolic-hotkeys {{ range $resources.symbolicHotkeys.disabled }} {{ . | quote }}{{ end }}
+{{ end -}}

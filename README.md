@@ -13,6 +13,8 @@ Host facts live in [typed declarations](modules/fleet/host.nix) under `hosts/<na
 
 Nix owns the host configuration and the ordinary tools, including the language servers, OpenSpec, and Plannotator. It does not own OMP: each host installs upstream OMP with the official installer and the personal plugin with OMP's plugin manager (see [OMP](#omp)). OMP owns its writable authentication, configuration, sessions, plugin cache, and databases; activation and Nix rollback do not replace them. Project repositories own their development environments.
 
+Chezmoi owns user files and user setup from [home/](home/); Nix owns `users.users.<name>.packages`, shell plugins, system preferences, services and immutable `/etc/chezmoi-resources/`. [Shared TOML facts](home/.chezmoidata/) feed both the typed Nix host declarations and the real chezmoi templates. User files are regular writable files, not Nix-store symlinks; Zed and Karabiner merge declared settings while preserving undeclared UI state. Neither owner manages OMP state, private keys, shell history, browser profiles, project data or Colima runtime data.
+
 ## Network
 
 Tailscale connects the MacBook Pro, Korolev, the personal Windows desktop, and the temporary MacBook Air. The MacBook Pro, the desktop, and the Air can initiate connections to one another. Korolev can initiate connections to the other three but does not accept inbound connections.
@@ -50,6 +52,12 @@ nix fmt -- --fail-on-change
 nix flake check --print-build-logs
 ```
 
+On Korolev, also build the reviewed system without activating it:
+
+```sh
+nix build .#nixosConfigurations.korolev.config.system.build.toplevel
+```
+
 Run these additional gates on the Mac:
 
 ```sh
@@ -61,7 +69,12 @@ The build-plan guard needs Darwin store access outside a check sandbox. It rejec
 
 ```sh
 nix flake check --all-systems --print-build-logs
+nix build --no-link --print-build-logs --impure --expr \
+  "builtins.attrValues (builtins.getFlake \"git+file://$PWD\").checks.aarch64-darwin"
+nix build .#darwinConfigurations.macbook-pro.system
 ```
+
+`--all-systems` evaluates the full matrix; installed Nix still builds checks for its local system. The explicit Darwin check collection above exercises the foreign-platform checks through the Mac builder.
 
 Permanent behavior changes use [OpenSpec](openspec/). [Agent guidance](AGENTS.md) explains the repository workflow.
 
@@ -88,9 +101,51 @@ sudo nixos-rebuild switch --flake .#korolev
 
 An agent can run these activation commands itself in a pseudo-terminal. When `sudo` prompts, the owner types the password into that terminal; agents never ask for or enter it. From Korolev, the agent activates the Mac with `ssh -t macbook-pro 'cd ~/.config/nix-darwin && darwin-switch'`.
 
-Mac activation runs packaged commands for layouts, application handlers, shortcuts, Terminal fonts, power settings, and Rosetta. Each command compares current state before it writes. It reports `current` or names the change. A repeated switch should not rewrite files, re-register applications, import preferences, or reset power settings. An unexpected command error stops activation; inspect the diagnostic before retrying. Quit Terminal.app before verifying its font because it can save old preferences on exit. PostgreSQL keeps its cluster at `/var/lib/postgresql/17`. Activation prepares that directory without moving data.
+Mac system activation retains power settings, Rosetta, persistent GUI Nix lookup and service ownership. The subsequent ordinary-user chezmoi apply invokes packaged layout, application-handler, shortcut and Terminal-font helpers only when their rendered change scripts change. Helpers compare before writing and fail visibly on unexpected errors. An unchanged source is not an external-preference drift scheduler. Quit Terminal.app before font verification because it can save old preferences on exit. PostgreSQL keeps its cluster at `/var/lib/postgresql/17`; system activation prepares that directory without moving data.
 
-Before accepting a changed Mac generation, compare the layout, Karabiner, and `FileTypes.app` mtimes across two switches of one revision. Run the built Home Manager activation with `DRY_RUN=1`. Confirm that none of those paths change. Check both power sources and the Rosetta execution probe before and after activation. These live checks require owner authorization; package command tests do not replace them.
+### Initialize and apply user files
+
+Before the first cutover, retain the previous system and Home Manager generations against garbage collection. Capture every managed destination's type, symlink target and permissions, including absent paths. Keep permission-preserving, resolved-content backups in a local 0700 directory outside the checkout; back up Zed/Karabiner UI settings, chezmoi local config/state, Mac user LaunchAgents and affected preferences. Preserve existing age/GPG/SSH identities locally without printing or exporting them. The [change's responsibility map](openspec/changes/replace-home-manager-with-chezmoi/design.md#responsibility-ownership-map) and retained previous revision define the full inventory.
+
+After the reviewed first system switch, initialize from the existing checkout, without `--apply` and without a second clone:
+
+```sh
+# Mac user, checkout at ~/.config/nix-darwin
+chezmoi init --source "$HOME/.config/nix-darwin" --promptString host=macbook-pro
+
+# Korolev user, checkout in the Linux filesystem
+chezmoi init --source "$HOME/src/github.com/glockyco/nix-config" --promptString host=korolev
+```
+
+Run only the command for the current host. Initialization records the checkout in `sourceDir` and the explicit machine in `data.host`; it does not infer WSL's hostname. Review any existing local config first. Unknown hosts and a target inside the source checkout are rejected. `home/` is selected through `.chezmoiroot`.
+
+Preview ordinary configuration without decrypting or showing credentials. The preview-only check-mode override excludes the private credential directory; never use it for the real apply:
+
+```sh
+chezmoi --override-data '{"checkMode":true}' diff
+chezmoi --override-data '{"checkMode":true}' apply --dry-run
+```
+
+Inspect credential source names and destination mode metadata locally, not decrypted diffs. Review every conflict against the backup manifest. For each **confirmed, backed-up Home Manager symlink only**, replace that individual destination with `chezmoi apply --exclude=scripts --force "$path"` (for example `.zshrc`, `.zshenv`, Starship/gh/bat/Ghostty configuration or `.ssh/config` when the manifest confirms it is a symlink). Do not blanket-force the home directory. Keep setup scripts excluded during these individual replacements; the subsequent full user apply runs them. App-owned Zed/Karabiner files use modify filters, not opaque snapshot replacement. Confirm Nix-store targets remain unchanged.
+
+Review [home/.chezmoiremove](home/.chezmoiremove) too: it retires the old XDG Git configuration now replaced by `.gitconfig`, the HM direnv hook, and Linux-only generated HM environment/fontconfig/tray configuration. Back up their resolved contents and symlink metadata before applying; removal unlinks a destination, never its store target. Inert HM cache/marker scaffolding remains for the integrator's final post-acceptance cleanup.
+
+On the Mac, explicitly unload the captured old Home Manager mount/SOPS user agents before removing their backed-up definitions; inspect their actual labels rather than guessing. The new Air mount definition is system-owned and only one mount agent may remain. Then, as the ordinary user:
+
+```sh
+chezmoi apply
+chezmoi verify
+```
+
+Later Mac updates use `darwin-switch`: it prints the closure diff, switches the system, then resolves the selected generation's user packages/resources and runs chezmoi. A failed switch prevents apply; a failed apply is a visible partial update. On Korolev keep the two explicit steps:
+
+```sh
+sudo nixos-rebuild switch --flake .#korolev
+chezmoi apply
+chezmoi verify
+```
+
+Never run chezmoi with sudo or against another user's HOME. Before accepting either host, verify fresh Tern tty and detached-stdin shells, tool discovery, Git/gh identity, effective/live SSH endpoints and private credential consumers where applicable. On the Mac also verify the actual keyboard/layout, Karabiner/Zed UI preservation, handlers, Terminal font, screenshot destination, GUI Git-hook Nix lookup, Air link/one agent and Colima configuration. Repeat switch/apply/verify at the same revision and compare layout/Karabiner/FileTypes content and mtimes plus power/Rosetta probes. These owner-assisted live checks are not replaced by sandbox checks.
 
 After OMP or plugin behavior changes, also complete the [release smoke](docs/operations/dependency-updates.md#release-smoke).
 
@@ -126,7 +181,7 @@ Check the result with `omp --version` and `omp plugin list`. To return to a know
 
 Both hosts use the [shared Nix policy](modules/shared/nix-policy.nix) for pinned registries and disabled legacy channels. On the Mac, Determinate Nix owns automatic store garbage collection; this configuration does not schedule an optimiser. On Korolev, NixOS owns weekly garbage collection and store optimisation. Keep generations needed for recovery before collecting store paths.
 
-The Mac's [SOPS user module](modules/home/darwin/secrets.nix) decrypts committed secrets with its private age key at `~/.config/sops/age/keys.txt`. Never commit, print, or copy that key or decrypted values into this repository. The repository check rejects plaintext secret values outside SOPS metadata. Offline recovery is **not yet configured**: the owner must create a key on encrypted offline media, provide only its public recipient, and verify each re-encrypted file with that key before treating offline recovery as available. Do not remove the current ciphertext until the Mac can decrypt replacements.
+Chezmoi's built-in age decrypts the Mac-only [private encrypted sources](home/dot_config/private_credentials/) with the existing `~/.config/sops/age/keys.txt` identity. The public recipient and credential inventory live in [shared metadata](home/.chezmoidata/credentials.toml). Destinations are `~/.config/credentials/{fastmail-token,cloudflare-dns-token,cloudflare-workers-token}`, mode 0600 under a 0700 directory. Unlike runtime SOPS secrets, plaintext persists across reboot: use encrypted host storage and encrypted local backups. Never commit, print or export the identity or decrypted values. Linux and Windows exclude these sources; no production decryption occurs in checks, which use synthetic identities for round trips and validate production ciphertext framing only. Framing does not prove recipient access. Offline recovery remains **unconfigured** until the owner supplies an authorized offline public recipient and locally proves access.
 
 ## DNS
 
@@ -136,8 +191,8 @@ Publish only from the Mac, after a review of the preview. Each command starts th
 
 ```sh
 cd dns
-nix develop .. --command bash -c 'CLOUDFLARE_API_TOKEN="$(< ~/.config/sops-nix/secrets/cloudflare-dns-token)" exec dnscontrol preview'
-nix develop .. --command bash -c 'CLOUDFLARE_API_TOKEN="$(< ~/.config/sops-nix/secrets/cloudflare-dns-token)" exec dnscontrol push'
+nix develop .. --command bash -c 'CLOUDFLARE_API_TOKEN="$(< ~/.config/credentials/cloudflare-dns-token)" exec dnscontrol preview'
+nix develop .. --command bash -c 'CLOUDFLARE_API_TOKEN="$(< ~/.config/credentials/cloudflare-dns-token)" exec dnscontrol push'
 ```
 
 Only the owner runs `push`, and only after the preview shows the intended record changes and nothing else. An agent may run `preview` but never `push`. A project that needs the token in its own shell calls the `use_cloudflare_dns` direnv function from its `.envrc`.
@@ -170,3 +225,7 @@ sudo nixos-rebuild switch --rollback --no-reexec
 ```
 
 Then repeat verification. Nix rollback restores Nix-managed tools, not OMP or plugin versions, credentials, tailnet enrollment, or application data; use the [OMP](#omp) commands for those. Windows configuration has no generation rollback.
+
+System rollback does not restore chezmoi destinations. For a normal user-file rollback, select the previous reviewed source revision in the existing checkout, run `chezmoi diff` only for nonsecret paths (or the preview-only check-mode override above), then ordinary-user `chezmoi apply` and `chezmoi verify` with compatible system resources. Stop Colima first if profile revisions are incompatible; its data stays untouched.
+
+For rejection of the initial Home Manager cutover, stop applying the new source, preserve post-cutover UI edits locally, restore the retained previous system generation, and restore captured files/symlinks/permissions/agents/preferences and original chezmoi config/state from the local backup. Remove only paths recorded absent before cutover. Restore the previous user activation only after conflicting chezmoi replacements are removed. Retain old encrypted sources in the previous revision and local recovery state until all credential consumers pass. Neither system rollback nor chezmoi's script ledger is a backup of removed files or application preferences; recovery has two explicit owners, not transactional all-or-nothing behavior.

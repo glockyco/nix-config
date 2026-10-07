@@ -1,0 +1,7 @@
+# Temporary borrowed-machine integration, removed with issue #17.
+[air]
+hostName = "macbook-air"
+user = "joaichberger"
+shareName = "Macintosh%20HD"
+volumeName = "Macintosh HD-1"
+home = "/Volumes/Macintosh HD-1/Users/joaichberger"

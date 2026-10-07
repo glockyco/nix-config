@@ -38,7 +38,7 @@ in
         ]
         # Host tools, not repository tools. `darwin-rebuild` activates the
         # Darwin host, and `dnsconfig.js` needs the credential that
-        # `modules/home/darwin/secrets.nix` decrypts through sops. The WSL
+        # chezmoi decrypts locally into ~/.config/credentials/. The WSL
         # host declares no secret, so shipping `dnscontrol` there would move
         # the failure from shell entry into the middle of a DNS operation.
         ++ lib.optionals hasDarwinHost [

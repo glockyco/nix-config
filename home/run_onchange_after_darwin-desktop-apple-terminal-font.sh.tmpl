@@ -1,0 +1,9 @@
+{{- $host := index .hosts .host -}}
+{{- $platform := index $host.platforms .chezmoi.os -}}
+{{ if and (eq .chezmoi.os "darwin") $host.roles.desktop -}}
+{{- $resources := include (joinPath .resourcesDir "manifest.json") | fromJson -}}
+#!/bin/sh
+set -eu
+# resource/helper identity: {{ $resources.appleTerminalFont | toJson | sha256sum }}
+apple-terminal-font {{ $resources.appleTerminalFont.font | quote }}
+{{ end -}}

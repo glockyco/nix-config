@@ -1,0 +1,8 @@
+{{- $settings := dict "buffer_font_family" .zed.fontFamily "terminal" (dict "font_family" .zed.fontFamily) "theme" (dict "dark" .zed.themeName "light" .zed.themeName) -}}
+{{- range $key, $value := .zed.settings -}}
+{{- $_ := set $settings $key $value -}}
+{{- end -}}
+{{- range $key, $value := .zed.platforms.darwin -}}
+{{- $_ := set $settings $key $value -}}
+{{- end -}}
+{{ $settings | toPrettyJson }}

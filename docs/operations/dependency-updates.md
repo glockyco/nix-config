@@ -2,7 +2,7 @@
 
 Use this runbook for release acceptance, Plannotator updates, desktop OpenSSH maintenance, or external authorization repair.
 Routine [updates](../../README.md#update), [release gates](../../README.md#develop), [activation](../../README.md#activate), and [Nix rollback](../../README.md#recover) have one README owner.
-Keep the previous Nix generation until activation verification and every required smoke pass.
+Keep the previous Nix generation and matching chezmoi source revision until user apply/verify, actual consumer verification and every required smoke pass. System rollback alone does not restore user files; follow the README's two-part recovery.
 
 ## Ownership and release order
 
@@ -17,7 +17,7 @@ After an OpenSpec update, regenerate adapters in the plugin repository with `nix
 For an artifact update, change the version, platform asset selection, and fixed hash together.
 Use the [Markdown Oxide](../../packages/markdown-oxide/package.nix) or [Roslyn](../../packages/roslyn-language-server/package.nix) declaration.
 Never accept changed bytes under an existing hash.
-If the plugin selects a different server, publish its release and change the [host package list](../../modules/home/packages.nix) together.
+If the plugin selects a different server, publish its release and change the system-declared [user package list](../../modules/shared/user-packages.nix) together.
 Do not publish a plugin that selects an unavailable server or retain the previous server as a fallback.
 
 ## Plannotator updates

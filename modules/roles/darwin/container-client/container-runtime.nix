@@ -1,47 +1,11 @@
+{ config, pkgs, ... }:
 {
-  config,
-  lib,
-  pkgs,
-  ...
-}:
-
-let
-  containerRuntimeCheck = pkgs.container-runtime-check;
-  profileFormat = pkgs.formats.yaml { };
-  profile = {
-    cpu = config.host.darwin.containerProfile.cpu;
-    disk = config.host.darwin.containerProfile.disk;
-    memory = config.host.darwin.containerProfile.memory;
-    arch = pkgs.stdenv.hostPlatform.qemuArch;
-    runtime = "docker";
-    vmType = "vz";
-    rosetta = true;
-    mountType = "virtiofs";
-    mounts = config.host.darwin.containerProfile.mounts;
-    kubernetes.enabled = false;
-    autoActivate = true;
-    network = {
-      address = false;
-      mode = "shared";
-      hostAddresses = false;
-    };
-    forwardAgent = false;
-  };
-in
-
-{
-  home.packages = lib.mkOrder 700 [
+  # Runtime state and VM lifecycle remain operator-owned. Chezmoi renders only
+  # the profile and environment from shared facts and this derived architecture.
+  users.users.${config.host.username}.packages = [
     pkgs.colima
     pkgs.docker-client
-    containerRuntimeCheck
+    pkgs.container-runtime-check
   ];
-
-  home.sessionVariables = {
-    COLIMA_HOME = "${config.xdg.configHome}/colima";
-    COLIMA_SAVE_CONFIG = "false";
-    DOCKER_CONTEXT = "colima";
-  };
-
-  xdg.configFile."colima/default/colima.yaml".source =
-    profileFormat.generate "colima-default-profile.yaml" profile;
+  chezmoi.resources.colima.arch = pkgs.stdenv.hostPlatform.qemuArch;
 }

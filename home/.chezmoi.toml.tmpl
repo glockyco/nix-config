@@ -1,0 +1,35 @@
+{{- $facts := include ".chezmoidata/hosts.toml" | fromToml -}}
+{{- $credentials := (include ".chezmoidata/credentials.toml" | fromToml).credentials -}}
+{{- $host := promptStringOnce . "host" "host" -}}
+{{- if not (hasKey $facts.hosts $host) -}}
+{{- fail "Unknown declared host" -}}
+{{- end -}}
+{{- $machine := index $facts.hosts $host -}}
+{{- if not (hasKey $machine.platforms .chezmoi.os) -}}
+{{- fail "Selected host has no declaration for this platform" -}}
+{{- end -}}
+{{- $platform := index $machine.platforms .chezmoi.os -}}
+{{- range $key := list "username" "home" "checkout" -}}
+{{- $value := index $platform $key -}}
+{{- if or (not (kindIs "string" $value)) (empty $value) -}}
+{{- fail (printf "Invalid platform fact: %s" $key) -}}
+{{- end -}}
+{{- end -}}
+{{- $source := .chezmoi.sourceDir | dir -}}
+{{- $destination := printf "%s" .chezmoi.destDir -}}
+{{- if or (eq $source $destination) (hasPrefix (printf "%s/" $source) $destination) -}}
+{{- fail "Destination must not be inside the source checkout" -}}
+{{- end -}}
+sourceDir = {{ $source | quote }}
+mode = "file"
+{{ if eq .chezmoi.os "darwin" -}}
+encryption = "age"
+[age]
+useBuiltinAge = true
+identity = {{ joinPath .chezmoi.homeDir $credentials.identity | quote }}
+recipient = {{ $credentials.recipient | quote }}
+{{ end }}
+[data]
+host = {{ $host | quote }}
+resourcesDir = "/etc/chezmoi-resources"
+checkMode = false

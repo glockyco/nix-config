@@ -1,0 +1,16 @@
+[portable.history]
+size = 100000
+save = 100000
+
+[portable.fzf]
+defaultCommand = "fd --type f --hidden --exclude .git"
+fileWidgetCommand = "fd --type f --hidden --exclude .git"
+changeDirWidgetCommand = "fd --type d --hidden --exclude .git"
+
+[portable.starship]
+truncationLength = 5
+commandDurationDisabled = true
+
+[portable.brave]
+extensions = ["nngceckbapebfimnlniiiahkandclblb", "jinjaccalgkegednnccohejagnlnfdag"]
+updateUrl = "https://clients2.google.com/service/update2/crx"

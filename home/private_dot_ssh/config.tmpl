@@ -1,0 +1,64 @@
+{{- $host := index .hosts .host -}}
+{{- $mac := eq .chezmoi.os "darwin" -}}
+{{- $linux := eq .chezmoi.os "linux" -}}
+# Endpoint blocks precede defaults because OpenSSH uses the first value.
+{{ if or (and $mac $host.roles.desktop) (and $linux $host.roles.wslWorkstation) -}}
+Host desktop-batch
+{{ range $key, $value := .ssh.batch }}    {{ $key }} {{ $value }}
+{{ end }}
+Host desktop desktop-batch
+    HostName {{ .ssh.desktop.hostName }}{{ if $linux }}.{{ .ssh.tailnetDnsDomain }}{{ end }}
+    User {{ .ssh.desktop.user }}
+    StrictHostKeyChecking yes
+    UserKnownHostsFile "{{ .chezmoi.homeDir }}/.ssh/desktop-known-hosts"
+    GlobalKnownHostsFile /dev/null
+    UpdateHostKeys no
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+{{ if $linux }}    IdentityFile {{ .ssh.userIdentityFile }}
+    IdentitiesOnly yes
+{{ end }}
+{{ end -}}
+{{ if and $linux $host.roles.wslWorkstation -}}
+{{ range $name, $pin := .ssh.hostKeys -}}
+{{ $destination := index $.hosts $name -}}
+Host {{ $name }}-batch
+{{ range $key, $value := $.ssh.batch }}    {{ $key }} {{ $value }}
+{{ end }}
+Host {{ $name }} {{ $name }}-batch
+    HostName {{ $name }}.{{ $.ssh.tailnetDnsDomain }}
+    User {{ $destination.platforms.darwin.username }}
+    IdentityFile {{ $.ssh.userIdentityFile }}
+    IdentitiesOnly yes
+    StrictHostKeyChecking yes
+    UserKnownHostsFile "{{ $.chezmoi.homeDir }}/.ssh/builder-known-hosts"
+    GlobalKnownHostsFile /dev/null
+    UpdateHostKeys no
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+
+{{ end -}}
+{{ end -}}
+{{ if and $mac $host.roles.airClient -}}
+Host air-batch
+{{ range $key, $value := .ssh.batch }}    {{ $key }} {{ $value }}
+{{ end }}
+Host air air-batch
+    HostName {{ .air.hostName }}
+    User {{ .air.user }}
+
+{{ end -}}
+{{ if and $mac $host.roles.desktop -}}
+# Opt in to hardware touch without changing ordinary github.com traffic.
+Host github-yubikey
+    HostName github.com
+    User git
+    IdentityAgent none
+    IdentityFile {{ .ssh.yubikeyIdentityFile }}
+    IdentitiesOnly yes
+
+Host *
+    IdentityAgent {{ .ssh.secretiveAgent }}
+{{ range $key, $value := .ssh.interactive }}    {{ $key }} {{ $value }}
+{{ end }}
+{{ end -}}

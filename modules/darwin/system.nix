@@ -35,14 +35,13 @@ in
     };
   };
 
-  # Home Manager derives `home.homeDirectory` from `users.users.<name>.home`.
   users.users.${username} = {
     name = username;
-    home = "/Users/${username}";
+    home = config.host.homeDirectory;
   };
 
   # Install git system-wide so root has it during `darwin-rebuild switch`; user
-  # configuration is in `modules/home/git.nix`.
+  # configuration is owned by the portable chezmoi source.
   environment.systemPackages = [ pkgs.git ];
 
   # GUI apps do not inherit the interactive zsh profile. Persist Nix discovery

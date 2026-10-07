@@ -1,87 +1,37 @@
 {
-  coreutils,
-  diffutils,
-  gnugrep,
   karabiner-configuration,
+  python3,
   runCommand,
 }:
+runCommand "check-karabiner-configuration-command" { nativeBuildInputs = [ python3 ]; } ''
+  export FILTER_COMMAND='${karabiner-configuration}/bin/karabiner-configuration'
+  python3 - <<'PY'
+  import json
+  import os
+  from pathlib import Path
+  import subprocess
 
-runCommand "check-karabiner-configuration"
-  {
-    nativeBuildInputs = [
-      coreutils
-      diffutils
-      gnugrep
-    ];
-  }
-  ''
-    set -eu
-    command=${karabiner-configuration}/bin/karabiner-configuration
-    source=$PWD/generated.json
-    destination=$PWD/.config/karabiner/karabiner.json
-    directory=$(dirname "$destination")
-    printf '%s\n' '{"profiles":["Neo2"]}' > "$source"
-
-    "$command" "$source" "$destination" >absent.out 2>absent.err
-    test ! -s absent.out
-    grep -qFx "karabiner-configuration: changed: $destination" absent.err
-    cmp "$source" "$destination"
-    test "$(stat -c %a "$directory")" = 700
-    test "$(stat -c %a "$destination")" = 600
-
-    touch -t 200001010101 "$destination" "$directory"
-    file_mtime=$(stat -c %Y "$destination")
-    directory_mtime=$(stat -c %Y "$directory")
-    "$command" "$source" "$destination" >current.out 2>current.err
-    test ! -s current.out
-    grep -qFx "karabiner-configuration: current: $destination" current.err
-    test "$(stat -c %Y "$destination")" = "$file_mtime"
-    test "$(stat -c %Y "$directory")" = "$directory_mtime"
-    test "$(stat -c %a "$destination")" = 600
-
-    chmod 0755 "$directory"
-    chmod 0644 "$destination"
-    "$command" "$source" "$destination" >mode.out 2>mode.err
-    test ! -s mode.out
-    grep -qFx "karabiner-configuration: changed: $destination" mode.err
-    test "$(stat -c %a "$directory")" = 700
-    test "$(stat -c %a "$destination")" = 600
-    test "$(stat -c %Y "$destination")" = "$file_mtime"
-    test "$(stat -c %Y "$directory")" = "$directory_mtime"
-
-    printf '%s\n' '{"profiles":["old"]}' > "$destination"
-    touch -t 200001010101 "$destination"
-    "$command" "$source" "$destination" >changed.out 2>changed.err
-    test ! -s changed.out
-    grep -qFx "karabiner-configuration: changed: $destination" changed.err
-    cmp "$source" "$destination"
-    test "$(stat -c %Y "$destination")" != "$file_mtime"
-    test "$(stat -c %a "$directory")" = 700
-    test "$(stat -c %a "$destination")" = 600
-
-    rm "$destination"
-    ln -s "$source" "$destination"
-    "$command" "$source" "$destination" >linked.out 2>linked.err
-    test ! -s linked.out
-    grep -qFx "karabiner-configuration: changed: $destination" linked.err
-    test ! -L "$destination"
-    test "$(stat -c %a "$destination")" = 600
-    cmp "$source" "$destination"
-
-    touch -t 200001010101 "$destination" "$directory"
-    file_mtime=$(stat -c %Y "$destination")
-    directory_mtime=$(stat -c %Y "$directory")
-    if "$command" "$PWD/missing.json" "$destination" >failed.out 2>failed.err; then
-      printf '%s\n' 'a failed configuration comparison unexpectedly passed' >&2
-      exit 1
-    else
-      test "$?" -ne 0
-    fi
-    test ! -s failed.out
-    grep -qFx "karabiner-configuration: could not compare $destination" failed.err
-    cmp "$source" "$destination"
-    test "$(stat -c %Y "$destination")" = "$file_mtime"
-    test "$(stat -c %Y "$directory")" = "$directory_mtime"
-
-    touch "$out"
-  ''
+  declaration = Path("managed.json")
+  declaration.write_text('{"global": {"show_in_menu_bar": true}, "profiles": [{"name": "Neo2", "selected": true, "virtual_hid_keyboard": {"keyboard_type_v2": "iso"}, "complex_modifications": {"rules": [{"description": "managed", "manipulators": []}]}}]}')
+  command = [os.environ["FILTER_COMMAND"], "--declaration", str(declaration)]
+  def run(content):
+      return subprocess.run(command, input=content, text=True, capture_output=True)
+  absent = run("")
+  assert absent.returncode == 0, absent.stderr
+  current = json.loads(absent.stdout)
+  current["ui_state"] = {"preserve": True}
+  original = json.dumps(current, separators=(",", ":")) + "\n"
+  repeated = run(original)
+  assert repeated.returncode == 0 and repeated.stdout == original, repeated
+  path = Path("settings.json")
+  path.write_text("{broken")
+  before = path.stat().st_mtime_ns
+  failed = run(path.read_text())
+  assert failed.returncode != 0 and not failed.stdout and failed.stderr
+  assert path.read_text() == "{broken" and path.stat().st_mtime_ns == before
+  declaration.unlink()
+  failed = run(original)
+  assert failed.returncode != 0 and not failed.stdout
+  PY
+  touch "$out"
+''

@@ -1,0 +1,42 @@
+{{- $host := index .hosts .host -}}
+{{- $platform := index $host.platforms .chezmoi.os -}}
+[user]
+    name = {{ $host.git.authorName | quote }}
+    email = {{ $host.git.defaultEmail | quote }}
+[init]
+    defaultBranch = main
+[pull]
+    rebase = true
+[push]
+    autoSetupRemote = true
+[core]
+    autocrlf = input
+    pager = delta
+[interactive]
+    diffFilter = delta --color-only
+[filter "lfs"]
+    clean = git-lfs clean -- %f
+    smudge = git-lfs smudge -- %f
+    process = git-lfs filter-process
+    required = true
+[delta]
+    features = catppuccin-mocha
+[include]
+    path = ~/.config/delta/catppuccin.gitconfig
+[ghq]
+    root = {{ $platform.ghqRoot | quote }}
+{{ if and (eq .chezmoi.os "linux") $host.roles.wslWorkstation }}
+[includeIf "gitdir:{{ $platform.ghqRoot }}/github.com/"]
+    path = ~/.config/git/github.gitconfig
+[credential]
+    helper = manager
+    credentialStore = gpg
+[credential "https://git.overleaf.com"]
+    provider = generic
+{{ end -}}
+[credential "https://github.com"]
+    helper =
+    helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+    helper =
+    helper = !gh auth git-credential

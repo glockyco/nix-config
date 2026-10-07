@@ -1,21 +1,16 @@
 {
-  description = "Apple Silicon workstation: Determinate Nix + nix-darwin + Home Manager";
+  description = "Fleet workstations: native Nix systems and portable chezmoi user configuration";
 
   # This flake declares no `nixConfig`. Each host declares the Numtide
   # substituter and its trusted public key in system scope, and Nix ignores a
   # flake-provided key for a user who is not in `trusted-users`. A machine that
   # has neither host configuration passes both values as command-line flags.
   inputs = {
-    # Pin nixpkgs to 26.05 to keep nix-darwin and Home Manager on the same release.
+    # Keep the native platform configurations on the same nixpkgs release.
     nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2605";
 
     nix-darwin = {
       url = "https://flakehub.com/f/nix-darwin/nix-darwin/0.2605";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    home-manager = {
-      url = "https://flakehub.com/f/nix-community/home-manager/0.2605";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -49,18 +44,8 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
 
-    catppuccin = {
-      url = "github:catppuccin/nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    sops-nix = {
-      url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
