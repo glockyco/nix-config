@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "projectRootFile": "flake.nix",
+  "excludes": [
+    "*.lock",
+    "*.patch",
+    "package-lock.json",
+    "go.mod",
+    "go.sum",
+    ".gitattributes",
+    ".gitignore",
+    ".gitmodules",
+    ".hgignore",
+    ".svnignore",
+    "LICENSE",
+    ".omp/**",
+    "secrets/*",
+    "home/encrypted_*",
+    "home/**/encrypted_*",
+    "home/.chezmoitemplates/windows-apps/zed-catppuccin.json",
+    "home/.chezmoitemplates/windows-apps/zen/**"
+  ],
+  "formatters": [
+    {
+      "name": "nixfmt",
+      "package": "nixfmt",
+      "native": false,
+      "includes": [
+        "*.nix"
+      ],
+      "options": [],
+      "plugins": [],
+      "priority": 0
+    },
+    {
+      "name": "ruff-check",
+      "package": "ruff",
+      "native": true,
+      "includes": [
+        "*.py",
+        "*.pyi"
+      ],
+      "options": [
+        "check",
+        "--fix"
+      ],
+      "plugins": [],
+      "priority": 0
+    },
+    {
+      "name": "ruff-format",
+      "package": "ruff",
+      "native": true,
+      "includes": [
+        "*.py",
+        "*.pyi"
+      ],
+      "options": [
+        "format"
+      ],
+      "plugins": [],
+      "priority": 1
+    },
+    {
+      "name": "mdformat",
+      "package": "mdformat",
+      "native": true,
+      "includes": [
+        "*.md"
+      ],
+      "options": [],
+      "plugins": [
+        "mdformat-gfm",
+        "mdformat-frontmatter"
+      ],
+      "priority": 0
+    },
+    {
+      "name": "jsonfmt",
+      "package": "jsonfmt",
+      "native": true,
+      "includes": [
+        "*.json",
+        "*.winget"
+      ],
+      "options": [
+        "-w"
+      ],
+      "plugins": [],
+      "priority": 0
+    },
+    {
+      "name": "yamlfmt",
+      "package": "yamlfmt",
+      "native": true,
+      "includes": [
+        "*.yaml",
+        "*.yml"
+      ],
+      "options": [
+        "-conf",
+        "@configuration@"
+      ],
+      "configuration": {
+        "line_ending": "lf",
+        "formatter": {
+          "retain_line_breaks": true
+        }
+      },
+      "plugins": [],
+      "priority": 0
+    },
+    {
+      "name": "prettier",
+      "package": "prettier",
+      "native": true,
+      "includes": [
+        "dns/dnsconfig.js"
+      ],
+      "options": [
+        "--write"
+      ],
+      "plugins": [],
+      "priority": 0
+    }
+  ]
+}

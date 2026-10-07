@@ -1,0 +1,100 @@
+{
+  "paths": [
+    "root.py",
+    "nested/space name.pyi",
+    "nested/line\nbreak.py",
+    "README.md",
+    "nested/skill.md",
+    "data.json",
+    "windows/configuration.winget",
+    ".github/workflows/check.yml",
+    "nested/config.yaml",
+    "dns/dnsconfig.js",
+    "other.js",
+    "flake.nix",
+    "nested/module.nix",
+    ".omp/settings.json",
+    "secrets/account.yaml",
+    "home/dot_config/private_credentials/encrypted_private_token.json",
+    "home/encrypted_private_token.md",
+    "home/.chezmoitemplates/windows-apps/zed-catppuccin.json",
+    "home/.chezmoitemplates/windows-apps/zen/vendor.md",
+    "plain.txt"
+  ],
+  "selected": {
+    "root.py": [
+      "ruff-check",
+      "ruff-format"
+    ],
+    "nested/space name.pyi": [
+      "ruff-check",
+      "ruff-format"
+    ],
+    "nested/line\nbreak.py": [
+      "ruff-check",
+      "ruff-format"
+    ],
+    "README.md": [
+      "mdformat"
+    ],
+    "nested/skill.md": [
+      "mdformat"
+    ],
+    "data.json": [
+      "jsonfmt"
+    ],
+    "windows/configuration.winget": [
+      "jsonfmt"
+    ],
+    ".github/workflows/check.yml": [
+      "yamlfmt"
+    ],
+    "nested/config.yaml": [
+      "yamlfmt"
+    ],
+    "dns/dnsconfig.js": [
+      "prettier"
+    ],
+    "flake.nix": [
+      "nixfmt"
+    ],
+    "nested/module.nix": [
+      "nixfmt"
+    ]
+  },
+  "options": {
+    "nixfmt": [],
+    "ruff-check": [
+      "check",
+      "--fix"
+    ],
+    "ruff-format": [
+      "format"
+    ],
+    "mdformat": [],
+    "jsonfmt": [
+      "-w"
+    ],
+    "yamlfmt": [
+      "-conf",
+      "@configuration@"
+    ],
+    "prettier": [
+      "--write"
+    ]
+  },
+  "configuration": {
+    "yamlfmt": {
+      "line_ending": "lf",
+      "formatter": {
+        "retain_line_breaks": true
+      }
+    }
+  },
+  "plugins": {
+    "mdformat": [
+      "mdformat-gfm",
+      "mdformat-frontmatter"
+    ]
+  }
+}

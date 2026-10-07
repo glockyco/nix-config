@@ -50,6 +50,8 @@ Korolev mounts the SCCH share `\\scch.at\SCCH`, which Windows maps as `S:`, read
 
 ## Develop
 
+### Linux and macOS
+
 With Nix and flakes installed, enter the pinned environment. It installs the commit hook; `direnv allow` uses the same shell.
 
 ```sh
@@ -60,7 +62,9 @@ Run release gates in order from the repository root, using each host's installed
 
 ```sh
 nix fmt -- --fail-on-change
+openspec validate make-korolev-windows-native --strict
 nix flake check --print-build-logs
+nix flake check --all-systems --print-build-logs
 ```
 
 On Korolev, also build the reviewed system without activating it:
@@ -76,10 +80,9 @@ nix run .#check-darwin-build-plans
 nix build .#darwinConfigurations.macbook-pro.system
 ```
 
-The build-plan guard needs Darwin store access outside a check sandbox. It rejects uncached source-built toolchains and language servers. [CI](.github/workflows/check.yml) checks both platforms; a local flake check checks only its own system. With the Mac connected to the tailnet, Korolev can build both systems:
+The build-plan guard needs Darwin store access outside a check sandbox. It rejects uncached source-built toolchains and language servers. [CI](.github/workflows/check.yml) retains host-native Linux/macOS Nix checks and adds the required `check (windows-latest)` native check. A local flake check builds checks only for its own system. With the Mac connected to the tailnet, build its explicit check collection after the sequential gates:
 
 ```sh
-nix flake check --all-systems --print-build-logs
 nix build --no-link --print-build-logs --impure --expr \
   "builtins.attrValues (builtins.getFlake \"git+file://$PWD\").checks.aarch64-darwin"
 nix build .#darwinConfigurations.macbook-pro.system
@@ -87,9 +90,29 @@ nix build .#darwinConfigurations.macbook-pro.system
 
 `--all-systems` evaluates the full matrix; installed Nix still builds checks for its local system. The explicit Darwin check collection above exercises the foreign-platform checks through the Mac builder.
 
-Permanent behavior changes use [OpenSpec](openspec/). [Agent guidance](AGENTS.md) explains the repository workflow.
+### Native Windows
 
-The [native Windows runbook](docs/operations/korolev-windows.md#native-checks-before-any-live-writes) owns source validation and live apply boundaries. From the native checkout, run `powershell.exe -NoProfile -NonInteractive -File .\windows\check.ps1`, the same invocation with `pwsh`, and read-only `winget configure show --file .\windows\configuration.winget`. The checker validates the vendored official DSC document schema/resource types and supports `-DocumentPath`, rendered `-AdditionalScriptPath` inputs, and focused `-SkipFixtures` inspection (not a complete gate). Default fixtures/AST parsing apply no workstation resource. [Evidence](openspec/changes/make-korolev-windows-native/evidence.md) explains why WinGet 1.29.380's public-module warnings make `configure validate` return 1 even for the untouched native-v3 baseline; that is not success. Linux parsing is not Windows PowerShell 5.1/WinGet execution evidence. No Nix-built Windows output is required; retained renderer code is transitional until the remaining resource/file migration is complete.
+Use the **native** checkout below `C:\Users\jglock\src`, not the separate Linux clone. Windows x64, native Git, inbox `tar.exe`, HTTPS access and Windows PowerShell 5.1 or PowerShell 7 are prerequisites; no global Python/npm formatter environment is required. In standard-user PowerShell, bootstrap the exact native formatter environment and install its hook:
+
+```powershell
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\windows\dev\bootstrap.ps1 -IncludeTestDependencies
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\windows\dev\format.ps1 -Check
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\windows\dev\tests\formatting.ps1
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\windows\dev\tests\bootstrap.ps1
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\windows\dev\tests\hook.ps1
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\windows\dev\tests\native-smoke.ps1
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\windows\check.ps1
+pwsh -NoProfile -NonInteractive -File .\windows\check.ps1
+winget configure show --file .\windows\configuration.winget
+```
+
+The bootstrap stores checksum-verified tools below this checkout's private Git directory, not a global Python/npm environment or user PATH. Re-entry is idempotent and refuses unrelated existing hooks. Git/Fork commits outside the bootstrap resolve those same pinned tools or fail with a bootstrap diagnostic. `formatting.json` alone declares formatter identities, patterns, exclusions, options, configuration and order for treefmt and the native dispatcher; YAML uses explicit LF line endings on both platforms. Native-only work needs no Nix; `.nix` has no native formatter. A Windows commit staging `.nix` must validate the **same native checkout** through the declared Korolev NixOS-WSL environment or fail clearly. The trusted installed host Nix resolves and builds the checkout's exact declared Nix package, like Linux CI, before running its pinned formatter; arbitrary PATH Nix is never selected. It never validates the separate Linux clone or enters the Unix dev shell (which would replace the native hook). If needed, select the declared distribution with `NIX_CONFIG_WSL_DISTRIBUTION`.
+
+The runtime/formatter/Python plugin closure is pinned in `windows/dev/dependencies.lock.json`; Python and Node are private embedded/portable distributions. Changed locks, missing artifacts and version drift fail rather than reinstall silently. After a reviewed dependency update, remove only the disposable `native-dev` tools directory reported by bootstrap and rerun it; do not remove Git metadata or an unrelated hook. `-ToolsRoot` isolates test installs and `-SkipHook` is for fixture/CI runs.
+
+Formatter and bootstrap/hook fixtures use temporary trees; the Linux cross-adapter parity fixture is `nix shell nixpkgs#powershell nixpkgs#python3 -c python windows/dev/tests/parity.py` after staging new source files. Windows CI provisions only pinned test dependencies (including DSC 3.2.3, WinGet 1.29.380 and chezmoi 2.73.0), checks both PowerShell hosts, schema/resource discovery and read-only WinGet parsing, and never applies workstation resources or uses production credentials. Hosted runner provisioning itself can only be accepted from the actual Windows Actions run.
+
+Permanent behavior changes use [OpenSpec](openspec/); validate the active change in the sequential gate sequence above. [Agent guidance](AGENTS.md) explains the repository workflow. The [native Windows runbook](docs/operations/korolev-windows.md#native-checks-before-any-live-writes) owns validation/live-apply boundaries and the schema/resource invariant fixtures. `windows/check.ps1` supports `-DocumentPath` and rendered `-AdditionalScriptPath` inputs; `-SkipFixtures` is focused inspection, not acceptance. [Evidence](openspec/changes/make-korolev-windows-native/evidence.md) explains why read-only `winget configure show`, not upstream `validate`'s public-module warnings, is the parse gate.
 
 ## Activate
 

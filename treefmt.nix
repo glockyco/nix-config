@@ -1,54 +1,35 @@
-_:
+{ pkgs, lib, ... }:
 
+let
+  policy = builtins.fromJSON (builtins.readFile ./formatting.json);
+  formatter = item: {
+    name = item.name;
+    value = {
+      command =
+        let
+          package = pkgs.${item.package};
+          withPlugins =
+            if item.plugins == [ ] then
+              package
+            else
+              package.withPlugins (ps: map (name: ps.${name}) item.plugins);
+        in
+        lib.getExe withPlugins;
+      inherit (item) includes priority;
+      options = map (
+        option:
+        if option == "@configuration@" then
+          toString (pkgs.writeText "${item.name}.json" (builtins.toJSON item.configuration))
+        else
+          option
+      ) item.options;
+    };
+  };
+in
 {
-  # treefmt walks up from the invocation directory to find this marker, so
-  # `nix fmt` covers the whole tree no matter which subdirectory it runs from.
-  projectRootFile = "flake.nix";
-
-  # sops writes these; a formatter has no business rewriting ciphertext. The
-  # MAC covers values rather than layout, so reindenting happens to survive,
-  # but it would fight `sops` on every edit and any reflowing of the ENC[...]
-  # blobs would corrupt the file outright.
-  settings.excludes = [
-    ".omp/**"
-    "secrets/*"
-  ];
-
-  programs = {
-    # RFC 166 formatter.
-    nixfmt.enable = true;
-
-    # Format and lint every tracked Python file.
-    ruff-format.enable = true;
-    ruff-check.enable = true;
-
-    # Plain mdformat only speaks CommonMark, which has no tables: it collapses
-    # the cells and leaves the delimiter row ragged. The GFM plugin adds
-    # tables, strikethrough and task lists, and aligns table columns.
-    # Frontmatter support preserves discovery metadata in authored skills.
-    mdformat = {
-      enable = true;
-      plugins = ps: [
-        ps.mdformat-gfm
-        ps.mdformat-frontmatter
-      ];
-    };
-
-    jsonfmt.enable = true;
-
-    # .github/workflows/. yamlfmt collapses every blank line by default, which
-    # runs the workflow steps together.
-    yamlfmt = {
-      enable = true;
-      settings.formatter.retain_line_breaks = true;
-    };
-
-    # The DNSControl zone is the only JavaScript source. Prettier's defaults
-    # match its style: two spaces, double quotes, semicolons, trailing commas.
-    # Scope it to that file, so it does not compete with the formatters above.
-    prettier = {
-      enable = true;
-      includes = [ "dns/dnsconfig.js" ];
-    };
+  inherit (policy) projectRootFile;
+  settings = {
+    excludes = lib.mkForce policy.excludes;
+    formatter = builtins.listToAttrs (map formatter policy.formatters);
   };
 }

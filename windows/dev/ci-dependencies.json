@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "provenance": "GitHub release asset SHA-256 digests from the official release API; chezmoi and PowerShell published checksums in korolev-native-selections. No hosted execution evidence is implied.",
+  "artifacts": [
+    {
+      "id": "dsc",
+      "version": "3.2.3",
+      "kind": "zip",
+      "url": "https://github.com/PowerShell/DSC/releases/download/v3.2.3/DSC-3.2.3-x86_64-pc-windows-msvc.zip",
+      "sha256": "e1e48218014c166bbbe0ee6364d1e9c2ab20ab5515ceda4eabd529a4bfd49881",
+      "executable": "dsc.exe",
+      "versionArguments": [
+        "--version"
+      ],
+      "versionPattern": "^dsc 3\\.2\\.3$"
+    },
+    {
+      "id": "powershell",
+      "version": "7.6.6",
+      "kind": "zip",
+      "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.6/PowerShell-7.6.6-win-x64.zip",
+      "sha256": "02fe458be20493fbdf43f61ea20610b811ee6c738ab1676c61b9cfcd1a33c860",
+      "executable": "pwsh.exe",
+      "versionArguments": [
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        "$PSVersionTable.PSVersion.ToString()"
+      ],
+      "versionPattern": "^7\\.6\\.6$"
+    },
+    {
+      "id": "chezmoi",
+      "version": "2.73.0",
+      "kind": "zip",
+      "url": "https://github.com/twpayne/chezmoi/releases/download/v2.73.0/chezmoi_2.73.0_windows_amd64.zip",
+      "sha256": "266938399108028a5b6dc7a137026e3ead747304122e5fe381d5396e496620f6",
+      "executable": "chezmoi.exe",
+      "versionArguments": [
+        "--version"
+      ],
+      "versionPattern": "^chezmoi version v2\\.73\\.0(?:,|$)"
+    },
+    {
+      "id": "git",
+      "version": "2.55.0.windows.5",
+      "kind": "portable-git",
+      "url": "https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/PortableGit-2.55.0.5-64-bit.7z.exe",
+      "sha256": "5aa8a20f6e9abb2c755f0e73c91c687701a46b309ad84a0ca6509380fa4ae290",
+      "executable": "cmd/git.exe",
+      "versionArguments": [
+        "--version"
+      ],
+      "versionPattern": "^git version 2\\.55\\.0\\.windows\\.5$"
+    },
+    {
+      "id": "winget",
+      "version": "1.29.380",
+      "packageVersion": "1.29.380.0",
+      "kind": "msixbundle",
+      "url": "https://github.com/microsoft/winget-cli/releases/download/v1.29.380/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle",
+      "sha256": "65dea9c01ce08ee7b763366b27c0e651f97db857c11ca9b9c301826c10092f2e",
+      "executable": "winget.exe",
+      "versionArguments": [
+        "--version"
+      ],
+      "versionPattern": "^v1\\.29\\.380$"
+    },
+    {
+      "id": "winget-frameworks",
+      "version": "1.29.380",
+      "kind": "zip",
+      "url": "https://github.com/microsoft/winget-cli/releases/download/v1.29.380/DesktopAppInstaller_Dependencies.zip",
+      "sha256": "ba875afe9d190f61218985ac0292a99d1db710bf93e13c68944ca9d89f0d82d1",
+      "packages": [
+        "x64/Microsoft.VCLibs.140.00_14.0.33519.0_x64.appx",
+        "x64/Microsoft.VCLibs.140.00.UWPDesktop_14.0.33728.0_x64.appx",
+        "x64/Microsoft.WindowsAppRuntime.1.8_8000.616.304.0_x64.appx"
+      ]
+    }
+  ],
+  "resources": {
+    "Microsoft.WinGet/Package": "1.29.380",
+    "Microsoft.Windows/Registry": "1.0.0",
+    "Microsoft.DSC.Transitional/WindowsPowerShellScript": "0.1.0"
+  }
+}

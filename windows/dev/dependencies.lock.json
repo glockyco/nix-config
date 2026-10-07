@@ -1,0 +1,355 @@
+{
+  "schemaVersion": 1,
+  "platform": "windows-x64",
+  "metadataSources": [
+    "https://pypi.org/pypi/ruff/0.15.14/json",
+    "https://pypi.org/pypi/mdformat/1.0.0/json",
+    "https://pypi.org/pypi/mdformat-gfm/1.0.0/json",
+    "https://pypi.org/pypi/mdformat-frontmatter/2.0.10/json",
+    "https://pypi.org/pypi/markdown-it-py/4.2.0/json",
+    "https://pypi.org/pypi/mdit-py-plugins/0.6.1/json",
+    "https://pypi.org/pypi/wcwidth/0.9.2/json",
+    "https://pypi.org/pypi/ruamel.yaml/0.19.1/json",
+    "https://pypi.org/pypi/mdurl/0.1.2/json",
+    "https://pypi.org/pypi/jsonschema/4.26.0/json",
+    "https://pypi.org/pypi/attrs/26.1.0/json",
+    "https://pypi.org/pypi/jsonschema-specifications/2025.9.1/json",
+    "https://pypi.org/pypi/referencing/0.37.0/json",
+    "https://pypi.org/pypi/rpds-py/2026.9.1/json",
+    "https://www.python.org/ftp/python/3.13.15/python-3.13.15-embed-amd64.zip",
+    "https://nodejs.org/dist/v24.19.0/SHASUMS256.txt",
+    "https://github.com/caarlos0/jsonfmt/releases/download/v0.5.2/checksums.txt",
+    "https://github.com/google/yamlfmt/releases/download/v0.21.0/checksums.txt",
+    "https://registry.npmjs.org/prettier/3.8.3",
+    "https://github.com/microsoft/winget-pkgs/tree/master/manifests/e/evilmartians/lefthook/2.1.17"
+  ],
+  "artifacts": [
+    {
+      "name": "python",
+      "version": "3.13.15",
+      "url": "https://www.python.org/ftp/python/3.13.15/python-3.13.15-embed-amd64.zip",
+      "sha256": "d1f04d990aee1253d8569e8e5104e30fa9f5fa830899f14843448872d936a2cf",
+      "file": "python-3.13.15-embed-amd64.zip",
+      "kind": "zip",
+      "target": "python",
+      "testOnly": false
+    },
+    {
+      "name": "node",
+      "version": "24.19.0",
+      "url": "https://nodejs.org/dist/v24.19.0/node-v24.19.0-win-x64.zip",
+      "sha256": "57f71ab3652e797d84acddc79c81cc9ff1c6ddb2a1974cdb83f00fee9bff4c73",
+      "file": "node-v24.19.0-win-x64.zip",
+      "kind": "zip",
+      "target": "node",
+      "testOnly": false
+    },
+    {
+      "name": "mdformat",
+      "version": "1.0.0",
+      "url": "https://files.pythonhosted.org/packages/54/9a/8fe71b95985ca7a4001effbcc58e5a07a1f2a2884203f74dcf48a3b08315/mdformat-1.0.0-py3-none-any.whl",
+      "sha256": "bca015d65a1d063a02e885a91daee303057bc7829c2cd37b2075a50dbb65944b",
+      "file": "mdformat-1.0.0-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": false
+    },
+    {
+      "name": "mdformat-gfm",
+      "version": "1.0.0",
+      "url": "https://files.pythonhosted.org/packages/e6/18/6bc2189b744dd383cad03764f41f30352b1278d2205096f77a29c0b327ad/mdformat_gfm-1.0.0-py3-none-any.whl",
+      "sha256": "7305a50efd2a140d7c83505b58e3ac5df2b09e293f9bbe72f6c7bee8c678b005",
+      "file": "mdformat_gfm-1.0.0-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": false
+    },
+    {
+      "name": "mdformat-frontmatter",
+      "version": "2.0.10",
+      "url": "https://files.pythonhosted.org/packages/ea/40/e61f8ed549bed3159a9677eadb89849ccca6de30eb90bf61e1b6026df96d/mdformat_frontmatter-2.0.10-py3-none-any.whl",
+      "sha256": "c99f7c52de0403e39f48b6a1c2bb79a4c8ce69304a799ff0e403e3957aa3669b",
+      "file": "mdformat_frontmatter-2.0.10-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": false
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "url": "https://files.pythonhosted.org/packages/b3/81/4da04ced5a082363ecfa159c010d200ecbd959ae410c10c0264a38cac0f5/markdown_it_py-4.2.0-py3-none-any.whl",
+      "sha256": "9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a",
+      "file": "markdown_it_py-4.2.0-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": false
+    },
+    {
+      "name": "mdit-py-plugins",
+      "version": "0.6.1",
+      "url": "https://files.pythonhosted.org/packages/a5/69/6da5581c6a7fede7dc261bf4e67d6adca4196f176b43288b55b3db395b6e/mdit_py_plugins-0.6.1-py3-none-any.whl",
+      "sha256": "214c82fb2ac524472ab6a5bcab1de80f73b50443e187f401bfd77efbc7c6481d",
+      "file": "mdit_py_plugins-0.6.1-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": false
+    },
+    {
+      "name": "wcwidth",
+      "version": "0.9.2",
+      "url": "https://files.pythonhosted.org/packages/9c/b4/0bfa065af506540d9d558e3e5548cff00bc1f9b24e6e2a8512498e8628de/wcwidth-0.9.2-py3-none-any.whl",
+      "sha256": "89ca642c5bf0101157a09366be69fad0379db1f700ae39a920e103234573670e",
+      "file": "wcwidth-0.9.2-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": false
+    },
+    {
+      "name": "ruamel.yaml",
+      "version": "0.19.1",
+      "url": "https://files.pythonhosted.org/packages/b8/0c/51f6841f1d84f404f92463fc2b1ba0da357ca1e3db6b7fbda26956c3b82a/ruamel_yaml-0.19.1-py3-none-any.whl",
+      "sha256": "27592957fedf6e0b62f281e96effd28043345e0e66001f97683aa9a40c667c93",
+      "file": "ruamel_yaml-0.19.1-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": false
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "url": "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl",
+      "sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8",
+      "file": "mdurl-0.1.2-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": false
+    },
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "url": "https://files.pythonhosted.org/packages/69/90/f63fb5873511e014207a475e2bb4e8b2e570d655b00ac19a9a0ca0a385ee/jsonschema-4.26.0-py3-none-any.whl",
+      "sha256": "d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce",
+      "file": "jsonschema-4.26.0-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": true
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "url": "https://files.pythonhosted.org/packages/64/b4/17d4b0b2a2dc85a6df63d1157e028ed19f90d4cd97c36717afef2bc2f395/attrs-26.1.0-py3-none-any.whl",
+      "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309",
+      "file": "attrs-26.1.0-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": true
+    },
+    {
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "url": "https://files.pythonhosted.org/packages/41/45/1a4ed80516f02155c51f51e8cedb3c1902296743db0bbc66608a0db2814f/jsonschema_specifications-2025.9.1-py3-none-any.whl",
+      "sha256": "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe",
+      "file": "jsonschema_specifications-2025.9.1-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": true
+    },
+    {
+      "name": "referencing",
+      "version": "0.37.0",
+      "url": "https://files.pythonhosted.org/packages/2c/58/ca301544e1fa93ed4f80d724bf5b194f6e4b945841c5bfd555878eea9fcb/referencing-0.37.0-py3-none-any.whl",
+      "sha256": "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231",
+      "file": "referencing-0.37.0-py3-none-any.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": true
+    },
+    {
+      "name": "rpds-py",
+      "version": "2026.9.1",
+      "url": "https://files.pythonhosted.org/packages/31/9c/ba5a9569d719bfdd6ce863df4133ac6a1658cf1b07cc3534c31db729fbbc/rpds_py-2026.9.1-cp313-cp313-win_amd64.whl",
+      "sha256": "3e93b2cd69a9830be33e03945cd7cda940a0a8bfcfbff41d6144f0cb0d3d8bd9",
+      "file": "rpds_py-2026.9.1-cp313-cp313-win_amd64.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": true
+    },
+    {
+      "name": "ruff",
+      "version": "0.15.14",
+      "url": "https://files.pythonhosted.org/packages/d1/b7/4ea2c170f10ad760fff2a5250beb18897719dc8b52b53a24cddbb9dd3f19/ruff-0.15.14-py3-none-win_amd64.whl",
+      "sha256": "802342981e056db3851a7836e5b070f8f15f67d4a685ae2a6160939d364b2902",
+      "file": "ruff-0.15.14-py3-none-win_amd64.whl",
+      "kind": "wheel",
+      "target": "python/Lib/site-packages",
+      "testOnly": false
+    },
+    {
+      "name": "jsonfmt",
+      "version": "0.5.2",
+      "url": "https://github.com/caarlos0/jsonfmt/releases/download/v0.5.2/jsonfmt_0.5.2_windows_amd64.tar.gz",
+      "sha256": "b01f1b567edc0ecb20488319bd40db7a62405f32d5629fef96023b887eed3f0e",
+      "file": "jsonfmt_0.5.2_windows_amd64.tar.gz",
+      "kind": "tar",
+      "target": "jsonfmt",
+      "testOnly": false
+    },
+    {
+      "name": "yamlfmt",
+      "version": "0.21.0",
+      "url": "https://github.com/google/yamlfmt/releases/download/v0.21.0/yamlfmt_0.21.0_Windows_x86_64.tar.gz",
+      "sha256": "07f80ce5d741eb4b0a9380ac78a19c7cb5bd44e2a9a47a5a04839e3ba54dd463",
+      "file": "yamlfmt_0.21.0_Windows_x86_64.tar.gz",
+      "kind": "tar",
+      "target": "yamlfmt",
+      "testOnly": false
+    },
+    {
+      "name": "lefthook",
+      "version": "2.1.17",
+      "url": "https://github.com/evilmartians/lefthook/releases/download/v2.1.17/lefthook_2.1.17_Windows_x86_64.exe",
+      "sha256": "5a62a41aa2c8d617a38bd5a245d4d340f851773f65ab37f6495c2f51e96cf036",
+      "file": "lefthook_2.1.17_Windows_x86_64.exe",
+      "kind": "exe",
+      "target": "lefthook",
+      "testOnly": false
+    },
+    {
+      "name": "prettier",
+      "version": "3.8.3",
+      "url": "https://registry.npmjs.org/prettier/-/prettier-3.8.3.tgz",
+      "sha256": "c8a850e71b7366f1bac1885e05b2f929d47168009f3b6914413902ca8b980fde",
+      "integrity": "sha512-7igPTM53cGHMW8xWuVTydi2KO233VFiTNyF5hLJqpilHfmn8C8gPf+PS7dUT64YcXFbiMGZxS9pCSxL/Dxm/Jw==",
+      "file": "prettier-3.8.3.tgz",
+      "kind": "tar",
+      "target": "prettier",
+      "testOnly": false
+    }
+  ],
+  "tools": [
+    {
+      "id": "python",
+      "command": "python/python.exe",
+      "prefixArguments": [],
+      "version": "3.13.15",
+      "versionArguments": [
+        "--version"
+      ],
+      "versionPattern": "^Python (?<version>\\d+\\.\\d+\\.\\d+)$",
+      "requiredPaths": [],
+      "runtime": "",
+      "testOnly": false
+    },
+    {
+      "id": "node",
+      "command": "node/node-v24.19.0-win-x64/node.exe",
+      "prefixArguments": [],
+      "version": "24.19.0",
+      "versionArguments": [
+        "--version"
+      ],
+      "versionPattern": "^v(?<version>\\d+\\.\\d+\\.\\d+)$",
+      "requiredPaths": [],
+      "runtime": "",
+      "testOnly": false
+    },
+    {
+      "id": "ruff-format",
+      "command": "python/Lib/site-packages/ruff-0.15.14.data/scripts/ruff.exe",
+      "prefixArguments": [],
+      "version": "0.15.14",
+      "versionArguments": [
+        "--version"
+      ],
+      "versionPattern": "^ruff (?<version>\\d+\\.\\d+\\.\\d+)$",
+      "requiredPaths": [],
+      "runtime": "",
+      "testOnly": false
+    },
+    {
+      "id": "ruff-check",
+      "command": "python/Lib/site-packages/ruff-0.15.14.data/scripts/ruff.exe",
+      "prefixArguments": [],
+      "version": "0.15.14",
+      "versionArguments": [
+        "--version"
+      ],
+      "versionPattern": "^ruff (?<version>\\d+\\.\\d+\\.\\d+)$",
+      "requiredPaths": [],
+      "runtime": "",
+      "testOnly": false
+    },
+    {
+      "id": "mdformat",
+      "command": "python/python.exe",
+      "prefixArguments": [
+        "-m",
+        "mdformat"
+      ],
+      "version": "1.0.0",
+      "versionArguments": [
+        "--version"
+      ],
+      "versionPattern": "^mdformat (?<version>\\d+\\.\\d+\\.\\d+).*$",
+      "requiredPaths": [],
+      "runtime": "python",
+      "testOnly": false
+    },
+    {
+      "id": "jsonfmt",
+      "command": "jsonfmt/jsonfmt.exe",
+      "prefixArguments": [],
+      "version": "0.5.2",
+      "versionArguments": [
+        "--version"
+      ],
+      "versionPattern": "(?m)(?:^|\\s)v?(?<version>\\d+\\.\\d+\\.\\d+)(?:\\s|$)",
+      "requiredPaths": [],
+      "runtime": "",
+      "testOnly": false
+    },
+    {
+      "id": "yamlfmt",
+      "command": "yamlfmt/yamlfmt.exe",
+      "prefixArguments": [],
+      "version": "0.21.0",
+      "versionArguments": [
+        "-version"
+      ],
+      "versionPattern": "(?m)(?:^|\\s)v?(?<version>\\d+\\.\\d+\\.\\d+)(?:\\s|$)",
+      "requiredPaths": [],
+      "runtime": "",
+      "testOnly": false
+    },
+    {
+      "id": "prettier",
+      "command": "node/node-v24.19.0-win-x64/node.exe",
+      "prefixArguments": [
+        "prettier/package/bin/prettier.cjs"
+      ],
+      "version": "3.8.3",
+      "versionArguments": [
+        "--version"
+      ],
+      "versionPattern": "^(?<version>\\d+\\.\\d+\\.\\d+)$",
+      "requiredPaths": [
+        "prettier/package/bin/prettier.cjs"
+      ],
+      "runtime": "node",
+      "testOnly": false
+    },
+    {
+      "id": "lefthook",
+      "command": "lefthook/lefthook.exe",
+      "prefixArguments": [],
+      "version": "2.1.17",
+      "versionArguments": [
+        "version"
+      ],
+      "versionPattern": "(?m)(?:^|\\s)v?(?<version>\\d+\\.\\d+\\.\\d+)(?:\\s|$)",
+      "requiredPaths": [],
+      "runtime": "",
+      "testOnly": false
+    }
+  ]
+}
