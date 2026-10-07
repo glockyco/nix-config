@@ -780,10 +780,6 @@ def main():
         legacy_source = work / "immutable-legacy-config"
         legacy_source.write_text("retired Home Manager fixture\n")
         legacy_source.chmod(0o444)
-        for relative in retired:
-            path = fixture.target / relative
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.symlink_to(legacy_source)
         brave_ancestors = []
         host = facts["hosts"][fixture.host]
         if fixture.target_os == "darwin" and host["roles"]["desktop"]:
@@ -798,6 +794,10 @@ def main():
                 parent = parent / name
                 parent.mkdir(mode=0o700)
                 brave_ancestors.append(parent)
+        for relative in retired:
+            path = fixture.target / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.symlink_to(legacy_source)
         fixture.run("apply", "--exclude=scripts")
         fixture.run("verify", "--exclude=scripts")
         for parent in brave_ancestors:
