@@ -213,17 +213,17 @@ The override SHALL NOT change unmodified Vim keys, `Escape`, terminal input, men
 
 ### Requirement: Validation before and after apply
 
-Windows-native repository gates SHALL validate the shipped document with WinGet and test ownership, explicit application selectors, dependencies, machine exceptions and parsed scripts without applying resources. Tests SHALL not read live enrollment or profile state. Before first live apply the operator SHALL preview drift; after applying in the proper account context the operator SHALL confirm all owned state.
+Windows-native repository gates SHALL validate the shipped document against its vendored official DSC v3 configuration-document JSON Schema and discovered resource-type allowlist, parse it with read-only `winget configure show`, and test ownership, explicit application selectors, dependencies, machine exceptions and script ASTs without applying resources. Schema sources SHALL retain reviewed release URLs and SHA-256 values. Tests SHALL not read live enrollment or profile state. Before first live apply the operator SHALL preview drift; after applying in the proper account context the operator SHALL confirm all owned state.
 
 #### Scenario: Validate without applying Windows state
 
 - **WHEN** the Windows-native repository checks run in CI or the native development environment
-- **THEN** they validate the shipped document against the document contract, every script against the PowerShell parser, the narrow script boundary, each application's version policy and selector, and the absence of a centrally managed application
-- **AND** they apply no resource and require no provider login or device enrollment; schema validation may require documented WinGet dependencies
+- **THEN** they validate the shipped document against the pinned official schema and resource-type allowlist, every script against the PowerShell parser, the narrow script boundary, each application's version policy and selector, and the absence of a centrally managed application
+- **AND** read-only WinGet show exits zero without applying a resource or requiring provider login/device enrollment; missing native parser/schema dependencies fail rather than skip
 
 #### Scenario: Validate without Windows
 
-- **WHEN** a Nix-only environment inspects the Windows source or requests its native WinGet validation
+- **WHEN** a Nix-only environment inspects the Windows source or requests native WinGet parsing
 - **THEN** source review remains possible but native validation is not reported as exercised there
 - **AND** required Windows CI performs the native gate; a missing Windows runtime/tool does not silently pass
 
@@ -284,7 +284,7 @@ Windows checks SHALL read app policy, selectors, scope, roles, managed exclusion
 #### Scenario: Declare a self-updating application
 
 - **WHEN** the declaration selects the self-updating policy without a version for Zed, Zen, Brave, Ferdium, or Git
-- **THEN** the repository check expects `useLatest: true` and no declared version
+- **THEN** the repository check expects catalog-latest test/install semantics with no exact selector (the native DSC package shape uses `useLatest: true`; scope-sensitive scripts enforce the equivalent query/install behavior)
 - **AND** the check carries no application-specific exception
 
 #### Scenario: Declared application absent from the document

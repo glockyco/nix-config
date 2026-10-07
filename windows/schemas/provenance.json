@@ -1,0 +1,49 @@
+{
+  "release": "v3.2.3",
+  "declaredSchema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json",
+  "validationSchema": "document.schema.json",
+  "validationSha256": "c92b6cb65b8b52505e7fad8fcc31ac08eba51401e0d7971c991c34cdc1444890",
+  "transformation": "Inline each external $ref without changing its validation keywords; unmodified upstream files retained below.",
+  "sources": [
+    {
+      "path": "upstream/config/document.schema",
+      "url": "https://raw.githubusercontent.com/PowerShell/DSC/v3.2.3/schemas/2023/08/config/document.json",
+      "sha256": "0f62fbee544bd16df87bddf0b11ff7a3b6aef920cff6a5cd3499039b27e3ebd9"
+    },
+    {
+      "path": "upstream/config/document.parameter.schema",
+      "url": "https://raw.githubusercontent.com/PowerShell/DSC/v3.2.3/schemas/2023/08/config/document.parameter.json",
+      "sha256": "790d3727c63e6702269b328be6feaa397cf1e8cfb4b7256c333018274a358761"
+    },
+    {
+      "path": "upstream/definitions/parameters/dataTypes.schema",
+      "url": "https://raw.githubusercontent.com/PowerShell/DSC/v3.2.3/schemas/2023/08/definitions/parameters/dataTypes.json",
+      "sha256": "161623b93c07e209363c87062ac20f5531e946680350e9b90d7f57cfb8ffba70"
+    },
+    {
+      "path": "upstream/definitions/parameters/validValueTypes.schema",
+      "url": "https://raw.githubusercontent.com/PowerShell/DSC/v3.2.3/schemas/2023/08/definitions/parameters/validValueTypes.json",
+      "sha256": "2598b85d791aa62c8e27ef92acc12c51f515073ab0557829bf3988a8453258fa"
+    },
+    {
+      "path": "upstream/config/document.resource.schema",
+      "url": "https://raw.githubusercontent.com/PowerShell/DSC/v3.2.3/schemas/2023/08/config/document.resource.json",
+      "sha256": "0b2ef7e287c774019fedd102f430d9522c1248f9d7b0259c5b404deffc608237"
+    },
+    {
+      "path": "upstream/definitions/resourceType.schema",
+      "url": "https://raw.githubusercontent.com/PowerShell/DSC/v3.2.3/schemas/2023/08/definitions/resourceType.json",
+      "sha256": "bbcb7e7731912ffe2a97884216be48789b0c8ba2f66203ee8c146944342dcdd6"
+    },
+    {
+      "path": "upstream/definitions/instanceName.schema",
+      "url": "https://raw.githubusercontent.com/PowerShell/DSC/v3.2.3/schemas/2023/08/definitions/instanceName.json",
+      "sha256": "104d22942e37c7a9b24260afafa85e5038a627a6f525f66de18745f4a8f2e7d5"
+    }
+  ],
+  "resources": {
+    "Microsoft.WinGet/Package": "1.29.380",
+    "Microsoft.Windows/Registry": "1.0.0",
+    "Microsoft.DSC.Transitional/WindowsPowerShellScript": "0.1.0"
+  }
+}
