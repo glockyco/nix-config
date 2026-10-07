@@ -1,6 +1,6 @@
 # Dependency Updates
 
-Use this runbook for release acceptance, OMP version recovery, or external authorization repair.
+Use this runbook for release acceptance, Plannotator updates, desktop OpenSSH maintenance, or external authorization repair.
 Routine [updates](../../README.md#update), [release gates](../../README.md#develop), [activation](../../README.md#activate), and [Nix rollback](../../README.md#recover) have one README owner.
 Keep the previous Nix generation until activation verification and every required smoke pass.
 
@@ -11,18 +11,18 @@ The [central controller](https://github.com/glockyco/dependency-automation#opera
 Target repositories hold no App credential. Do not enable a second Nix updater or Renovate's Nix manager.
 
 Use the existing [plugin release procedure](https://github.com/glockyco/omp-agent-setup#release-flow) and [Erenshor dependency procedure](https://github.com/glockyco/erenshor-data-mining#dependency-maintenance).
-Publish a verified plugin revision before advancing `personal-omp-plugin` here. Do not install it through OMP's mutable plugin manager.
-After an OpenSpec update, regenerate adapters in the plugin repository with `nix run .#sync-openspec-adapters` before advancing its pin here.
+Hosts install and upgrade the personal plugin with OMP's plugin manager (see the [README](../../README.md#omp)); the `personal-omp-plugin` input here supplies only the OpenSpec contract and adapter-freshness checks.
+After an OpenSpec update, regenerate adapters in the plugin repository with `nix run .#sync-openspec-adapters` and publish a plugin release before advancing its pin here.
 
 For an artifact update, change the version, platform asset selection, and fixed hash together.
 Use the [Markdown Oxide](../../packages/markdown-oxide/package.nix) or [Roslyn](../../packages/roslyn-language-server/package.nix) declaration.
 Never accept changed bytes under an existing hash.
-If the plugin selects a different server, publish its verified revision and change the wrapper package selection together.
+If the plugin selects a different server, publish its release and change the [host package list](../../modules/home/packages.nix) together.
 Do not publish a plugin that selects an unavailable server or retain the previous server as a fallback.
 
 ## Plannotator updates
 
-The OMP wrapper uses the unmodified vendor package from the commit-qualified `plannotator-packages` input in [flake.nix](../../flake.nix). Plannotator advances only on request. Its vendor recipe and transitive inputs stay pinned while routine lock updates can advance other tools. Keep the vendor's own Nixpkgs selection; do not add a workstation `nixpkgs` follow.
+Both hosts install the unmodified vendor package from the commit-qualified `plannotator-packages` input in [flake.nix](../../flake.nix) as an ordinary package. Plannotator advances only on request. Its vendor recipe and transitive inputs stay pinned while routine lock updates can advance other tools. Keep the vendor's own Nixpkgs selection; do not add a workstation `nixpkgs` follow.
 
 For an explicit Plannotator update:
 
@@ -40,7 +40,7 @@ For an explicit Plannotator update:
 
 1. Build the selected package on both supported systems and record its version and Nix output paths with the change.
 
-1. Verify document and last-response feedback in the wrapped OMP session, without approval controls or source edits.
+1. Verify document and last-response feedback in a fresh OMP session in Tern, without approval controls or source edits.
 
 1. Verify explicit cancellation, then complete the existing host release and rollback gates before replacing the working generation.
 
@@ -52,136 +52,27 @@ Closing the browser tab does not guarantee cancellation in the stock annotation-
 
 Use `/plannotator-cancel` to cancel the pending review before starting another. The adapter also cancels reviews on session navigation and shutdown. Browser annotations provide feedback only; they do not edit the source or approve implementation.
 
-## Agent-led OMP updates
-
-The repository-local [omp-update skill](../../.agents/skills/omp-update/SKILL.md) guides an agent through this procedure.
-Start a fresh wrapped OMP session in this checkout and request an update, or invoke `/skill:omp-update`.
-The result is a verified selected runtime, not only a repaired patch series or instructions for unfinished work.
-
-### Preflight and authorization
-
-1. Identify the current host and system from the environment and repository declarations. Default to that supported host unless the user names another.
-1. Resolve `omp`, `omp-dev-update`, and `verify-personal-omp` from the caller's command environment. Inspect their resolved launchers for ownership; do not select a convenient developer executable.
-1. Read [the declared inputs](../../packages/omp-dev-update/package.nix). Resolve the installed updater script and read the immutable JSON path passed to its `--config` argument. Compare its upstream URL, fork URL, patch base, patch tip, and system with the reviewed repository declaration. Do not execute file contents to extract these fields.
-1. Run `omp-dev-update --status` to record the selected release, upstream, patch range, resulting commit, and system. Inspect the declared state root's `current` and `previous` targets and their generation metadata. A first installation can have neither target. Status metadata describes the selected generation, not necessarily the installed updater's current pins.
-1. Inspect repository changes and granted scope. Preserve unrelated work. A normal update request authorizes the existing updater's selection on the current host, unless restricted. Obtain missing authorization before patch publication, configuration publication, host activation, or recovery outside the granted scope. Never infer fleet permission from access to a remote builder.
-
-If installed pins differ from the reviewed repository pins, establish which revision is intended before preparation.
-If the intended pin change is already reviewed and committed, reuse that commit; do not edit or recommit identical pins.
-A reviewed local commit can be activated without a nix-config push. Request configuration publication only when that operation is required by the user's scope.
-Run the applicable [release gates](../../README.md#develop), review and commit the intended configuration, then perform authorized [activation](../../README.md#activate).
-Do not activate unrelated or unreviewed changes. Read activation output and resolve the installed updater again before retrying.
-Building a package does not install its pins. Publishing a fork branch does not activate either host.
-
-Run authorized activation yourself, as [Activate](../../README.md#activate) describes: when `sudo` prompts, the owner types the password into your pseudo-terminal.
-Do not ask for passwords or private-key contents. Only if no owner can enter the password, report the exact host command and the current selection, then resume after the operator provides the activation result.
-If the host or command ownership is unsupported, report that prerequisite instead of installing another OMP distribution.
-
-### Prepare and accept the runtime
-
-1. If a failure was already reported, inspect its phase and candidate before another attempt. Do not rerun a known failure merely to confirm it.
-1. Otherwise, run `omp-dev-update` through the installed command. It selects the latest stable upstream release using the installed pins.
-1. If preparation succeeds, read the JSON report on standard output (see [Session follow-up and retention](#session-follow-up-and-retention)). Then run `verify-personal-omp` and complete [Release smoke](#release-smoke) in a fresh wrapped session through Herdr. Include the WSL browser check when applicable.
-1. If inputs are unchanged, verify the selected runtime and report **already current**. Do not manufacture a patch refresh, pin edit, or new generation.
-1. If preparation fails, use the reported phase and candidate location to select the repair path below. A failed candidate need not have `generation.json`; that file is written after successful preparation.
-1. If smoke fails after selection, report failed acceptance and follow authorized [OMP version recovery](#omp-version-recovery). Repeat verification after recovery. Do not report the recovered older release as a successful upgrade.
-
-The updater owns its process lock, candidate worktree, retained development environment, verification phases, and atomic promotion.
-Do not edit `current` or `previous`, remove a process-held lock, manually promote a candidate, or invent prepare-only or resume flags.
-An interrupted or rejected preparation leaves the previous selection available; inspect the selection before reporting its state.
-The updater keeps generations that running sessions use; see [Session follow-up and retention](#session-follow-up-and-retention).
-
-### Session follow-up and retention
-
-After an update or rollback changes the selection, the updater restarts idle OMP sessions that the local Herdr server manages and that still run an older generation. Each restart exits the session and resumes the same session file in its pane with `omp --resume`, so the session continues on the selected generation. The updater restarts a session only if Herdr reports it `idle` or `done`, its input editor is visibly empty, and it was launched as plain `omp` or with only `--resume` or `--continue`. Anything else stays running and untouched. OMP's own `/restart` resumes on the generation that is already running, so it does not upgrade a session.
-
-The updater then removes every generation except the current one, the previous one, and those a running process still uses, including failed candidates of earlier runs. It does not run Nix garbage collection. `omp-dev-update --prune` repeats only this cleanup, for example after sessions that were skipped have been restarted by hand.
-
-Standard output is one JSON object: the selected generation's metadata plus `sessions` and `generations`. An unchanged update prints the metadata alone, and `--prune` prints `generations` alone. Relay these fields to the operator:
-
-- `sessions.herdr`: `unavailable` means no session was restarted.
-- `sessions.skipped`: each entry names a pane, session file, generation, and `reason`. `invoking` is the session that ran the updater, usually the reporting agent itself. `working`, `blocked`, and `unknown` are busy or unclassified agents. `draft` means the editor holds unsent text. `editor-unrecognized` means the editor could not be located. `custom-arguments` means the session was launched with flags other than `--resume` or `--continue`. `no-session-file`, `exit-timeout`, `relaunch-unconfirmed`, and `herdr-error` mean the restart could not complete. Each of these sessions needs a manual exit and `omp --resume`.
-- `sessions.restarted`: panes now running the selected generation.
-- `generations.inUse`: older generations kept for running processes, with process counts. After those processes end, `omp-dev-update --prune` removes them.
-- `generations.error`: cleanup failed after a successful selection. Report it; the selection stands.
-
-### Repair a non-conflict failure
-
-Read the reported command, exit status, phase, and relevant source before choosing a repair.
-Use [the updater implementation](../../packages/omp-dev-update/src/omp_dev_update/__init__.py) as the current phase and command reference.
-
-- **Fetch or input validation:** check declared URLs, release/tag identity, exact commit availability, ancestry, and existing credential access. Do not print tokens, change credential ownership, or accept a moving branch as a pin.
-- **Environment or dependencies:** inspect the resolved release's Nix shell and lockfiles, available disk space, and the actual dependency error. Preserve frozen dependency installation; do not update locks merely to make installation pass.
-- **Native components:** the updater installs the addon that upstream published for the candidate release, after an integrity and provenance check. It compiles the addon in the target host's development environment only when the pinned patch range changes native sources, or when no published addon matches the release and platform. Inspect the registry response, the verification output, and the host development environment. Do not install an unverified artifact, copy another host's build output, or bypass the phase with an executable fallback.
-- **Package checks or regressions:** investigate the failing behavior. Keep failures visible and verify the source repair before retrying production preparation.
-- **Native loading or CLI smoke:** inspect the native error, source launcher, immutable plugin input, and caller environment. Do not rewrite mutable OMP configuration or add a launcher fallback.
-- **Lock or promotion:** inspect the owning operation and recorded state. Wait for legitimate work or report the failure; do not delete state to force another updater through.
-
-Use a separate worktree for source repairs. Follow the same verification and publication boundaries as a patch refresh.
-If a repair requires an updater contract change, use a separately reviewed OpenSpec change rather than silently expanding the current update.
-Retry only after a diagnosed cause or prerequisite has changed. State any remaining blocker and preserve the failed candidate for inspection.
-
-### Refresh the maintained patches
-
-1. Record the failing range and resolved stable upstream commit from installed inputs, updater output, and Git state. Inspect the candidate read-only, including its conflict blocks and relevant upstream changes. Do not repair the failed candidate in place.
-1. Use a separate maintained Git repository or worktree outside the updater's active generations. If none exists, create an owned temporary clone from the declared sources. Fetch the exact old base and tip plus the resolved stable release; verify commit identities, ancestry, and the release tag as the updater does.
-1. Create a new versioned maintenance branch at the old patch tip. Rebase that range onto the resolved upstream commit using `git rebase --onto <upstream-commit> <old-base>`. Resolve each overlap by understanding both behaviors, not with a blanket ours/theirs strategy. Preserve the original branch.
-1. Review `git range-diff <old-base>..<old-tip> <new-base>..<new-tip>` and the complete diff from the new upstream base. Check every intended fix, unintended changes, and release notes. Move personal notes to the appropriate unreleased section without rewriting published upstream entries.
-1. If upstream now supplies a fix, verify its behavior before retiring the redundant patch. Do not silently preserve or discard a patch based only on whether Git applies it. The updater rejects an empty or merged patch range; if no patches remain, report the need for a reviewed updater contract change. Do not create a dummy patch to pass validation.
-1. Verify the refreshed source before publication. Read the current `PHASES`, `REGRESSIONS`, and `prepare` implementation in the updater, then execute the corresponding checks in the resolved upstream development environment. Preserve its frozen dependency installation, native component preparation, package checks, behavior regressions, native loading, and immutable-plugin launcher checks. A range that changes native sources restores the host compile, so verify that path when the refreshed patches touch Rust or build files. Check the relevant upstream scripts if their interfaces changed.
-1. Use isolated application state for verification: separate HOME, XDG directories, OMP/PI agent paths, and an outside-checkout launch directory. Remove inherited runtime overrides as the updater does. Keep the personal plugin at its declared immutable path. Do not copy authentication databases or run aggregate setup commands that install global links.
-1. Request any missing permission to publish the concrete new branch to the declared fork. Publish only the verified commits, without force-pushing or rewriting the original branch. Verify the exact base and tip can be fetched and their ancestry checked independently on both supported hosts. Missing host access is a verification blocker, not permission to copy a checkout or claim that check passed.
-1. Update the exact `patchBase` and `patchTip` in the repository declaration. Record verification with the relevant change and use the personal commit policy for task-owned changes. A patch-fork push does not authorize a nix-config push. Keep semantic updater changes in their own reviewed change.
-1. Complete the applicable README gates, review and merge the intended configuration, and perform authorized activation on the requested host. Inspect activation output and confirm the installed inputs. Then rerun `omp-dev-update` and complete runtime acceptance; do not stop at publication or pin integration.
-
-A newer stable release can appear during maintenance. Record the release actually selected on retry and verify that result.
-If replay fails against that newer release, inspect the new failure; do not claim that earlier verification covered it.
-Only the updater prepares and selects the production generation. Verification worktrees are not alternate runtime installations.
-
-### Completion and handoff
-
-Report **updated**, **already current**, **recovered**, or **blocked**, with the observed host and selected identities.
-Include the verifier result, fresh-session smoke, immutable plugin path, Herdr status, and previous-generation availability.
-Name the commits, publications, and activations actually performed. From the report, list the restarted panes, every skipped session with its reason, and the generations kept in use. State explicitly when the reporting agent's own session (`invoking`) still runs the older generation.
-If no previous generation exists, report that limitation; never invent a successful rollback.
-For blockers, name the failed phase, candidate if present, current selection, missing prerequisite, and exact next operator action.
-Keep evidence with the change or session, not as historical release facts in this manual or skill.
-
 ## Release smoke
 
-### Herdr prerequisite
-
-Before controlling panes, check `HERDR_ENV` with `printenv HERDR_ENV` through the Bash tool that will execute Herdr.
-Eval's environment can differ from the command environment; a missing Eval value alone does not establish a Herdr blocker.
-
-- If Bash reports `1`, read `herdr --skill` and follow its control policy for the fresh wrapped-session smoke.
-- If the marker is absent or not `1`, do not control the user's Herdr session or set the marker yourself. Complete independent checks, including the managed-browser smoke when available. Report the fresh Herdr-session checks as blocked and request that the operator resume them from a Herdr-managed OMP session.
-- If the command check fails for another reason, report that error rather than interpreting it as an absent marker.
-
-Herdr availability does not establish permission to control unrelated panes. A missing marker does not establish that OMP's managed browser is unavailable.
-
-### Runtime checks
-
-After activation or an OMP executable change, run `verify-personal-omp`.
-It must report the observed OMP version, a plugin path under `/nix/store`, and `omp: current`.
-For an `llm-agents`, plugin, wrapper, extension, or OMP executable change, start a fresh wrapped `omp` session in a disposable repository.
-Ask it to report the loaded `@glockyco/personal-omp-plugin` source path and quote the personal commit policy.
+After activation, an OMP update, or a plugin upgrade, check `omp --version` and `omp plugin list`. The list must show `personal@glockyco` once, in user scope, at the expected version.
+For an `llm-agents`, plugin, OMP, or Plannotator change, start a fresh `omp` session in Tern in a disposable repository.
+Ask it to quote the personal commit policy and to list the `/personal:opsx-*` commands.
 Then request a `personal_commit` preview with these fields:
 
 ```text
 action=preview
 subject="chore: verify release smoke"
-body="The release must prove that the immutable personal commit extension loads without changing repository state."
+body="The release must prove that the personal commit extension loads from the installed plugin without changing repository state."
 repo="."
 ```
 
-The plugin path must be under `/nix/store`, the policy must apply, and preview must leave the repository unchanged.
+The policy must apply, every workflow command must appear once under its `/personal:` name, and preview must leave the repository unchanged.
 A workflow-only or documentation-only change needs no model-backed smoke. It still needs every [release gate](../../README.md#develop).
 On WSL, repeat the [managed-browser smoke](wsl-omp-bootstrap.md#managed-browser-smoke) after OMP updates, recovery, or browser ABI changes.
 
 For Plannotator changes, run `/plannotator-annotate <path>` and `/plannotator-last` in the fresh local session. Submit feedback from the native browser and confirm source attribution without source edits or approval. Exercise `/plannotator-cancel` and confirm that the owned listener disappears. Closing a tab alone is not a cancellation guarantee.
 
-For language-server changes, use fresh wrapped sessions at fixed representative project roots on both supported systems.
+For language-server changes, use fresh sessions at fixed representative project roots on both supported systems.
 OMP discovers root markers in its working directory, not child directories.
 Supply project SDKs through each project's development environment. A server runtime does not supply the C# SDK.
 Require diagnostics for every supported language, plus definition, references, and rename where supported.
@@ -196,20 +87,9 @@ A missing server, unsupported operation, crash, lost edit, or persistent semanti
 Record initialization and post-rename diagnostic failures separately. Successful retries do not erase them.
 Do not add sleeps, hidden retries, or timeout overrides to manufacture acceptance.
 
-## OMP version recovery
+## OMP recovery
 
-Nix rollback preserves the selected OMP source generation and writable application state.
-On macbook-pro and korolev, select the previous verified generation without a download or rebuild:
-
-```sh
-omp-dev-update --rollback
-verify-personal-omp
-```
-
-Rollback fails without changing the selection when no previous generation exists. Repeat [Release smoke](#release-smoke) afterward.
-Do not delete retained generation directories while sessions use them, delete `~/.omp`, or copy credentials and databases from another host.
-
-An update failure leaves the current generation selected and reports the failed phase and candidate location. Resolve patch conflicts in the maintained Git series, publish only with explicit authorization, and review its pinned input here before retrying. Do not edit an active generation or use the official installer as a fallback.
+Nix rollback does not change OMP, the plugin, or their writable state. To return to an accepted OMP release, reinstall it with `curl -fsSL https://omp.sh/install | sh -s -- --binary --ref <tag>` and repeat [Release smoke](#release-smoke). A bad plugin release is replaced by a newer corrective release from the plugin repository, then `omp plugin marketplace update glockyco` and `omp plugin upgrade --scope user personal@glockyco`. Do not delete `~/.omp`, edit the plugin cache, or copy credentials and databases from another host.
 
 ## Desktop OpenSSH maintenance
 
@@ -241,7 +121,7 @@ After installation, use the Pro's pinned `desktop-batch` endpoint to verify the 
 
 To recover from a failed ZIP update, use the local console and the same supported remove/install procedure with the retained accepted package. Restore the saved SSH configuration and ACLs if they changed, restore startup settings, and repeat transport acceptance. Removing the Windows capability can remove its server binary: pointing the service back to `C:\Windows\System32\OpenSSH\sshd.exe` is not a recovery procedure when that file is absent. Returning to capability ownership requires an explicit Windows capability installation, not an executable fallback. Do not reinstall or restart the working server merely to rehearse this procedure.
 
-The desktop's agent stack is manual too, and separate from this repository's wrapper. OMP is the standalone Windows executable under `%LOCALAPPDATA%\omp`, installed with the official installer at a pinned tag and checked against the release digest; do not install it through Bun, which produces a shim this fleet rejects. The personal plugin is a source checkout at the revision this repository pins, loaded with `--plugin-dir` and `--extension`; update it explicitly rather than by automatic pull. Language servers are deliberately absent there. Record any accepted version change with its digest in the owning change.
+The desktop's agent stack is manual too. OMP is the standalone Windows executable under `%LOCALAPPDATA%\omp`, installed with the official installer in binary mode (`& ([scriptblock]::Create((irm https://omp.sh/install.ps1))) -Binary`) and updated with `omp update`; do not install it through Bun, which produces a shim this fleet rejects. Check after installation that OMP's shell is native PowerShell or Git Bash, never the WSL `bash.exe`. The personal plugin comes from `omp plugin marketplace add glockyco/omp-agent-setup` and `omp plugin install --scope user personal@glockyco`, and upgrades with the commands in the [README](../../README.md#omp). Language servers are deliberately absent there. Record any accepted version change in the owning change.
 
 ### Sources, revocation and session lifetime
 

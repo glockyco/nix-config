@@ -11,9 +11,7 @@ Personal workstation configuration for an Apple Silicon MacBook Pro and NixOS un
 
 Host facts live in [typed declarations](modules/fleet/host.nix) under `hosts/<name>/host.nix`. Each `hosts/<name>/default.nix` selects its roles: the Mac selects [desktop](modules/roles/darwin/desktop/default.nix), [PostgreSQL](modules/roles/darwin/postgresql/default.nix), [container client](modules/roles/darwin/container-client/default.nix), and the temporary [Air client](modules/roles/darwin/air-client/default.nix); Korolev selects [WSL workstation](modules/roles/nixos/wsl-workstation/default.nix). The Darwin and NixOS baselines do not enable these functions on their own. Change a machine value in its host declaration and role policy in its role module.
 
-Nix owns the host configuration and OMP wrapper, updater, plugin, and language tools. `omp-dev-update` prepares patched OMP source generations independently on each host. OMP owns its writable authentication, configuration, sessions, and databases; activation and Nix rollback do not replace them. Project repositories own their development environments.
-
-[![System overview: pinned inputs and shared and platform-specific modules compose the macOS and NixOS/WSL environments. Windows configuration is applied separately. The OMP detail shows the Nix-managed wrapper, plugin, and language servers interacting with the host-local source runtime and writable state.](docs/images/system-overview.webp)](docs/images/system-overview.webp)
+Nix owns the host configuration and the ordinary tools, including the language servers, OpenSpec, and Plannotator. It does not own OMP: each host installs upstream OMP with the official installer and the personal plugin with OMP's plugin manager (see [OMP](#omp)). OMP owns its writable authentication, configuration, sessions, plugin cache, and databases; activation and Nix rollback do not replace them. Project repositories own their development environments.
 
 ## Network
 
@@ -94,13 +92,35 @@ Mac activation runs packaged commands for layouts, application handlers, shortcu
 
 Before accepting a changed Mac generation, compare the layout, Karabiner, and `FileTypes.app` mtimes across two switches of one revision. Run the built Home Manager activation with `DRY_RUN=1`. Confirm that none of those paths change. Check both power sources and the Rosetta execution probe before and after activation. These live checks require owner authorization; package command tests do not replace them.
 
-Run `verify-personal-omp` afterward. It reports the selected release and commits, OMP version, plugin store path, and current Herdr integration. After OMP or plugin behavior changes, also complete the [release smoke](docs/operations/dependency-updates.md#release-smoke).
+After OMP or plugin behavior changes, also complete the [release smoke](docs/operations/dependency-updates.md#release-smoke).
 
 In a fresh local OMP session, use `/plannotator-annotate <path>` to annotate a document or `/plannotator-last` to annotate the last response. Submitted annotations return as feedback, without editing the source or approving implementation. Use `/plannotator-cancel` if a closed browser tab leaves a review pending.
 
 For a new Windows machine, follow [WSL and Windows provisioning](docs/operations/wsl-omp-bootstrap.md). It covers image import, credentials, the separate Windows apply, and recovery. Run one WSL distribution at a time; confirm `systemctl is-active user@1000.service` reports `active` before activation.
 
 For local containers on the Mac, use the [container lifecycle and recovery procedure](docs/operations/container-runtime.md). Activation does not start or delete the VM.
+
+## OMP
+
+Each host runs upstream OMP from the official installer in binary mode, installed to `~/.local/bin`, which the shell puts on `PATH`. Tern is the terminal for interactive sessions. Install OMP, then the personal plugin from the [`glockyco` marketplace](https://github.com/glockyco/omp-agent-setup):
+
+```sh
+curl -fsSL https://omp.sh/install | sh -s -- --binary
+omp plugin marketplace add glockyco/omp-agent-setup
+omp plugin install --scope user personal@glockyco
+```
+
+Start a new OMP session afterwards. The plugin supplies the personal policy, skills, `personal_commit`, the Plannotator commands, the language-server overrides, and the OpenSpec workflow as `/personal:opsx-apply`, `/personal:opsx-archive`, `/personal:opsx-explore`, `/personal:opsx-propose`, `/personal:opsx-sync`, and `/personal:opsx-update`.
+
+Update OMP and the plugin independently, then start a new session:
+
+```sh
+omp update
+omp plugin marketplace update glockyco
+omp plugin upgrade --scope user personal@glockyco
+```
+
+Check the result with `omp --version` and `omp plugin list`. To return to a known release of OMP, reinstall it with `curl -fsSL https://omp.sh/install | sh -s -- --binary --ref <tag>`; a bad plugin release is replaced by a newer corrective release, never by rewriting the installed cache.
 
 ## Nix maintenance and encrypted secrets
 
@@ -130,23 +150,10 @@ For a manual Nix update, choose one command, review the diff, then run the gates
 
 ```sh
 nix flake update                       # all inputs
-nix flake update personal-omp-plugin   # plugin only
+nix flake update personal-omp-plugin   # OpenSpec check tools only
 ```
 
-For an agent-led update, open this repository in a fresh OMP session and request an update or invoke `/skill:omp-update`. The [repository skill](.agents/skills/omp-update/SKILL.md) follows the [complete update procedure](docs/operations/dependency-updates.md#agent-led-omp-updates), including patch repair and runtime verification.
-
-On macbook-pro and korolev, initialize or update the patched OMP runtime explicitly:
-
-```sh
-omp-dev-update
-omp
-```
-
-The updater checks a host-native source generation before selecting it. It installs the native addon that upstream published for that release, after an integrity and provenance check, and compiles the addon only when the pinned patches change native sources. Downloaded packages stay in one cache under `~/.local/share/omp-dev/cache`; removing that directory changes no generation. Failed updates leave the current generation unchanged. The [patch input](packages/omp-dev-update/package.nix) is pinned; changing the maintained patches requires a reviewed pin update. Normal sessions retain the immutable plugin and language tools. Use `omp-dev-update --rollback` for [OMP recovery](docs/operations/dependency-updates.md#omp-version-recovery), not `omp update` or Nix rollback.
-
-After selecting a generation, `omp-dev-update` restarts idle OMP sessions in Herdr panes that still run an older one, resuming each session on the new generation. It leaves busy sessions, sessions with an unsent draft, sessions launched with flags other than `--resume` or `--continue`, and its own session untouched, and lists them on standard error and in its JSON report. It then removes generations that are neither current, previous, nor used by a running process. Run `omp-dev-update --prune` to repeat that cleanup after restarting the listed sessions. The [update procedure](docs/operations/dependency-updates.md#session-follow-up-and-retention) describes the report fields.
-
-Run the verifier and applicable release smoke before accepting the update.
+The `personal-omp-plugin` input supplies only the fleet OpenSpec contract check and the adapter-freshness check; updating it does not change the plugin that hosts run. OMP and the plugin update with their own commands, described under [OMP](#omp).
 
 ## Recover
 
@@ -162,4 +169,4 @@ sudo nixos-rebuild list-generations | cat
 sudo nixos-rebuild switch --rollback --no-reexec
 ```
 
-Then repeat verification. Nix rollback restores immutable tools, not OMP versions, credentials, tailnet enrollment, or application data. For a rejected OMP release, use [source-generation recovery](docs/operations/dependency-updates.md#omp-version-recovery). Windows configuration has no generation rollback.
+Then repeat verification. Nix rollback restores Nix-managed tools, not OMP or plugin versions, credentials, tailnet enrollment, or application data; use the [OMP](#omp) commands for those. Windows configuration has no generation rollback.

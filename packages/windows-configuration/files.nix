@@ -74,7 +74,6 @@ let
 
   zedSettings =
     (shared.zedSettings {
-      ompCommand = "omp";
       fontFamily = "JetBrainsMonoNL NF";
     })
     // {

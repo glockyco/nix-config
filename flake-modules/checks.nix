@@ -25,7 +25,6 @@
       markdownTests = pkgs.callPackage ../packages/markdown-oxide/tests.nix { };
       roslynTests = pkgs.callPackage ../packages/roslyn-language-server/tests.nix { };
       moduleImportTests = pkgs.callPackage ../packages/module-imports-check/tests.nix { };
-      personalOmpTests = pkgs.callPackage ../packages/personal-omp/tests.nix { };
 
       hostChecks =
         host:
@@ -55,23 +54,44 @@
               trustedPublicKeys = settings.extra-trusted-public-keys;
             };
           };
-          personal-omp =
-            assert lib.assertMsg (installedPackage pkgs.personal-omp)
-              "${host.name}: installed OMP wrapper differs from pkgs.personal-omp";
-            assert lib.assertMsg (installedPackage pkgs.personal-omp.devUpdate)
-              "${host.name}: installed OMP updater differs from pkgs.personal-omp.devUpdate";
-            assert lib.assertMsg (installedPackage pkgs.personal-omp.verifyPersonalOmp)
-              "${host.name}: installed OMP verifier differs from pkgs.personal-omp.verifyPersonalOmp";
-            assert lib.assertMsg (installedPackage pkgs.openspec)
-              "${host.name}: pinned OpenSpec is absent from home.packages";
+          # Upstream OMP and the personal plugin live outside Nix; the host
+          # still owns the ordinary tools they call.
+          agent-tools =
+            let
+              bothHosts = with pkgs; [
+                uv
+                openspec
+                plannotator
+                markdown-oxide
+                nixd
+                pyright
+                svelte-language-server
+                texlab
+                typescript-language-server
+              ];
+              missing = builtins.filter (package: !installedPackage package) bothHosts;
+              roslyn = installedPackage pkgs.roslyn-language-server;
+            in
+            assert lib.assertMsg (missing == [ ])
+              "${host.name}: home.packages lacks ${lib.concatMapStringsSep ", " lib.getName missing}";
+            assert lib.assertMsg (
+              roslyn == (host.kind == "darwin")
+            ) "${host.name}: Roslyn belongs to the Mac only";
             # Homebrew's shell setup prepends its prefix, so a host that
-            # enables Homebrew must put the user's profile, and the wrapper,
-            # back in front.
+            # enables Homebrew must put the user's profile back in front.
             assert lib.assertMsg (
               (hostConfig.homebrew.enable or false)
               -> lib.hasInfix "path=(\"/etc/profiles/per-user/${host.username}/bin\"" home.programs.zsh.initContent
             ) "${host.name}: Homebrew precedes the user's profile in zsh";
-            pkgs.runCommand "check-${host.name}-personal-omp" { } "touch $out";
+            # The executable must report the version its package declares.
+            pkgs.runCommand "check-${host.name}-agent-tools" { nativeBuildInputs = [ pkgs.openspec ]; } ''
+              reported="$(HOME="$TMPDIR" openspec --version)"
+              if [ "$reported" != "${pkgs.openspec.version}" ]; then
+                echo "openspec reports $reported, its package declares ${pkgs.openspec.version}" >&2
+                exit 1
+              fi
+              touch "$out"
+            '';
           login-shell =
             assert home.programs.zsh.enable;
             assert home.home.homeDirectory == user.home;
@@ -155,7 +175,6 @@
               "${host.name}: mnt-s.mount keeps the start limit that turns an unreachable share into an empty directory";
             pkgs.runCommand "check-${host.name}-scch-share" { } "touch $out";
           omp-browser-runtime = pkgs.callPackage ../checks/omp-browser-runtime-check.nix {
-            personalOmp = pkgs.personal-omp;
             systemPath = hostConfig.system.path;
           };
           builder-ssh-configuration = pkgs.callPackage ../checks/builder-ssh-config-check.nix {
@@ -247,6 +266,8 @@
           src = ../.;
           name = "check-openspec-contracts";
         };
+        # The plugin's tracked adapters must match this repository's OpenSpec.
+        openspecAdapters = inputs.personal-omp-plugin.checks.${system}.openspec-adapters;
         fleetSurface =
           assert lib.assertMsg (
             missingFiles == [ ]
@@ -278,17 +299,6 @@
       }
       // lib.optionalAttrs (supports pkgs.module-imports-check) {
         inherit (moduleImportTests) moduleImports moduleImportsCommand;
-      }
-      // lib.optionalAttrs (supports pkgs.personal-omp) {
-        inherit (personalOmpTests)
-          personalOmpShape
-          personalOmpGeneration
-          personalOmpVerification
-          herdrOmpReconciliation
-          ;
-      }
-      // lib.optionalAttrs (supports pkgs.omp-dev-update) {
-        personalOmpUpdate = pkgs.omp-dev-update.tests;
       }
       // lib.optionalAttrs (supports pkgs.tailscale-set-after-login) {
         tailscaleSetAfterLogin = pkgs.callPackage ../packages/tailscale-set-after-login/tests.nix { };

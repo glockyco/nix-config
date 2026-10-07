@@ -1,4 +1,4 @@
-{ config, ... }:
+_:
 
 let
   shared = import ../../shared;
@@ -15,10 +15,7 @@ in
     # settings.json, preserving UI state while reapplying declared values on each switch.
     extensions = [ "latex" ];
 
-    # The theme comes from `modules/home/darwin/catppuccin.nix`. Use an
-    # absolute command because GUI-launched Zed does not inherit the shell's PATH.
-    userSettings = shared.zedSettings {
-      ompCommand = "${config.home.profileDirectory}/bin/omp";
-    };
+    # The theme comes from `modules/home/darwin/catppuccin.nix`.
+    userSettings = shared.zedSettings { };
   };
 }

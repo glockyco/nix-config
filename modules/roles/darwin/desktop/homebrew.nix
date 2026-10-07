@@ -26,14 +26,6 @@ in
   homebrew = {
     enable = true;
 
-    taps = [ "can1357/tap" ];
-
-    brews = [
-      # Retain the official installation for pre-cutover Nix generations.
-      # The source-generation wrapper does not use this executable.
-      "can1357/tap/omp"
-    ];
-
     casks = map (application: application.cask) (
       builtins.filter (application: application.cask != null) config.host.darwin.applications
     );
