@@ -64,7 +64,7 @@ try {
     $base = @('--no-tty', '--force', '--refresh-externals=never', '--source', $checkout, '--destination', $target, '--config', $config, '--persistent-state', $state, '--override-data-file', $overridePath)
     if ($ViaPowerShell7) {
       $invocationPath = Join-Path $fixtureRoot 'PowerShell 7 chezmoi invocation.json'
-      Write-CoreFile $invocationPath (@{ command = (Get-Command chezmoi -CommandType Application).Source; arguments = $base + $Arguments } | ConvertTo-Json -Depth 30)
+      Write-CoreFile $invocationPath (@{ command = (Get-Command chezmoi -CommandType Application | Select-Object -First 1).Source; arguments = $base + $Arguments } | ConvertTo-Json -Depth 30)
       $bridge = Join-Path $fixtureRoot 'PowerShell 7 chezmoi bridge.ps1'
       Write-CoreFile $bridge @'
 param([string]$InvocationPath)
@@ -74,7 +74,7 @@ $invocation = [IO.File]::ReadAllText($InvocationPath) | ConvertFrom-Json
 & $invocation.command @($invocation.arguments)
 exit $LASTEXITCODE
 '@
-      Invoke-CoreNative (Get-Command pwsh -CommandType Application).Source @('-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', $bridge, $invocationPath) -Failure:$Failure
+      Invoke-CoreNative (Get-Command pwsh -CommandType Application | Select-Object -First 1).Source @('-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', $bridge, $invocationPath) -Failure:$Failure
       return
     }
     Invoke-CoreNative chezmoi ($base + $Arguments) -Failure:$Failure
@@ -282,9 +282,17 @@ exit "$CORE_WINGET_EXIT"
   }
   $env:PATH = $bin + [IO.Path]::PathSeparator + $saved.PATH
   $viaPowerShell7 = [Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT -and $null -ne (Get-Command pwsh -CommandType Application -ErrorAction SilentlyContinue)
+  if ($viaPowerShell7) {
+    # Hosted runners also have an ambient pwsh behind the locked one. Exercise
+    # that discovery shape without installing another runtime or invoking it.
+    $secondaryShell = Join-Path $fixtureRoot 'second PowerShell on PATH'
+    Write-CoreFile (Join-Path $secondaryShell 'pwsh.cmd') "@echo off`r`nexit /b 89`r`n"
+    $env:PATH += [IO.Path]::PathSeparator + $secondaryShell
+    Assert-Core (@(Get-Command pwsh -CommandType Application).Count -gt 1) 'PowerShell discovery regression must expose multiple PATH candidates'
+  }
   $null = Invoke-CoreChezmoi @('apply') -ViaPowerShell7:$viaPowerShell7
   if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) {
-    $classicModules = Join-Path (Split-Path (Get-Command powershell.exe -CommandType Application).Source -Parent) 'Modules'
+    $classicModules = Join-Path (Split-Path (Get-Command powershell.exe -CommandType Application | Select-Object -First 1).Source -Parent) 'Modules'
     Assert-Core ([IO.File]::ReadAllText($env:CORE_MODULE_PATH_LOG).StartsWith($classicModules + ';', [StringComparison]::OrdinalIgnoreCase)) 'chezmoi must run Classic with its own module defaults, not inherited Core module directories'
     if ($viaPowerShell7) { Write-Output 'chezmoi-core: real PowerShell 7 -> chezmoi -> Windows PowerShell module boundary passed' }
   }
