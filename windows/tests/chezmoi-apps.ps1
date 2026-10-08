@@ -58,7 +58,7 @@ $script:AppsConfig = Join-Path $script:AppsTemporary 'init.toml'
 $script:AppsState = Join-Path $script:AppsTemporary 'state.boltdb'
 $script:AppsCache = Join-Path $script:AppsTemporary 'cache'
 $saved = @{}
-foreach ($name in @('HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA')) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
+foreach ($name in @('HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'PSModulePath')) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
   [void][IO.Directory]::CreateDirectory($script:AppsHome)
   $env:HOME = $script:AppsHome; $env:USERPROFILE = $script:AppsHome

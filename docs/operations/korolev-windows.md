@@ -121,6 +121,8 @@ Select `korolev` at init. Confirm persisted `sourceDir` is this native checkout 
 
 Windows init declares the built-in `powershell.exe` interpreter with `-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File`; package setup therefore does not depend on PowerShell 7 being installed first. Re-run `chezmoi init --source $checkout` after updating an existing clone to refresh that persisted declaration, then inspect diff before apply.
 
+Every Windows PowerShell entry point first establishes a shared, process-only module search path for the Desktop interpreter: its own modules, Windows PowerShell's user/shared defaults and persisted user/machine `PSModulePath` values. This excludes PowerShell 7 runtime directories inherited through chezmoi when applying from `pwsh`, without changing registry environment values or shell profiles. Core-edition execution is unchanged. Windows CI provisions locked PowerShell 7 and exercises the real `pwsh` → chezmoi → `powershell.exe` boundary as well as both full host suites.
+
 The repository's root `.gitattributes` keeps LF in every working tree (`* text=auto eol=lf`), overriding Git for Windows' bootstrap `core.autocrlf=true`, so native formatters, hooks and checks see the same bytes as Linux and macOS. Vendored Windows app includes additionally use scoped `* -text`, so pinned asset bytes are never converted. A fresh clone needs no repair. An older clone may already contain converted CRLF bytes: after updating to the reviewed revision, inspect and back up local edits in that directory outside the checkout before restoring its canonical tracked bytes:
 
 ```powershell
