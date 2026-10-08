@@ -48,12 +48,15 @@ function Expand-NativeArtifact {
             }
         } finally { $archive.Dispose() }
     } elseif ($Artifact.kind -eq 'tar') {
-        $listing = Invoke-NativeProcess -Command 'tar.exe' -Arguments @('-tzf', $Path)
+        # Git's GNU tar can win PATH and interpret a Windows drive letter as a remote host.
+        $tar = Join-Path $env:SystemRoot 'System32/tar.exe'
+        if (-not (Test-Path -LiteralPath $tar -PathType Leaf)) { throw "Windows inbox tar is missing at '$tar'." }
+        $listing = Invoke-NativeProcess -Command $tar -Arguments @('-tzf', $Path)
         if ($listing.ExitCode -ne 0) { throw "Cannot inspect $($Artifact.file): tar exit $($listing.ExitCode): $($listing.Output)" }
         foreach ($entry in ($listing.Output -split "`n")) {
             if ($entry) { $null = Resolve-NativeLockedPath -ToolsRoot $Destination -RelativePath $entry.TrimEnd("`r", '/') }
         }
-        $result = Invoke-NativeProcess -Command 'tar.exe' -Arguments @('-xzf', $Path, '-C', $Destination)
+        $result = Invoke-NativeProcess -Command $tar -Arguments @('-xzf', $Path, '-C', $Destination)
         if ($result.ExitCode -ne 0) { throw "Cannot extract $($Artifact.file): tar exit $($result.ExitCode): $($result.Output)" }
     } else { throw "Unsupported native artifact type $($Artifact.kind)." }
 }

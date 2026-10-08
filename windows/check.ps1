@@ -34,9 +34,9 @@ try {
     . (Join-Path $PSScriptRoot 'tests/fixtures.ps1')
     Invoke-NativeFixtures $document $managed $PSScriptRoot
     $repositoryRoot = Split-Path -Parent $PSScriptRoot
-    foreach ($fixture in @('chezmoi-core.ps1', 'chezmoi-apps.ps1')) {
+    foreach ($fixture in @('chezmoi-core.ps1', 'chezmoi-apps.ps1', 'archive-regressions.ps1', 'wsl-hook-regressions.ps1')) {
       $fixturePath = Join-Path $PSScriptRoot "tests/$fixture"
-      Assert-Contract (Test-Path -LiteralPath $fixturePath -PathType Leaf) "fixture ${fixture}: required Windows chezmoi fixture is missing"
+      Assert-Contract (Test-Path -LiteralPath $fixturePath -PathType Leaf) "fixture ${fixture}: required Windows fixture is missing"
       & $fixturePath -RepositoryRoot $repositoryRoot
     }
   }

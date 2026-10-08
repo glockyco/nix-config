@@ -44,6 +44,8 @@ function Get-FormattingPlan {
 function ConvertTo-NativeArgument {
     param([string]$Value)
     # CommandLineToArgvW quoting for Windows PowerShell's ProcessStartInfo.
+    # WSL parses option tokens before its Linux command line; quote only when needed.
+    if ($Value.Length -gt 0 -and $Value -notmatch '[\s"]') { return $Value }
     '"' + [regex]::Replace([regex]::Replace($Value, '(\\*)"', '$1$1\"'), '(\\+)$', '$1$1') + '"'
 }
 
