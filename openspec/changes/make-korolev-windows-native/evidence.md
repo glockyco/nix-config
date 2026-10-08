@@ -104,7 +104,7 @@ Final hand-maintained `windows/configuration.winget` SHA-256: `c62579c54baa799f0
 
 The required Nix sequence was run strictly in order; the explicit Darwin check build followed it to prove actual Mac builder execution rather than only foreign-system evaluation. Native scripts were exercised with Windows PowerShell `-NoProfile -NonInteractive -ExecutionPolicy Bypass -File` against the source UNC path. The initial no-policy invocation was rejected by execution policy; the reviewed fixture invocation uses a process-only setting, changes no persistent policy and cannot override managed policy. PowerShell 5.1-specific default-parameter/UNC-provider handling, npm lock parsing and fixture dynamic-scope collisions were corrected before the complete successful run. Installer failures are asserted as terminating errors retaining native code 23. Exact/newer and self-updating/newer fixtures assert no downgrade or reinstall.
 
-## Wave 2 contract
+## Wave 1 migration handoff (historical)
 
 `windows/check.ps1` is the native entrypoint. `-DocumentPath` selects a JSON-compatible WinGet document; `-AdditionalScriptPath` is a `string[]` of actual rendered PowerShell files (including the migrated ReNeo launcher/setup scripts). Default execution includes controlled positive/negative fixtures; `-SkipFixtures` is inspection-only, not acceptance. Run under Windows PowerShell 5.1 and PowerShell 7, plus Linux pwsh parity. CI's separate WinGet parse gate is `winget configure show`, not `validate`. Install only pinned runner dependencies; fail missing runtime/resource discovery, never skip or apply.
 
@@ -127,3 +127,27 @@ Native facts: standard AD principal `scch\jglock`, profile `C:\Users\jglock`; re
 ## Open acceptance risks
 
 Source/fixture gates do not prove standard-user installers, npm/LSP compatibility, native OMP annotation listener cleanup, real Tern/Zed/Fork behavior, network/node/SSH cutover or reboot recovery. Those remain the owner-attended tasks in sections 6–8, not deferred implementation in this source unit. Mac LaTeX/TexLab uses project-owned workflows on the Mac; no native MiKTeX/TexLab/nixd/Roslyn or WSL fallback is introduced. Retain local recovery backups/accepted binaries/generations until those gates pass.
+
+## Wave 2 review regression proof
+
+Wave 2 moved all listed user-file writers into `home/` and removed the legacy Nix renderer/checker packages and their wiring. The WinGet AltSnap resource retains installer payloads, not INI settings. The earlier handoff list above records the migration boundary, not current competing ownership.
+
+Before verification of the corrections, current standalone fixtures were executed against an immutable `git archive` snapshot of PR #67 revision `e13d06f7dff9080e98742ed130d516d563748b99`. Each requested regression failed against that original source:
+
+| Fixture / case                               | Observed pre-fix failure                                                                                 |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `checkout-regressions.ps1`                   | Real `core.autocrlf=true` clone changed the pinned Zed asset SHA-256                                     |
+| `checkout-regressions.ps1 -Case Interpreter` | Rendered Windows init did not declare the required built-in PowerShell interpreter                       |
+| `app-regressions.ps1 -Case AltSnap`          | UTF-16LE BOM was not retained                                                                            |
+| `app-regressions.ps1 -Case PowerToys`        | Restart list included child processes rather than only the canonical runner                              |
+| `app-regressions.ps1 -Case Path`             | Original helper lacked the narrow registry/message seams needed to preserve and test raw expandable PATH |
+| `wsl-hook-regressions.ps1`                   | Bare `wslpath` was unavailable under the modeled WSL exec PATH (exit 127)                                |
+| `archive-regressions.ps1`                    | Archive extraction selected fake PATH `tar.exe` rather than the inbox absolute executable                |
+
+The baseline cases ran with Linux PowerShell 7; AltSnap, PowerToys and PATH baseline failures were also reproduced with Windows PowerShell 5.1. Registry/process/message doubles never mutate the real profile or launch/stop real apps. Checkout fixtures clone isolated source snapshots, including a clone with spaces and Git line-ending conversion enabled. The AltSnap exception refines the former blanket UTF-8 rule: retain the existing INI encoding/BOM, while ordinary JSON/CSS/user.js remains UTF-8 without BOM. The runbook covers canonical-byte recovery for existing CRLF-converted clones and refreshing the persisted interpreter with init.
+
+Actual Windows PowerShell 5.1 invoked the real same-checkout hook through `wsl.exe` on a disposable Windows-local clone whose path contains spaces. The absolute WSL bridge/bash transport, nonce proof, trusted host resolution of the checkout-declared Nix implementation and pinned `nix fmt -- --fail-on-change` returned zero. This was read-only with respect to the workstation/repository outside that disposable clone; it installed/configured no Windows tool or service and applied no user files. The first real attempts exposed duplicate System32/WindowsApps command discovery and WSL's quoted-option parsing; first-match executable selection and quoting only necessary argument values correct those boundaries, with fixture assertions.
+
+The corrected full `windows/check.ps1` suite returned zero under Windows PowerShell 5.1 and Linux PowerShell 7, including rendered production-interpreter configuration, ASTs, isolated repeated app apply/verify, UTF-16LE drift/BOM preservation, canonical PowerToys restart, raw expandable PATH and message doubles, clone-byte pins, fake-PATH tar and WSL transport regressions. Windows used a temporary checksum-verified official chezmoi 2.73.0 binary, not a live installation. The Linux native development formatting/bootstrap/hook fixture suites also passed. The sequential release gates (`nix fmt -- --fail-on-change`, strict OpenSpec validation, host flake check and all-systems flake check) returned zero; all-systems evaluates foreign outputs and does not by itself prove a Darwin build.
+
+The revised `checks.aarch64-darwin.macbook-pro-chezmoi` was then explicitly built with `nix build .#checks.aarch64-darwin.macbook-pro-chezmoi --no-link --print-build-logs`; logs show the successful actual build on `ssh-ng://glockyco@macbook-pro`. No host activation was performed.

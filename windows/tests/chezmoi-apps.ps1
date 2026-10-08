@@ -54,7 +54,7 @@ $script:AppsTemporary = Join-Path ([IO.Path]::GetTempPath()) ('chezmoi apps ' + 
 $script:AppsHome = Join-Path $script:AppsTemporary 'user home'
 $script:AppsSource = Join-Path $RepositoryRoot 'home'
 $script:AppsRenderedSource = Join-Path $script:AppsTemporary 'rendered source'
-$script:AppsConfig = Join-Path $script:AppsTemporary 'chezmoi.json'
+$script:AppsConfig = Join-Path $script:AppsTemporary 'init.toml'
 $script:AppsState = Join-Path $script:AppsTemporary 'state.boltdb'
 $script:AppsCache = Join-Path $script:AppsTemporary 'cache'
 $saved = @{}
@@ -64,9 +64,31 @@ try {
   $env:HOME = $script:AppsHome; $env:USERPROFILE = $script:AppsHome
   $env:APPDATA = Join-Path $script:AppsHome 'AppData/Roaming'
   $env:LOCALAPPDATA = Join-Path $script:AppsHome 'AppData/Local'
-  $fixtureInterpreter = @{ command = $engine; args = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File') }
-  $fixtureConfig = @{ data = @{ host = 'korolev' }; interpreters = @{ ps1 = $fixtureInterpreter } }
-  Write-AppsFixture $script:AppsConfig (ConvertTo-Json -InputObject $fixtureConfig -Depth 10)
+  # promptStringOnce is init-only: exercise the shared template through actual
+  # init in a disposable minimal checkout, not through execute-template.
+  $initCheckout = Join-Path $script:AppsTemporary 'init checkout'
+  Write-AppsFixture (Join-Path $initCheckout '.chezmoiroot') "home`n"
+  foreach ($relative in @('.chezmoidata/hosts.toml', '.chezmoidata/credentials.toml')) {
+    Write-AppsFixture (Join-Path $initCheckout ('home/' + $relative)) ([IO.File]::ReadAllText((Join-Path $script:AppsSource $relative)))
+  }
+  $initTemplate = [IO.File]::ReadAllText((Join-Path $script:AppsSource '.chezmoi.toml.tmpl'))
+  if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
+    $initTemplate = '{{- $_ := set .chezmoi "os" "windows" -}}{{- $_ := set .chezmoi "homeDir" ' + ($script:AppsHome | ConvertTo-Json -Compress) + ' -}}' + $initTemplate
+  }
+  Write-AppsFixture (Join-Path $initCheckout 'home/.chezmoi.toml.tmpl') $initTemplate
+  $null = Invoke-AppsChezmoi -Arguments @('--config', $script:AppsConfig, '--source', $initCheckout, '--destination', $script:AppsHome, '--persistent-state', $script:AppsState, '--cache', $script:AppsCache, '--no-tty', 'init', '--promptString', 'host=korolev')
+  $configured = (Invoke-AppsChezmoi -Arguments @('--config', $script:AppsConfig, 'dump-config', '--format=json')) | ConvertFrom-Json
+  Assert-Apps ($configured.interpreters.ps1.command -ceq 'powershell.exe') 'shared Windows init uses the in-box Windows PowerShell interpreter'
+  Assert-Apps (($configured.interpreters.ps1.args -join '|') -ceq '-NoLogo|-NoProfile|-NonInteractive|-ExecutionPolicy|Bypass|-File') 'shared Windows init supplies the noninteractive script interpreter arguments'
+  if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) {
+    $engine = (Get-Command $configured.interpreters.ps1.command -ErrorAction Stop).Source
+  } else {
+    # Linux can render Windows source but cannot execute powershell.exe.
+    # Adapt execution only after asserting the actual shared-init contract.
+    $configured.interpreters.ps1.command = $engine
+    $script:AppsConfig = Join-Path $script:AppsTemporary 'linux-execution.json'
+    Write-AppsFixture $script:AppsConfig (ConvertTo-Json -InputObject $configured -Depth 30)
+  }
   $assetRoot = Join-Path $script:AppsSource '.chezmoitemplates/windows-apps'
   $metadata = ([IO.File]::ReadAllText((Join-Path $script:AppsSource '.chezmoidata/windows-apps.json')) | ConvertFrom-Json).windowsApps
   Assert-Apps ((Get-FileHash (Join-Path $assetRoot $metadata.zed.path) -Algorithm SHA256).Hash -ieq $metadata.zed.sha256) 'pinned Zed asset hash'
@@ -144,7 +166,9 @@ try {
   Write-AppsFixture $fork '{"GitInstancePath":"old-wslgit","ui":{"column":37},"repository":"keep me"}'
   Write-AppsFixture $powerToys '{"startup":false,"enabled":{"CmdPal":false,"FutureModule":true},"ui":{"window":123}}'
   Write-AppsFixture $reneo '{"standaloneMode":false,"runtime":{"lastLayout":"keep"}}'
-  Write-AppsFixture $altSnap "[General]`nAero=0`nAutoSnap=0`nUnrelated=keep`n[Input]`nHotkeys=keep`n"
+  [void][IO.Directory]::CreateDirectory((Split-Path -Parent $altSnap))
+  $altSnapUnrelated = 'Unrelated=keep ' + [char]0x00fc + [char]0x03bb + [char]0x6771
+  [IO.File]::WriteAllText($altSnap, "[General]`r`nAero=0`r`nAutoSnap=0`r`n$altSnapUnrelated`r`n[Input]`r`nHotkeys=keep`r`n", [Text.UnicodeEncoding]::new($false, $true))
   Write-AppsFixture $keymap '[{"context":"Editor","bindings":{"ctrl-c":"bad"}}]'
   # Existing relative and absolute profiles are discovered by their own sections.
   $zenRoot = Join-Path $env:APPDATA 'zen'
@@ -163,11 +187,17 @@ try {
 
   # Process doubles expose exactly the stop/wait/write/start boundary, no real app.
   $script:AppsEvents = [Collections.Generic.List[string]]::new()
-  $processFixture = [PSCustomObject]@{ Events = $script:AppsEvents; ReNeoRunning = $false }
+  $powerToysRunner = Join-Path $env:LOCALAPPDATA 'PowerToys/PowerToys.exe'
+  $processFixture = [PSCustomObject]@{ Events = $script:AppsEvents; ReNeoRunning = $false; PowerToysRunner = $powerToysRunner }
   ${function:Get-Process} = {
     param([string]$Name, $ErrorAction)
     $processFixture.Events.Add('get:' + $Name)
     if ($Name -eq 'reneo' -and -not $processFixture.ReNeoRunning) { return }
+    if ($Name -eq 'PowerToys*') {
+      [PSCustomObject]@{ Path = $processFixture.PowerToysRunner; ProcessName = 'PowerToys'; Id = 12345 }
+      [PSCustomObject]@{ Path = 'fixture PowerToys.FancyZones.exe'; ProcessName = 'PowerToys.FancyZones'; Id = 12346 }
+      return
+    }
     [PSCustomObject]@{ Path = ('fixture ' + $Name + '.exe'); ProcessName = $Name; Id = 12345 }
   }.GetNewClosure()
   ${function:Stop-Process} = {
@@ -187,11 +217,12 @@ try {
   }.GetNewClosure()
   & $beforePath
   Assert-Apps ($script:AppsEvents -contains 'stop:Fork' -and $script:AppsEvents -contains 'wait:Fork') 'Fork stop/wait before write'
-  Assert-Apps ($script:AppsEvents -contains 'stop:PowerToys*' -and $script:AppsEvents -contains 'stop:AltSnap') 'PowerToys/AltSnap stop before write'
+  Assert-Apps ($script:AppsEvents -contains 'stop:PowerToys' -and $script:AppsEvents -contains 'stop:PowerToys.FancyZones' -and $script:AppsEvents -contains 'stop:AltSnap') 'PowerToys runner/child and AltSnap stop before write'
   Assert-Apps ([IO.File]::ReadAllText($fork).Contains('old-wslgit')) 'before hook does not write a managed file'
   $null = Invoke-AppsApply 'apply'
   & $afterPath
-  Assert-Apps ($script:AppsEvents -contains 'start:fixture Fork.exe' -and $script:AppsEvents -contains 'start:fixture PowerToys*.exe' -and $script:AppsEvents -contains 'start:fixture AltSnap.exe') "held applications restart after write; process events=$($script:AppsEvents -join '; ')"
+  Assert-Apps ($script:AppsEvents -contains 'start:fixture Fork.exe' -and $script:AppsEvents -contains ('start:' + $powerToysRunner) -and $script:AppsEvents -contains 'start:fixture AltSnap.exe') "held applications restart after write; process events=$($script:AppsEvents -join '; ')"
+  Assert-Apps (@($script:AppsEvents | Where-Object { $_ -like 'start:*PowerToys*' }).Count -eq 1 -and $script:AppsEvents -notcontains 'start:fixture PowerToys.FancyZones.exe') 'PowerToys restarts only its canonical runner, never a child'
   Assert-Apps ($script:AppsEvents -contains 'stop:zen' -and $script:AppsEvents -contains 'wait:zen' -and $script:AppsEvents -contains 'start:fixture zen.exe') 'Zen stop/write/restart'
   $null = Invoke-AppsApply 'verify'
   Assert-Apps ((Get-FileHash (Join-Path $env:APPDATA 'Zed/themes/catppuccin-mauve.json') -Algorithm SHA256).Hash -ieq $metadata.zed.sha256) 'rendered Zed theme preserves exact source bytes'
@@ -212,6 +243,9 @@ try {
   Assert-Apps ($actual.standaloneLayout -eq 'Neo' -and $actual.standaloneMode -eq $true -and $actual.runtime.lastLayout -eq 'keep') 'ReNeo declared keys and runtime state'
   $actual = [IO.File]::ReadAllText($altSnap)
   foreach ($line in @('Aero=1', 'SmartAero=1', 'AutoSnap=2', 'AeroHoffset=50', 'AeroVoffset=50', 'Unrelated=keep', 'Hotkeys=keep')) { Assert-Apps ($actual.Contains($line)) "AltSnap $line" }
+  Assert-Apps ($actual.Contains($altSnapUnrelated)) 'AltSnap unrelated non-ASCII content survives UTF-16 modification'
+  $altSnapBytes = [IO.File]::ReadAllBytes($altSnap)
+  Assert-Apps ($altSnapBytes[0] -eq 255 -and $altSnapBytes[1] -eq 254) 'AltSnap retains its original UTF-16 LE BOM'
   $actualKeymap = [IO.File]::ReadAllText($keymap) | ConvertFrom-Json
   Assert-Apps ($actualKeymap.Count -eq 2 -and $actualKeymap[0].context -eq 'Editor && mode == full' -and $actualKeymap[1].bindings.'ctrl-c' -eq 'editor::Copy' -and $null -eq $actualKeymap[0].bindings.'ctrl-k') 'complete Windows-first editor-only keymap'
   foreach ($profile in @($relativeProfile, $absoluteProfile)) {
@@ -225,8 +259,8 @@ try {
       Assert-Apps ((Get-FileHash (Join-Path $profile ('chrome/' + $file.Name)) -Algorithm SHA256).Hash -ieq $file.Value.sha256) "applied Zen $($file.Name) exact bytes"
     }
   }
-  # All resulting app-owned writes have no UTF-8 BOM.
-  foreach ($path in @($zed, $fork, $powerToys, $reneo, $altSnap, $keymap, (Join-Path $relativeProfile 'user.js'))) {
+  # JSON/text writes use BOMless UTF-8; AltSnap retains its own encoding above.
+  foreach ($path in @($zed, $fork, $powerToys, $reneo, $keymap, (Join-Path $relativeProfile 'user.js'))) {
     $bytes = [IO.File]::ReadAllBytes($path)
     Assert-Apps (-not ($bytes.Length -ge 3 -and $bytes[0] -eq 239 -and $bytes[1] -eq 187 -and $bytes[2] -eq 191)) "no BOM: $path"
   }
@@ -295,8 +329,8 @@ try {
   $ternPath = Join-Path $script:AppsHome 'AppData/Local/Programs/Tern'
   Write-AppsFixture (Join-Path $ternPath 'tern.exe') 'fixture executable'
   $pathFixture = [PSCustomObject]@{ UserPath = ('keep before;' + $ternPath + ';keep after;' + $ternPath.ToUpperInvariant() + '/'); Writes = 0 }
-  # Template-defined wrappers delegate to Environment in production; replace only those
-  # wrappers in this controlled rendered fixture, never system environment APIs.
+  # The standalone regressions below exercise the real registry wrappers with
+  # registry and native-message doubles; this fixture tests the rendered tail.
   # Definitions must precede the operational tail, so separate its function prelude.
   $ternAstTokens = $null; $ternAstErrors = $null
   $ternAst = [Management.Automation.Language.Parser]::ParseInput($tern, [ref]$ternAstTokens, [ref]$ternAstErrors)
@@ -322,6 +356,7 @@ try {
   & $launcher
   Assert-Apps ($script:AppsEvents -contains 'verb:RunAs' -and @($script:AppsEvents | Where-Object { $_ -like 'start:*' }).Count -eq 1) 'ReNeo launcher requests explicit owner RunAs once'
   Write-Output 'PASS chezmoi app fixtures: JSONC/state, native keymap/Fork, module keys, real Zen profiles, BOM, process doubles, repeats, Tern user PATH'
+  & (Join-Path $PSScriptRoot 'app-regressions.ps1') -RepositoryRoot $RepositoryRoot
 } finally {
   foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
   Remove-Item -LiteralPath $script:AppsTemporary -Recurse -Force -ErrorAction SilentlyContinue
