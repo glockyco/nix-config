@@ -62,6 +62,8 @@ try {
   $null = Invoke-CheckoutNative git @('-C', $seed, '-c', 'core.autocrlf=false', '-c', "core.attributesFile=$emptyConfig", 'add', '--all')
   $null = Invoke-CheckoutNative git @('-C', $seed, '-c', 'user.name=Checkout Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgSign=false', 'commit', '-qm', 'Snapshot supplied checkout source')
   $null = Invoke-CheckoutNative git @('-c', 'core.autocrlf=true', '-c', "core.attributesFile=$emptyConfig", 'clone', '--no-local', '-q', $seed, $clone)
+  $hostsBytes = [IO.File]::ReadAllBytes((Join-Path $clone 'home/.chezmoidata/hosts.toml'))
+  Assert-Checkout (-not ($hostsBytes -contains [byte]13)) 'autocrlf=true clone converted ordinary text to CRLF; the repository eol policy must keep LF'
   if ($Case -ne 'Interpreter') {
     $metadata = ([IO.File]::ReadAllText((Join-Path $clone 'home/.chezmoidata/windows-apps.json')) | ConvertFrom-Json).windowsApps
     $assets = Join-Path $clone $assetRelative

@@ -1,0 +1,4 @@
+# Native Windows clones inherit Git for Windows' core.autocrlf=true. Keep LF in
+# every working tree so formatters, hooks and pinned digests see the same bytes
+# on Windows, Linux and macOS. Nested files may opt specific paths out with -text.
+* text=auto eol=lf
