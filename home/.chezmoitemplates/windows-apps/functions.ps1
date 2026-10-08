@@ -87,6 +87,40 @@ function Get-AppIni {
   return $Text
 }
 
+# AltSnap ships UTF-16 LE files. Its modify filter and drift check must use the
+# same byte representation rather than the UTF-8 policy for JSON app settings.
+function Get-AppIniBytes {
+  param([byte[]]$Bytes, $Desired)
+  $encoding = [Text.UTF8Encoding]::new($false)
+  $offset = 0
+  if ($Bytes.Length -ge 4 -and $Bytes[0] -eq 255 -and $Bytes[1] -eq 254 -and $Bytes[2] -eq 0 -and $Bytes[3] -eq 0) {
+    $encoding = [Text.UTF32Encoding]::new($false, $true); $offset = 4
+  } elseif ($Bytes.Length -ge 4 -and $Bytes[0] -eq 0 -and $Bytes[1] -eq 0 -and $Bytes[2] -eq 254 -and $Bytes[3] -eq 255) {
+    $encoding = [Text.UTF32Encoding]::new($true, $true); $offset = 4
+  } elseif ($Bytes.Length -ge 3 -and $Bytes[0] -eq 239 -and $Bytes[1] -eq 187 -and $Bytes[2] -eq 191) {
+    $encoding = [Text.UTF8Encoding]::new($true); $offset = 3
+  } elseif ($Bytes.Length -ge 2 -and $Bytes[0] -eq 255 -and $Bytes[1] -eq 254) {
+    $encoding = [Text.UnicodeEncoding]::new($false, $true); $offset = 2
+  } elseif ($Bytes.Length -ge 2 -and $Bytes[0] -eq 254 -and $Bytes[1] -eq 255) {
+    $encoding = [Text.UnicodeEncoding]::new($true, $true); $offset = 2
+  }
+  $text = $encoding.GetString($Bytes, $offset, $Bytes.Length - $offset)
+  $body = $encoding.GetBytes((Get-AppIni $text $Desired))
+  return ,([byte[]]($encoding.GetPreamble() + $body))
+}
+
+function Test-AppIni {
+  param([string]$Path, $Desired)
+  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
+  $bytes = [IO.File]::ReadAllBytes($Path)
+  $expected = Get-AppIniBytes $bytes $Desired
+  if ($bytes.Length -ne $expected.Length) { return $false }
+  for ($i = 0; $i -lt $bytes.Length; $i++) {
+    if ($bytes[$i] -ne $expected[$i]) { return $false }
+  }
+  return $true
+}
+
 function Read-AppText {
   param([string]$Path)
   if (Test-Path -LiteralPath $Path -PathType Leaf) { return [IO.File]::ReadAllText($Path) }
@@ -108,12 +142,18 @@ function Test-AppText {
 }
 
 function Stop-AppForWrite {
-  param([string]$Name)
+  param([string]$Name, [string]$RestartPath)
   $processes = @(Get-Process -Name $Name -ErrorAction SilentlyContinue)
-  $paths = @($processes | ForEach-Object {
-    if (-not $_.Path) { throw "Cannot determine $Name executable for restart; refusing to stop it" }
-    $_.Path
-  } | Select-Object -Unique)
+  # PowerToys children are stopped together, but only its canonical runner is
+  # launchable without the runner's child arguments and lifecycle ownership.
+  $paths = if ($RestartPath) {
+    if ($processes.Count -gt 0) { @($RestartPath) } else { @() }
+  } else {
+    @($processes | ForEach-Object {
+      if (-not $_.Path) { throw "Cannot determine $Name executable for restart; refusing to stop it" }
+      $_.Path
+    } | Select-Object -Unique)
+  }
   if ($processes.Count -gt 0) {
     $processes | Stop-Process -Force -ErrorAction Stop
     $processes | Wait-Process -Timeout 10 -ErrorAction Stop
@@ -243,8 +283,46 @@ function Apply-ZenWrites {
   finally { Restart-AppAfterWrite $restart }
 }
 
-function Get-AppUserPath { return [Environment]::GetEnvironmentVariable('Path', 'User') }
+function Open-AppUserEnvironment {
+  param([bool]$Writable)
+  return [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment', $Writable)
+}
+
+function Get-AppUserPath {
+  $key = Open-AppUserEnvironment $false
+  try {
+    return [string]$key.GetValue('Path', '', [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+  } finally { $key.Dispose() }
+}
+
+function Invoke-AppEnvironmentMessage {
+  param([IntPtr]$Window, [uint32]$Message, [IntPtr]$WParam, [string]$LParam, [uint32]$Flags, [uint32]$Timeout)
+  if (-not ('WindowsAppEnvironment.NativeMethods' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+namespace WindowsAppEnvironment {
+  public static class NativeMethods {
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern IntPtr SendMessageTimeout(IntPtr window, uint message,
+      IntPtr wParam, string lParam, uint flags, uint timeout, out UIntPtr result);
+  }
+}
+'@
+  }
+  $result = [UIntPtr]::Zero
+  [void][WindowsAppEnvironment.NativeMethods]::SendMessageTimeout($Window, $Message, $WParam, $LParam, $Flags, $Timeout, [ref]$result)
+}
+
+function Send-AppEnvironmentChange {
+  # HWND_BROADCAST, WM_SETTINGCHANGE, SMTO_ABORTIFHUNG.
+  Invoke-AppEnvironmentMessage -Window ([IntPtr]0xffff) -Message 0x1a -WParam ([IntPtr]::Zero) -LParam 'Environment' -Flags 2 -Timeout 5000
+}
+
 function Set-AppUserPath {
   param([string]$Value)
-  [Environment]::SetEnvironmentVariable('Path', $Value, 'User')
+  $key = Open-AppUserEnvironment $true
+  try { $key.SetValue('Path', $Value, [Microsoft.Win32.RegistryValueKind]::ExpandString) }
+  finally { $key.Dispose() }
+  Send-AppEnvironmentChange
 }

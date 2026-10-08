@@ -119,6 +119,18 @@ chezmoi diff
 
 Select `korolev` at init. Confirm persisted `sourceDir` is this native checkout (not its `home` child), `data.host=korolev`, Windows profile facts and ghq root `~/src`. The repository's `.chezmoiroot` selects `home/`. Init and diff do not authorize apply; review source revision, backups and Neo prerequisite first. On an existing checkout, inspect it instead of cloning over it. Never print decrypted credential previews.
 
+Windows init declares the built-in `powershell.exe` interpreter with `-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File`; package setup therefore does not depend on PowerShell 7 being installed first. Re-run `chezmoi init --source $checkout` after updating an existing clone to refresh that persisted declaration, then inspect diff before apply.
+
+Vendored Windows app includes use scoped `.gitattributes` (`* -text`), so Git for Windows' bootstrap `core.autocrlf=true` cannot change pinned asset bytes. A fresh clone needs no repair. An older clone may already contain converted CRLF bytes: after updating to the reviewed revision, inspect and back up local edits in that directory outside the checkout before restoring its canonical tracked bytes:
+
+```powershell
+git diff -- home/.chezmoitemplates/windows-apps
+git restore --source=HEAD --worktree -- home/.chezmoitemplates/windows-apps
+git check-attr text -- home/.chezmoitemplates/windows-apps/zed-catppuccin-mauve.asset home/.chezmoitemplates/windows-apps/zen/userChrome.css
+```
+
+The reported attribute must be `unset`. This scoped restore discards local edits there, so do not run it without their reviewed backup. Maintainers who need to renormalize the index can then run `git add --renormalize -- home/.chezmoitemplates/windows-apps` and inspect `git diff --cached -- home/.chezmoitemplates/windows-apps`; canonical bytes should produce no asset change. Do not stage the old converted bytes first: `-text` deliberately preserves bytes and would preserve the wrong CRLF content too. Run native checks again before apply.
+
 In standard PowerShell, from the native checkout:
 
 ```powershell
@@ -207,7 +219,7 @@ Native Markdown/Python/TypeScript/Svelte and Typst use Windows tools directly. T
 
 Fork's declared `GitInstancePath` points at `%LOCALAPPDATA%\Programs\Git`, preserving unrelated settings. Global Git uses the work email; `~/src/github.com/` selects the GitHub no-reply identity and repository-local email wins. Shared defaults include Git LFS, delta, `main`, pull/push policy, `autocrlf=input`, HTTPS and native GCM with Overleaf's generic provider. GCM's reviewed relative path is `mingw64/bin/git-credential-manager.exe` for Git 2.55; Git >=2.56 moves to `ucrt64/bin`. Review and update the shared fact after a Git upgrade rather than probing a fallback chain. Credentials, gh `hosts.yml` and private SSH keys are never managed. Confirm effective Git identity and native HTTPS/GCM operations in disposable worktrees before accepting Fork.
 
-PowerToys declared module keys, ReNeo launcher/config and AltSnap INI values have chezmoi ownership; app-held files use stop/write/restart setup. Zen themes and its single `user.js` preference apply only to real profiles found through `profiles.ini`; create a profile in Zen first, never fabricate one. Cookies/history and unrelated preferences remain untouched. Keep local backups and close applications for recovery. Remove only change-owned old wslgit payload/environment references after live native Fork acceptance, not during fixture validation.
+PowerToys declared module keys, ReNeo launcher/config and AltSnap INI values have chezmoi ownership; app-held files use stop/write/restart setup. PowerToys children stop when needed, but restart only through `%LOCALAPPDATA%\PowerToys\PowerToys.exe`, not by independently launching its modules. AltSnap keeps its existing INI encoding and BOM (including UTF-16LE); new BOMless files and other managed app text use UTF-8 without BOM. Tern's PATH setup preserves unexpanded entries such as `%LOCALAPPDATA%`, keeps `REG_EXPAND_SZ`, and broadcasts the user-environment change; open a fresh shell to inherit it. Zen themes and its single `user.js` preference apply only to real profiles found through `profiles.ini`; create a profile in Zen first, never fabricate one. Cookies/history and unrelated preferences remain untouched. Keep local backups and close applications for recovery. Remove only change-owned old wslgit payload/environment references after live native Fork acceptance, not during fixture validation.
 
 An absent Zen `profiles.ini` skips theme setup during fresh bootstrap; after creating a real profile, ordinary apply discovers it. A present malformed profile declaration or missing declared directory fails rather than writing guessed paths. Dynamic Zen setup rechecks on every apply; ordinary `chezmoi verify` covers regular declared destinations, not the dynamically discovered profile writes. Inspect Zen after apply as part of live acceptance.
 

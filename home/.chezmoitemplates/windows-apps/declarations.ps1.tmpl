@@ -14,7 +14,7 @@ $altSnapDesired = @'
 '@ | ConvertFrom-Json
 $reneoDirectory = 'Microsoft/WinGet/Packages/Rojetto.ReNeo.neo2_Microsoft.Winget.Source_8wekyb3d8bbwe/ReNeo'
 $heldFiles = @(
-  [PSCustomObject]@{ Path = (Join-Path $env:LOCALAPPDATA 'Fork/settings.json'); Process = 'Fork'; Desired = $forkDesired; Kind = 'fork' },
-  [PSCustomObject]@{ Path = (Join-Path $env:LOCALAPPDATA 'Microsoft/PowerToys/settings.json'); Process = 'PowerToys*'; Desired = $powerToysDesired; Kind = 'power-toys' },
-  [PSCustomObject]@{ Path = (Join-Path $env:APPDATA 'AltSnap/AltSnap.ini'); Process = 'AltSnap'; Desired = $altSnapDesired; Kind = 'ini' }
+  [PSCustomObject]@{ Path = (Join-Path $env:LOCALAPPDATA 'Fork/settings.json'); Process = 'Fork'; RestartPath = ''; Desired = $forkDesired; Kind = 'fork' },
+  [PSCustomObject]@{ Path = (Join-Path $env:LOCALAPPDATA 'Microsoft/PowerToys/settings.json'); Process = 'PowerToys*'; RestartPath = (Join-Path $env:LOCALAPPDATA 'PowerToys/PowerToys.exe'); Desired = $powerToysDesired; Kind = 'power-toys' },
+  [PSCustomObject]@{ Path = (Join-Path $env:APPDATA 'AltSnap/AltSnap.ini'); Process = 'AltSnap'; RestartPath = ''; Desired = $altSnapDesired; Kind = 'ini' }
 )

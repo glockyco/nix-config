@@ -35,6 +35,11 @@ useBuiltinAge = true
 identity = {{ joinPath .chezmoi.homeDir $credentials.identity | quote }}
 recipient = {{ $credentials.recipient | quote }}
 {{ end }}
+{{ if eq .chezmoi.os "windows" -}}
+[interpreters.ps1]
+command = "powershell.exe"
+args = ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File"]
+{{ end }}
 [data]
 host = {{ $host | quote }}
 resourcesDir = "/etc/chezmoi-resources"

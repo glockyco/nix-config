@@ -12,13 +12,16 @@ $null = Get-AppJson (Read-AppText (Join-Path $env:LOCALAPPDATA ($reneoDirectory 
 $null = @(Get-ZenWrites $zenProfilesIni $zenFiles $zenPreference)
 $pending = @()
 foreach ($file in $heldFiles) {
-  $text = Read-AppText $file.Path
-  $desired = if ($file.Kind -eq 'ini') { Get-AppIni $text $file.Desired } else { Get-AppJson $text $file.Desired $file.Kind }
-  if (-not (Test-AppText $file.Path $desired)) { $pending += $file }
+  if ($file.Kind -eq 'ini') {
+    if (-not (Test-AppIni $file.Path $file.Desired)) { $pending += $file }
+  } else {
+    $desired = Get-AppJson (Read-AppText $file.Path) $file.Desired $file.Kind
+    if (-not (Test-AppText $file.Path $desired)) { $pending += $file }
+  }
 }
 $restart = @()
 try {
-  foreach ($file in $pending) { $restart += @(Stop-AppForWrite $file.Process) }
+  foreach ($file in $pending) { $restart += @(Stop-AppForWrite -Name $file.Process -RestartPath $file.RestartPath) }
   if ($restart.Count -gt 0) { Write-AppText $restartState (ConvertTo-Json -InputObject @($restart | Select-Object -Unique)) }
 } catch {
   Restart-AppAfterWrite $restart

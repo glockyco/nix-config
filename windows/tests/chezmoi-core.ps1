@@ -28,6 +28,7 @@ function Invoke-CoreNative([string]$Command, [string[]]$Arguments, [switch]$Fail
   else { Assert-Core ($code -eq 0) ("$Command exited ${code}: " + ($output -join "`n")) }
   return ($output -join "`n")
 }
+& (Join-Path $PSScriptRoot 'checkout-regressions.ps1') -RepositoryRoot $RepositoryRoot
 $fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) ('chezmoi core ' + [guid]::NewGuid().ToString('N'))
 $checkout = Join-Path $fixtureRoot 'native checkout with spaces'
 $target = Join-Path $fixtureRoot 'isolated profile'
@@ -63,13 +64,24 @@ try {
     $base = @('--no-tty', '--force', '--refresh-externals=never', '--source', $checkout, '--destination', $target, '--config', $config, '--persistent-state', $state, '--override-data-file', $overridePath)
     Invoke-CoreNative chezmoi ($base + $Arguments) -Failure:$Failure
   }
-  $null = Invoke-CoreChezmoi @('init', '--promptString', 'host=korolev')
+  function Initialize-CoreConfig {
+    if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
+      # init ignores override-data OS, and promptStringOnce exists only in
+      # init. Force Windows context in the disposable template, not production.
+      $prefix = '{{- $_ := set .chezmoi "os" "windows" -}}{{- $_ := set .chezmoi "homeDir" ' + ($target | ConvertTo-Json -Compress) + ' -}}'
+      Write-CoreFile (Join-Path $checkout 'home/.chezmoi.toml.tmpl') ($prefix + [IO.File]::ReadAllText((Join-Path $RepositoryRoot 'home/.chezmoi.toml.tmpl')))
+    }
+    $null = Invoke-CoreChezmoi @('init', '--promptString', 'host=korolev')
+  }
+  Initialize-CoreConfig
   $persisted = Invoke-CoreChezmoi @('dump-config', '--format=json') | ConvertFrom-Json
   Assert-Core ($persisted.sourceDir.Replace('\', '/') -eq $checkout.Replace('\', '/')) 'init must persist the native checkout, not home/ or a second clone'
   Assert-Core ($persisted.data.host -eq 'korolev') 'init must persist host=korolev'
+  Assert-Core ($persisted.interpreters.ps1.command -ceq 'powershell.exe') 'Windows init must explicitly use in-box Windows PowerShell, not bootstrap-dependent pwsh'
+  Assert-Core (($persisted.interpreters.ps1.args -join '|') -ceq '-NoLogo|-NoProfile|-NonInteractive|-ExecutionPolicy|Bypass|-File') 'Windows init must persist unattended Windows PowerShell arguments'
   $initText = [IO.File]::ReadAllText($config)
   Assert-Core ($initText -notmatch 'recipient|identity|encryption|useBuiltinAge') 'native init must not select Mac age or secret identity'
-  $null = Invoke-CoreChezmoi @('init', '--promptString', 'host=korolev')
+  Initialize-CoreConfig
   $facts = Invoke-CoreChezmoi @('data', '--format=json') | ConvertFrom-Json
   $windows = $facts.hosts.korolev.platforms.windows
   $linux = $facts.hosts.korolev.platforms.linux
@@ -200,18 +212,29 @@ try {
   # file in a second fixture source. The native double records child calls.
   $checkout = Join-Path $fixtureRoot 'onchange checkout with spaces'
   $target = Join-Path $fixtureRoot 'onchange profile'
-  $config = Join-Path $fixtureRoot 'onchange.json'
+  $config = Join-Path $fixtureRoot 'onchange.toml'
   $state = Join-Path $fixtureRoot 'onchange-state.boltdb'
   $platformFixture.checkout = $checkout
   $null = New-Item -ItemType Directory -Path (Join-Path $checkout 'home/.chezmoidata'), (Join-Path $checkout 'windows'), $target -Force
   Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/.chezmoidata/hosts.toml') -Destination (Join-Path $checkout 'home/.chezmoidata/hosts.toml')
+  Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/.chezmoidata/credentials.toml') -Destination (Join-Path $checkout 'home/.chezmoidata/credentials.toml')
+  Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/.chezmoi.toml.tmpl') -Destination (Join-Path $checkout 'home/.chezmoi.toml.tmpl')
   Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/run_onchange_before_windows-00-winget.ps1.tmpl') -Destination (Join-Path $checkout 'home/run_onchange_before_windows-00-winget.ps1.tmpl')
   Write-CoreFile (Join-Path $checkout '.chezmoiroot') "home`n"
   Write-CoreFile (Join-Path $checkout 'windows/configuration.winget') $originalDocument
   Write-CoreFile (Join-Path $checkout 'home/dot_fixture-after') "package-before-file`n"
   $null = Invoke-CoreNative git @('init', '-q', $checkout)
-  $engine = (Get-Process -Id $PID).Path
-  Write-CoreFile $config (@{ sourceDir = $checkout; destDir = $target; data = @{ host = 'korolev'; checkMode = $true }; interpreters = @{ ps1 = @{ command = $engine; args = @('-NoProfile', '-NonInteractive', '-File') } } } | ConvertTo-Json -Depth 10)
+  $override.data = @{ checkMode = $true }
+  Initialize-CoreConfig
+  $onchangeConfig = Invoke-CoreChezmoi @('dump-config', '--format=json') | ConvertFrom-Json
+  Assert-Core ($onchangeConfig.interpreters.ps1.command -ceq 'powershell.exe') 'onchange fixture must use the rendered Windows init interpreter'
+  if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
+    # Linux cannot execute in-box Windows PowerShell. Adapt execution only after
+    # asserting the production init above; Windows exercises it unchanged.
+    $onchangeConfig.interpreters.ps1.command = (Get-Process -Id $PID).Path
+    $config = Join-Path $fixtureRoot 'onchange-linux.json'
+    Write-CoreFile $config ($onchangeConfig | ConvertTo-Json -Depth 30)
+  }
   $bin = Join-Path $fixtureRoot 'fixture executables'
   $null = New-Item -ItemType Directory -Path $bin
   $env:CORE_WINGET_LOG = Join-Path $fixtureRoot 'winget-calls.log'
