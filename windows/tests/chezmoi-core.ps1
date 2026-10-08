@@ -35,7 +35,7 @@ $target = Join-Path $fixtureRoot 'isolated profile'
 $config = Join-Path $fixtureRoot 'init.toml'
 $state = Join-Path $fixtureRoot 'chezmoi-state.boltdb'
 $saved = @{}
-$variables = @('HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_STATE_HOME', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM', 'GIT_CONFIG_NOSYSTEM', 'GIT_CONFIG_COUNT', 'GH_CONFIG_DIR', 'PATH', 'CORE_WINGET_LOG', 'CORE_WINGET_EXIT', 'CORE_AFTER_FILE', 'CORE_REQUIRE_BEFORE')
+$variables = @('HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_STATE_HOME', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM', 'GIT_CONFIG_NOSYSTEM', 'GIT_CONFIG_COUNT', 'GH_CONFIG_DIR', 'PATH', 'PSModulePath', 'CORE_WINGET_LOG', 'CORE_WINGET_EXIT', 'CORE_AFTER_FILE', 'CORE_REQUIRE_BEFORE', 'CORE_MODULE_PATH_LOG')
 foreach ($name in $variables) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
   $null = New-Item -ItemType Directory -Path $checkout, $target -Force
@@ -57,11 +57,26 @@ try {
   $env:GH_CONFIG_DIR = Join-Path $target 'AppData/Roaming/GitHub CLI'
   $override = @{ chezmoi = @{ os = 'windows'; homeDir = $target } }
   function Invoke-CoreChezmoi {
-    param([string[]]$Arguments, [hashtable]$OverrideData = $override, [switch]$Failure)
+    param([string[]]$Arguments, [hashtable]$OverrideData = $override, [switch]$Failure, [switch]$ViaPowerShell7)
     # A file avoids Windows PowerShell 5.1's lossy native JSON-argument quoting.
     $overridePath = Join-Path $fixtureRoot 'override-data.json'
     Write-CoreFile $overridePath ($OverrideData | ConvertTo-Json -Depth 30 -Compress)
     $base = @('--no-tty', '--force', '--refresh-externals=never', '--source', $checkout, '--destination', $target, '--config', $config, '--persistent-state', $state, '--override-data-file', $overridePath)
+    if ($ViaPowerShell7) {
+      $invocationPath = Join-Path $fixtureRoot 'PowerShell 7 chezmoi invocation.json'
+      Write-CoreFile $invocationPath (@{ command = (Get-Command chezmoi -CommandType Application).Source; arguments = $base + $Arguments } | ConvertTo-Json -Depth 30)
+      $bridge = Join-Path $fixtureRoot 'PowerShell 7 chezmoi bridge.ps1'
+      Write-CoreFile $bridge @'
+param([string]$InvocationPath)
+$ErrorActionPreference = 'Stop'
+if ($PSVersionTable.PSEdition -ne 'Core' -or $PSVersionTable.PSVersion.Major -lt 7) { throw 'The interpreter-boundary regression requires PowerShell 7' }
+$invocation = [IO.File]::ReadAllText($InvocationPath) | ConvertFrom-Json
+& $invocation.command @($invocation.arguments)
+exit $LASTEXITCODE
+'@
+      Invoke-CoreNative (Get-Command pwsh -CommandType Application).Source @('-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', $bridge, $invocationPath) -Failure:$Failure
+      return
+    }
     Invoke-CoreNative chezmoi ($base + $Arguments) -Failure:$Failure
   }
   function Initialize-CoreConfig {
@@ -166,11 +181,15 @@ try {
     $pinText = [IO.File]::ReadAllText((Join-Path $target ('.ssh/' + $entry[0] + '-known-hosts'))).Trim()
     Assert-Core ($pinText -eq ($entry[0] + ',' + $entry[0] + '.tail8768af.ts.net ' + $entry[1])) "managed $($entry[0]) pin drifted"
   }
-  # Parse every rendered Windows setup script, including the Apps slice. Its
-  # standalone fixture separately parses/exercises modify filters and helpers.
-  foreach ($template in @(Get-ChildItem -LiteralPath (Join-Path $checkout 'home') -Filter 'run_*.ps1.tmpl' -File)) {
+  # Every Windows entry point must establish the shared interpreter boundary
+  # before module cmdlets, including modify filters and the explicit launcher.
+  $prelude = [IO.File]::ReadAllText((Join-Path $checkout 'home/.chezmoitemplates/windows-powershell-prelude.ps1'))
+  $renderedEntryPoints = @{}
+  foreach ($template in @(Get-ChildItem -LiteralPath (Join-Path $checkout 'home') -Filter '*.ps1.tmpl' -File -Recurse)) {
+    if ($template.FullName -match '[/\\]\.chezmoitemplates[/\\]') { continue }
     $rendered = Invoke-CoreChezmoi @('execute-template', '--file', $template.FullName)
     Assert-CoreSyntax $template.Name $rendered
+    $renderedEntryPoints[$template.FullName] = $rendered
   }
   $wingetTemplate = Join-Path $checkout 'home/run_onchange_before_windows-00-winget.ps1.tmpl'
   $wingetScript = Invoke-CoreChezmoi @('execute-template', '--file', $wingetTemplate)
@@ -215,11 +234,12 @@ try {
   $config = Join-Path $fixtureRoot 'onchange.toml'
   $state = Join-Path $fixtureRoot 'onchange-state.boltdb'
   $platformFixture.checkout = $checkout
-  $null = New-Item -ItemType Directory -Path (Join-Path $checkout 'home/.chezmoidata'), (Join-Path $checkout 'windows'), $target -Force
+  $null = New-Item -ItemType Directory -Path (Join-Path $checkout 'home/.chezmoidata'), (Join-Path $checkout 'home/.chezmoitemplates'), (Join-Path $checkout 'windows'), $target -Force
   Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/.chezmoidata/hosts.toml') -Destination (Join-Path $checkout 'home/.chezmoidata/hosts.toml')
   Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/.chezmoidata/credentials.toml') -Destination (Join-Path $checkout 'home/.chezmoidata/credentials.toml')
   Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/.chezmoi.toml.tmpl') -Destination (Join-Path $checkout 'home/.chezmoi.toml.tmpl')
   Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/run_onchange_before_windows-00-winget.ps1.tmpl') -Destination (Join-Path $checkout 'home/run_onchange_before_windows-00-winget.ps1.tmpl')
+  Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/.chezmoitemplates/windows-powershell-prelude.ps1') -Destination (Join-Path $checkout 'home/.chezmoitemplates/windows-powershell-prelude.ps1')
   Write-CoreFile (Join-Path $checkout '.chezmoiroot') "home`n"
   Write-CoreFile (Join-Path $checkout 'windows/configuration.winget') $originalDocument
   Write-CoreFile (Join-Path $checkout 'home/dot_fixture-after') "package-before-file`n"
@@ -239,6 +259,7 @@ try {
   $null = New-Item -ItemType Directory -Path $bin
   $env:CORE_WINGET_LOG = Join-Path $fixtureRoot 'winget-calls.log'
   $env:CORE_AFTER_FILE = Join-Path $target '.fixture-after'
+  $env:CORE_MODULE_PATH_LOG = Join-Path $fixtureRoot 'classic-module-path.log'
   $env:CORE_REQUIRE_BEFORE = '1'
   $env:CORE_WINGET_EXIT = '0'
   if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) {
@@ -246,6 +267,7 @@ try {
 @echo off
 if "%CORE_REQUIRE_BEFORE%"=="1" if exist "%CORE_AFTER_FILE%" exit /b 31
 echo %*>>"%CORE_WINGET_LOG%"
+echo %PSModulePath%>"%CORE_MODULE_PATH_LOG%"
 exit /b %CORE_WINGET_EXIT%
 '@).Replace("`n", "`r`n")
   } else {
@@ -259,7 +281,13 @@ exit "$CORE_WINGET_EXIT"
     $null = Invoke-CoreNative chmod @('+x', $double)
   }
   $env:PATH = $bin + [IO.Path]::PathSeparator + $saved.PATH
-  $null = Invoke-CoreChezmoi @('apply')
+  $viaPowerShell7 = [Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT -and $null -ne (Get-Command pwsh -CommandType Application -ErrorAction SilentlyContinue)
+  $null = Invoke-CoreChezmoi @('apply') -ViaPowerShell7:$viaPowerShell7
+  if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) {
+    $classicModules = Join-Path (Split-Path (Get-Command powershell.exe -CommandType Application).Source -Parent) 'Modules'
+    Assert-Core ([IO.File]::ReadAllText($env:CORE_MODULE_PATH_LOG).StartsWith($classicModules + ';', [StringComparison]::OrdinalIgnoreCase)) 'chezmoi must run Classic with its own module defaults, not inherited Core module directories'
+    if ($viaPowerShell7) { Write-Output 'chezmoi-core: real PowerShell 7 -> chezmoi -> Windows PowerShell module boundary passed' }
+  }
   Assert-Core ((Test-Path -LiteralPath $env:CORE_AFTER_FILE) -and [IO.File]::ReadAllLines($env:CORE_WINGET_LOG).Count -eq 1) 'hashed before script must install before managed files'
   $env:CORE_REQUIRE_BEFORE = '0'
   $null = Invoke-CoreChezmoi @('apply')
@@ -274,6 +302,9 @@ exit "$CORE_WINGET_EXIT"
   Assert-Core ([IO.File]::ReadAllLines($env:CORE_WINGET_LOG).Count -eq 3) 'failed onchange state must not be recorded as successful'
   $null = Invoke-CoreChezmoi @('apply')
   Assert-Core ([IO.File]::ReadAllLines($env:CORE_WINGET_LOG).Count -eq 3) 'unchanged successful document must not rerun after recovery'
+  foreach ($entryPoint in $renderedEntryPoints.Keys) {
+    Assert-Core (($renderedEntryPoints[$entryPoint] -replace '\A#![^\r\n]*\r?\n', '').StartsWith($prelude)) "$entryPoint must include the shared Windows PowerShell prelude first"
+  }
   Write-Output 'chezmoi-core: native init, effective Git/GCM, SSH pins/options, script AST and hashed WinGet/order/failure fixtures passed'
 } finally {
   foreach ($name in $variables) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }

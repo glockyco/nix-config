@@ -179,7 +179,7 @@ $script:RegressionChezmoi = (Get-Command chezmoi -ErrorAction Stop).Source
 $script:RegressionEngine = [Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
 $script:RegressionFilter = Join-Path $script:RegressionTemporary 'altsnap.ps1'
 $saved = @{}
-foreach ($name in @('HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA')) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
+foreach ($name in @('HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'PSModulePath')) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
   [void][IO.Directory]::CreateDirectory($script:RegressionHome)
   $env:HOME = $script:RegressionHome; $env:USERPROFILE = $script:RegressionHome

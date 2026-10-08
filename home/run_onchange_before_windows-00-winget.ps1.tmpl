@@ -2,6 +2,7 @@
 {{- $platform := index (index .hosts .host).platforms "windows" -}}
 {{- $document := include (joinPath (.chezmoi.sourceDir | dir) "windows/configuration.winget") -}}
 #!/usr/bin/env pwsh
+{{ template "windows-powershell-prelude.ps1" . }}
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 # document SHA-256: {{ $document | sha256sum }}
