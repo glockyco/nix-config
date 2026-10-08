@@ -46,13 +46,22 @@ function Invoke-AppRegressionFilter {
   $start.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script:RegressionFilter + '"'
   $start.UseShellExecute = $false
   $start.RedirectStandardInput = $true; $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
-  $process = [Diagnostics.Process]::Start($start)
+  # .NET Framework builds an AutoFlush StreamWriter for redirected stdin.
+  # Its inherited console encoding can emit a BOM before any BaseStream write.
+  # Construct that pipe with a BOMless writer, then restore the caller's encoding.
+  $parentInputEncoding = [Console]::InputEncoding
+  try {
+    [Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
+    $process = [Diagnostics.Process]::Start($start)
+    $inputStream = $process.StandardInput.BaseStream
+  } finally { [Console]::InputEncoding = $parentInputEncoding }
   $result = [IO.MemoryStream]::new()
   try {
-    $process.StandardInput.BaseStream.Write($Bytes, 0, $Bytes.Length)
+    $inputStream.Write($Bytes, 0, $Bytes.Length)
     $process.StandardInput.Close()
     $process.StandardOutput.BaseStream.CopyTo($result)
     $stderr = $process.StandardError.ReadToEnd()
+    $script:RegressionFilterStderr = $stderr
     $process.WaitForExit()
     Assert-AppRegression ($process.ExitCode -eq 0) "AltSnap filter exited $($process.ExitCode): $stderr"
     return ,$result.ToArray()
@@ -67,8 +76,17 @@ function Test-AltSnapRegression {
   $text = "[General]`r`n$unrelated`r`nAero=0`r`nAutoSnap=0`r`nCustom=" + [char]0x00e9 + "`r`n[Input]`r`nHotkeys=keep`r`n"
   $encoding = [Text.UnicodeEncoding]::new($false, $true)
   $inputBytes = [byte[]]($encoding.GetPreamble() + $encoding.GetBytes($text))
-  $outputBytes = Invoke-AppRegressionFilter $inputBytes
-  Assert-AppRegression ($outputBytes.Length -ge 2 -and $outputBytes[0] -eq 255 -and $outputBytes[1] -eq 254) 'AltSnap must retain the original UTF-16 LE BOM'
+  # Hosted Windows PowerShell can inherit BOM-bearing UTF-8 console input.
+  # The binary fixture transport must not prepend that encoding's preamble.
+  $parentInputEncoding = [Console]::InputEncoding
+  try {
+    [Console]::InputEncoding = [Text.Encoding]::UTF8
+    $outputBytes = Invoke-AppRegressionFilter $inputBytes
+  } finally { [Console]::InputEncoding = $parentInputEncoding }
+  if ($outputBytes.Length -lt 2 -or $outputBytes[0] -ne 255 -or $outputBytes[1] -ne 254) {
+    $prefix = [BitConverter]::ToString($outputBytes, 0, [Math]::Min(16, $outputBytes.Length))
+    throw "AltSnap must retain the original UTF-16 LE BOM; stdout length=$($outputBytes.Length), first bytes=$prefix; stderr=$script:RegressionFilterStderr"
+  }
   $actual = $encoding.GetString($outputBytes, 2, $outputBytes.Length - 2)
   Assert-AppRegression ($actual.Contains($unrelated + "`r`n") -and $actual.Contains('Custom=' + [char]0x00e9 + "`r`n") -and $actual.Contains("Hotkeys=keep`r`n")) 'AltSnap unrelated non-ASCII lines must survive unchanged'
   foreach ($line in @('Aero=1', 'AutoSnap=2', 'SmartAero=1', 'AeroHoffset=50', 'AeroVoffset=50')) {
