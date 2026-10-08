@@ -10,11 +10,13 @@ if (-not $RepositoryRoot) { $RepositoryRoot = Split-Path (Split-Path $PSScriptRo
 
 function Invoke-SameCheckoutNixGate {
     param([string]$RepositoryRoot)
-    $wsl = Get-Command wsl.exe -CommandType Application -ErrorAction SilentlyContinue
+    $wsl = Get-Command wsl.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $wsl) { throw 'Staged .nix files require the declared Korolev NixOS-WSL environment on this exact checkout; install/enable WSL or commit from the Nix environment.' }
     $arguments = @()
     if ($env:NIX_CONFIG_WSL_DISTRIBUTION) { $arguments += @('--distribution', $env:NIX_CONFIG_WSL_DISTRIBUTION) }
-    $conversion = Invoke-CapturedProcess -Command $wsl.Source -Arguments ($arguments + @('--exec', 'wslpath', '-a', '-u', $RepositoryRoot)) -WorkingDirectory $RepositoryRoot
+    # NixOS-WSL's extraBin links /bin/wslpath to /init; --exec does not load
+    # the login-shell PATH or the NixOS system profile.
+    $conversion = Invoke-CapturedProcess -Command $wsl.Source -Arguments ($arguments + @('--exec', '/bin/wslpath', '-a', '-u', $RepositoryRoot)) -WorkingDirectory $RepositoryRoot
     if ($conversion.code -ne 0) { throw "Cannot map native checkout into the declared WSL environment (exit $($conversion.code)): $($conversion.error)" }
     $linuxRoot = $conversion.output.TrimEnd([char]13, [char]10)
     if (-not $linuxRoot.StartsWith('/')) { throw 'Wrong checkout: WSL did not return an absolute native checkout path' }
@@ -23,7 +25,7 @@ function Invoke-SameCheckoutNixGate {
     $proofPath = Join-Path $RepositoryRoot $proofName
     try {
         [IO.File]::WriteAllText($proofPath, $proofValue, (New-Object Text.UTF8Encoding($false)))
-        $result = Invoke-CapturedProcess -Command $wsl.Source -Arguments ($arguments + @('--cd', $linuxRoot, '--exec', 'bash', './windows/dev/nix-gate.sh', $linuxRoot, $proofName, $proofValue)) -WorkingDirectory $RepositoryRoot
+        $result = Invoke-CapturedProcess -Command $wsl.Source -Arguments ($arguments + @('--cd', $linuxRoot, '--exec', '/run/current-system/sw/bin/bash', './windows/dev/nix-gate.sh', $linuxRoot, $proofName, $proofValue)) -WorkingDirectory $RepositoryRoot
         if ($result.output) { Write-Host $result.output }
         if ($result.code -ne 0) { throw "Same-checkout pinned Nix gate failed (exit $($result.code)): $($result.error)" }
     } finally { if (Test-Path -LiteralPath $proofPath) { Remove-Item -LiteralPath $proofPath -Force } }

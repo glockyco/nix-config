@@ -49,7 +49,7 @@ try {
     function Get-Command { param($Name, $CommandType, $ErrorAction) [pscustomobject]@{ Source = 'fixture-wsl' } }
     function Invoke-CapturedProcess {
         param($Command, $Arguments, $WorkingDirectory)
-        if ($Arguments -contains 'wslpath') { return [pscustomobject]@{ code = 0; output = '/wrong/checkout'; error = '' } }
+        if ($Arguments -contains '/bin/wslpath') { return [pscustomobject]@{ code = 0; output = '/wrong/checkout'; error = '' } }
         [pscustomobject]@{ code = 23; output = ''; error = 'Wrong checkout: native proof file does not match' }
     }
     Expect-Failure { Invoke-SameCheckoutNixGate $work } 'exit 23.*Wrong checkout' 'WSL wrong-checkout and native exit propagation'
@@ -58,4 +58,5 @@ try {
     ${function:Get-NativeTool} = $originalLookup
     if (Test-Path -LiteralPath $work) { Remove-Item -LiteralPath $work -Recurse -Force }
 }
+& (Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) 'tests/wsl-hook-regressions.ps1') -RepositoryRoot $RepositoryRoot
 Write-Host 'PASS native hook fixtures'

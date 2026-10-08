@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# wsl.exe --exec supplies an FHS PATH, not the NixOS login environment.
+# Use the activated host commands and its declared WSL extraBin bridge only;
+# do not inherit arbitrary Windows/user executables for Git or coreutils.
+export PATH=/run/current-system/sw/bin:/bin
 expected_root=$1
 proof_file=$2
 proof_value=$3
