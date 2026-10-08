@@ -41,6 +41,8 @@ Package-before-file ordering: a Windows-only `run_onchange_before_` PowerShell s
 
 Chez owns Zed JSONC-preserving modify settings, its fully enforced Windows-first keymap and pinned theme; Fork's `GitInstancePath` points at native per-user Git and preserves unrelated settings; Zen profile themes and its one declared user.js preference preserve cookies/history and unrelated preferences. It owns PowerToys declared module keys, ReNeo config/launcher and AltSnap INI values without duplicating installer resources. Move the old stop/write/restart behavior for app-held config to tested chezmoi setup operations; preserve UTF-8 without BOM for JSON/CSS/user.js and preserve AltSnap's original INI encoding/BOM, including UTF-16LE. Apply Zen assets only after a real profile exists; support declared relative/absolute `profiles.ini` paths with controlled fixtures and no profile fabrication. WinGet must stop writing every migrated user destination. Tern settings remain Tern-owned, not a new template.
 
+The owner's PowerToys module declaration matches the live enabled map audited on 2026-10-08, including FancyZones and the native `File Explorer` key. Omit the obsolete `File Explorer Preview` key because it is absent from that live map. Preserve Zed's `wsl_connections` as remembered-project UI state; only retired declaration-owned `lsp.nixd`, `lsp.texlab` and `agent_servers.omp` keys are removed. Remembered WSL projects do not reinstate managed WSL language-server wiring.
+
 Reject whole-file overwrite of app-owned settings, elevated user apply, and keeping WinGet user-file resources beside chezmoi: each creates state loss or competing ownership.
 
 ### 3. Native tool selections, grounded in WinGet catalog queries
