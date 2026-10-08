@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory = $true)][string]$RepositoryRoot,
-  [ValidateSet('All', 'AltSnap', 'PowerToys', 'Path')][string]$Case = 'All'
+  [ValidateSet('All', 'AltSnap', 'PowerToys', 'Zed', 'Path')][string]$Case = 'All'
 )
 $ErrorActionPreference = 'Stop'
 # Run this current fixture against any source snapshot, including the pre-fix
@@ -136,6 +136,14 @@ function Test-PowerToysRegression {
   $starts = @($events | Where-Object { $_ -like 'start:*' })
   Assert-AppRegression ($starts.Count -eq 1 -and $starts[0] -ceq ('start:' + $runner)) 'PowerToys must restart only its canonical runner, never a child'
 }
+function Test-ZedRegression {
+  . ([scriptblock]::Create($script:RegressionBefore.Prelude))
+  $text = '{"wsl_connections":[{"distro_name":"NixOS","projects":["/home/user/project"]}],"lsp":{"nixd":{},"texlab":{},"other":{}},"agent_servers":{"omp":{},"other":{}}}'
+  $result = ConvertFrom-AppJsonc (Get-AppJson $text ([PSCustomObject]@{ vim_mode = $true }) 'zed')
+  Assert-AppRegression ($result.wsl_connections.Count -eq 1 -and $result.wsl_connections[0].distro_name -ceq 'NixOS' -and $result.wsl_connections[0].projects[0] -ceq '/home/user/project') 'Zed remembered WSL projects must survive convergence'
+  Assert-AppRegression ($null -eq $result.lsp.nixd -and $null -eq $result.lsp.texlab -and $null -eq $result.agent_servers.omp -and $null -ne $result.lsp.other -and $null -ne $result.agent_servers.other) 'Zed removes only retired managed LSP/agent keys'
+  Assert-AppRegression ($result.vim_mode -eq $true) 'Zed declared settings still converge'
+}
 function Test-PathRegression {
   $helperPath = Join-Path $script:RegressionSource '.chezmoitemplates/windows-apps/functions.ps1'
   $helperText = [IO.File]::ReadAllText($helperPath)
@@ -190,7 +198,7 @@ try {
   $script:RegressionAfter = Render-AppRegression 'run_after_windows-apps-restart.ps1.tmpl'
   Write-AppRegressionFile $script:RegressionFilter (Render-AppRegression 'AppData/Roaming/AltSnap/modify_AltSnap.ini.ps1.tmpl')
   $failures = [Collections.Generic.List[string]]::new()
-  foreach ($name in @('AltSnap', 'PowerToys', 'Path')) {
+  foreach ($name in @('AltSnap', 'PowerToys', 'Zed', 'Path')) {
     if ($Case -ne 'All' -and $Case -ne $name) { continue }
     try { & ('Test-' + $name + 'Regression'); Write-Output "PASS app-regressions: $name" }
     catch { $failures.Add("${name}: $($_.Exception.Message)") }

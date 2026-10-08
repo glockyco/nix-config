@@ -109,6 +109,12 @@ The hand-maintained Windows application set SHALL declare `Ferdium.Ferdium` as t
 
 Chezmoi SHALL own Windows application files, enforcing stable content and converging only declared keys in app-rewritten files. Zed and Zen SHALL retain pinned Catppuccin Mocha/Mauve themes. Zed SHALL open native checkouts without WSL transport or an OMP agent server; Fork SHALL use native per-user Git. AltSnap SHALL own modifier movement/snapping without overlapping PowerToys modules. ReNeo and native Neo SHALL retain their declared ordinary/elevated/UAC boundaries.
 
+#### Scenario: Preserve remembered Zed WSL projects
+
+- **WHEN** chezmoi converges existing Zed settings containing `wsl_connections`
+- **THEN** remembered WSL projects remain unchanged as app-owned UI state
+- **AND** retired declaration-owned nixd/TexLab WSL wiring and the OMP agent server are removed
+
 #### Scenario: Enforce a stable configuration file
 
 - **WHEN** a file in the enforced class differs from the declaration

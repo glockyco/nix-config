@@ -107,7 +107,6 @@ function Edit-AppJsonc {
   if ($index -ne $tokens.Count) { throw 'Malformed JSONC: trailing value after root object' }
   $edits = [Collections.Generic.List[object]]::new()
   if ($Kind -eq 'zed') {
-    Add-AppJsoncRemovalEdits $node @('wsl_connections') $edits
     foreach ($owner in @('lsp', 'agent_servers')) {
       $parent = @($node.Properties | Where-Object { $_.Name -ceq $owner })
       if ($parent.Count -gt 1) { throw "Duplicate JSONC property $owner; existing file was not overwritten" }

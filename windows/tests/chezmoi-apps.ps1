@@ -231,7 +231,8 @@ try {
   Assert-Apps ([IO.File]::ReadAllText($zed).Contains('// state and strings with comment-looking text are legitimate JSONC')) 'changed Zed JSONC retains comments'
   Assert-Apps ($actual.ui_state.label -ceq ('unicode ' + [char]0x03bb)) 'literal UTF-8 input/output preserved'
   Assert-Apps ($actual.ui_state.url -ceq 'https://example.invalid/a/*b*/' -and $actual.languages.Nix.tab_size -eq 7) 'Zed undeclared JSONC state preserved'
-  Assert-Apps ($actual.languages.Nix.language_servers.Count -eq 0 -and $null -eq $actual.lsp.nixd -and $null -eq $actual.lsp.texlab -and $null -eq $actual.agent_servers.omp -and $null -eq $actual.wsl_connections) 'removed native-prohibited managed integrations'
+  Assert-Apps ($actual.languages.Nix.language_servers.Count -eq 0 -and $null -eq $actual.lsp.nixd -and $null -eq $actual.lsp.texlab -and $null -eq $actual.agent_servers.omp) 'removed retired managed integrations'
+  Assert-Apps ($actual.wsl_connections.Count -eq 1 -and $actual.wsl_connections[0].distro_name -ceq 'NixOS') 'Zed remembered WSL projects preserved'
   Assert-Apps ($actual.lsp.pyright.settings.custom -eq $true -and $actual.agent_servers.other.command -eq 'native.exe') 'unrelated Zed agent/LSP preserved'
   $actual = [IO.File]::ReadAllText($fork) | ConvertFrom-Json
   Assert-Apps ($actual.GitInstancePath -eq (Join-Path $script:AppsHome 'AppData/Local/Programs/Git/cmd/git.exe') -and $actual.ui.column -eq 37) 'native Fork Git and UI state'
@@ -305,8 +306,8 @@ try {
   $script:AppsEvents.Clear()
   Apply-ZenWrites @(Get-ZenWrites $missingIni @() $metadata.zen.preference)
   Assert-Apps ($script:AppsEvents.Count -eq 0 -and -not (Test-Path $missingIni)) 'fresh Zen without a profile skips setup without writes/process changes'
-  $removedOnly = Get-AppJson '{"wsl_connections":[]}' ([PSCustomObject]@{ vim_mode = $true }) 'zed'
-  Assert-Apps ((ConvertFrom-AppJsonc $removedOnly).vim_mode -eq $true) 'JSONC sole legacy property removal with missing-key insertion'
+  $preservedOnly = ConvertFrom-AppJsonc (Get-AppJson '{"wsl_connections":[]}' ([PSCustomObject]@{ vim_mode = $true }) 'zed')
+  Assert-Apps ($preservedOnly.vim_mode -eq $true -and $null -ne $preservedOnly.wsl_connections -and $preservedOnly.wsl_connections.Count -eq 0) 'JSONC sole UI-state property preserved with missing-key insertion'
   $changedComment = Get-AppJson "{/*keep nested*/`"nested`":{`"declared`":0,/*keep sibling*/`"other`":5,},}" ([PSCustomObject]@{ nested = [PSCustomObject]@{ declared = 1 } }) 'fixture'
   Assert-Apps ($changedComment.Contains('/*keep nested*/') -and $changedComment.Contains('/*keep sibling*/') -and (ConvertFrom-AppJsonc $changedComment).nested.other -eq 5) 'changed nested JSONC retains comments, sibling state and trailing commas'
   Assert-AppsFailure { Get-ZenProfiles (Join-Path $script:AppsTemporary 'missing profiles.ini') } 'Launch Zen once'
