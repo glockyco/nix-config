@@ -370,7 +370,7 @@ Korolev SHALL use a native Windows checkout below the ghq root `~/src` as chezmo
 
 ### Requirement: Native Korolev agent session
 
-Korolev SHALL run standalone upstream OMP in Tern against a local Windows checkout, updated through `omp update`, with the personal plugin installed/upgraded by OMP's plugin manager. Required shell, Git, OpenSpec, research and annotation tools SHALL resolve natively. Credentials and session state SHALL stay Windows-local; saved history SHALL not be represented as a surviving process.
+Korolev SHALL run standalone upstream OMP in Tern against a local Windows checkout, installed and updated by Tern as the single OMP installation, with the personal plugin installed/upgraded by OMP's plugin manager. Required shell, Git, OpenSpec, research and annotation tools SHALL resolve natively. Credentials and session state SHALL stay Windows-local; saved history SHALL not be represented as a surviving process.
 
 #### Scenario: Complete a real native session
 
