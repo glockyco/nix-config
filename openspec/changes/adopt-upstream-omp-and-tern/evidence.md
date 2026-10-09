@@ -94,3 +94,9 @@ In a WSL tab of Tern for Windows 0.6.0, in the disposable repository `/tmp/accep
 - Links (6.2): `https://example.com/` was clickable. Plain Linux paths, a path with `:12`, a path with spaces and `/mnt/s/Common` were not clickable. Tern for Windows does not detect Linux paths in WSL output; its log earlier showed file links from WSL sessions resolving as `C:\home\user\…`. No terminal flags or patches were added to change this.
 - Image and redraw (6.2): the official `omp` displayed `gradient.png` inline, and the session redrew correctly while the window was resized narrow and wide.
 - Plannotator (6.4): `/plannotator-annotate "notes with spaces.md"` opened the review in the Windows browser; one submitted comment reached the session once; `/plannotator-last` and `/plannotator-cancel` worked. Afterwards no Plannotator process or listener remained, and the repository was unchanged (`git status` empty, fixture commit unchanged).
+
+## Task-status reconciliation (2026-10-09)
+
+The exercised prerequisite/install, implementation/release, both-host real-session/LSP/update, WSL browser and desktop evidence above supports tasks 1.1–1.6, 2.1–5.4, 6.1, 6.3, 6.5, 6.6 and 6.8. The update result is already-current, not an installed new release.
+
+Task 1.7 remains open: the recorded pre-cutover smoke is Korolev-only and does not record the full both-host provider/pre-cutover gate. Task 1.8 remains open because explicit handoff and preservation/finish of all old conversations and drafts is not recorded. Task 6.2 still needs the Mac's actual link/image/input/redraw acceptance; task 6.4 still needs the Mac and full review lifecycle/isolation boundaries beyond the recorded Korolev smoke. Task 6.7 has isolated installer proof on both hosts but live rollback/reapply only on Korolev. Task 7.1 requires remaining acceptance before source-generation retirement, and 7.2 requires the complete fleet evidence and archive; neither is inferred from merge or static checks.
