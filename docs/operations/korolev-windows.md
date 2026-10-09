@@ -6,7 +6,7 @@ Windows is the target primary workstation; NixOS-WSL remains a secondary CLI/bui
 
 WinGet Configuration owns packages and Windows settings; chezmoi owns Windows user files and user setup from `home/`. Each destination has one owner. Source/fixture checks do not claim native provisioning, application/session or network acceptance. Implementation evidence belongs to the OpenSpec change, not this current-state manual.
 
-Existing live state supplied by the owner on 2026-10-07: per-user Git 2.55.0.5 is at `%LOCALAPPDATA%\Programs\Git` on user PATH; Tern 0.6.0 is at `%LOCALAPPDATA%\Programs\Tern` on user PATH with a Start-menu shortcut; official OMP 18.8.0 is at `%LOCALAPPDATA%\omp\omp.exe` on user PATH with personal plugin 0.2.0, per-user Git Bash selected and owner login complete. Zed's `agent_servers.omp` entry is removed. Do not redo those installations. These facts do not claim native LSP/annotation/network acceptance. The remaining catalog/release selections were verified read-only; further provisioning, UAC, restart and application acceptance are owner-attended.
+Existing live state supplied by the owner on 2026-10-07: per-user Git 2.55.0.5 is at `%LOCALAPPDATA%\Programs\Git` on user PATH; Tern 0.6.0 is at `%LOCALAPPDATA%\Programs\Tern` on user PATH with a Start-menu shortcut; official OMP 18.8.0 is at `%LOCALAPPDATA%\omp\omp.exe` on user PATH with personal plugin 0.2.0, per-user Git Bash selected and owner login complete. Zed's `agent_servers.omp` entry is removed. Do not redo those installations. These facts do not claim native LSP/annotation/network acceptance. The remaining catalog/release selections were verified read-only; further provisioning, UAC, restart and application acceptance are owner-attended. Superseded on 2026-10-09: Tern 0.7.0 runs from `%LOCALAPPDATA%\Programs\Tern`, and Tern-managed OMP at `%LOCALAPPDATA%\Tern\omp\bin` replaced the official-installer copy, which was removed with its PATH entry ([evidence](../../openspec/changes/make-korolev-windows-native/evidence.md#tern-launch-session-daemon-and-omp-ownership-2026-10-09)).
 
 ## Source and privilege owners
 
@@ -54,7 +54,7 @@ For all **exact** rows, installation targets the reviewed version; drift is repo
 | Zen (`Zen-Team.Zen-Browser`)                  | WinGet, machine exception, self-updating                                                   | Vendor channel; re-test narrow policies                | Approved installer repair plus explicit policy script; preserve profile/history and newer version                                 |
 | Brave (`Brave.Brave`)                         | WinGet, user, self-updating, browser relay only                                            | Vendor channel                                         | Supported repair; relay profile/extension remain app-owned; no startup entry                                                      |
 | Ferdium (`Ferdium.Ferdium`)                   | WinGet, user, self-updating                                                                | App/vendor updater                                     | Supported repair preserving services, credentials, sessions/cache and startup/update preferences                                  |
-| Tern                                          | Manual signed-in Stencil build, user, self-updating                                        | Stencil/Tern vendor flow                               | Retain previous accepted build outside Temp; preserve `%LOCALAPPDATA%\Tern`                                                       |
+| Tern                                          | Manual signed-in Stencil build, user, self-updating                                        | Stencil/Tern vendor flow                               | Retain previous accepted build outside Temp; preserve `%LOCALAPPDATA%\Tern` and `%APPDATA%\Tern`                                  |
 | Fork (`Fork.Fork`)                            | WinGet, user, exact 2.21.0                                                                 | Reviewed document pin change                           | Exact repair, preserving unrelated app settings; target native Git only after file-owner cutover                                  |
 | PowerToys (`Microsoft.PowerToys`)             | WinGet, user, exact 0.101.2362.0                                                           | Reviewed pin and installed module-key audit            | Exact repair and owned-key backup; preserve UI state, one startup owner, no AltSnap overlap                                       |
 | AltSnap (`AltSnap.AltSnap`)                   | Reviewed checksum-verified official release, user, exact 1.68                              | Reviewed archive/executable/hooks pins                 | Exact repair with owned INI backup; preserve 50/50 snapping                                                                       |
@@ -82,7 +82,7 @@ For all **exact** rows, installation targets the reviewed version; drift is repo
 | typescript-language-server                    | npm user prefix, exact 5.3.0                                                               | Reviewed version/integrity/lock change                 | Exact repair; TS 5.9.3 compatibility requires native project smoke, not a claimed peer constraint                                 |
 | svelte-language-server                        | npm user prefix, exact 0.17.31                                                             | Reviewed version/integrity/lock change                 | Exact repair; verify native `svelteserver.cmd` in representative project                                                          |
 | OpenSpec (`@fission-ai/openspec`)             | npm user prefix, exact 1.14.0                                                              | Reviewed version/integrity/lock change                 | Exact repair; adapters remain personal-plugin-owned, never run `openspec init` here                                               |
-| OMP                                           | Official standalone binary user installer; reviewed release below                          | `omp update`                                           | Reinstall accepted reviewed release through official `-Binary -Ref`; preserve auth/session state                                  |
+| OMP                                           | Tern-managed at `%LOCALAPPDATA%\Tern\omp\bin`, first on user PATH                          | Tern's **Check for omp updates**                       | Tern's **Install omp**; preserve `~/.omp` auth/session state; never add a second installer copy                                   |
 | Personal plugin                               | OMP user plugin manager                                                                    | Marketplace update then plugin upgrade, below          | Supported corrective plugin release; retained source/version record, never rewrite cache                                          |
 | Plannotator                                   | Official minimal user installer, exact v0.28.7 with attestation verification               | Explicit reviewed vendor release selection             | Reinstall accepted release via same verified minimal flow; no vendor skills/hooks or WSL hosting                                  |
 
@@ -186,34 +186,36 @@ Repeat all three tests from the standard account. Require desired state; repeat 
 
 ## Explicit Tern, OMP, plugin and annotation flows
 
-Owner sign-in/download is required for Tern's closed-beta Stencil service. Install the accepted build at `%LOCALAPPDATA%\Programs\Tern\tern.exe`, not Temp; preserve `%LOCALAPPDATA%\Tern`. Add the stable directory exactly once to **user** PATH through reviewed user setup. No invented WinGet ID/download URL. Open actual Tern and prove native PowerShell, executable discovery, Unicode/glyphs, paste, resizing, interrupt and clickable links. Retain the prior accepted build and temporary spike until real session gates pass. Do not uninstall Windows-owned terminals or delete unrelated profiles merely because their declaration is retired.
+Owner sign-in/download is required for Tern's closed-beta Stencil service. Install the accepted build at `%LOCALAPPDATA%\Programs\Tern\tern.exe`, not Temp; preserve `%LOCALAPPDATA%\Tern` and `%APPDATA%\Tern`. Add the stable directory exactly once to **user** PATH through reviewed user setup. No invented WinGet ID/download URL. Open actual Tern and prove native PowerShell, executable discovery, Unicode/glyphs, paste, resizing, interrupt and clickable links. Retain the prior accepted build until real session gates pass. Do not uninstall Windows-owned terminals or delete unrelated profiles merely because their declaration is retired.
 
-Install OMP through its [official Windows installer](https://github.com/can1357/oh-my-pi/blob/main/scripts/install.ps1) with the reviewed release, then the exact personal-plugin commands:
+Launch Tern only through that executable: the Start-menu shortcut, or a taskbar pin created from a window it started. Tern updates the executable it was started from, so a pin or shortcut to another copy silently keeps that copy current instead. Do not set `TERN_CONFIG_DIR`; settings and saved sessions belong in the default `%APPDATA%\Tern`.
+
+Sessions survive closing or updating the window only while a window is attached to Tern's session daemon (`\\.\pipe\tern-<user>`). In a pane, `tern whoami` names the pane; Settings › Sessions shows the daemon as running. A window that reports the daemon unavailable runs its programs itself, and they end with the window. Known Tern for Windows defect, reproduced on 0.6.0, 0.6.3 and 0.7.0: the window first connects 14–25 s after launch, but a daemon it started with nothing to restore exits idle after 10 s. A daemon restoring saved panes stayed up, so the defect mainly affects a launch with no saved session. Report it to Stencil with `%LOCALAPPDATA%\Tern\Logs\tern.log` and `tern-daemon.log`; do not add login daemons, launcher scripts or scheduled tasks to work around it. The palette's **Restart session daemon** does not reattach a window that has already fallen back.
+
+OMP on Windows is Tern-managed. Accept Tern's offer to install it, or run **Install omp** from the palette; Tern places it at `%LOCALAPPDATA%\Tern\omp\bin` and first on user PATH. Then install the personal plugin and Plannotator:
 
 ```powershell
-& ([scriptblock]::Create((Invoke-RestMethod https://omp.sh/install.ps1))) -Binary -Ref v18.8.0
 omp plugin marketplace add glockyco/omp-agent-setup
 omp plugin install --scope user personal@glockyco
 & ([scriptblock]::Create((Invoke-RestMethod https://plannotator.ai/install.ps1))) -Minimal -Version v0.28.7 -VerifyAttestation
 ```
 
-OMP defaults to `%LOCALAPPDATA%\omp`; verify actual executable/version and user PATH. The Plannotator release selection has published digest/attestation metadata, but that is not cryptographic verification of a downloaded EXE: require `-VerifyAttestation` to succeed, never suppress it. Minimal mode leaves skills/hooks to the personal plugin. Inspect OMP's actual selected shell after install: choose native PowerShell or the actual Git-for-Windows Bash executable, never System32 `bash.exe`/WSL. No wrapper, launcher flags, Bun-global OMP, imported auth DB or complete chezmoi-managed OMP config.
+Verify that `omp` resolves to Tern's copy and check its version. Do not keep an official-installer copy under `%LOCALAPPDATA%\omp` beside it. The Plannotator release selection has published digest/attestation metadata, but that is not cryptographic verification of a downloaded EXE: require `-VerifyAttestation` to succeed, never suppress it. Minimal mode leaves skills/hooks to the personal plugin. Inspect OMP's actual selected shell: choose native PowerShell or the actual Git-for-Windows Bash executable, never System32 `bash.exe`/WSL. No wrapper, launcher flags, Bun-global OMP, imported auth DB or complete chezmoi-managed OMP config.
 
 Restart OMP and verify both extension modules, all nine personal skills, personal policy, `/personal:opsx-*`, native LSP overrides and disabled Marksman. Owner performs Windows-local Anthropic/OpenAI, GitHub/GCM, browser/Overleaf logins where needed; prove a real response for each provider, `gh auth status`, HTTPS Git access and nonprompting GCM lookup afterwards without printing secrets. Do not copy WSL/Mac credentials.
 
 In actual Tern, use a disposable native checkout with a space in its path: exercise native PowerShell/Git/research/OpenSpec and harmless `personal_commit` preview creating no commit. In the actual Windows browser invoke `/plannotator-annotate` on a disposable file and `/plannotator-last`, submit feedback and prove source unchanged. Cancel a pending review with `/plannotator-cancel`; inspect owned listener/process cleanup after cancel, navigation and shutdown. Closing a browser tab alone is not cancellation. A native lifecycle failure blocks acceptance and requires a separately approved plugin fix, not hidden WSL hosting or omitted commands. Saved OMP history is not process survival across reboot.
 
-Updates are independent:
+Updates are independent: Tern's **Check for omp updates** updates OMP, and the plugin updates with
 
 ```powershell
-omp update
 omp plugin marketplace update glockyco
 omp plugin upgrade --scope user personal@glockyco
 omp --version
 omp plugin list
 ```
 
-Restart and repeat real Tern/annotation/cancel/LSP smokes. Retain accepted binaries and source/version records until these pass; recover OMP via the official binary installer and reviewed `-Ref`, plugin via supported corrective releases, not cache editing or Nix rollback. Plannotator updates remain explicit reviewed minimal installations with verification.
+Restart and repeat real Tern/annotation/cancel/LSP smokes. Recover OMP through Tern's **Install omp**, the plugin via supported corrective releases, not cache editing or Nix rollback. Plannotator updates remain explicit reviewed minimal installations with verification.
 
 ## Native projects and Mac LaTeX
 
