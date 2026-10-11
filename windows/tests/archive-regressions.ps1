@@ -57,7 +57,7 @@ try {
         . (Join-Path $RepositoryRoot 'windows/tests/native-contract.ps1')
         . (Join-Path $RepositoryRoot 'windows/tests/installer-doubles.ps1')
         $document = [IO.File]::ReadAllText((Join-Path $RepositoryRoot 'windows/configuration.winget')) | ConvertFrom-Json
-        $imageResources = @($document.resources | Where-Object { $_.metadata.application.id -eq 'ImageMagick.ImageMagick' })
+        $imageResources = @($document.resources | Where-Object { $_.PSObject.Properties['metadata'] -and $_.metadata.PSObject.Properties['application'] -and $_.metadata.application.id -eq 'ImageMagick.ImageMagick' })
         Assert-Contract ($imageResources.Count -eq 1) 'ImageMagick actual 7z fixture: required archive resource is missing or ambiguous'
         Invoke-InstallerFixture -Resource $imageResources[0] -Scenario 'missing' -Root $temp -ArchivePath $imageArchive
         Write-Output 'PASS ImageMagick actual 7z extraction with absolute inbox tar and fake PATH tar first'

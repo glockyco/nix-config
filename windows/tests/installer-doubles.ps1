@@ -46,7 +46,7 @@ function Invoke-InstallerFixture {
   try {
     $state = @{ Installed = ($Scenario -notin @('missing', 'missing-row', 'hash-failure', 'install-failure', 'runtime-missing', 'node-machine', 'candidate-version-mismatch', 'candidate-native-failure')); Installs = 0; Downloads = 0; Extracts = 0; Hashes = 0; NativeVersions = 0; UserPath = ''; Version = $spec.version }
     if ($archiveResource -and $Scenario -in @('hash-failure', 'extraction-native-failure', 'candidate-version-mismatch', 'candidate-native-failure', 'candidate-missing', 'promotion-failure')) { $state.Installed = $true; $state.Version = '0.0.1' }
-    $state.UpgradeAvailable = $spec.policy -eq 'self-updating' -and $Scenario -in @('upgrade', 'drift')
+    $state.UpgradeAvailable = $spec.PSObject.Properties['policy'] -and $spec.policy -eq 'self-updating' -and $Scenario -in @('upgrade', 'drift')
     $state.NativeDrift = $Scenario -in @('pdf-text-native-drift', 'pdf-info-native-drift')
     if ($Scenario -in @('drift', 'runtime-missing')) { $state.Version = '0.0.1' }
     if ($Scenario -eq 'newer') { $state.Version = '999.0.0' }
