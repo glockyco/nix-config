@@ -38,6 +38,30 @@ Test-ApprovedScriptRole $first
 $beforeNames = $first.Checks.Count
 Test-ApprovedScriptRole $second
 Assert-Contract ($second.Checks.Count -eq $beforeNames + 1) 'parser fixture: different caller name reused a named role check'
+$nativeSource = @'
+$saved = $ErrorActionPreference
+try {
+    $ErrorActionPreference = 'Continue'
+    & $tool
+    $nativeCode = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = $saved
+}
+if ($nativeCode -ne 0) { throw 'fixture' }
+'@
+$nativeFirst = Get-ScriptRecord 'native-first.ps1' $nativeSource
+Test-NativeInvocationScopes $nativeFirst
+$beforeNames = $nativeFirst.Checks.Count
+Test-NativeInvocationScopes (Get-ScriptRecord 'native-second.ps1' $nativeSource)
+Assert-Contract ($nativeFirst.Checks.Count -eq $beforeNames + 1) 'parser fixture: different caller name reused a named native invocation check'
+$invalidNativeSource = $nativeSource.Replace("'Continue'", "'Stop'")
+foreach ($name in @('native-first.ps1', 'native-first.ps1', 'native-renamed.ps1')) {
+    $invalidNative = Get-ScriptRecord $name $invalidNativeSource
+    $failure = $null
+    try { Test-NativeInvocationScopes $invalidNative } catch { $failure = $_.Exception.Message }
+    Assert-Contract ($failure -match ('^script ' + [regex]::Escape($name) + ': native invocation at \d+: native invocation must temporarily select Continue$')) "parser fixture: changed native source lost its current rejection for $name"
+    Assert-Contract ($invalidNative.Checks.Count -eq 0) 'parser fixture: failed native invocation check was cached'
+}
 foreach ($name in @('invalid-first.ps1', 'invalid-second.ps1')) {
     $failure = $null
     try { $null = Get-ScriptRecord $name 'if (' } catch { $failure = $_.Exception.Message }

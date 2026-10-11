@@ -172,6 +172,8 @@ function Test-DocumentScriptBoundary {
 
 function Test-NativeInvocationScopes {
   param($Record)
+  $cacheKey = 'native-invocation-scopes:' + $Record.Name
+  if ($Record.Checks.ContainsKey($cacheKey)) { return }
   $calls = @($Record.Commands | Where-Object { $_.InvocationOperator -eq 'Ampersand' })
   Assert-Contract ($calls.Count -gt 0) "script $($Record.Name): recognizable direct native invocation is missing"
   foreach ($call in $calls) {
@@ -213,6 +215,7 @@ function Test-NativeInvocationScopes {
     })
     Assert-Contract ($checks.Count -gt 0) "${label}: captured native exit code must reject failure after preference restoration"
   }
+  $Record.Checks[$cacheKey] = $true
 }
 
 function Test-ScriptInstaller {
