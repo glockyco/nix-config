@@ -4,17 +4,27 @@ function Assert-Contract {
   if (-not $Condition) { throw $Finding }
 }
 
+# Repeated document mutations share shipped source. Ordinal keys distinguish
+# every text change; caller names and validation policies are keyed separately.
+$script:ScriptParseCache = New-Object 'System.Collections.Generic.Dictionary[string,object]' ([StringComparer]::Ordinal)
+
 function Get-ScriptRecord {
   param([string]$Name, [string]$Source)
-  $tokens = $null
-  $errors = $null
-  $ast = [System.Management.Automation.Language.Parser]::ParseInput($Source, [ref]$tokens, [ref]$errors)
-  Assert-Contract ($errors.Count -eq 0) "script ${Name}: $(@($errors | ForEach-Object { "$($_.ErrorId) at $($_.Extent.StartLineNumber): $($_.Message)" }) -join '; ')"
-  $strings = @($ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.StringConstantExpressionAst] -or $n -is [System.Management.Automation.Language.ExpandableStringExpressionAst] }, $true))
-  $variables = @($ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.VariableExpressionAst] }, $true))
-  $commands = @($ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] }, $true))
-  $members = @($ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.InvokeMemberExpressionAst] }, $true))
-  [PSCustomObject]@{ Name = $Name; Ast = $ast; Strings = $strings; Variables = $variables; Commands = $commands; Members = $members }
+  $parsed = $null
+  if (-not $script:ScriptParseCache.TryGetValue($Source, [ref]$parsed)) {
+    $tokens = $null
+    $errors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseInput($Source, [ref]$tokens, [ref]$errors)
+    Assert-Contract ($errors.Count -eq 0) "script ${Name}: $(@($errors | ForEach-Object { "$($_.ErrorId) at $($_.Extent.StartLineNumber): $($_.Message)" }) -join '; ')"
+    $strings = @($ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.StringConstantExpressionAst] -or $n -is [System.Management.Automation.Language.ExpandableStringExpressionAst] }, $true))
+    $variables = @($ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.VariableExpressionAst] }, $true))
+    $commands = @($ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] }, $true))
+    $members = @($ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.InvokeMemberExpressionAst] }, $true))
+    $checks = New-Object 'System.Collections.Generic.Dictionary[string,bool]' ([StringComparer]::Ordinal)
+    $parsed = [PSCustomObject]@{ Ast = $ast; Strings = $strings; Variables = $variables; Commands = $commands; Members = $members; Checks = $checks }
+    $script:ScriptParseCache.Add($Source, $parsed)
+  }
+  [PSCustomObject]@{ Name = $Name; Ast = $parsed.Ast; Strings = $parsed.Strings; Variables = $parsed.Variables; Commands = $parsed.Commands; Members = $parsed.Members; Checks = $parsed.Checks }
 }
 
 function ConvertFrom-NpmLockJson {
@@ -36,6 +46,10 @@ function Get-EmbeddedJson {
 
 function Test-ApprovedScriptRole {
   param($Record, [bool]$AllowedAdministrator = $false)
+  # Only successful pure-source checks are reused, with the caller's exact name
+  # and approved-script flag. Failures always recompute their named diagnostics.
+  $cacheKey = "administrator-role:$AllowedAdministrator|$($Record.Name)"
+  if ($Record.Checks.ContainsKey($cacheKey)) { return }
   $guards = @($Record.Ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.IfStatementAst] }, $true) | Where-Object {
     $condition = $_.Clauses[0].Item1
     @($condition.FindAll({ param($n) $n -is [System.Management.Automation.Language.InvokeMemberExpressionAst] -and $n.Member.Value -eq 'IsInRole' }, $true)).Count -gt 0 -and
@@ -49,6 +63,7 @@ function Test-ApprovedScriptRole {
       Assert-Contract (@($targets | Where-Object { $_.Value -match 'apply-(kbdneo|zen-policies)\.ps1$' }).Count -eq 0) "script $($Record.Name): fixed Administrator scripts must not run automatically"
     }
   }
+  $Record.Checks[$cacheKey] = $true
 }
 
 
@@ -127,6 +142,9 @@ function Test-AdministratorScript {
 
 function Test-DocumentScriptBoundary {
   param($Record, $Application)
+  # Apart from source/name, this check reads only the relay-policy classification.
+  $cacheKey = 'document-boundary:' + ($Application.id -in @('Brave.Brave', 'Ferdium.Ferdium')) + '|' + $Record.Name
+  if ($Record.Checks.ContainsKey($cacheKey)) { return }
   Test-ApprovedScriptRole $Record
   $label = "script $($Record.Name)"
   if ($Application.id -in @('Brave.Brave', 'Ferdium.Ferdium')) {
@@ -149,6 +167,7 @@ function Test-DocumentScriptBoundary {
     $runtimeRead = $node.Value -eq 'HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64' -and $node.Parent -is [System.Management.Automation.Language.CommandAst] -and $node.Parent.GetCommandName() -eq 'Get-ItemProperty'
     Assert-Contract ($neoRead -or $runtimeRead) "${label}: document-owned HKLM path $($node.Value)"
   }
+  $Record.Checks[$cacheKey] = $true
 }
 
 function Test-NativeInvocationScopes {

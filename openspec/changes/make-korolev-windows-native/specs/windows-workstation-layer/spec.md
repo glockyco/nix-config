@@ -227,6 +227,13 @@ Windows-native repository gates SHALL validate the shipped document against its 
 - **THEN** they validate the shipped document against the pinned official schema and resource-type allowlist, every script against the PowerShell parser, the narrow script boundary, each application's version policy and selector, and the absence of a centrally managed application
 - **AND** read-only WinGet show exits zero without applying a resource or requiring provider login/device enrollment; missing native parser/schema dependencies fail rather than skip
 
+#### Scenario: Focus native precommit without weakening shipped checks
+
+- **WHEN** native precommit invokes `windows/check.ps1 -SkipFixtures`
+- **THEN** shipped document contracts, pinned official schema validation and shipped script AST/Administrator-boundary checks still run and failures reject the commit
+- **AND** staged formatting and same-checkout staged-Nix validation remain unchanged
+- **AND** only isolated fixtures are omitted; full on-demand checks and both Windows PowerShell 5.1 and locked PowerShell 7 CI jobs retain every fixture, including rendered chezmoi coverage
+
 #### Scenario: Validate without Windows
 
 - **WHEN** a Nix-only environment inspects the Windows source or requests native WinGet parsing

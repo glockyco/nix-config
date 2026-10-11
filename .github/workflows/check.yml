@@ -58,28 +58,112 @@ jobs:
             --extra-experimental-features 'nix-command flakes' \
             flake check --print-build-logs
 
-  windows:
-    name: check (windows-latest)
+  windows-format:
+    name: Windows formatting
     runs-on: windows-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      - name: Cache locked development archives
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ runner.temp }}/native-dev-archives
+          key: windows-dev-archives-${{ hashFiles('windows/dev/dependencies.lock.json') }}
+
+      - name: Bootstrap locked native formatters
+        shell: powershell
+        run: .\windows\dev\bootstrap.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE -IncludeTestDependencies -SkipHook -ArchiveCacheRoot "$env:RUNNER_TEMP\native-dev-archives"
+
+      # Formatting is host-independent; keep it off both fixture critical paths.
+      - name: Shared native formatting check
+        shell: powershell
+        run: |
+          $timer = [Diagnostics.Stopwatch]::StartNew()
+          try { .\windows\dev\format.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE -Check }
+          finally { Write-Host ("timing: gate native formatting {0:F3}s" -f $timer.Elapsed.TotalSeconds) }
+
+  windows-ps51:
+    name: Windows gates (PowerShell 5.1)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Cache only release archives, never extracted tools or AppX registrations.
+      # Exact lock keys have no fallback; provisioning rechecks every archive hash.
+      - name: Cache locked runner archives
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ runner.temp }}/native-ci-archives
+          key: windows-ci-archives-${{ hashFiles('windows/dev/ci-dependencies.json') }}
+
+      - name: Cache locked development archives
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ runner.temp }}/native-dev-archives
+          key: windows-dev-archives-${{ hashFiles('windows/dev/dependencies.lock.json') }}
+
       # Runner-only, hash-locked test dependencies. No workstation resources,
       # configuration apply, production profiles, credentials or enrollment.
       - name: Provision locked native test dependencies
         shell: powershell
-        run: .\windows\dev\ci-provision.ps1
+        run: .\windows\dev\ci-provision.ps1 -ArchiveCacheRoot "$env:RUNNER_TEMP\native-ci-archives"
 
       - name: Native gates on Windows PowerShell 5.1
         shell: powershell
-        run: .\windows\dev\ci.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE
+        run: .\windows\dev\ci.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE -ArchiveCacheRoot "$env:RUNNER_TEMP\native-dev-archives"
+
+  windows-ps7:
+    name: Windows gates (locked PowerShell 7)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Cache locked runner archives
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ runner.temp }}/native-ci-archives
+          key: windows-ci-archives-${{ hashFiles('windows/dev/ci-dependencies.json') }}
+
+      - name: Cache locked development archives
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ runner.temp }}/native-dev-archives
+          key: windows-dev-archives-${{ hashFiles('windows/dev/dependencies.lock.json') }}
+
+      - name: Provision locked native test dependencies
+        shell: powershell
+        run: .\windows\dev\ci-provision.ps1 -ArchiveCacheRoot "$env:RUNNER_TEMP\native-ci-archives"
 
       - name: Native gates on locked PowerShell 7
         shell: powershell
         run: |
           & "$env:RUNNER_TEMP\native-check\powershell\pwsh.exe" `
             -NoProfile -NonInteractive -ExecutionPolicy Bypass `
-            -File .\windows\dev\ci.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE
+            -File .\windows\dev\ci.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE `
+            -ArchiveCacheRoot "$env:RUNNER_TEMP\native-dev-archives"
           if ($LASTEXITCODE -ne 0) { throw "PowerShell 7 native gate exited $LASTEXITCODE" }
+
+  windows:
+    name: check (windows-latest)
+    needs: [windows-format, windows-ps51, windows-ps7]
+    if: always()
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require every Windows gate to succeed
+        shell: powershell
+        env:
+          WINDOWS_FORMAT_RESULT: ${{ needs.windows-format.result }}
+          WINDOWS_PS51_RESULT: ${{ needs.windows-ps51.result }}
+          WINDOWS_PS7_RESULT: ${{ needs.windows-ps7.result }}
+        run: |
+          if ($env:WINDOWS_FORMAT_RESULT -cne 'success' -or $env:WINDOWS_PS51_RESULT -cne 'success' -or $env:WINDOWS_PS7_RESULT -cne 'success') {
+            throw "Windows gates did not all succeed: formatting=$env:WINDOWS_FORMAT_RESULT; PowerShell 5.1=$env:WINDOWS_PS51_RESULT; PowerShell 7=$env:WINDOWS_PS7_RESULT"
+          }

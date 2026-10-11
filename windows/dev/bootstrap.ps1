@@ -2,6 +2,7 @@
 param(
     [string]$RepositoryRoot,
     [string]$ToolsRoot,
+    [string]$ArchiveCacheRoot,
     [switch]$SkipHook,
     [switch]$IncludeTestDependencies
 )
@@ -14,7 +15,11 @@ if (-not $RepositoryRoot) { $RepositoryRoot = Split-Path (Split-Path $PSScriptRo
 function Receive-NativeArtifact {
     param([string]$Uri, [string]$Destination)
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-    Invoke-WebRequest -UseBasicParsing -Uri $Uri -OutFile $Destination
+    $savedProgressPreference = $ProgressPreference
+    try {
+        $ProgressPreference = 'SilentlyContinue'
+        Invoke-WebRequest -UseBasicParsing -Uri $Uri -OutFile $Destination
+    } finally { $ProgressPreference = $savedProgressPreference }
 }
 
 function Test-NativeArtifactHash {
@@ -106,21 +111,38 @@ function Install-NativeHook {
 }
 
 function Invoke-NativeBootstrap {
-    param([string]$RepositoryRoot, [string]$ToolsRoot, [switch]$SkipHook, [switch]$IncludeTestDependencies)
+    param([string]$RepositoryRoot, [string]$ToolsRoot, [string]$ArchiveCacheRoot, [switch]$SkipHook, [switch]$IncludeTestDependencies)
     if ($env:OS -ne 'Windows_NT') { throw 'The native bootstrap requires Windows x64; Darwin/Linux use the pinned Nix shell.' }
     if (-not [Environment]::Is64BitProcess) { throw 'Run the native bootstrap in a 64-bit PowerShell process.' }
     $RepositoryRoot = [IO.Path]::GetFullPath($RepositoryRoot)
     if (-not $ToolsRoot) { $ToolsRoot = Get-NativeToolsRoot -RepositoryRoot $RepositoryRoot }
     $ToolsRoot = [IO.Path]::GetFullPath($ToolsRoot)
+    if ($ArchiveCacheRoot) {
+        $ArchiveCacheRoot = [IO.Path]::GetFullPath($ArchiveCacheRoot)
+        $separator = [IO.Path]::DirectorySeparatorChar
+        $cachePrefix = $ArchiveCacheRoot.TrimEnd('\', '/') + $separator
+        $toolsPrefix = $ToolsRoot.TrimEnd('\', '/') + $separator
+        if ($cachePrefix.StartsWith($toolsPrefix, [StringComparison]::OrdinalIgnoreCase) -or $toolsPrefix.StartsWith($cachePrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'The archive cache and extracted tools directories must be separate, non-overlapping directories.'
+        }
+    }
     if (-not $SkipHook) { Assert-NativeHookOwnership -HookPath (Get-NativeHookPath -RepositoryRoot $RepositoryRoot) }
     $lock = Get-NativeDependencies
     $tools = @($lock.tools | Where-Object { -not $_.testOnly -or $IncludeTestDependencies })
+    $artifacts = @($lock.artifacts | Where-Object { -not $_.testOnly -or $IncludeTestDependencies })
     $alreadyInstalled = Test-Path -LiteralPath $ToolsRoot
     if ($alreadyInstalled) {
         # Existing managed tools must be healthy; never hide missing files, version drift or lock changes by reinstalling.
         foreach ($definition in $tools) { $null = Get-NativeTool -Name $definition.id -ToolsRoot $ToolsRoot }
         $manifest = Get-Content -LiteralPath (Join-Path $ToolsRoot 'tools.json') -Raw | ConvertFrom-Json
         if (-not $IncludeTestDependencies -or $manifest.includeTestDependencies) {
+            if ($ArchiveCacheRoot) {
+                # Even an already-installed tool tree must not hide corruption in restored archives.
+                foreach ($artifact in $artifacts) {
+                    $cachedPath = Resolve-NativeLockedPath -ToolsRoot $ArchiveCacheRoot -RelativePath $artifact.file
+                    if (Test-Path -LiteralPath $cachedPath) { Test-NativeArtifactHash -Artifact $artifact -Path $cachedPath }
+                }
+            }
             if (-not $SkipHook) { Install-NativeHook -RepositoryRoot $RepositoryRoot }
             Write-Output "Native development tools already installed at $ToolsRoot"
             return
@@ -134,10 +156,13 @@ function Invoke-NativeBootstrap {
     try {
         $null = New-Item -ItemType Directory -Path $stage
         $null = New-Item -ItemType Directory -Path $download
-        foreach ($artifact in @($lock.artifacts | Where-Object { -not $_.testOnly -or $IncludeTestDependencies })) {
-            $path = Join-Path $download $artifact.file
-            Receive-NativeArtifact -Uri $artifact.url -Destination $path
+        if ($ArchiveCacheRoot) { $null = New-Item -ItemType Directory -Path $ArchiveCacheRoot -Force }
+        foreach ($artifact in $artifacts) {
+            $cachedPath = if ($ArchiveCacheRoot) { Resolve-NativeLockedPath -ToolsRoot $ArchiveCacheRoot -RelativePath $artifact.file } else { $null }
+            $path = if ($cachedPath -and (Test-Path -LiteralPath $cachedPath)) { $cachedPath } else { Join-Path $download $artifact.file }
+            if ($path -ne $cachedPath) { Receive-NativeArtifact -Uri $artifact.url -Destination $path }
             Test-NativeArtifactHash -Artifact $artifact -Path $path
+            if ($cachedPath -and $path -ne $cachedPath) { Copy-Item -LiteralPath $path -Destination $cachedPath }
             Expand-NativeArtifact -Artifact $artifact -Path $path -Destination (Resolve-NativeLockedPath -ToolsRoot $stage -RelativePath $artifact.target)
         }
         # Embedded Python is isolated from user/site/PYTHONPATH and contains only the hashed wheel closure.
@@ -169,6 +194,6 @@ function Invoke-NativeBootstrap {
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
-    try { Invoke-NativeBootstrap -RepositoryRoot $RepositoryRoot -ToolsRoot $ToolsRoot -SkipHook:$SkipHook -IncludeTestDependencies:$IncludeTestDependencies }
+    try { Invoke-NativeBootstrap -RepositoryRoot $RepositoryRoot -ToolsRoot $ToolsRoot -ArchiveCacheRoot $ArchiveCacheRoot -SkipHook:$SkipHook -IncludeTestDependencies:$IncludeTestDependencies }
     catch { [Console]::Error.WriteLine($_.Exception.Message); exit 1 }
 }
