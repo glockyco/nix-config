@@ -89,7 +89,11 @@ function Invoke-InstallerFixture {
     }
     function Invoke-FixtureNative {
       $target = [string]$args[0]
-      $arguments = @($args | Select-Object -Skip 1)
+      # Native applications expand array-valued arguments; a PowerShell function
+      # double receives the array as one argument unless it is expanded here.
+      $arguments = @(foreach ($argument in @($args | Select-Object -Skip 1)) {
+        foreach ($value in @($argument)) { [string]$value }
+      })
       $global:LASTEXITCODE = 0
       if ($archiveResource -and $spec.archiveKind -eq '7z' -and $target -eq (Join-Path $env:SystemRoot 'System32\tar.exe')) {
         Assert-Contract ($arguments.Count -eq 4 -and $arguments[0] -eq '-xf' -and $arguments[2] -eq '-C') "resource $($Resource.name): inbox tar argument boundary differs"
