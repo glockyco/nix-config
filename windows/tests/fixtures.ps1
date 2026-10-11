@@ -78,7 +78,7 @@ function Invoke-NativeFixtures {
         Set-FixtureSpecificationProperty $target 'testScript' $key 'fixture-mismatch'
         Assert-FixtureRejection "$($resource.name) specification $key drift" { Test-WindowsDocument $changed $Managed } 'resource .+: test/install specification (differs|missing)'
       }
-      if ($spec.upgradeCode) {
+      if ($spec.PSObject.Properties['upgradeCode']) {
         $changed = Copy-FixtureObject $Document
         $target = $changed.resources | Where-Object name -eq $resource.name
         $target.metadata.distribution.upgradeCode = '{00000000-0000-0000-0000-000000000000}'
