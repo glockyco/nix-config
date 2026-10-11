@@ -1101,9 +1101,6 @@
     {
       "name": "package native npm tools",
       "type": "Microsoft.DSC.Transitional/WindowsPowerShellScript",
-      "dependsOn": [
-        "[resourceId('Microsoft.DSC.Transitional/WindowsPowerShellScript', 'package javascript runtime')]"
-      ],
       "metadata": {
         "description": "Exact native language/OpenSpec commands with complete integrity-locked closure",
         "application": {
