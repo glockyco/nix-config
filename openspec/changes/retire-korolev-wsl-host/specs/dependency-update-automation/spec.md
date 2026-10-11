@@ -11,7 +11,8 @@ Central automation SHALL own Nix inputs; Renovate SHALL own Actions/non-Nix depe
 - **WHEN** dependency operations, automation and central registry are inspected
 - **THEN** each dependency class has one update owner/version authority
 - **AND** platform OMP/plugin operations remain outside Nix activation
-- **AND** Docker Desktop remains Intune-owned, Mac Colima remains Nix/user-owned and Windows TeX Live/tlmgr yearly lifecycle remains C3-owned
+- **AND** nix-config declares Docker Desktop's self-updating machine-scope initial install without a version pin or downgrade, while Intune's update-only package keeps it current after owner/employer licensing confirmation
+- **AND** Mac Colima remains Nix/user-owned and Windows TeX Live/tlmgr yearly lifecycle remains C3-owned
 - **AND** no App credential or scheduled Nix-update workflow exists in this repository
 
 ### Requirement: Required merge checks
