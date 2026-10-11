@@ -3,6 +3,20 @@ function Copy-FixtureObject {
   $Value | ConvertTo-Json -Depth 100 | ConvertFrom-Json
 }
 
+function Set-FixtureSpecificationProperty {
+  param($Resource, [string]$Kind, [string]$Key, $Value)
+  $record = Get-ScriptRecord $Resource.name $Resource.properties.$Kind
+  foreach ($node in $record.Strings) {
+    try { $spec = $node.Value | ConvertFrom-Json } catch { continue }
+    if ($spec.id -ne $Resource.metadata.application.id) { continue }
+    $spec | Add-Member -NotePropertyName $Key -NotePropertyValue $Value -Force
+    $literal = "'" + (($spec | ConvertTo-Json -Depth 100 -Compress).Replace("'", "''")) + "'"
+    $Resource.properties.$Kind = $Resource.properties.$Kind.Remove($node.Extent.StartOffset, $node.Extent.Text.Length).Insert($node.Extent.StartOffset, $literal)
+    return
+  }
+  throw "fixture $($Resource.name): embedded specification is missing"
+}
+
 function Assert-FixtureRejection {
   param([string]$FixtureName, [scriptblock]$Action, [string]$Finding)
   $failure = $null
@@ -25,6 +39,46 @@ function Invoke-NativeFixtures {
     . (Join-Path $WindowsRoot 'tests/schema-fixtures.ps1')
     Invoke-SchemaFixtures $Document $WindowsRoot $root
     Write-Output 'fixture passed: unchanged declaration including per-user Git and approved Zen/Tailscale exceptions'
+    $profile = [IO.File]::ReadAllText((Join-Path $WindowsRoot 'texlive.profile'))
+    Test-TeXLiveProfile $profile
+    foreach ($line in @($profile -split '\r?\n' | Where-Object { $_ -notmatch '^\s*(#|$)' })) {
+      $key = ($line.Trim() -split '\s+', 2)[0]
+      $removed = (@($profile -split '\r?\n' | Where-Object { $_ -cne $line }) -join "`n")
+      Assert-FixtureRejection "TeX profile missing $key" { Test-TeXLiveProfile $removed } "texlive.profile: required key $key is missing"
+      $changedProfile = $profile.Replace($line, "$key fixture-wrong-value")
+      Assert-FixtureRejection "TeX profile changed $key" { Test-TeXLiveProfile $changedProfile } "texlive.profile: reviewed user/year/value differs for $key"
+    }
+    foreach ($option in @('instopt_portable 1', 'instopt_adjustpath 0', 'tlpdbopt_w32_multi_user 1', 'tlpdbopt_file_assocs 1', 'tlpdbopt_desktop_integration 1')) {
+      Assert-FixtureRejection "TeX profile machine/duplicate option $option" { Test-TeXLiveProfile ($profile + "`n" + $option) } 'texlive.profile: (unapproved option|duplicate key)'
+    }
+    foreach ($replacement in @(@('2026', '2025'), @('jglock', 'Administrator'), @('C:/Users/jglock', 'C:/Program Files'), @('C:/Users/jglock', '$env:USERPROFILE'))) {
+      Assert-FixtureRejection "TeX profile path $($replacement[1])" { Test-TeXLiveProfile $profile.Replace($replacement[0], $replacement[1]) } 'texlive.profile: reviewed user/year/value differs'
+    }
+    Assert-FixtureRejection 'TeX profile malformed declaration' { Test-TeXLiveProfile ($profile + "`ninvalid") } 'texlive.profile: invalid key/value'
+    foreach ($resource in @($Document.resources | Where-Object { $_.metadata.application.source -in @('official-zip', 'official-archive') })) {
+      $spec = @(Get-EmbeddedJson (Get-ScriptRecord $resource.name $resource.properties.setScript))[0]
+      foreach ($key in $spec.PSObject.Properties.Name) {
+        $changed = Copy-FixtureObject $Document
+        $target = $changed.resources | Where-Object name -eq $resource.name
+        Set-FixtureSpecificationProperty $target 'testScript' $key 'fixture-mismatch'
+        Assert-FixtureRejection "$($resource.name) specification $key drift" { Test-WindowsDocument $changed $Managed } 'resource .+: (test/install specification|official archive test specification).+'
+      }
+      foreach ($key in $resource.metadata.distribution.PSObject.Properties.Name) {
+        $changed = Copy-FixtureObject $Document
+        $target = $changed.resources | Where-Object name -eq $resource.name
+        $target.metadata.distribution.$key = 'fixture-mismatch'
+        Assert-FixtureRejection "$($resource.name) distribution $key drift" { Test-WindowsDocument $changed $Managed } 'resource .+: official archive .+'
+      }
+    }
+    foreach ($resource in @($Document.resources | Where-Object { $_.metadata.application.id -in @('oschwartz10612.Poppler', 'JohnMacFarlane.Pandoc') })) {
+      $spec = @(Get-EmbeddedJson (Get-ScriptRecord $resource.name $resource.properties.setScript))[0]
+      foreach ($key in $spec.PSObject.Properties.Name) {
+        $changed = Copy-FixtureObject $Document
+        $target = $changed.resources | Where-Object name -eq $resource.name
+        Set-FixtureSpecificationProperty $target 'testScript' $key 'fixture-mismatch'
+        Assert-FixtureRejection "$($resource.name) specification $key drift" { Test-WindowsDocument $changed $Managed } 'resource .+: test/install specification (differs|missing)'
+      }
+    }
     $cases = @(
       @{ Name = 'duplicate resource'; Finding = 'resource .+: duplicate name'; Edit = { param($d) $d.resources += $d.resources[0] } },
       @{ Name = 'undeclared dependency'; Finding = 'resource .+: undeclared/self dependency absent-fixture'; Edit = { param($d) $d.resources[0] | Add-Member dependsOn @('absent-fixture') -Force } },
@@ -146,9 +200,13 @@ function Invoke-NativeFixtures {
       if (-not $spec.registrationOnly) { Invoke-InstallerFixture $resource 'native-failure' $root }
       if ($spec.requiresVCRuntime) { Invoke-InstallerFixture $resource 'runtime-missing' $root }
       if ($spec.policy -eq 'self-updating') { Invoke-InstallerFixture $resource 'upgrade' $root }
+      if ($spec.id -eq 'oschwartz10612.Poppler') {
+        foreach ($scenario in @('pdf-text-missing', 'pdf-info-missing', 'pdf-text-native-drift', 'pdf-info-native-drift', 'catalog-revision-drift')) { Invoke-InstallerFixture $resource $scenario $root }
+      }
     }
-    foreach ($resource in @($Document.resources | Where-Object { $_.metadata.application.source -eq 'official-zip' })) {
-      foreach ($scenario in @('desired', 'missing', 'drift', 'newer', 'hash-failure', 'native-failure', 'candidate-version-mismatch', 'candidate-native-failure')) { Invoke-InstallerFixture $resource $scenario $root }
+    foreach ($resource in @($Document.resources | Where-Object { $_.metadata.application.source -in @('official-zip', 'official-archive') })) {
+      foreach ($scenario in @('desired', 'missing', 'drift', 'newer', 'hash-failure', 'native-failure', 'candidate-version-mismatch', 'candidate-native-failure', 'extraction-native-failure', 'candidate-missing', 'version-unrecognized', 'path-drift', 'executable-missing', 'promotion-failure')) { Invoke-InstallerFixture $resource $scenario $root }
+      if ($resource.metadata.application.id -eq 'ImageMagick.ImageMagick') { Invoke-InstallerFixture $resource 'revision-drift' $root }
     }
     foreach ($resource in @($Document.resources | Where-Object { $_.metadata.application.source -eq 'npm' })) {
       foreach ($scenario in @('desired', 'missing', 'newer', 'native-failure', 'install-failure', 'npm-version-drift', 'npm-wrapper-missing', 'npm-lock-drift', 'npm-native-version-drift', 'node-machine')) { Invoke-InstallerFixture $resource $scenario $root }

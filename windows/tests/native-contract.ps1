@@ -197,15 +197,29 @@ function Test-ScriptInstaller {
       ($distribution.manifest -match '^https://' -or ($app.versionPolicy -eq 'self-updating' -and $distribution.installerType -eq ('catalog-' + $app.scope)))
     Assert-Contract ($reviewed -or $retained) "${label}: reviewed installer URL/digest/type or retained registration-only manifest is missing"
   }
-  if ($app.source -eq 'official-zip') {
+  if ($app.source -in @('official-zip', 'official-archive')) {
     $distribution = $Resource.metadata.distribution
-    Assert-Contract ($distribution.url -match '^https://' -and $distribution.sha256 -match '^[a-fA-F0-9]{64}$') "${label}: official ZIP URL/digest is missing"
-    Assert-Contract ($specs.Count -eq 1 -and $specs[0].version -eq $app.version -and $specs[0].url -eq $distribution.url -and $specs[0].sha256 -eq $distribution.sha256 -and $specs[0].directory -eq $distribution.directory) "${label}: official ZIP selectors differ from metadata"
+    Assert-Contract ($distribution.url -match '^https://' -and $distribution.sha256 -match '^[a-fA-F0-9]{64}$') "${label}: official archive URL/digest is missing"
+    Assert-Contract ($specs.Count -eq 1 -and $specs[0].version -eq $app.version -and $specs[0].url -eq $distribution.url -and $specs[0].sha256 -eq $distribution.sha256 -and $specs[0].directory -eq $distribution.directory) "${label}: official archive selectors differ from metadata"
     $testSpecs = @(Get-EmbeddedJson $TestRecord | Where-Object { $_.id -eq $app.id })
-    Assert-Contract ($testSpecs.Count -eq 1 -and $testSpecs[0].version -eq $app.version -and $testSpecs[0].sha256 -eq $distribution.sha256 -and $testSpecs[0].directory -eq $distribution.directory -and $testSpecs[0].executable -eq $specs[0].executable) "${label}: official ZIP test selectors differ"
-    Assert-Contract ($distribution.directory -is [string] -and $distribution.directory -notmatch '^[A-Za-z]:|^[\\/]|(^|[\\/])\.\.([\\/]|$)') "${label}: official ZIP destination escapes user ownership"
-    Assert-Contract (@($SetRecord.Commands | Where-Object { $_.GetCommandName() -eq 'Get-FileHash' }).Count -gt 0) "${label}: ZIP extraction lacks digest verification"
+    Assert-Contract ($testSpecs.Count -eq 1) "${label}: official archive test specification missing or ambiguous"
+    foreach ($property in $distribution.PSObject.Properties) {
+      Assert-Contract ((ConvertTo-Json -InputObject $specs[0].($property.Name) -Depth 100 -Compress) -ceq (ConvertTo-Json -InputObject $property.Value -Depth 100 -Compress)) "${label}: official archive distribution selector differs for $($property.Name)"
+    }
+    Assert-Contract ($distribution.directory -is [string] -and $distribution.directory -notmatch '^[A-Za-z]:|^[\\/]|(^|[\\/])\.\.([\\/]|$)') "${label}: official archive destination escapes user ownership"
+    Assert-Contract (@($SetRecord.Commands | Where-Object { $_.GetCommandName() -eq 'Get-FileHash' }).Count -gt 0) "${label}: archive extraction lacks digest verification"
     if ($app.id -eq 'PowerShell.PowerShell') { Assert-Contract ($specs[0].directory -eq 'Programs\PowerShell\7') "${label}: unstable PowerShell user destination" }
+    if ($app.id -eq 'ImageMagick.ImageMagick') {
+      Assert-Contract ($specs[0].archiveKind -eq '7z' -and $specs[0].executable -eq 'magick.exe' -and $specs[0].directory -eq 'Programs\ImageMagick' -and $specs[0].payload -eq '.' -and (@($specs[0].versionArgs) -join ',') -eq '-version') "${label}: ImageMagick archive interface differs"
+    }
+  }
+  if ($app.source -in @('winget', 'official-zip', 'official-archive')) {
+    $testSpecs = @(Get-EmbeddedJson $TestRecord | Where-Object { $_.id -eq $app.id })
+    Assert-Contract ($specs.Count -eq 1 -and $testSpecs.Count -eq 1) "${label}: test/install specification missing or ambiguous"
+    $keys = @(@($specs[0].PSObject.Properties.Name) + @($testSpecs[0].PSObject.Properties.Name) | Select-Object -Unique)
+    foreach ($key in $keys) {
+      Assert-Contract ($null -ne $specs[0].PSObject.Properties[$key] -and $null -ne $testSpecs[0].PSObject.Properties[$key] -and (ConvertTo-Json -InputObject $specs[0].$key -Depth 100 -Compress) -ceq (ConvertTo-Json -InputObject $testSpecs[0].$key -Depth 100 -Compress)) "${label}: test/install specification differs for $key"
+    }
   }
   if ($app.source -in @('github-release', 'nerd-fonts-release')) {
     $releases = @(Get-EmbeddedJson $SetRecord | Where-Object { $_.url -and $_.archiveSha256 })
@@ -252,6 +266,40 @@ function Test-ScriptInstaller {
   }
 }
 
+function Test-TeXLiveProfile {
+  param([string]$Text)
+  $expected = @{
+    selected_scheme = 'scheme-full'
+    TEXDIR = 'C:/Users/jglock/texlive/2026'
+    TEXMFLOCAL = 'C:/Users/jglock/texlive/texmf-local'
+    TEXMFSYSVAR = 'C:/Users/jglock/texlive/2026/texmf-var'
+    TEXMFSYSCONFIG = 'C:/Users/jglock/texlive/2026/texmf-config'
+    TEXMFVAR = 'C:/Users/jglock/.texlive2026/texmf-var'
+    TEXMFCONFIG = 'C:/Users/jglock/.texlive2026/texmf-config'
+    TEXMFHOME = 'C:/Users/jglock/texmf'
+    instopt_adjustpath = '1'
+    tlpdbopt_install_docfiles = '0'
+    tlpdbopt_install_srcfiles = '0'
+    tlpdbopt_desktop_integration = '0'
+    tlpdbopt_file_assocs = '0'
+    tlpdbopt_w32_multi_user = '0'
+  }
+  $values = @{}
+  foreach ($line in @($Text -split '\r?\n')) {
+    if ($line -match '^\s*(#|$)') { continue }
+    $match = [regex]::Match($line, '^\s*(\S+)\s+(.+?)\s*$')
+    Assert-Contract $match.Success 'texlive.profile: invalid key/value declaration'
+    $key = $match.Groups[1].Value
+    Assert-Contract ($expected.ContainsKey($key)) "texlive.profile: unapproved option $key"
+    Assert-Contract (-not $values.ContainsKey($key)) "texlive.profile: duplicate key $key"
+    $values[$key] = $match.Groups[2].Value
+  }
+  foreach ($key in $expected.Keys) {
+    Assert-Contract ($values.ContainsKey($key)) "texlive.profile: required key $key is missing"
+    Assert-Contract ($values[$key] -ceq $expected[$key]) "texlive.profile: reviewed user/year/value differs for $key"
+  }
+}
+
 function Test-WindowsDocument {
   param($Document, $Managed)
   Assert-Contract ($Document.'$schema' -eq 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json') 'configuration.winget $schema: unexpected document schema'
@@ -279,6 +327,7 @@ function Test-WindowsDocument {
     'source-manager' = 'twpayne.chezmoi'; tailnet = 'Tailscale.Tailscale'; 'javascript-runtime' = 'OpenJS.NodeJS.LTS'; 'bun-runtime' = 'Oven-sh.Bun'; 'python-runtime' = 'Python.Python.3.13'; 'python-tooling' = 'astral-sh.uv'
     'repository-manager' = 'x-motemen.ghq'; search = 'BurntSushi.ripgrep.MSVC'; find = 'sharkdp.fd'; picker = 'junegunn.fzf'; pager = 'dandavison.delta'; 'hook-runner' = 'evilmartians.lefthook'
     'markdown-lsp' = 'FelixZeller.markdown-oxide'; 'document-compiler' = 'Typst.Typst'; 'typst-lsp' = 'Myriad-Dreamin.Tinymist'; shell = 'PowerShell.PowerShell'; 'github-cli' = 'GitHub.cli'
+    'latex-lsp' = 'TexLab.TexLab'; 'pdf-text' = 'oschwartz10612.Poppler'; 'document-converter' = 'JohnMacFarlane.Pandoc'; 'pdf-transform' = 'QPDF.QPDF'; 'image-converter' = 'ImageMagick.ImageMagick'
     openspec = '@fission-ai/openspec'; 'python-lsp' = '@fission-ai/openspec'; 'typescript-lsp' = '@fission-ai/openspec'; 'svelte-lsp' = '@fission-ai/openspec'
   }
   $selfUpdating = @('Zen-Team.Zen-Browser', 'ZedIndustries.Zed', 'Brave.Brave', 'Ferdium.Ferdium', 'Git.Git')
@@ -313,6 +362,9 @@ function Test-WindowsDocument {
         'ryanoasis.nerd-fonts.JetBrainsMono' { 'nerd-fonts-release' }
         'PowerShell.PowerShell' { 'official-zip' }
         'GitHub.cli' { 'official-zip' }
+        'TexLab.TexLab' { 'official-zip' }
+        'QPDF.QPDF' { 'official-zip' }
+        'ImageMagick.ImageMagick' { 'official-archive' }
         '@fission-ai/openspec' { 'npm' }
         default { 'winget' }
       }
@@ -326,7 +378,7 @@ function Test-WindowsDocument {
       Assert-Contract ($app.versionPolicy -is [string] -and $app.versionPolicy -in @('exact', 'self-updating')) "${label}: missing/ambiguous version policy"
       Assert-Contract (($app.versionPolicy -eq 'self-updating') -eq ($app.id -in $selfUpdating)) "${label}: forbidden version policy for $($app.id)"
       Assert-Contract ($(if ($app.versionPolicy -eq 'exact') { $app.version -is [string] -and $app.version.Length -gt 0 } else { -not $app.PSObject.Properties['version'] })) "${label}: invalid version selector"
-      Assert-Contract ($app.id -notin @('Microsoft.WindowsTerminal', 'Tern.Tern', 'MiKTeX.MiKTeX') -and 'terminal' -notin $app.roles -and $app.id -notmatch '(?i)texlab|nixd|roslyn') "${label}: forbidden native package/manual Tern boundary"
+      Assert-Contract ($app.id -notin @('Microsoft.WindowsTerminal', 'Tern.Tern', 'MiKTeX.MiKTeX') -and 'terminal' -notin $app.roles -and $app.id -notmatch '(?i)nixd|roslyn' -and ($app.id -notmatch '(?i)texlab' -or $app.id -eq 'TexLab.TexLab')) "${label}: forbidden native package/manual Tern boundary"
       if ($resource.type -eq 'Microsoft.WinGet/Package') {
         Assert-Contract ($resource.properties.id -eq $app.id -and $resource.properties.source -eq $app.source) "${label}: package identity/source selector differs"
         if ($app.versionPolicy -eq 'exact') {

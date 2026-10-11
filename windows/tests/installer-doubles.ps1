@@ -32,21 +32,26 @@ function ConvertTo-FixtureScript {
 }
 
 function Invoke-InstallerFixture {
-  param($Resource, [string]$Scenario, [string]$Root)
+  param($Resource, [string]$Scenario, [string]$Root, [string]$ArchivePath)
   $record = Get-ScriptRecord "$($Resource.name) specification" $Resource.properties.setScript
   $spec = @(Get-EmbeddedJson $record)[0]
+  $archiveResource = $Resource.metadata.application.source -in @('official-zip', 'official-archive')
   $caseRoot = Microsoft.PowerShell.Management\Join-Path $Root ([guid]::NewGuid().ToString())
   $null = New-Item -ItemType Directory -Path $caseRoot -Force
   $saved = @{}
-  foreach ($name in @('HOME', 'USERPROFILE', 'LOCALAPPDATA', 'APPDATA', 'TEMP', 'Path')) {
+  foreach ($name in @('HOME', 'USERPROFILE', 'LOCALAPPDATA', 'APPDATA', 'TEMP', 'Path', 'SystemRoot')) {
     $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
-    if ($name -ne 'Path') { [Environment]::SetEnvironmentVariable($name, $caseRoot, 'Process') }
+    if ($name -ne 'Path' -and -not ($name -eq 'SystemRoot' -and $ArchivePath)) { [Environment]::SetEnvironmentVariable($name, $caseRoot, 'Process') }
   }
   try {
-    $state = @{ Installed = ($Scenario -notin @('missing', 'missing-row', 'hash-failure', 'install-failure', 'runtime-missing', 'node-machine', 'candidate-version-mismatch', 'candidate-native-failure')); Installs = 0; Downloads = 0; Extracts = 0; UserPath = ''; Version = $spec.version }
+    $state = @{ Installed = ($Scenario -notin @('missing', 'missing-row', 'hash-failure', 'install-failure', 'runtime-missing', 'node-machine', 'candidate-version-mismatch', 'candidate-native-failure')); Installs = 0; Downloads = 0; Extracts = 0; Hashes = 0; NativeVersions = 0; UserPath = ''; Version = $spec.version }
+    if ($archiveResource -and $Scenario -in @('hash-failure', 'extraction-native-failure', 'candidate-version-mismatch', 'candidate-native-failure', 'candidate-missing', 'promotion-failure')) { $state.Installed = $true; $state.Version = '0.0.1' }
     $state.UpgradeAvailable = $spec.policy -eq 'self-updating' -and $Scenario -in @('upgrade', 'drift')
+    $state.NativeDrift = $Scenario -in @('pdf-text-native-drift', 'pdf-info-native-drift')
     if ($Scenario -in @('drift', 'runtime-missing')) { $state.Version = '0.0.1' }
     if ($Scenario -eq 'newer') { $state.Version = '999.0.0' }
+    if ($Scenario -eq 'revision-drift') { $state.Version = '7.1.2-32' }
+    if ($Scenario -eq 'catalog-revision-drift') { $state.Version = '25.07.0-1' }
     if (-not $state.Version) { $state.Version = '999.0.0' }
     # Normalize Windows relative declarations so the same doubles run on PS7 Linux.
     function Join-Path {
@@ -57,10 +62,16 @@ function Invoke-InstallerFixture {
       $null = New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($Path)) -Force
       [IO.File]::WriteAllText($Path, $Content)
     }
+    function Move-Item {
+      param([string]$LiteralPath, [string]$Destination)
+      if ($Scenario -eq 'promotion-failure' -and $LiteralPath -like '*expanded*') { throw 'fixture promotion failure' }
+      Microsoft.PowerShell.Management\Move-Item -LiteralPath $LiteralPath -Destination $Destination
+    }
     function Get-FixtureToolPath {
       if ($spec.id -eq 'Git.Git') { return (Join-Path $env:LOCALAPPDATA 'Programs\Git\cmd\git.exe') }
       if ($spec.id -eq 'Python.Python.3.13') { return (Join-Path $env:LOCALAPPDATA 'Programs\Python\Python313\python.exe') }
-      if ($Resource.metadata.application.source -eq 'official-zip') { return (Join-Path (Join-Path $env:LOCALAPPDATA $spec.directory) $spec.executable) }
+      if ($spec.id -eq 'JohnMacFarlane.Pandoc') { return (Join-Path $env:LOCALAPPDATA 'Programs\Pandoc\pandoc.exe') }
+      if ($archiveResource) { return (Join-Path (Join-Path $env:LOCALAPPDATA $spec.directory) $spec.executable) }
       return (Join-Path $env:LOCALAPPDATA ('Microsoft\WinGet\Links\' + $spec.executable))
     }
     function Install-FixtureNpm {
@@ -80,6 +91,18 @@ function Invoke-InstallerFixture {
       $target = [string]$args[0]
       $arguments = @($args | Select-Object -Skip 1)
       $global:LASTEXITCODE = 0
+      if ($archiveResource -and $spec.archiveKind -eq '7z' -and $target -eq (Join-Path $env:SystemRoot 'System32\tar.exe')) {
+        Assert-Contract ($arguments.Count -eq 4 -and $arguments[0] -eq '-xf' -and $arguments[2] -eq '-C') "resource $($Resource.name): inbox tar argument boundary differs"
+        Assert-Contract ($state.Hashes -gt $state.Extracts) "resource $($Resource.name): native extraction occurred before digest verification"
+        if ($ArchivePath) {
+          $state.Extracts++
+          & $target @arguments
+          return
+        }
+        if ($Scenario -eq 'extraction-native-failure') { $state.Extracts++; $global:LASTEXITCODE = 23; return }
+        Expand-FixtureArchive $arguments[1] $arguments[3]
+        return
+      }
       if ([IO.Path]::GetFileNameWithoutExtension($target) -eq 'svelteserver' -and '--version' -in $arguments) {
         throw "resource $($Resource.name): svelteserver has no --version mode; verify its manifest and wrapper instead"
       }
@@ -103,11 +126,19 @@ function Invoke-InstallerFixture {
           $typeIndex = [Array]::IndexOf($arguments, '--installer-type')
           Assert-Contract ($typeIndex -ge 0 -and $arguments[$typeIndex + 1] -eq $spec.installerType) "resource $($Resource.name): wrong installer type execution"
         }
+        if ($spec.id -eq 'JohnMacFarlane.Pandoc') {
+          $locationIndex = [Array]::IndexOf($arguments, '--location')
+          Assert-Contract ($locationIndex -ge 0 -and $arguments[$locationIndex + 1] -eq (Join-Path $env:LOCALAPPDATA 'Programs\Pandoc')) "resource $($Resource.name): Pandoc user install location differs"
+        }
         $state.Installs++
         if ($Scenario -eq 'install-failure') { $global:LASTEXITCODE = 23; return }
         $state.Installed = $true; $state.UpgradeAvailable = $false
         $state.Version = if ($spec.version) { $spec.version } else { '1.0.0' }
         if ($spec.executable) { Write-FixtureFile (Get-FixtureToolPath) }
+        if ($spec.id -eq 'oschwartz10612.Poppler') {
+          Write-FixtureFile (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links\pdfinfo.exe')
+          $state.NativeDrift = $false
+        }
         if ($spec.id -eq 'OpenJS.NodeJS.LTS') {
           Write-FixtureFile (Join-Path $env:LOCALAPPDATA 'Node ZIP with spaces\node.exe')
           Write-FixtureFile (Join-Path $env:LOCALAPPDATA 'Node ZIP with spaces\npm.cmd')
@@ -121,6 +152,11 @@ function Invoke-InstallerFixture {
         Install-FixtureNpm
         return
       }
+      if ($archiveResource) {
+        Assert-Contract ($target -eq (Get-FixtureToolPath) -or $target -like '*expanded*') "resource $($Resource.name): archive tool discovery escaped owned directory ($target)"
+        Assert-Contract (($arguments -join ',') -eq (@($spec.versionArgs) -join ',')) "resource $($Resource.name): archive native version arguments differ"
+        $state.NativeVersions++
+      }
       if ($Scenario -eq 'native-failure') { $global:LASTEXITCODE = 23; return }
       if ($Scenario -eq 'candidate-native-failure' -and $target -like '*expanded*') { $global:LASTEXITCODE = 23; return }
       if ($Resource.metadata.application.source -eq 'npm') {
@@ -130,6 +166,14 @@ function Invoke-InstallerFixture {
           if ($command -in $package.Value.bin.PSObject.Properties.Name) { return $package.Value.version }
         }
         throw "resource $($Resource.name): unexpected native wrapper $target"
+      }
+      if ($Scenario -eq 'version-unrecognized') { return 'fixture has no version output' }
+      if ($spec.id -eq 'oschwartz10612.Poppler') {
+        Assert-Contract ($arguments.Count -eq 1 -and $arguments[0] -eq '-v') "resource $($Resource.name): Poppler must use native -v"
+        $name = [IO.Path]::GetFileName($target)
+        Assert-Contract ($name -in @('pdftotext.exe', 'pdfinfo.exe')) "resource $($Resource.name): unexpected Poppler discovery $target"
+        if ($state.NativeDrift -and (($Scenario -eq 'pdf-text-native-drift' -and $name -eq 'pdftotext.exe') -or ($Scenario -eq 'pdf-info-native-drift' -and $name -eq 'pdfinfo.exe'))) { return '0.0.1' }
+        return ($state.Version -replace '-\d+$', '')
       }
       if ($Scenario -eq 'candidate-version-mismatch' -and $target -like '*expanded*') { return '0.0.1' }
       if ($target -like '*expanded*') { return $spec.version }
@@ -143,18 +187,23 @@ function Invoke-InstallerFixture {
     }
     function Invoke-WebRequest {
       param($Uri, $OutFile, [switch]$UseBasicParsing)
-      Assert-Contract ($Uri -eq $spec.url) "resource $($Resource.name): ZIP URL differs"
-      $state.Downloads++; Write-FixtureFile $OutFile 'fixture archive'
+      Assert-Contract ($Uri -eq $spec.url) "resource $($Resource.name): archive URL differs"
+      $state.Downloads++
+      if ($ArchivePath) { Copy-Item -LiteralPath $ArchivePath -Destination $OutFile }
+      else { Write-FixtureFile $OutFile 'fixture archive' }
     }
     function Get-FileHash {
       param($LiteralPath, $Algorithm)
-      Assert-Contract ($Algorithm -eq 'SHA256') "resource $($Resource.name): ZIP digest algorithm differs"
+      Assert-Contract ($Algorithm -eq 'SHA256') "resource $($Resource.name): archive digest algorithm differs"
+      $state.Hashes++
       [PSCustomObject]@{ Hash = $(if ($Scenario -eq 'hash-failure') { '0' * 64 } else { $spec.sha256 }) }
     }
     function Expand-FixtureArchive {
       param($Archive, $Destination)
+      Assert-Contract ($state.Hashes -gt $state.Extracts) "resource $($Resource.name): extraction occurred before digest verification"
       $state.Extracts++
-      Write-FixtureFile (Join-Path (Join-Path $Destination $spec.payload) $spec.executable)
+      if ($Scenario -eq 'extraction-native-failure') { throw 'Native command failed with exit code 23' }
+      if ($Scenario -ne 'candidate-missing') { Write-FixtureFile (Join-Path (Join-Path $Destination $spec.payload) $spec.executable) }
     }
     function Get-ItemProperty {
       param($Path, $ErrorAction)
@@ -185,9 +234,18 @@ function Invoke-InstallerFixture {
       Write-FixtureFile (Join-Path $env:LOCALAPPDATA 'Node ZIP with spaces\npm.cmd')
       $state.UserPath = Join-Path $env:LOCALAPPDATA 'Node ZIP with spaces'
     }
-    if ($state.Installed -and $Resource.metadata.application.source -eq 'official-zip') {
-      $state.UserPath = Split-Path -Parent (Get-FixtureToolPath)
+    if ($state.Installed -and $spec.id -eq 'oschwartz10612.Poppler') {
+      Write-FixtureFile (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links\pdfinfo.exe')
+      if ($Scenario -eq 'pdf-text-missing') { Remove-Item -LiteralPath (Get-FixtureToolPath) }
+      if ($Scenario -eq 'pdf-info-missing') { Remove-Item -LiteralPath (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links\pdfinfo.exe') }
     }
+    if ($state.Installed -and $archiveResource) {
+      $state.UserPath = Split-Path -Parent (Get-FixtureToolPath)
+      Write-FixtureFile (Join-Path (Join-Path $env:LOCALAPPDATA $spec.directory) 'prior-directory.txt') 'preserve prior payload'
+      if ($Scenario -eq 'path-drift') { $state.UserPath = '' }
+      if ($Scenario -eq 'executable-missing') { Remove-Item -LiteralPath (Get-FixtureToolPath) }
+    }
+    if ($archiveResource -and $spec.archiveKind -eq '7z' -and -not $ArchivePath) { Write-FixtureFile (Join-Path $env:SystemRoot 'System32\tar.exe') }
     $test = ConvertTo-FixtureScript "$($Resource.name) testScript" $Resource.properties.testScript
     $set = ConvertTo-FixtureScript "$($Resource.name) setScript" $Resource.properties.setScript
     $failure = $null
@@ -195,15 +253,22 @@ function Invoke-InstallerFixture {
     try {
       $desired = & $test
       $null = & $set
-      if ($Scenario -in @('missing', 'missing-row', 'drift', 'upgrade')) {
+      if ($Scenario -in @('missing', 'missing-row', 'drift', 'upgrade', 'revision-drift', 'path-drift', 'executable-missing', 'pdf-text-missing', 'pdf-info-missing', 'pdf-text-native-drift', 'pdf-info-native-drift', 'catalog-revision-drift')) {
         if ($spec.version) { $state.Version = $spec.version }
         $null = & $set
-        Assert-Contract ($state.Installs -eq $(if ($Resource.metadata.application.source -eq 'official-zip') { 0 } else { 1 })) "resource $($Resource.name): repeat apply is not idempotent"
+        Assert-Contract ($state.Installs -eq $(if ($archiveResource) { 0 } else { 1 })) "resource $($Resource.name): repeat apply is not idempotent"
+        Assert-Contract ((& $test) -eq $true) "resource $($Resource.name): repeat apply did not reach desired state"
       }
+      if ($archiveResource) { Assert-Contract ($state.NativeVersions -gt 0) "resource $($Resource.name): archive fixture never discovered a native version" }
     } catch { $failure = $_.Exception.Message }
     $label = "resource $($Resource.name) fixture $Scenario"
     switch ($Scenario) {
       'hash-failure' { Assert-Contract ($failure -match 'SHA-256' -and $state.Extracts -eq 0) "${label}: failed hash did not stop extraction" }
+      'extraction-native-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|Native (command|archive extraction) failed with exit code 23|tar failed with exit code 23)$' -and $state.Extracts -eq 1) "${label}: extraction exit 23 lost ($failure)" }
+      'candidate-missing' { Assert-Contract ($failure -match 'release executable missing') "${label}: archive without native executable accepted ($failure)" }
+      'promotion-failure' { Assert-Contract ($failure -eq 'fixture promotion failure') "${label}: promotion failure was swallowed ($failure)" }
+      'version-unrecognized' { Assert-Contract ($failure -match 'unrecognized version output' -and $state.Downloads -eq 0) "${label}: invalid version output accepted ($failure)" }
+      'path-drift' { Assert-Contract (-not $failure -and $desired -eq $false -and $state.Downloads -eq 0 -and (Split-Path -Parent (Get-FixtureToolPath)) -in @($state.UserPath -split ';')) "${label}: owned discovery path drift did not converge ($failure)" }
       'install-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$') "${label}: installer exit 23 lost ($failure)" }
       'native-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$') "${label}: executable exit 23 lost ($failure)" }
       'candidate-native-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$') "${label}: candidate executable exit 23 lost ($failure)" }
@@ -222,8 +287,18 @@ function Invoke-InstallerFixture {
       'npm-native-version-drift' { Assert-Contract ($desired -eq $false) "${label}: native command version drift accepted" }
       default { Assert-Contract (-not $failure -and $desired -eq $false) "${label}: missing/drift did not converge ($failure)" }
     }
-    if ($Resource.metadata.application.source -eq 'official-zip' -and $Scenario -in @('missing', 'drift')) {
-      Assert-Contract ($state.Downloads -eq 1 -and $state.Extracts -eq 1) "${label}: ZIP repeat install/download is not idempotent"
+    if ($archiveResource -and $Scenario -in @('missing', 'drift', 'revision-drift', 'executable-missing')) {
+      Assert-Contract ($state.Downloads -eq 1 -and $state.Extracts -eq 1) "${label}: archive repeat install/download is not idempotent"
+      Assert-Contract ((Split-Path -Parent (Get-FixtureToolPath)) -in @($state.UserPath -split ';')) "${label}: owned native tool path was not registered"
+      Assert-Contract ($caseRoot.Contains(' ')) "${label}: fixture did not exercise paths containing spaces"
+    }
+    if ($archiveResource -and $Scenario -in @('hash-failure', 'extraction-native-failure', 'candidate-version-mismatch', 'candidate-native-failure', 'candidate-missing', 'native-failure', 'version-unrecognized', 'promotion-failure')) {
+      $prior = Join-Path (Join-Path $env:LOCALAPPDATA $spec.directory) 'prior-directory.txt'
+      Assert-Contract ((Test-Path -LiteralPath $prior) -and [IO.File]::ReadAllText($prior) -ceq 'preserve prior payload') "${label}: failure destroyed the prior installation"
+    }
+    if ($archiveResource -and $Scenario -in @('drift', 'revision-drift', 'executable-missing')) {
+      $backups = @(Get-ChildItem -LiteralPath (Split-Path -Parent (Join-Path $env:LOCALAPPDATA $spec.directory)) -Directory | Where-Object { $_.Name -like ((Split-Path -Leaf (Join-Path $env:LOCALAPPDATA $spec.directory)) + '.previous-*') })
+      Assert-Contract ($backups.Count -eq 1 -and [IO.File]::ReadAllText((Join-Path $backups[0].FullName 'prior-directory.txt')) -ceq 'preserve prior payload') "${label}: successful replacement did not preserve the prior directory"
     }
     Write-Output "fixture passed: $label"
   } finally {

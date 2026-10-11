@@ -45,6 +45,23 @@ try {
     if ($tarCalls.Count -ne 2) { throw 'Archive inspection and extraction did not both use inbox tar' }
     if ([Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $output 'file.txt'))) -cne [Convert]::ToBase64String($payload)) { throw 'Inbox tar extraction did not preserve payload bytes' }
     Write-Output 'PASS Windows inbox tar archive extraction with fake PATH tar first'
+    if ($nativeWindows) {
+        # A real 7z payload exercises the shipped ImageMagick extractor, not a ZIP
+        # renamed to .7z. Only extraction uses native code; no tool is installed/run.
+        $imageArchive = Join-Path $temp 'ImageMagick fixture.7z'
+        [IO.File]::WriteAllBytes((Join-Path $input 'magick.exe'), $payload)
+        $created = & $originalProcess -Command $inboxTar -Arguments @('--format=7zip', '-cf', $imageArchive, '-C', $input, 'magick.exe')
+        if ($created.ExitCode -ne 0) { throw "Cannot create isolated 7z archive: $($created.Output)" }
+        $signature = [IO.File]::ReadAllBytes($imageArchive)
+        if ([Convert]::ToBase64String($signature[0..5]) -cne 'N3q8rycc') { throw 'ImageMagick fixture is not an actual 7z archive' }
+        . (Join-Path $RepositoryRoot 'windows/tests/native-contract.ps1')
+        . (Join-Path $RepositoryRoot 'windows/tests/installer-doubles.ps1')
+        $document = [IO.File]::ReadAllText((Join-Path $RepositoryRoot 'windows/configuration.winget')) | ConvertFrom-Json
+        $imageResources = @($document.resources | Where-Object { $_.metadata.application.id -eq 'ImageMagick.ImageMagick' })
+        Assert-Contract ($imageResources.Count -eq 1) 'ImageMagick actual 7z fixture: required archive resource is missing or ambiguous'
+        Invoke-InstallerFixture -Resource $imageResources[0] -Scenario 'missing' -Root $temp -ArchivePath $imageArchive
+        Write-Output 'PASS ImageMagick actual 7z extraction with absolute inbox tar and fake PATH tar first'
+    }
 } finally {
     $env:PATH = $oldPath
     $env:SystemRoot = $oldSystemRoot
