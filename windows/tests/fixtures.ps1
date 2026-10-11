@@ -78,6 +78,12 @@ function Invoke-NativeFixtures {
         Set-FixtureSpecificationProperty $target 'testScript' $key 'fixture-mismatch'
         Assert-FixtureRejection "$($resource.name) specification $key drift" { Test-WindowsDocument $changed $Managed } 'resource .+: test/install specification (differs|missing)'
       }
+      if ($spec.upgradeCode) {
+        $changed = Copy-FixtureObject $Document
+        $target = $changed.resources | Where-Object name -eq $resource.name
+        $target.metadata.distribution.upgradeCode = '{00000000-0000-0000-0000-000000000000}'
+        Assert-FixtureRejection "$($resource.name) reviewed MSI UpgradeCode drift" { Test-WindowsDocument $changed $Managed } 'resource .+: user MSI UpgradeCode selector differs'
+      }
     }
     $cases = @(
       @{ Name = 'duplicate resource'; Finding = 'resource .+: duplicate name'; Edit = { param($d) $d.resources += $d.resources[0] } },
@@ -215,6 +221,9 @@ function Invoke-NativeFixtures {
       }
       if ($spec.requiresVCRuntime) { Invoke-InstallerFixture $resource 'runtime-missing' $root }
       if ($spec.policy -eq 'self-updating') { Invoke-InstallerFixture $resource 'upgrade' $root }
+      if ($spec.scope -eq 'user' -and $spec.installerType -eq 'wix') {
+        foreach ($scenario in @('msi-machine', 'msi-version-drift', 'msi-ambiguous')) { Invoke-InstallerFixture $resource $scenario $root }
+      }
       if ($spec.id -eq 'oschwartz10612.Poppler') {
         foreach ($scenario in @('pdf-text-missing', 'pdf-info-missing', 'pdf-info-ambiguous', 'pdf-text-native-drift', 'pdf-info-native-drift', 'catalog-revision-drift')) { Invoke-InstallerFixture $resource $scenario $root }
       }
