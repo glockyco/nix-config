@@ -49,7 +49,8 @@ function Invoke-InstallerFixture {
   $saved = @{}
   foreach ($name in @('HOME', 'USERPROFILE', 'LOCALAPPDATA', 'APPDATA', 'TEMP', 'Path', 'SystemRoot')) {
     $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
-    if ($name -ne 'Path' -and -not ($name -eq 'SystemRoot' -and $ArchivePath)) { [Environment]::SetEnvironmentVariable($name, $caseRoot, 'Process') }
+    # A real native PowerShell child needs the real Windows installation to initialize.
+    if ($name -ne 'Path' -and -not ($name -eq 'SystemRoot' -and ($ArchivePath -or $Scenario -like '*stderr*'))) { [Environment]::SetEnvironmentVariable($name, $caseRoot, 'Process') }
   }
   try {
     $nativeStderr = $Scenario -like '*stderr*'
