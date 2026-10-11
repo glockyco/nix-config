@@ -14,6 +14,9 @@ try {
   catch { throw "document ${DocumentPath}: $($_.Exception.Message)" }
   $managed = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'managed-applications.json') -Raw -Encoding UTF8 | ConvertFrom-Json
   Test-WindowsDocument $document $managed
+  $profilePath = Join-Path $PSScriptRoot 'texlive.profile'
+  Assert-Contract (Test-Path -LiteralPath $profilePath -PathType Leaf) 'texlive.profile: reviewed installer profile is missing'
+  Test-TeXLiveProfile ([IO.File]::ReadAllText($profilePath))
   . (Join-Path $PSScriptRoot 'tests/schema.ps1') -DocumentPath $DocumentPath -WindowsRoot $PSScriptRoot
   Invoke-DocumentSchemaCheck $DocumentPath $PSScriptRoot
   foreach ($file in @(Get-ChildItem -LiteralPath $PSScriptRoot -Recurse -File -Filter '*.ps1')) {
