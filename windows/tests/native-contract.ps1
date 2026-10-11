@@ -151,11 +151,60 @@ function Test-DocumentScriptBoundary {
   }
 }
 
+function Test-NativeInvocationScopes {
+  param($Record)
+  $calls = @($Record.Commands | Where-Object { $_.InvocationOperator -eq 'Ampersand' })
+  Assert-Contract ($calls.Count -gt 0) "script $($Record.Name): recognizable direct native invocation is missing"
+  foreach ($call in $calls) {
+    $label = "script $($Record.Name): native invocation at $($call.Extent.StartLineNumber)"
+    $scope = $call.Parent
+    while ($scope -and $scope -isnot [System.Management.Automation.Language.TryStatementAst]) { $scope = $scope.Parent }
+    Assert-Contract ($null -ne $scope -and $null -ne $scope.Finally) "${label}: native preference scope requires try/finally"
+    $before = @($scope.Body.Statements | Where-Object { $_.Extent.EndOffset -le $call.Extent.StartOffset })
+    $continue = @($before | Where-Object {
+      $_ -is [System.Management.Automation.Language.AssignmentStatementAst] -and
+        $_.Left -is [System.Management.Automation.Language.VariableExpressionAst] -and $_.Left.VariablePath.UserPath -eq 'ErrorActionPreference' -and
+        @($_.Right.FindAll({ param($n) $n -is [System.Management.Automation.Language.StringConstantExpressionAst] -and $n.Value -eq 'Continue' }, $true)).Count -eq 1
+    })
+    Assert-Contract ($continue.Count -eq 1) "${label}: native invocation must temporarily select Continue"
+    $after = @($scope.Body.Statements | Where-Object { $_.Extent.StartOffset -ge $call.Extent.EndOffset })
+    $capture = if ($after.Count -gt 0) { $after[0] } else { $null }
+    Assert-Contract ($capture -is [System.Management.Automation.Language.AssignmentStatementAst] -and
+      $capture.Left -is [System.Management.Automation.Language.VariableExpressionAst] -and
+      @($capture.Right.FindAll({ param($n) $n -is [System.Management.Automation.Language.VariableExpressionAst] -and $n.VariablePath.UserPath -eq 'LASTEXITCODE' }, $true)).Count -eq 1) "${label}: native exit code must be captured immediately"
+    $restores = @($scope.Finally.Statements | Where-Object {
+      $_ -is [System.Management.Automation.Language.AssignmentStatementAst] -and
+        $_.Left -is [System.Management.Automation.Language.VariableExpressionAst] -and $_.Left.VariablePath.UserPath -eq 'ErrorActionPreference'
+    })
+    Assert-Contract ($restores.Count -eq 1) "${label}: finally must restore the previous preference"
+    $savedNames = @($restores[0].Right.FindAll({ param($n) $n -is [System.Management.Automation.Language.VariableExpressionAst] }, $true))
+    Assert-Contract ($savedNames.Count -eq 1 -and $savedNames[0].VariablePath.UserPath -ne 'ErrorActionPreference') "${label}: finally must restore a saved preference"
+    $savedName = $savedNames[0].VariablePath.UserPath
+    $saves = @($scope.Parent.FindAll({ param($n) $n -is [System.Management.Automation.Language.AssignmentStatementAst] }, $false) | Where-Object {
+      $_.Extent.EndOffset -le $scope.Extent.StartOffset -and
+        $_.Left -is [System.Management.Automation.Language.VariableExpressionAst] -and $_.Left.VariablePath.UserPath -eq $savedName -and
+        @($_.Right.FindAll({ param($n) $n -is [System.Management.Automation.Language.VariableExpressionAst] -and $n.VariablePath.UserPath -eq 'ErrorActionPreference' }, $true)).Count -eq 1
+    })
+    Assert-Contract ($saves.Count -gt 0) "${label}: previous preference must be saved before the native scope"
+    $codeName = $capture.Left.VariablePath.UserPath
+    $checks = @($scope.Parent.FindAll({ param($n) $n -is [System.Management.Automation.Language.IfStatementAst] }, $false) | Where-Object {
+      $_.Extent.StartOffset -ge $scope.Extent.EndOffset -and
+        @($_.Clauses[0].Item1.FindAll({ param($n) $n -is [System.Management.Automation.Language.VariableExpressionAst] -and $n.VariablePath.UserPath -eq $codeName }, $true)).Count -gt 0 -and
+        @($_.FindAll({ param($n) $n -is [System.Management.Automation.Language.ThrowStatementAst] -or $n -is [System.Management.Automation.Language.ExitStatementAst] }, $true)).Count -gt 0
+    })
+    Assert-Contract ($checks.Count -gt 0) "${label}: captured native exit code must reject failure after preference restoration"
+  }
+}
+
 function Test-ScriptInstaller {
   param($Resource, $TestRecord, $SetRecord)
   $app = $Resource.metadata.application
   $label = "resource $($Resource.name)"
   $specs = @(Get-EmbeddedJson $SetRecord | Where-Object { $_.id -eq $app.id })
+  if ($app.source -in @('winget', 'official-zip', 'official-archive', 'npm')) {
+    Test-NativeInvocationScopes $TestRecord
+    Test-NativeInvocationScopes $SetRecord
+  }
   if ($app.source -eq 'winget') {
     Assert-Contract ($specs.Count -eq 1) "${label}: installer specification missing or ambiguous"
     $spec = $specs[0]
@@ -167,7 +216,7 @@ function Test-ScriptInstaller {
       @($_.FindAll({ param($n) $n -is [System.Management.Automation.Language.StringConstantExpressionAst] -and $n.Value -eq 'install' }, $true)).Count -gt 0
     })
     $direct = @($SetRecord.Commands | Where-Object {
-      $_.GetCommandName() -eq 'winget' -and @($_.CommandElements | Where-Object { $_ -is [System.Management.Automation.Language.StringConstantExpressionAst] -and $_.Value -eq 'install' }).Count -gt 0
+      $_.InvocationOperator -eq 'Ampersand' -and $_.GetCommandName() -eq 'winget' -and @($_.CommandElements | Where-Object { $_ -is [System.Management.Automation.Language.StringConstantExpressionAst] -and $_.Value -eq 'install' }).Count -gt 0
     })
     Assert-Contract ($arrays.Count + $direct.Count -eq 1) "${label}: expected one explicit WinGet installer argument declaration"
     $selector = if ($arrays.Count -eq 1) { $arrays[0] } else { $direct[0] }
