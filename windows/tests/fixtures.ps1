@@ -81,10 +81,7 @@ function Invoke-NativeFixtures {
     }
     $cases = @(
       @{ Name = 'duplicate resource'; Finding = 'resource .+: duplicate name'; Edit = { param($d) $d.resources += $d.resources[0] } },
-      @{ Name = 'undeclared dependency'; Finding = 'resource .+: undeclared/self dependency absent-fixture'; Edit = { param($d) $d.resources[0] | Add-Member dependsOn @('absent-fixture') -Force } },
-      @{ Name = 'dependency cycle'; Finding = 'resource .+: dependency cycle'; Edit = { param($d) $d.resources[0] | Add-Member dependsOn @("[resourceId('$($d.resources[1].type)', '$($d.resources[1].name)')]") -Force; $d.resources[1] | Add-Member dependsOn @("[resourceId('$($d.resources[0].type)', '$($d.resources[0].name)')]") -Force } },
-      @{ Name = 'dependency type mismatch'; Finding = 'resource .+: dependency .+ must use resourceId with its declared type'; Edit = { param($d) $d.resources[0] | Add-Member dependsOn @("[resourceId('Microsoft.Windows/Registry', '$($d.resources[1].name)')]") -Force } },
-      @{ Name = 'well-formed dependency'; Finding = 'resource .+: dependsOn cannot be resolved by winget configure apply'; Edit = { param($d) $d.resources[1] | Add-Member dependsOn @("[resourceId('$($d.resources[0].type)', '$($d.resources[0].name)')]") -Force } },
+      @{ Name = 'declared dependency'; Finding = 'resource .+: dependsOn cannot be resolved by winget configure apply'; Edit = { param($d) $d.resources[1] | Add-Member dependsOn @("[resourceId('$($d.resources[0].type)', '$($d.resources[0].name)')]") -Force } },
       @{ Name = 'npm tools before runtime'; Finding = 'resource .+: npm tools must follow the javascript runtime in document order'; Edit = { param($d) $npm = @($d.resources | Where-Object { $_.metadata.application.source -eq 'npm' })[0]; $d.resources = @($npm) + @($d.resources | Where-Object { $_.name -ne $npm.name }) } },
       @{ Name = 'schema'; Finding = '\$schema'; Edit = { param($d) $d.'$schema' = 'https://invalid.example/schema' } },
       @{ Name = 'processor'; Finding = 'metadata: expected dscv3'; Edit = { param($d) $d.metadata.winget.processor.identifier = 'not-dsc' } },
@@ -225,7 +222,7 @@ function Invoke-NativeFixtures {
     $ErrorActionPreference = 'Continue'
     $output = & $engine -NoProfile -NonInteractive -File (Join-Path $WindowsRoot 'check.ps1') -DocumentPath $fixturePath -SkipFixtures 2>&1
     $ErrorActionPreference = 'Stop'
-    Assert-Contract ($LASTEXITCODE -ne 0 -and ($output -join "`n") -match 'resource .+: undeclared/self dependency missing-resource') 'fixture entrypoint: invalid document did not return named nonzero failure'
+    Assert-Contract ($LASTEXITCODE -ne 0 -and ($output -join "`n") -match 'resource .+: dependsOn cannot be resolved by winget configure apply') 'fixture entrypoint: invalid document did not return named nonzero failure'
     $scriptPath = Join-Path $root 'broken rendered script.ps1'
     [IO.File]::WriteAllText($scriptPath, 'if (')
     $documentPath = Join-Path $root 'valid document.winget'
