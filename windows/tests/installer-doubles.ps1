@@ -54,6 +54,7 @@ function Invoke-InstallerFixture {
   $record = Get-ScriptRecord "$($Resource.name) specification" $Resource.properties.setScript
   $spec = @(Get-EmbeddedJson $record)[0]
   $archiveResource = $Resource.metadata.application.source -in @('official-zip', 'official-archive')
+  $msiResource = $Resource.metadata.application.source -eq 'winget' -and $Resource.metadata.application.scope -eq 'user' -and $spec.PSObject.Properties['installerType'] -and $spec.installerType -eq 'wix'
   $caseRoot = Microsoft.PowerShell.Management\Join-Path $Root ([guid]::NewGuid().ToString())
   $null = New-Item -ItemType Directory -Path $caseRoot -Force
   $saved = @{}
@@ -79,6 +80,7 @@ function Invoke-InstallerFixture {
     function Close-FixtureInstaller { param($Installer) $state.MsiCloses++ }
     function Invoke-FixtureInstallerInfo {
       param([string]$Property, [object[]]$Arguments)
+      Assert-Contract $msiResource "resource $($Resource.name): Windows Installer API is only valid for user WiX resources"
       if ($Scenario -eq 'list-failure') { throw 'Windows Installer API failed' }
       if ($Property -eq 'RelatedProducts') {
         Assert-Contract ($Arguments.Count -eq 1 -and $Arguments[0] -eq $spec.upgradeCode) "resource $($Resource.name): MSI UpgradeCode selector differs"
@@ -172,7 +174,7 @@ function Invoke-InstallerFixture {
         $idIndex = [Array]::IndexOf($arguments, '--id')
         Assert-Contract ($idIndex -ge 0 -and $arguments[$idIndex + 1] -eq $spec.id -and '--exact' -in $arguments -and '--source' -in $arguments) "resource $($Resource.name): double observed wrong ID/source"
         if ($arguments[0] -eq 'list') {
-          Assert-Contract (-not $spec.upgradeCode) "resource $($Resource.name): MSI discovery must not use WinGet ARP scope filtering"
+          Assert-Contract (-not $msiResource) "resource $($Resource.name): MSI discovery must not use WinGet ARP scope filtering"
           if ($Scenario -in @('list-failure', 'list-stderr-failure')) { $global:LASTEXITCODE = 23; return }
           if (-not $state.Installed -and $Scenario -eq 'missing-row') { return 'No installed package found matching input criteria.' }
           if (-not $state.Installed) { $global:LASTEXITCODE = -1978335212; return }
@@ -355,7 +357,7 @@ function Invoke-InstallerFixture {
       'native-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$') "${label}: executable exit 23 lost ($failure)" }
       'candidate-native-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$') "${label}: candidate executable exit 23 lost ($failure)" }
       'list-failure' {
-        $expected = if ($spec.upgradeCode) { '^Windows Installer API failed$' } else { '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$' }
+        $expected = if ($msiResource) { '^Windows Installer API failed$' } else { '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$' }
         Assert-Contract ($failure -match $expected -and $state.Installs -eq 0) "${label}: registration failure lost ($failure)"
       }
       'list-stderr-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$' -and $state.Installs -eq 0) "${label}: native registration stderr exit 23 lost ($failure)" }
@@ -386,7 +388,7 @@ function Invoke-InstallerFixture {
       'msi-version-drift' { Assert-Contract ($desired -eq $false -and -not $failure) "${label}: wrong MSI version accepted despite correct executable version ($failure)" }
       default { Assert-Contract (-not $failure -and $desired -eq $false) "${label}: missing/drift did not converge ($failure)" }
     }
-    if ($spec.upgradeCode) { Assert-Contract ($state.MsiOpens -gt 0 -and $state.MsiOpens -eq $state.MsiCloses) "${label}: Windows Installer COM object was not released" }
+    if ($msiResource) { Assert-Contract ($state.MsiOpens -gt 0 -and $state.MsiOpens -eq $state.MsiCloses) "${label}: Windows Installer COM object was not released" }
     if ($nativeStderr) { Assert-Contract ($state.StderrCommands -gt 0) "${label}: regression never invoked a real native stderr process" }
     if ($portable) {
       Assert-Contract (@(Get-ChildItem -LiteralPath $links -Force).Count -eq 0) "${label}: fixture created a WinGet link instead of PATH-mode discovery"
