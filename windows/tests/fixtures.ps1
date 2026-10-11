@@ -124,6 +124,19 @@ function Invoke-NativeFixtures {
       $null = & $case.Edit $changed
       Assert-FixtureRejection $case.Name { Test-WindowsDocument $changed $Managed } $case.Finding
     }
+    $nativeResource = @($Document.resources | Where-Object { $_.metadata.application.id -eq 'twpayne.chezmoi' })[0]
+    $nativeSource = $nativeResource.properties.testScript
+    $nativeRecord = Get-ScriptRecord 'native scope negative controls' $nativeSource
+    $nativeCall = @($nativeRecord.Commands | Where-Object { $_.InvocationOperator -eq 'Ampersand' })[0]
+    $nativeScope = $nativeCall.Parent
+    while ($nativeScope -isnot [System.Management.Automation.Language.TryStatementAst]) { $nativeScope = $nativeScope.Parent }
+    foreach ($mutation in @(
+      @{ Name = 'native Continue removed'; Source = $nativeSource.Replace("'Continue'", "'Stop'"); Finding = 'temporarily select Continue' },
+      @{ Name = 'native exit capture removed'; Source = $nativeSource.Replace('$LASTEXITCODE', '$fixtureWrongCode'); Finding = 'exit code must be captured immediately' },
+      @{ Name = 'native preference restore removed'; Source = $nativeSource.Remove($nativeScope.Finally.Extent.StartOffset, $nativeScope.Finally.Extent.Text.Length).Insert($nativeScope.Finally.Extent.StartOffset, '{}'); Finding = 'finally must restore' }
+    )) {
+      Assert-FixtureRejection $mutation.Name { Test-NativeInvocationScopes (Get-ScriptRecord $mutation.Name $mutation.Source) } $mutation.Finding
+    }
     Assert-FixtureRejection 'automatic fixed Administrator invocation' { Test-ApprovedScriptRole (Get-ScriptRecord 'rendered user apply.ps1' "& '.\apply-kbdneo.ps1'") } 'fixed Administrator scripts must not run automatically'
     foreach ($name in @('apply-kbdneo.ps1', 'apply-zen-policies.ps1')) {
       $source = [IO.File]::ReadAllText((Join-Path $WindowsRoot $name))
@@ -197,10 +210,13 @@ function Invoke-NativeFixtures {
       $spec = @(Get-EmbeddedJson (Get-ScriptRecord $resource.name $resource.properties.setScript))[0]
       foreach ($scenario in @('desired', 'missing', 'missing-row', 'drift', 'newer', 'list-failure', 'install-failure')) { Invoke-InstallerFixture $resource $scenario $root }
       if (-not $spec.registrationOnly) { Invoke-InstallerFixture $resource 'native-failure' $root }
+      if ($spec.executable -and $spec.id -notin @('Git.Git', 'Python.Python.3.13', 'JohnMacFarlane.Pandoc')) {
+        foreach ($scenario in @('portable-executable-missing', 'portable-executable-ambiguous', 'owned-root-exclusion')) { Invoke-InstallerFixture $resource $scenario $root }
+      }
       if ($spec.requiresVCRuntime) { Invoke-InstallerFixture $resource 'runtime-missing' $root }
       if ($spec.policy -eq 'self-updating') { Invoke-InstallerFixture $resource 'upgrade' $root }
       if ($spec.id -eq 'oschwartz10612.Poppler') {
-        foreach ($scenario in @('pdf-text-missing', 'pdf-info-missing', 'pdf-text-native-drift', 'pdf-info-native-drift', 'catalog-revision-drift')) { Invoke-InstallerFixture $resource $scenario $root }
+        foreach ($scenario in @('pdf-text-missing', 'pdf-info-missing', 'pdf-info-ambiguous', 'pdf-text-native-drift', 'pdf-info-native-drift', 'catalog-revision-drift')) { Invoke-InstallerFixture $resource $scenario $root }
       }
     }
     foreach ($resource in @($Document.resources | Where-Object { $_.metadata.application.source -in @('official-zip', 'official-archive') })) {
@@ -209,10 +225,13 @@ function Invoke-NativeFixtures {
     }
     foreach ($resource in @($Document.resources | Where-Object { $_.metadata.application.source -eq 'npm' })) {
       foreach ($scenario in @('desired', 'missing', 'newer', 'native-failure', 'install-failure', 'npm-version-drift', 'npm-wrapper-missing', 'npm-lock-drift', 'npm-native-version-drift', 'node-machine')) { Invoke-InstallerFixture $resource $scenario $root }
+      foreach ($scenario in @('node-executable-ambiguous', 'node-owned-root-exclusion')) { Invoke-InstallerFixture $resource $scenario $root }
       $unsupportedVersion = Copy-FixtureObject $resource
       $unsupportedVersion.properties.testScript = $unsupportedVersion.properties.testScript.Replace("'typescript-language-server','openspec'", "'typescript-language-server','svelteserver','openspec'")
       Assert-FixtureRejection 'Svelte unsupported version mode' { Invoke-InstallerFixture $unsupportedVersion 'desired' $root } 'svelteserver has no --version mode'
     }
+    . (Join-Path $WindowsRoot 'tests/native-stderr-regressions.ps1')
+    Invoke-NativeStderrRegressions $Document $WindowsRoot $root
     # The public entrypoint must return nonzero and preserve names, independently of helper throws.
     $engine = (Get-Process -Id $PID).Path
     $fixturePath = Join-Path $root 'invalid document.winget'
