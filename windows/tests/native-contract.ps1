@@ -262,7 +262,6 @@ function Test-ScriptInstaller {
       Assert-Contract ($bundles[0].manifest.dependencies.$name -eq $selected.version -and @($selected.bin).Count -gt 0) "${label}: npm manifest/native wrapper missing for $name"
       Assert-Contract ($testBundles[0].packages.$name.version -eq $selected.version -and $testBundles[0].packages.$name.integrity -eq $selected.integrity) "${label}: npm test selector differs for $name"
     }
-    Assert-Contract (@($Resource.dependsOn).Count -gt 0) "${label}: npm runtime dependency is missing"
   }
 }
 
@@ -332,6 +331,17 @@ function Test-WindowsDocument {
   }
   $selfUpdating = @('Zen-Team.Zen-Browser', 'ZedIndustries.Zed', 'Brave.Brave', 'Ferdium.Ferdium', 'Git.Git')
   $dependencyNames = @{}
+  # Test order: prerequisites must precede their consumers because apply runs units in document order.
+  $resourceOrder = @($Document.resources | ForEach-Object { [string]$_.name })
+  $runtimeIndex = -1
+  for ($i = 0; $i -lt @($Document.resources).Count; $i++) {
+    if (@($Document.resources[$i].metadata.application.roles) -contains 'javascript-runtime') { $runtimeIndex = $i; break }
+  }
+  for ($i = 0; $i -lt @($Document.resources).Count; $i++) {
+    if ($Document.resources[$i].metadata.application.source -eq 'npm') {
+      Assert-Contract ($runtimeIndex -ge 0 -and $runtimeIndex -lt $i) "resource $($resourceOrder[$i]): npm tools must follow the javascript runtime in document order"
+    }
+  }
   foreach ($resource in $Document.resources) {
     $label = "resource $($resource.name)"
     $dependencies = @($resource.dependsOn | Where-Object { $null -ne $_ })
@@ -344,6 +354,10 @@ function Test-WindowsDocument {
       $dependencyNames[$resource.name] += $target
     }
     Assert-Contract (@($dependencies | Select-Object -Unique).Count -eq $dependencies.Count) "${label}: duplicate dependency"
+    # WinGet 1.29.380 `winget configure` (apply) resolves dependsOn only by plain unit name, while the
+    # official DSC schema requires resourceId() lookups, so no dependency form satisfies both. Apply
+    # preserves document order; prerequisites are ordered earlier instead (see Test order below).
+    Assert-Contract ($dependencies.Count -eq 0) "${label}: dependsOn cannot be resolved by winget configure apply; order the prerequisite earlier in the document"
     Assert-Contract ($resource.type -notmatch '(?i)WindowsFeature|OptionalFeature|WindowsCapability') "${label}: Windows feature is forbidden"
     $app = $resource.metadata.application
     $exception = $null -ne $app -and $app.id -in @('Zen-Team.Zen-Browser', 'Tailscale.Tailscale')
