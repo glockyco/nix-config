@@ -37,7 +37,7 @@ function Invoke-NativeCommitGate {
         [string]$ToolsRoot,
         [scriptblock]$NixGate = { param($root) Invoke-SameCheckoutNixGate $root },
         [scriptblock]$FormatGate = { param($root, $tools, $paths) $null = Get-NativeTool -Name lefthook -ToolsRoot $tools; Invoke-NativeFormatting -RepositoryRoot $root -ToolsRoot $tools -Paths $paths -Check },
-        [scriptblock]$WindowsGate = { param($root) & (Join-Path $root 'windows/check.ps1'); if ($LASTEXITCODE -ne 0) { throw "Windows invariant gate failed (exit $LASTEXITCODE)" } }
+        [scriptblock]$WindowsGate = { param($root) & (Join-Path $root 'windows/check.ps1') -SkipFixtures; if ($LASTEXITCODE -ne 0) { throw "Windows invariant gate failed (exit $LASTEXITCODE)" } }
     )
     $paths = @(Get-GitFormattingPaths -RepositoryRoot $RepositoryRoot -Staged)
     if (@($paths | Where-Object { $_.EndsWith('.nix', [StringComparison]::Ordinal) }).Count -gt 0) { & $NixGate $RepositoryRoot }

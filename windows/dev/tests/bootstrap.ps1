@@ -5,6 +5,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 if (-not $RepositoryRoot) { $RepositoryRoot = Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent }
 . (Join-Path $RepositoryRoot 'windows/dev/bootstrap.ps1') -RepositoryRoot $RepositoryRoot
+$script:BootstrapReceive = ${function:Receive-NativeArtifact}
 
 function Assert-BootstrapFixture {
     param([bool]$Condition, [string]$Message)
@@ -17,6 +18,13 @@ function Assert-BootstrapFailure {
     try { & $Action | Out-Null } catch { $failure = $_.Exception.Message }
     Assert-BootstrapFixture -Condition ($null -ne $failure -and $failure -match $Pattern) -Message "$Name did not fail with '$Pattern': $failure"
     Write-Output "PASS negative bootstrap fixture: $Name"
+}
+
+function Invoke-WebRequest {
+    param([switch]$UseBasicParsing, [string]$Uri, [string]$OutFile)
+    $script:ObservedProgressPreference = $ProgressPreference
+    if ($script:WebRequestFault) { throw 'fixture download failure' }
+    [IO.File]::WriteAllText($OutFile, 'fixture artifact', (New-Object Text.UTF8Encoding($false)))
 }
 
 # Doubles intercept downloads, extraction and native processes, never the lock/hash/lookup/bootstrap decisions.
@@ -93,6 +101,14 @@ $script:ExtractionCount = 0
 $script:ProcessCount = 0
 try {
     $null = New-Item -ItemType Directory -Path $temp
+    $script:WebRequestFault = $false
+    $savedProgressPreference = $ProgressPreference
+    & $script:BootstrapReceive -Uri 'https://fixture.invalid/artifact' -Destination (Join-Path $temp 'progress artifact')
+    Assert-BootstrapFixture -Condition ($script:ObservedProgressPreference -eq 'SilentlyContinue' -and $ProgressPreference -eq $savedProgressPreference) -Message 'download progress was not suppressed locally and restored'
+    $script:WebRequestFault = $true
+    Assert-BootstrapFailure 'download progress restoration' { & $script:BootstrapReceive -Uri 'https://fixture.invalid/artifact' -Destination (Join-Path $temp 'progress artifact') } 'fixture download failure'
+    Assert-BootstrapFixture -Condition ($ProgressPreference -eq $savedProgressPreference) -Message 'failed download changed caller progress preference'
+    $script:WebRequestFault = $false
     $fixtureArtifact = Join-Path $temp 'artifact'
     [IO.File]::WriteAllText($fixtureArtifact, 'fixture artifact', (New-Object Text.UTF8Encoding($false)))
     $script:FixtureLock = Get-NativeDependencies
@@ -129,6 +145,44 @@ try {
     Assert-BootstrapFixture -Condition $manifest.includeTestDependencies -Message 'test dependency upgrade was not recorded'
     $null = Get-NativeTool -Name mdformat -ToolsRoot $root
     Write-Output 'PASS bootstrap isolated test dependency closure upgrade'
+
+    $cache = Join-Path $temp 'archive cache with spaces'
+    $cachedTools = Join-Path $temp 'cold cache tools'
+    $downloads = $script:DownloadCount
+    Invoke-NativeBootstrap -RepositoryRoot $checkout -ToolsRoot $cachedTools -ArchiveCacheRoot $cache -IncludeTestDependencies -SkipHook | Out-Null
+    Assert-BootstrapFixture -Condition ($script:DownloadCount -eq $downloads + $script:FixtureLock.artifacts.Count) -Message 'cold cache did not download the full test dependency closure'
+    Assert-BootstrapFixture -Condition (@(Get-ChildItem -LiteralPath $cache -File).Count -eq $script:FixtureLock.artifacts.Count -and @(Get-ChildItem -LiteralPath $cache -Directory).Count -eq 0) -Message 'cache contains extracted installations or lacks locked archives'
+    $warmTools = Join-Path $temp 'warm cache tools'
+    $downloads = $script:DownloadCount
+    Invoke-NativeBootstrap -RepositoryRoot $checkout -ToolsRoot $warmTools -ArchiveCacheRoot $cache -IncludeTestDependencies -SkipHook | Out-Null
+    Assert-BootstrapFixture -Condition ($script:DownloadCount -eq $downloads) -Message 'warm cache redownloaded locked archives'
+    $null = Get-NativeTool -Name mdformat -ToolsRoot $warmTools
+    $cachedArtifact = Join-Path $cache $script:FixtureLock.artifacts[0].file
+    $cachedBytes = [IO.File]::ReadAllBytes($cachedArtifact)
+    [IO.File]::WriteAllText($cachedArtifact, 'corrupt cache')
+    $extractions = $script:ExtractionCount
+    $corruptRoot = Join-Path $temp 'corrupt cache tools'
+    Assert-BootstrapFailure 'restored archive hash' { Invoke-NativeBootstrap -RepositoryRoot $checkout -ToolsRoot $corruptRoot -ArchiveCacheRoot $cache -IncludeTestDependencies -SkipHook } 'SHA-256 mismatch'
+    Assert-BootstrapFailure 'installed tools restored archive hash' { Invoke-NativeBootstrap -RepositoryRoot $checkout -ToolsRoot $warmTools -ArchiveCacheRoot $cache -IncludeTestDependencies -SkipHook } 'SHA-256 mismatch'
+    Assert-BootstrapFixture -Condition ($script:DownloadCount -eq $downloads -and $script:ExtractionCount -eq $extractions -and -not (Test-Path -LiteralPath $corruptRoot) -and [IO.File]::ReadAllText($cachedArtifact) -ceq 'corrupt cache') -Message 'cache corruption was redownloaded, overwritten, extracted or installed'
+    [IO.File]::WriteAllBytes($cachedArtifact, $cachedBytes)
+    $lockBytes = [IO.File]::ReadAllBytes($script:NativeLockPath)
+    $npmArtifact = @($script:FixtureLock.artifacts | Where-Object name -eq 'prettier')[0]
+    $npmIntegrity = $npmArtifact.integrity
+    $npmArtifact.integrity = 'sha512-invalid'
+    [IO.File]::WriteAllText($script:NativeLockPath, ($script:FixtureLock | ConvertTo-Json -Depth 10))
+    Assert-BootstrapFailure 'restored npm integrity' { Invoke-NativeBootstrap -RepositoryRoot $checkout -ToolsRoot (Join-Path $temp 'bad cached npm tools') -ArchiveCacheRoot $cache -IncludeTestDependencies -SkipHook } 'npm integrity mismatch'
+    Assert-BootstrapFixture -Condition ($script:DownloadCount -eq $downloads) -Message 'restored npm integrity failure redownloaded an archive'
+    $npmArtifact.integrity = $npmIntegrity
+    [IO.File]::WriteAllBytes($script:NativeLockPath, $lockBytes)
+    Assert-BootstrapFailure 'archive cache inside tools' { Invoke-NativeBootstrap -RepositoryRoot $checkout -ToolsRoot $warmTools -ArchiveCacheRoot (Join-Path $warmTools 'archives') -SkipHook } 'separate, non-overlapping'
+    Assert-BootstrapFailure 'tools inside archive cache' { Invoke-NativeBootstrap -RepositoryRoot $checkout -ToolsRoot (Join-Path $cache 'tools') -ArchiveCacheRoot $cache -SkipHook } 'separate, non-overlapping'
+    $script:DownloadFault = 'hash'
+    $freshBadCache = Join-Path $temp 'bad fresh archive cache'
+    Assert-BootstrapFailure 'fresh cache archive hash' { Invoke-NativeBootstrap -RepositoryRoot $checkout -ToolsRoot (Join-Path $temp 'bad fresh cached tools') -ArchiveCacheRoot $freshBadCache -SkipHook } 'SHA-256 mismatch'
+    Assert-BootstrapFixture -Condition (@(Get-ChildItem -LiteralPath $freshBadCache).Count -eq 0 -and @(Get-ChildItem -LiteralPath $temp -Directory | Where-Object Name -like 'native-dev-stage-*').Count -eq 0) -Message 'failed download persisted an unverified archive or staged tools'
+    $script:DownloadFault = ''
+    Write-Output 'PASS bootstrap archive cache cold/warm reuse, full test closure, fatal corruption/integrity, archive-only scope and staging cleanup'
 
     $script:ProcessFault = 'version'
     Assert-BootstrapFailure 'version mismatch' { Get-NativeTool -Name jsonfmt -ToolsRoot $root } 'version mismatch.*bootstrap.ps1'

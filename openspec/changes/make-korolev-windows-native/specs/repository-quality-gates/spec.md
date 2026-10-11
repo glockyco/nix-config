@@ -29,11 +29,12 @@ Local and CI formatting gates SHALL consume one platform-neutral declaration of 
 
 - **WHEN** a standard Windows session stages only files supported by the native formatter adapter
 - **THEN** the local gate uses the shared declaration and pinned native tools without requiring Nix
-- **AND** the Windows CI leg runs the same native checks
+- **AND** native precommit runs `windows/check.ps1 -SkipFixtures`, retaining shipped document contracts, pinned official schema validation and shipped script AST/Administrator-boundary checks
+- **AND** full on-demand and CI gates retain all isolated fixtures, including rendered chezmoi coverage
 
 ### Requirement: The commit hook is installed from the development shell
 
-Entering the declared development environment SHALL install lefthook in that checkout. Darwin/Linux SHALL retain the pinned Nix shell; Windows SHALL use an explicit native bootstrap with pinned tools. Git clients outside the environment SHALL resolve those pinned tools or fail with a missing-environment diagnostic. Platform-specific dispatch SHALL never silently skip staged Nix validation.
+Entering the declared development environment SHALL install lefthook in that checkout. Darwin/Linux SHALL retain the pinned Nix shell; Windows SHALL use an explicit native bootstrap with pinned tools. Git clients outside the environment SHALL resolve those pinned tools or fail with a missing-environment diagnostic. Platform-specific dispatch SHALL never silently skip staged Nix validation. Native Windows precommit SHALL invoke `windows/check.ps1 -SkipFixtures`, retaining shipped document contracts, pinned official schema validation and shipped script AST/Administrator-boundary checks, and SHALL propagate checker failure. Full on-demand and CI gates SHALL retain the complete isolated fixture suite.
 
 #### Scenario: First entry into the shell
 
@@ -52,6 +53,12 @@ Entering the declared development environment SHALL install lefthook in that che
 - **WHEN** the user bootstraps the declared native Windows development environment
 - **THEN** lefthook is installed for the native checkout and works from native Git and Fork
 - **AND** re-entry installs no duplicate hook and retires no unrelated hook without review
+
+#### Scenario: Default native Windows gate fails
+
+- **WHEN** the real default Windows precommit gate invokes the checker
+- **THEN** it forwards `-SkipFixtures` and propagates a nonzero checker exit as a failed commit
+- **AND** isolated hook fixtures assert both behaviors without replacing the default Windows gate
 
 ### Requirement: A development shell on every supported system
 
@@ -75,7 +82,7 @@ Every declared Nix system SHALL retain a pinned development shell. Native Window
 
 ### Requirement: Each gate runs its host's Nix implementation
 
-Each Linux/Darwin CI gate SHALL use the Nix implementation declared by that host. Windows CI SHALL use native Windows tools for official DSC document-schema validation, read-only WinGet show parsing, PowerShell tests and applicable shared formatting, not Nix or a WSL-only substitute. Windows checks SHALL be required alongside Linux, Darwin and live policy checks before main deployment can be accepted.
+Each Linux/Darwin CI gate SHALL use the Nix implementation declared by that host. Windows CI SHALL use native Windows tools for official DSC document-schema validation, read-only WinGet show parsing, PowerShell tests and applicable shared formatting, not Nix or a WSL-only substitute. Applicable Windows formatting SHALL run once; all existing non-format gates and the full fixture suite SHALL run in parallel Windows PowerShell 5.1 and locked PowerShell 7 jobs. Download caches SHALL contain archives only, not extracted installations; restored archives SHALL be verified against lock hashes on every use and CI SHALL provision fresh tools directories. The required `check (windows-latest)` SHALL aggregate all Windows children and fail when any child fails, is cancelled or is skipped. Windows checks SHALL be required alongside Linux, Darwin and live policy checks before main deployment can be accepted.
 
 #### Scenario: An output evaluates on one implementation only
 
@@ -92,3 +99,15 @@ Each Linux/Darwin CI gate SHALL use the Nix implementation declared by that host
 - **WHEN** the Windows document, script syntax or privilege/app ownership invariant fails native checks
 - **THEN** the Windows job and protected-main acceptance fail even if both Nix jobs pass
 - **AND** no successful Linux-only completion authorizes tailnet deployment
+
+#### Scenario: A Windows child does not succeed
+
+- **WHEN** any Windows formatting or host-check child fails, is cancelled or is skipped
+- **THEN** the required `check (windows-latest)` aggregate fails
+- **AND** successful sibling jobs do not authorize protected-main acceptance or tailnet deployment
+
+#### Scenario: Restore a cached tool download
+
+- **WHEN** a Windows CI job restores a downloaded archive from cache
+- **THEN** it verifies the archive against its lock hash before extraction on that use
+- **AND** it builds a fresh tools directory rather than restoring an extracted installation
