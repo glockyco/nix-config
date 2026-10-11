@@ -219,7 +219,7 @@ The override SHALL NOT change unmodified Vim keys, `Escape`, terminal input, men
 
 ### Requirement: Validation before and after apply
 
-Windows-native repository gates SHALL validate the shipped document against its vendored official DSC v3 configuration-document JSON Schema and discovered resource-type allowlist, parse it with read-only `winget configure show`, and test ownership, explicit application selectors, dependencies, machine exceptions and script ASTs without applying resources. Schema sources SHALL retain reviewed release URLs and SHA-256 values. Tests SHALL not read live enrollment or profile state. Before first live apply the operator SHALL preview drift; after applying in the proper account context the operator SHALL confirm all owned state.
+Windows-native repository gates SHALL validate the shipped document against its vendored official DSC v3 configuration-document JSON Schema and discovered resource-type allowlist, parse it with read-only `winget configure show`, and test ownership, explicit application selectors, prerequisite order, machine exceptions and script ASTs without applying resources. Because `winget configure` apply cannot resolve the schema's `resourceId()` dependency form, the document SHALL declare no `dependsOn` and SHALL order each prerequisite before its consumers. Schema sources SHALL retain reviewed release URLs and SHA-256 values. Tests SHALL not read live enrollment or profile state. Before first live apply the operator SHALL preview drift; after applying in the proper account context the operator SHALL confirm all owned state.
 
 #### Scenario: Validate without applying Windows state
 
@@ -241,8 +241,13 @@ Windows-native repository gates SHALL validate the shipped document against its 
 
 #### Scenario: Reject a dependency on an undeclared resource
 
-- **WHEN** a resource in the hand-maintained document depends on a name that no resource in the document declares
-- **THEN** the repository check fails and names both resources
+- **WHEN** a resource in the hand-maintained document declares any `dependsOn`, whether or not its target is declared
+- **THEN** the repository check fails and names the resource, because apply cannot resolve the dependency
+
+#### Scenario: Order prerequisites before their consumers
+
+- **WHEN** a native npm tool resource precedes the JavaScript runtime in the document
+- **THEN** the repository check fails and names the npm resource
 
 #### Scenario: Preview and confirm on the machine
 

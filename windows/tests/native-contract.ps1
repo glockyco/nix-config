@@ -330,7 +330,6 @@ function Test-WindowsDocument {
     openspec = '@fission-ai/openspec'; 'python-lsp' = '@fission-ai/openspec'; 'typescript-lsp' = '@fission-ai/openspec'; 'svelte-lsp' = '@fission-ai/openspec'
   }
   $selfUpdating = @('Zen-Team.Zen-Browser', 'ZedIndustries.Zed', 'Brave.Brave', 'Ferdium.Ferdium', 'Git.Git')
-  $dependencyNames = @{}
   # Test order: prerequisites must precede their consumers because apply runs units in document order.
   $resourceOrder = @($Document.resources | ForEach-Object { [string]$_.name })
   $runtimeIndex = -1
@@ -344,20 +343,10 @@ function Test-WindowsDocument {
   }
   foreach ($resource in $Document.resources) {
     $label = "resource $($resource.name)"
-    $dependencies = @($resource.dependsOn | Where-Object { $null -ne $_ })
-    $dependencyNames[$resource.name] = @()
-    foreach ($dependency in $dependencies) {
-      $match = [regex]::Match([string]$dependency, "^\[resourceId\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)\]$")
-      $target = if ($match.Success) { $match.Groups[2].Value } else { [string]$dependency }
-      Assert-Contract ($names.ContainsKey($target) -and $target -ne $resource.name) "${label}: undeclared/self dependency $target"
-      Assert-Contract ($match.Success -and $names[$target] -ceq $match.Groups[1].Value) "${label}: dependency $target must use resourceId with its declared type $($names[$target])"
-      $dependencyNames[$resource.name] += $target
-    }
-    Assert-Contract (@($dependencies | Select-Object -Unique).Count -eq $dependencies.Count) "${label}: duplicate dependency"
     # WinGet 1.29.380 `winget configure` (apply) resolves dependsOn only by plain unit name, while the
     # official DSC schema requires resourceId() lookups, so no dependency form satisfies both. Apply
-    # preserves document order; prerequisites are ordered earlier instead (see Test order below).
-    Assert-Contract ($dependencies.Count -eq 0) "${label}: dependsOn cannot be resolved by winget configure apply; order the prerequisite earlier in the document"
+    # preserves document order, so prerequisites are ordered earlier instead (checked above).
+    Assert-Contract ($null -eq $resource.dependsOn) "${label}: dependsOn cannot be resolved by winget configure apply; order the prerequisite earlier in the document"
     Assert-Contract ($resource.type -notmatch '(?i)WindowsFeature|OptionalFeature|WindowsCapability') "${label}: Windows feature is forbidden"
     $app = $resource.metadata.application
     $exception = $null -ne $app -and $app.id -in @('Zen-Team.Zen-Browser', 'Tailscale.Tailscale')
@@ -458,17 +447,4 @@ function Test-WindowsDocument {
   }
   foreach ($role in $fixed.Keys) { Assert-Contract ($roles.ContainsKey($role) -and $roles[$role] -eq $fixed[$role]) "application ${role}: missing required fixed identity $($fixed[$role])" }
   foreach ($name in @('german input methods', 'windows dark appearance')) { Assert-Contract ($names.ContainsKey($name)) "resource ${name}: required settings are missing" }
-  $nodeResource = @($Document.resources | Where-Object { $_.metadata.application.id -eq 'OpenJS.NodeJS.LTS' })[0]
-  foreach ($resource in @($Document.resources | Where-Object { $_.metadata.application.source -eq 'npm' })) {
-    Assert-Contract ($nodeResource.name -in $dependencyNames[$resource.name]) "resource $($resource.name): declared native Node dependency is missing"
-  }
-  # Detect dependency cycles without requiring declaration order to be execution order.
-  $pending = @($Document.resources)
-  $resolved = @{}
-  while ($pending.Count -gt 0) {
-    $ready = @($pending | Where-Object { @($dependencyNames[$_.name] | Where-Object { -not $resolved.ContainsKey($_) }).Count -eq 0 })
-    Assert-Contract ($ready.Count -gt 0) "resource $($pending[0].name): dependency cycle"
-    foreach ($resource in $ready) { $resolved[$resource.name] = $true }
-    $pending = @($pending | Where-Object { -not $resolved.ContainsKey($_.name) })
-  }
 }
