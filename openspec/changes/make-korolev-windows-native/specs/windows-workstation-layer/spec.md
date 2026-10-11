@@ -334,7 +334,7 @@ The repository check SHALL parse every script that the Windows layer ships: each
 ### Requirement: Zed WSL LaTeX builds
 
 **Reason**: Windows is the native primary workstation; Windows Zed no longer transports LaTeX projects or TexLab through WSL.
-**Migration**: Compile LaTeX and run TexLab in the Mac's existing full TeX toolchain, keeping project build commands and root markers in each project. Native Windows document work uses Typst/tinymist; any retained WSL TeX packages are secondary tools, not a Windows editor dependency.
+**Migration**: Compile LaTeX with native TeX Live and run TexLab natively, keeping project build commands and root markers in each project. Native Windows document work also uses Typst/tinymist; WSL TeX packages leave with the WSL host and are not a Windows editor dependency.
 
 ### Requirement: Checker errors and self-tests have separate paths
 
@@ -388,13 +388,20 @@ Korolev SHALL run standalone upstream OMP in Tern against a local Windows checko
 
 ### Requirement: Native language and document tools
 
-Native Korolev SHALL provide Windows Markdown, Python, TypeScript/Svelte and Typst tools/servers used by its agent/editor. Project SDKs and build settings SHALL remain project-owned. Windows SHALL not satisfy native tools through WSL; nixd and C#/Unity servers SHALL not be installed for this role. LaTeX compilation and TexLab SHALL use the Mac, not a Windows-to-WSL editor transport.
+Native Korolev SHALL provide Windows Markdown, Python, TypeScript/Svelte, Typst and LaTeX tools/servers used by its agent/editor, plus the Poppler, QPDF, ImageMagick and Pandoc command-line tools for document work. LaTeX SHALL use TeX Live installed per user from its official installer, including latexmk and biber, with TexLab from its official release. Project SDKs and build settings SHALL remain project-owned. Windows SHALL not satisfy native tools through WSL; nixd and C#/Unity servers SHALL not be installed for this role.
 
 #### Scenario: Diagnose representative work
 
 - **WHEN** OMP opens representative native Markdown, Python, TypeScript and Svelte projects and a Typst document
 - **THEN** each declared server initializes, returns applicable diagnostics/navigation, and a native Typst build succeeds
 - **AND** no server executable or interpreter resolves through `wsl.exe`, a Linux path or a Nix store
+
+#### Scenario: Build a LaTeX document natively
+
+- **WHEN** the owner builds a representative LaTeX project with latexmk on native Korolev
+- **THEN** TeX Live's latexmk and biber produce the PDF and TexLab returns diagnostics/navigation for its sources
+- **AND** `pdftotext`, `pdfinfo`, `qpdf`, `magick` and `pandoc` resolve to native Windows executables
+- **AND** no build step uses the Mac, WSL or MiKTeX
 
 ### Requirement: Stable manually installed terminal
 
