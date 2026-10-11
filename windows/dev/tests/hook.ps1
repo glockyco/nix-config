@@ -36,18 +36,22 @@ try {
     Assert-Fixture $script:windowsCalled 'Native invariant gate did not run'
     Write-Host 'PASS native-only staged commit (no Nix)'
     # Keep the real default Windows gate; only its checker is doubled in the
-    # disposable checkout, so argument forwarding and exit handling are covered.
+    # disposable checkout, so host isolation, forwarding and exits are covered.
     $windowsRoot = Join-Path $work 'windows'
     New-Item -ItemType Directory -Path $windowsRoot | Out-Null
     [IO.File]::WriteAllText((Join-Path $windowsRoot 'check.ps1'), @'
 param([switch]$SkipFixtures)
+$ErrorActionPreference = 'Stop'
+# Optional document metadata is legal in the checker's fresh host scope.
+# This throws if the hook's tools.ps1 StrictMode Latest leaks into the checker.
+$optional = ([PSCustomObject]@{}).application
 [IO.File]::WriteAllText((Join-Path $PSScriptRoot 'invocation.txt'), [string]$SkipFixtures.IsPresent)
 if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'fail.txt')) { exit 23 }
 exit 0
 '@)
     Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format
     Assert-Fixture ([IO.File]::ReadAllText((Join-Path $windowsRoot 'invocation.txt')) -ceq 'True') 'Default Windows gate did not forward -SkipFixtures'
-    Write-Host 'PASS default Windows gate forwards -SkipFixtures'
+    Write-Host 'PASS default Windows gate isolates host scope and forwards -SkipFixtures'
     [IO.File]::WriteAllText((Join-Path $windowsRoot 'fail.txt'), 'fail')
     Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format } 'Windows invariant gate failed \(exit 23\)' 'default Windows gate failure propagation'
     [IO.File]::WriteAllText((Join-Path $work 'space name.md'), 'bad')
