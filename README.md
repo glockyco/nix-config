@@ -183,8 +183,10 @@ Later Mac updates use `darwin-switch`: it prints the closure diff, switches the 
 ```sh
 sudo nixos-rebuild switch --flake .#korolev
 chezmoi apply
-chezmoi verify
+chezmoi verify --exclude=scripts
 ```
+
+On Windows, exclude scripts because the three always-run app stop/restart and Tern PATH scripts remain pending by design; regular managed files still verify.
 
 Never run chezmoi with sudo or against another user's HOME. Before accepting either host, verify fresh Tern tty and detached-stdin shells, tool discovery, Git/gh identity, effective/live SSH endpoints and private credential consumers where applicable. On the Mac also verify the actual keyboard/layout, Karabiner/Zed UI preservation, handlers, Terminal font, screenshot destination, GUI Git-hook Nix lookup, Air link/one agent and Colima configuration. Repeat switch/apply/verify at the same revision and compare layout/Karabiner/FileTypes content and mtimes plus power/Rosetta probes. These owner-assisted live checks are not replaced by sandbox checks.
 

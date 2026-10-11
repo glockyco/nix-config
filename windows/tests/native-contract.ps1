@@ -267,6 +267,16 @@ function Test-ScriptInstaller {
     $retained = $distribution.registrationOnly -eq $true -and $spec.registrationOnly -eq $true -and
       ($distribution.manifest -match '^https://' -or ($app.versionPolicy -eq 'self-updating' -and $distribution.installerType -eq ('catalog-' + $app.scope)))
     Assert-Contract ($reviewed -or $retained) "${label}: reviewed installer URL/digest/type or retained registration-only manifest is missing"
+    if ($app.scope -eq 'user' -and $spec.installerType -eq 'wix') {
+      Assert-Contract ($spec.upgradeCode -match '^\{[A-Fa-f0-9]{8}(-[A-Fa-f0-9]{4}){3}-[A-Fa-f0-9]{12}\}$' -and $spec.upgradeCode -eq $distribution.upgradeCode) "${label}: user MSI UpgradeCode selector differs from reviewed distribution"
+      foreach ($record in @($TestRecord, $SetRecord)) {
+        $information = @($record.Members | Where-Object { $_.Member.Value -eq 'InvokeMember' -and $_.Arguments.Count -eq 5 })
+        foreach ($property in @('RelatedProducts', 'AssignmentType', 'VersionString')) {
+          Assert-Contract (@($information | Where-Object { $_.Extent.Text -match [regex]::Escape("'$property'") }).Count -gt 0) "${label}: user MSI Windows Installer discovery missing $property"
+        }
+        Assert-Contract (@($record.Commands | Where-Object { $_.InvocationOperator -eq 'Ampersand' -and $_.GetCommandName() -eq 'winget' -and @($_.CommandElements | Where-Object { $_ -is [System.Management.Automation.Language.StringConstantExpressionAst] -and $_.Value -eq 'list' }).Count -gt 0 }).Count -eq 0) "${label}: user MSI discovery must not use WinGet ARP scope filtering"
+      }
+    }
   }
   if ($app.source -in @('official-zip', 'official-archive')) {
     $distribution = $Resource.metadata.distribution

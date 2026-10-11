@@ -17,8 +17,15 @@ function ConvertTo-FixtureScript {
       }
       $edits += [PSCustomObject]@{ Start = $command.Extent.StartOffset; Length = $text.Length; Text = $replacement }
     }
+    if ($command.GetCommandName() -eq 'New-Object' -and @($command.CommandElements | Where-Object { $_ -is [System.Management.Automation.Language.StringConstantExpressionAst] -and $_.Value -eq 'WindowsInstaller.Installer' }).Count -eq 1) {
+      $edits += [PSCustomObject]@{ Start = $command.Extent.StartOffset; Length = $command.Extent.Text.Length; Text = 'New-FixtureInstaller' }
+    }
   }
   foreach ($member in $record.Members) {
+    if ($member.Member.Value -eq 'InvokeMember' -and $member.Arguments.Count -eq 5 -and $member.Arguments[0] -is [System.Management.Automation.Language.StringConstantExpressionAst] -and $member.Arguments[0].Value -in @('RelatedProducts', 'ProductInfo')) {
+      $replacement = '(Invoke-FixtureInstallerInfo (' + $member.Arguments[0].Extent.Text + ') (' + $member.Arguments[4].Extent.Text + '))'
+      $edits += [PSCustomObject]@{ Start = $member.Extent.StartOffset; Length = $member.Extent.Text.Length; Text = $replacement }
+    }
     if ($member.Expression -is [System.Management.Automation.Language.TypeExpressionAst]) {
       $type = $member.Expression.TypeName.FullName
       $replacement = $null
@@ -27,6 +34,9 @@ function ConvertTo-FixtureScript {
       }
       if ($type -in @('IO.Compression.ZipFile', 'System.IO.Compression.ZipFile') -and $member.Member.Value -eq 'ExtractToDirectory') {
         $replacement = '(Expand-FixtureArchive ' + (($member.Arguments | ForEach-Object { '(' + $_.Extent.Text + ')' }) -join ' ') + ')'
+      }
+      if ($type -eq 'Runtime.InteropServices.Marshal' -and $member.Member.Value -eq 'FinalReleaseComObject') {
+        $replacement = '(Close-FixtureInstaller (' + $member.Arguments[0].Extent.Text + '))'
       }
       if ($replacement) { $edits += [PSCustomObject]@{ Start = $member.Extent.StartOffset; Length = $member.Extent.Text.Length; Text = $replacement } }
     }
@@ -56,14 +66,31 @@ function Invoke-InstallerFixture {
     $nativeStderr = $Scenario -like '*stderr*'
     $fixtureEngine = (Get-Process -Id $PID).Path
     $state = @{ Installed = ($Scenario -notin @('missing', 'missing-row', 'hash-failure', 'install-failure', 'install-stderr-failure', 'native-stderr-install', 'runtime-missing', 'node-machine', 'candidate-version-mismatch', 'candidate-native-failure')); Installs = 0; Downloads = 0; Extracts = 0; Hashes = 0; NativeVersions = 0; StderrCommands = 0; SeenTools = @(); UserPath = ''; Version = $spec.version }
+    $state.MsiOpens = 0; $state.MsiCloses = 0
     if ($archiveResource -and $Scenario -in @('hash-failure', 'extraction-native-failure', 'candidate-version-mismatch', 'candidate-native-failure', 'candidate-missing', 'promotion-failure')) { $state.Installed = $true; $state.Version = '0.0.1' }
     $state.UpgradeAvailable = $spec.PSObject.Properties['policy'] -and $spec.policy -eq 'self-updating' -and $Scenario -in @('upgrade', 'drift')
     $state.NativeDrift = $Scenario -in @('pdf-text-native-drift', 'pdf-info-native-drift')
-    if ($Scenario -in @('drift', 'runtime-missing')) { $state.Version = '0.0.1' }
+    if ($Scenario -in @('drift', 'runtime-missing', 'msi-version-drift')) { $state.Version = '0.0.1' }
     if ($Scenario -eq 'newer') { $state.Version = '999.0.0' }
     if ($Scenario -eq 'revision-drift') { $state.Version = '7.1.2-32' }
     if ($Scenario -eq 'catalog-revision-drift') { $state.Version = '25.07.0-1' }
     if (-not $state.Version) { $state.Version = '999.0.0' }
+    function New-FixtureInstaller { $state.MsiOpens++; [PSCustomObject]@{} }
+    function Close-FixtureInstaller { param($Installer) $state.MsiCloses++ }
+    function Invoke-FixtureInstallerInfo {
+      param([string]$Property, [object[]]$Arguments)
+      if ($Scenario -eq 'list-failure') { throw 'Windows Installer API failed' }
+      if ($Property -eq 'RelatedProducts') {
+        Assert-Contract ($Arguments.Count -eq 1 -and $Arguments[0] -eq $spec.upgradeCode) "resource $($Resource.name): MSI UpgradeCode selector differs"
+        if (-not $state.Installed) { return }
+        if ($Scenario -eq 'msi-ambiguous') { return @('{11111111-1111-1111-1111-111111111111}', '{22222222-2222-2222-2222-222222222222}') }
+        return '{11111111-1111-1111-1111-111111111111}'
+      }
+      Assert-Contract ($Property -eq 'ProductInfo' -and $Arguments.Count -eq 2 -and $Arguments[0] -eq '{11111111-1111-1111-1111-111111111111}') "resource $($Resource.name): MSI product selector differs"
+      if ($Arguments[1] -eq 'AssignmentType') { return $(if ($Scenario -eq 'msi-machine') { '1' } else { '0' }) }
+      Assert-Contract ($Arguments[1] -eq 'VersionString') "resource $($Resource.name): unsupported MSI property"
+      return $state.Version
+    }
     # Normalize Windows relative declarations so the same doubles run on PS7 Linux.
     function Join-Path {
       param([string]$Path, [string]$ChildPath)
@@ -145,6 +172,7 @@ function Invoke-InstallerFixture {
         $idIndex = [Array]::IndexOf($arguments, '--id')
         Assert-Contract ($idIndex -ge 0 -and $arguments[$idIndex + 1] -eq $spec.id -and '--exact' -in $arguments -and '--source' -in $arguments) "resource $($Resource.name): double observed wrong ID/source"
         if ($arguments[0] -eq 'list') {
+          Assert-Contract (-not $spec.upgradeCode) "resource $($Resource.name): MSI discovery must not use WinGet ARP scope filtering"
           if ($Scenario -in @('list-failure', 'list-stderr-failure')) { $global:LASTEXITCODE = 23; return }
           if (-not $state.Installed -and $Scenario -eq 'missing-row') { return 'No installed package found matching input criteria.' }
           if (-not $state.Installed) { $global:LASTEXITCODE = -1978335212; return }
@@ -215,6 +243,7 @@ function Invoke-InstallerFixture {
       }
       if ($Scenario -eq 'candidate-version-mismatch' -and $target -like '*expanded*') { return '0.0.1' }
       if ($target -like '*expanded*') { return $spec.version }
+      if ($Scenario -eq 'msi-version-drift') { return $spec.version }
       return $state.Version
     }
     function Invoke-FixtureEnvironment {
@@ -302,7 +331,7 @@ function Invoke-InstallerFixture {
     try {
       $desired = & $test
       $null = & $set
-      if ($Scenario -in @('missing', 'missing-row', 'drift', 'upgrade', 'revision-drift', 'path-drift', 'executable-missing', 'portable-executable-missing', 'owned-root-exclusion', 'native-stderr-install', 'pdf-text-missing', 'pdf-info-missing', 'pdf-text-native-drift', 'pdf-info-native-drift', 'catalog-revision-drift')) {
+      if ($Scenario -in @('missing', 'missing-row', 'drift', 'upgrade', 'revision-drift', 'path-drift', 'executable-missing', 'portable-executable-missing', 'owned-root-exclusion', 'native-stderr-install', 'pdf-text-missing', 'pdf-info-missing', 'pdf-text-native-drift', 'pdf-info-native-drift', 'catalog-revision-drift', 'msi-version-drift')) {
         if ($spec.version) { $state.Version = $spec.version }
         $null = & $set
         Assert-Contract ($state.Installs -eq $(if ($archiveResource) { 0 } else { 1 })) "resource $($Resource.name): repeat apply is not idempotent"
@@ -325,7 +354,10 @@ function Invoke-InstallerFixture {
       'install-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$') "${label}: installer exit 23 lost ($failure)" }
       'native-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$') "${label}: executable exit 23 lost ($failure)" }
       'candidate-native-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$') "${label}: candidate executable exit 23 lost ($failure)" }
-      'list-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$') "${label}: registration exit 23 lost ($failure)" }
+      'list-failure' {
+        $expected = if ($spec.upgradeCode) { '^Windows Installer API failed$' } else { '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$' }
+        Assert-Contract ($failure -match $expected -and $state.Installs -eq 0) "${label}: registration failure lost ($failure)"
+      }
       'list-stderr-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$' -and $state.Installs -eq 0) "${label}: native registration stderr exit 23 lost ($failure)" }
       'install-stderr-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$' -and $state.Installs -eq 1) "${label}: native installer stderr exit 23 lost ($failure)" }
       'version-stderr-failure' { Assert-Contract ($failure -match '^(fixture-native-exit:23|(Native command|winget) failed with exit code 23)$' -and $state.Installs -eq 0) "${label}: native version stderr exit 23 lost ($failure)" }
@@ -333,6 +365,13 @@ function Invoke-InstallerFixture {
       'runtime-missing' { Assert-Contract ($failure -match 'runtime is missing' -and $state.Installs -eq 0) "${label}: absent employer runtime did not block installer" }
       'node-machine' { Assert-Contract ($failure -match 'native per-user Node' -and $state.Installs -eq 0) "${label}: machine/WSL Node accepted" }
       'node-owned-root-exclusion' { Assert-Contract ($desired -eq $false -and $failure -match 'native per-user Node' -and $state.Installs -eq 0) "${label}: unrelated Node executable escaped owned-root exclusion ($failure)" }
+      { $_ -in @('msi-machine', 'msi-ambiguous') } {
+        $expected = if ($Scenario -eq 'msi-machine') { 'machine-context MSI product refused' } else { 'ambiguous Windows Installer related products' }
+        Assert-Contract ($failure -match $expected) "${label}: invalid MSI registration accepted by test ($failure)"
+        $setFailure = $null
+        try { $null = & $set } catch { $setFailure = $_.Exception.Message }
+        Assert-Contract ($setFailure -match $expected -and $state.Installs -eq 0) "${label}: invalid MSI registration accepted by set ($setFailure)"
+      }
       'candidate-version-mismatch' { Assert-Contract ($failure -match 'version mismatch') "${label}: wrong downloaded version accepted" }
       'newer' {
         if ($spec.policy -eq 'self-updating') { Assert-Contract ($desired -eq $true -and -not $failure -and $state.Installs -eq 0) "${label}: newer self-update downgraded/reinstalled ($failure)" }
@@ -344,8 +383,10 @@ function Invoke-InstallerFixture {
       'npm-wrapper-missing' { Assert-Contract ($desired -eq $false) "${label}: missing native wrapper accepted" }
       'npm-lock-drift' { Assert-Contract ($desired -eq $false) "${label}: lock integrity drift accepted" }
       'npm-native-version-drift' { Assert-Contract ($desired -eq $false) "${label}: native command version drift accepted" }
+      'msi-version-drift' { Assert-Contract ($desired -eq $false -and -not $failure) "${label}: wrong MSI version accepted despite correct executable version ($failure)" }
       default { Assert-Contract (-not $failure -and $desired -eq $false) "${label}: missing/drift did not converge ($failure)" }
     }
+    if ($spec.upgradeCode) { Assert-Contract ($state.MsiOpens -gt 0 -and $state.MsiOpens -eq $state.MsiCloses) "${label}: Windows Installer COM object was not released" }
     if ($nativeStderr) { Assert-Contract ($state.StderrCommands -gt 0) "${label}: regression never invoked a real native stderr process" }
     if ($portable) {
       Assert-Contract (@(Get-ChildItem -LiteralPath $links -Force).Count -eq 0) "${label}: fixture created a WinGet link instead of PATH-mode discovery"
