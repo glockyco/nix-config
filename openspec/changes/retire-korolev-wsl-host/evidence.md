@@ -69,9 +69,9 @@ Only `architecture.md`, `product.md` and `style.md` were copied. Queues, state, 
 
 Copied files were byte-identical. The native UNC aqua bank `aqua-t47fhcxrpbx2` was empty, so no merge was needed. No queues, `state.json`, transcripts or databases were copied. Fresh native print-mode sessions in saner2027-paper and nix-config quoted a ported decision verbatim.
 
-## Task 3.4: provider login pending
+## Task 3.4: native litellm provider
 
-Native `%USERPROFILE%\.omp\agent\models.yml` reproduces the nonsecret WSL `providers.litellm.baseUrl: https://vllm-api.scch.at/v1` definition exactly. WSL's file has no key. The endpoint returns 401 without a key. The one stored WSL litellm credential was not copied. Owner-native `/login` and one real response remain pending. Task 3.4 is not complete.
+Native `%USERPROFILE%\.omp\agent\models.yml` reproduces the nonsecret WSL `providers.litellm.baseUrl: https://vllm-api.scch.at/v1` definition exactly. WSL's file has no key, and the stored WSL litellm credential was not copied. On 2026-10-13 the owner logged in natively. `omp models litellm` then listed 18 models, and `omp -p --no-session --model litellm/casperhansen/llama-3.3-70b-instruct-awq` answered `pong` with exit 0. No credential was printed.
 
 ## Tasks 3.5 and 3.6: booking plugin
 
