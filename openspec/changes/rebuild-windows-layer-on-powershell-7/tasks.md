@@ -20,8 +20,8 @@
 
 - [x] 3.1 Switch hash-protected chezmoi invocation and persisted interpreter to pwsh in the PR. Hash all engine execution/data/schema/managed-audit inputs and the npm lock before invoking the thin entrypoint.
 - [x] 3.2 Delete the WinGet document, vendored DSC schemas, bespoke contract checker, checker-only mutation/installer fixtures, Desktop preludes and WinGet/DSC CI provisioners. Retain distinct surviving source/parser/Administrator/lifecycle tests.
-- [ ] 3.3 Rewrite the Windows runbook as a short current-state guide and point README and other callers at it. Run complete mocked PowerShell 7/static/format checks and strict OpenSpec validation, then update PR #90.
-- [ ] 3.4 Before merge, the integrator runs the engine dry run and then chezmoi apply on Korolev from the PR branch, accepts zero drift or every named difference, and records post-apply convergence/application checks. Agents never run live engine dry run, apply or elevation.
+- [x] 3.3 Rewrite the Windows runbook as a short current-state guide and point README and other callers at it. Run complete mocked PowerShell 7/static/format checks and strict OpenSpec validation, then update PR #90. Local `windows/dev/ci.ps1` and `format.ps1 -Check` passed. PR #90 CI passed with `check (windows-latest)` in 2 min 10 s.
+- [x] 3.4 Before merge, the integrator runs the engine dry run and then chezmoi apply on Korolev from the PR branch, accepts zero drift or every named difference, and records post-apply convergence/application checks. Agents never run live engine dry run, apply or elevation. The pre-apply dry run named two intended differences: the npm closure had no lock marker yet and the ReNeo startup command moved to pwsh. Apply at b07f239 reinstalled the closure from the identical lock and changed the ReNeo value. Afterwards the dry run reported all 61 resources desired, a repeated apply did nothing and `chezmoi verify --exclude=scripts` passed. OpenSpec 1.14.0, pyright 1.1.411, TypeScript 5.9.3 and typescript-language-server 5.3.0 resolved natively.
 
 ## 4. Shared development hook deployment
 
