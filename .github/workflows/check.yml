@@ -11,7 +11,77 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      nix: ${{ steps.classify.outputs.nix }}
+      windows: ${{ steps.classify.outputs.windows }}
+      docs: ${{ steps.classify.outputs.docs }}
+      openspec: ${{ steps.classify.outputs.openspec }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Classify the complete PR diff
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import subprocess
+
+          affected = dict.fromkeys(("nix", "windows", "docs", "openspec"), False)
+          full = os.environ["EVENT_NAME"] != "pull_request"
+          if not full:
+              paths = subprocess.check_output([
+                  "git", "diff", "--name-only", "--no-renames", "-z",
+                  f'{os.environ["BASE_SHA"]}...{os.environ["HEAD_SHA"]}',
+              ]).decode("utf-8").split("\0")
+              for path in filter(None, paths):
+                  classified = False
+                  # These include content read by fleetSurface, OpenSpec and
+                  # chezmoi checks, plus the remote-access runbook assertion.
+                  if (
+                      path.endswith(".nix")
+                      or path in ("flake.lock", "formatting.json", ".chezmoiroot")
+                      or path.startswith((
+                          "flake-modules/", "modules/", "hosts/", "packages/",
+                          "checks/", "lib/", "overlays/", "dns/", "home/", "openspec/",
+                      ))
+                      or path == "docs/operations/korolev-remote-access.md"
+                  ):
+                      affected["nix"] = classified = True
+                  if path.startswith(("windows/", "home/")) or path in ("formatting.json", "lefthook.yml"):
+                      affected["windows"] = classified = True
+                  if path.endswith((".md", ".markdown")) and not path.startswith(("home/", "openspec/")):
+                      affected["docs"] = classified = True
+                  if path.startswith("openspec/"):
+                      affected["openspec"] = classified = True
+                  if path.startswith(".github/") or not classified:
+                      full = True
+          if full:
+              affected = dict.fromkeys(affected, True)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              for job, needed in affected.items():
+                  print(f"{job}={str(needed).lower()}", file=output)
+                  print(f"{job}={str(needed).lower()}")
+          PY
+
+  openspec:
+    permissions:
+      contents: read
+    uses: glockyco/omp-agent-setup/.github/workflows/openspec.yml@aa97a3febee50f00ee7e4e43a81edc211ad7f8d7 # v0.4.0
+    with:
+      openspec-root: '.'
+
   check:
+    needs: changes
+    if: needs.changes.outputs.nix == 'true'
     # `nix flake check` only checks the runner's own system, so the fleet needs
     # one runner per system in `systems`. The macOS 14 and newer labels are
     # Apple Silicon; `ubuntu-latest` covers `x86_64-linux`.
@@ -59,6 +129,8 @@ jobs:
             flake check --print-build-logs
 
   windows-format:
+    needs: changes
+    if: needs.changes.outputs.windows == 'true' || needs.changes.outputs.docs == 'true'
     name: Windows formatting
     runs-on: windows-latest
     permissions:
@@ -85,6 +157,8 @@ jobs:
           finally { Write-Host ("timing: gate native formatting {0:F3}s" -f $timer.Elapsed.TotalSeconds) }
 
   windows-ps51:
+    needs: changes
+    if: needs.changes.outputs.windows == 'true'
     name: Windows gates (PowerShell 5.1)
     runs-on: windows-latest
     permissions:
@@ -117,6 +191,8 @@ jobs:
         run: .\windows\dev\ci.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE -ArchiveCacheRoot "$env:RUNNER_TEMP\native-dev-archives"
 
   windows-ps7:
+    needs: changes
+    if: needs.changes.outputs.windows == 'true'
     name: Windows gates (locked PowerShell 7)
     runs-on: windows-latest
     permissions:
@@ -151,19 +227,27 @@ jobs:
 
   windows:
     name: check (windows-latest)
-    needs: [windows-format, windows-ps51, windows-ps7]
+    needs: [changes, windows-format, windows-ps51, windows-ps7]
     if: always()
     runs-on: windows-latest
     permissions:
       contents: read
     steps:
-      - name: Require every Windows gate to succeed
+      - name: Require every affected Windows gate to succeed
         shell: powershell
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          WINDOWS_AFFECTED: ${{ needs.changes.outputs.windows }}
           WINDOWS_FORMAT_RESULT: ${{ needs.windows-format.result }}
           WINDOWS_PS51_RESULT: ${{ needs.windows-ps51.result }}
           WINDOWS_PS7_RESULT: ${{ needs.windows-ps7.result }}
         run: |
-          if ($env:WINDOWS_FORMAT_RESULT -cne 'success' -or $env:WINDOWS_PS51_RESULT -cne 'success' -or $env:WINDOWS_PS7_RESULT -cne 'success') {
+          if ($env:CHANGES_RESULT -cne 'success') {
+            throw "Changed-file classification did not succeed: $env:CHANGES_RESULT"
+          }
+          $results = @($env:WINDOWS_FORMAT_RESULT, $env:WINDOWS_PS51_RESULT, $env:WINDOWS_PS7_RESULT)
+          foreach ($result in $results) {
+            if ($result -ceq 'success') { continue }
+            if ($result -ceq 'skipped' -and $env:WINDOWS_AFFECTED -ceq 'false') { continue }
             throw "Windows gates did not all succeed: formatting=$env:WINDOWS_FORMAT_RESULT; PowerShell 5.1=$env:WINDOWS_PS51_RESULT; PowerShell 7=$env:WINDOWS_PS7_RESULT"
           }
