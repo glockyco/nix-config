@@ -39,16 +39,6 @@ try {
     # checkout to cover fresh host isolation, argument forwarding and exit codes.
     $windowsRoot = Join-Path $work 'windows'
     New-Item -ItemType Directory -Path $windowsRoot | Out-Null
-    [IO.File]::WriteAllText((Join-Path $windowsRoot 'check.ps1'), @'
-param([switch]$SkipFixtures)
-$ErrorActionPreference = 'Stop'
-# Optional document metadata is legal in the checker's fresh host scope.
-# This throws if the hook's tools.ps1 StrictMode Latest leaks into the checker.
-$optional = ([PSCustomObject]@{}).application
-[IO.File]::WriteAllText((Join-Path $PSScriptRoot 'invocation.txt'), [string]$SkipFixtures.IsPresent)
-if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'fail.txt')) { exit 23 }
-exit 0
-'@)
     [IO.File]::WriteAllText((Join-Path $windowsRoot 'check-workstation.ps1'), @'
 param([switch]$StaticOnly)
 $ErrorActionPreference = 'Stop'
@@ -60,8 +50,6 @@ if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'engine-fail.txt')) { exit 2
 exit 0
 '@)
     Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format
-    Assert-Fixture ([IO.File]::ReadAllText((Join-Path $windowsRoot 'invocation.txt')) -ceq 'True') 'Default Windows gate did not forward -SkipFixtures'
-    Write-Host 'PASS default Windows gate isolates host scope and forwards -SkipFixtures'
     $engineInvocation = Get-Content -LiteralPath (Join-Path $windowsRoot 'engine-invocation.json') -Raw | ConvertFrom-Json
     Assert-Fixture $engineInvocation.staticOnly 'Default engine gate did not forward -StaticOnly'
     Assert-Fixture ($engineInvocation.processId -ne $PID -and $engineInvocation.hostMajor -ge 7 -and -not $engineInvocation.leakedHelper) 'Default engine gate did not isolate its PowerShell 7 host'
@@ -69,8 +57,6 @@ exit 0
     [IO.File]::WriteAllText((Join-Path $windowsRoot 'engine-fail.txt'), 'fail')
     Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format } 'Workstation static gate failed \(exit 24\)' 'default engine static gate failure propagation'
     Remove-Item -LiteralPath (Join-Path $windowsRoot 'engine-fail.txt')
-    [IO.File]::WriteAllText((Join-Path $windowsRoot 'fail.txt'), 'fail')
-    Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format } 'Windows invariant gate failed \(exit 23\)' 'default Windows gate failure propagation'
     [IO.File]::WriteAllText((Join-Path $work 'space name.md'), 'bad')
     Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format -WindowsGate $noWindows } 'Unformatted native' 'unformatted native rejection'
     [IO.File]::WriteAllText((Join-Path $work 'fixture.nix'), '{}')

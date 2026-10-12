@@ -41,12 +41,6 @@ function Get-FormattingPlan {
     }
 }
 
-function ConvertTo-NativeArgument {
-    param([string]$Value)
-    # Retained for the legacy WSL quoting regression fixtures during parallel migration.
-    if ($Value.Length -gt 0 -and $Value -notmatch '[\s"]') { return $Value }
-    '"' + [regex]::Replace([regex]::Replace($Value, '(\\*)"', '$1$1\"'), '(\\+)$', '$1$1') + '"'
-}
 
 function Invoke-CapturedProcess {
     param([string]$Command, [string[]]$Arguments, [string]$WorkingDirectory)

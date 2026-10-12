@@ -65,7 +65,7 @@ function Add-AppJsoncMergeEdits {
       Add-AppJsoncMergeEdits $Text $valueNode $setting.Value $Edits
     } else {
       $original = $Text.Substring($valueNode.Start, $valueNode.End - $valueNode.Start)
-      # A container property retains empty/single-element arrays under PS5.1.
+      # A container property retains empty and single-element arrays.
       $container = ConvertFrom-AppJsonc ('{"value":' + $original + '}')
       $actual = $container.value
       $expected = ConvertTo-Json -InputObject $setting.Value -Depth 100 -Compress

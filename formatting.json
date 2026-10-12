@@ -79,8 +79,7 @@
       "package": "jsonfmt",
       "native": true,
       "includes": [
-        "*.json",
-        "*.winget"
+        "*.json"
       ],
       "options": [
         "-w"

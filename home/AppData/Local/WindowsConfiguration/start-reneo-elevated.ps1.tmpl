@@ -1,3 +1,2 @@
 {{ if and (eq .chezmoi.os "windows") (eq .host "korolev") -}}
-{{ template "windows-powershell-prelude.ps1" . }}
 {{ include (joinPath .chezmoi.sourceDir ".chezmoitemplates/windows-apps/start-reneo-elevated.ps1") }}{{ end -}}

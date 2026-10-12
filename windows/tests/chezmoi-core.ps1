@@ -2,9 +2,9 @@ param([string]$RepositoryRoot = (Join-Path $PSScriptRoot '../..'))
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $RepositoryRoot = (Resolve-Path -LiteralPath $RepositoryRoot).Path
-# Dependencies are native chezmoi, Git and OpenSSH; fixture applies call only a
-# disposable winget double, never the installed package manager or user state.
-foreach ($command in @('chezmoi', 'git', 'ssh')) {
+# Fixture applies invoke only a standalone fake engine in a disposable checkout.
+# The production engine is never copied or invoked.
+foreach ($command in @('chezmoi', 'git', 'ssh', 'pwsh')) {
   if (-not (Get-Command $command -CommandType Application -ErrorAction SilentlyContinue)) { throw "chezmoi-core requires native $command on PATH" }
 }
 function Assert-Core([bool]$Condition, [string]$Message) {
@@ -28,6 +28,22 @@ function Invoke-CoreNative([string]$Command, [string[]]$Arguments, [switch]$Fail
   else { Assert-Core ($code -eq 0) ("$Command exited ${code}: " + ($output -join "`n")) }
   return ($output -join "`n")
 }
+$engineInputs = @('windows/workstation.json', 'windows/workstation.schema.json', 'windows/Workstation.psm1', 'windows/Workstation.Settings.ps1', 'windows/Workstation.Delivery.ps1', 'windows/Workstation.Validation.ps1', 'windows/workstation.ps1', 'windows/managed-applications.json', 'windows/npm/package.json', 'windows/npm/package-lock.json')
+$fakeEngine = @'
+param([switch]$Apply)
+$ErrorActionPreference = 'Stop'
+if (-not $Apply -or $args.Count -ne 0) { throw 'The hook must request only -Apply' }
+if ($PSVersionTable.PSEdition -ne 'Core' -or $PSVersionTable.PSVersion.Major -lt 7) { throw 'The hook must use PowerShell 7' }
+if ($env:CORE_REQUIRE_BEFORE -eq '1' -and (Test-Path -LiteralPath $env:CORE_AFTER_FILE)) { exit 31 }
+[IO.File]::AppendAllText($env:CORE_ENGINE_LOG, "$PSCommandPath|-Apply`n")
+exit ([int]$env:CORE_ENGINE_EXIT)
+'@
+function Initialize-CoreEngine([string]$Root) {
+  foreach ($relative in $engineInputs) {
+    $content = if ($relative -ceq 'windows/workstation.ps1') { $fakeEngine } else { "fixture-only input: $relative`n" }
+    Write-CoreFile (Join-Path $Root $relative) $content
+  }
+}
 & (Join-Path $PSScriptRoot 'checkout-regressions.ps1') -RepositoryRoot $RepositoryRoot
 $fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) ('chezmoi core ' + [guid]::NewGuid().ToString('N'))
 $checkout = Join-Path $fixtureRoot 'native checkout with spaces'
@@ -35,13 +51,13 @@ $target = Join-Path $fixtureRoot 'isolated profile'
 $config = Join-Path $fixtureRoot 'init.toml'
 $state = Join-Path $fixtureRoot 'chezmoi-state.boltdb'
 $saved = @{}
-$variables = @('HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_STATE_HOME', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM', 'GIT_CONFIG_NOSYSTEM', 'GIT_CONFIG_COUNT', 'GH_CONFIG_DIR', 'PATH', 'PSModulePath', 'CORE_WINGET_LOG', 'CORE_WINGET_EXIT', 'CORE_AFTER_FILE', 'CORE_REQUIRE_BEFORE', 'CORE_MODULE_PATH_LOG')
+$variables = @('HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_STATE_HOME', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM', 'GIT_CONFIG_NOSYSTEM', 'GIT_CONFIG_COUNT', 'GH_CONFIG_DIR', 'CORE_ENGINE_LOG', 'CORE_ENGINE_EXIT', 'CORE_AFTER_FILE', 'CORE_REQUIRE_BEFORE')
 foreach ($name in $variables) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
   $null = New-Item -ItemType Directory -Path $checkout, $target -Force
   Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home') -Destination $checkout -Recurse
   Write-CoreFile (Join-Path $checkout '.chezmoiroot') "home`n"
-  Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'windows/configuration.winget') -Destination (New-Item -ItemType Directory -Path (Join-Path $checkout 'windows')).FullName
+  Initialize-CoreEngine $checkout
   $null = Invoke-CoreNative git @('init', '-q', $checkout)
   foreach ($name in @('HOME', 'USERPROFILE')) { [Environment]::SetEnvironmentVariable($name, $target, 'Process') }
   foreach ($pair in @(@('APPDATA', 'AppData/Roaming'), @('LOCALAPPDATA', 'AppData/Local'), @('XDG_CONFIG_HOME', '.config'), @('XDG_CACHE_HOME', '.cache'), @('XDG_STATE_HOME', '.local/state'))) {
@@ -57,26 +73,10 @@ try {
   $env:GH_CONFIG_DIR = Join-Path $target 'AppData/Roaming/GitHub CLI'
   $override = @{ chezmoi = @{ os = 'windows'; homeDir = $target } }
   function Invoke-CoreChezmoi {
-    param([string[]]$Arguments, [hashtable]$OverrideData = $override, [switch]$Failure, [switch]$ViaPowerShell7)
-    # A file avoids Windows PowerShell 5.1's lossy native JSON-argument quoting.
+    param([string[]]$Arguments, [hashtable]$OverrideData = $override, [switch]$Failure)
     $overridePath = Join-Path $fixtureRoot 'override-data.json'
     Write-CoreFile $overridePath ($OverrideData | ConvertTo-Json -Depth 30 -Compress)
     $base = @('--no-tty', '--force', '--refresh-externals=never', '--source', $checkout, '--destination', $target, '--config', $config, '--persistent-state', $state, '--override-data-file', $overridePath)
-    if ($ViaPowerShell7) {
-      $invocationPath = Join-Path $fixtureRoot 'PowerShell 7 chezmoi invocation.json'
-      Write-CoreFile $invocationPath (@{ command = (Get-Command chezmoi -CommandType Application | Select-Object -First 1).Source; arguments = $base + $Arguments } | ConvertTo-Json -Depth 30)
-      $bridge = Join-Path $fixtureRoot 'PowerShell 7 chezmoi bridge.ps1'
-      Write-CoreFile $bridge @'
-param([string]$InvocationPath)
-$ErrorActionPreference = 'Stop'
-if ($PSVersionTable.PSEdition -ne 'Core' -or $PSVersionTable.PSVersion.Major -lt 7) { throw 'The interpreter-boundary regression requires PowerShell 7' }
-$invocation = [IO.File]::ReadAllText($InvocationPath) | ConvertFrom-Json
-& $invocation.command @($invocation.arguments)
-exit $LASTEXITCODE
-'@
-      Invoke-CoreNative (Get-Command pwsh -CommandType Application | Select-Object -First 1).Source @('-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', $bridge, $invocationPath) -Failure:$Failure
-      return
-    }
     Invoke-CoreNative chezmoi ($base + $Arguments) -Failure:$Failure
   }
   function Initialize-CoreConfig {
@@ -92,8 +92,8 @@ exit $LASTEXITCODE
   $persisted = Invoke-CoreChezmoi @('dump-config', '--format=json') | ConvertFrom-Json
   Assert-Core ($persisted.sourceDir.Replace('\', '/') -eq $checkout.Replace('\', '/')) 'init must persist the native checkout, not home/ or a second clone'
   Assert-Core ($persisted.data.host -eq 'korolev') 'init must persist host=korolev'
-  Assert-Core ($persisted.interpreters.ps1.command -ceq 'powershell.exe') 'Windows init must explicitly use in-box Windows PowerShell, not bootstrap-dependent pwsh'
-  Assert-Core (($persisted.interpreters.ps1.args -join '|') -ceq '-NoLogo|-NoProfile|-NonInteractive|-ExecutionPolicy|Bypass|-File') 'Windows init must persist unattended Windows PowerShell arguments'
+  Assert-Core ($persisted.interpreters.ps1.command -ceq 'pwsh') 'Windows init must explicitly use PowerShell 7'
+  Assert-Core (($persisted.interpreters.ps1.args -join '|') -ceq '-NoLogo|-NoProfile|-NonInteractive|-File') 'Windows init must persist unattended PowerShell 7 arguments'
   $initText = [IO.File]::ReadAllText($config)
   Assert-Core ($initText -notmatch 'recipient|identity|encryption|useBuiltinAge') 'native init must not select Mac age or secret identity'
   Initialize-CoreConfig
@@ -190,142 +190,105 @@ exit $LASTEXITCODE
     $pinText = [IO.File]::ReadAllText((Join-Path $target ('.ssh/' + $entry[0] + '-known-hosts'))).Trim()
     Assert-Core ($pinText -eq ($entry[0] + ',' + $entry[0] + '.tail8768af.ts.net ' + $entry[1])) "managed $($entry[0]) pin drifted"
   }
-  # Every Windows entry point must establish the shared interpreter boundary
-  # before module cmdlets, including modify filters and the explicit launcher.
-  $prelude = [IO.File]::ReadAllText((Join-Path $checkout 'home/.chezmoitemplates/windows-powershell-prelude.ps1'))
-  $renderedEntryPoints = @{}
   foreach ($template in @(Get-ChildItem -LiteralPath (Join-Path $checkout 'home') -Filter '*.ps1.tmpl' -File -Recurse)) {
     if ($template.FullName -match '[/\\]\.chezmoitemplates[/\\]') { continue }
     $rendered = Invoke-CoreChezmoi @('execute-template', '--file', $template.FullName)
     Assert-CoreSyntax $template.Name $rendered
-    $renderedEntryPoints[$template.FullName] = $rendered
+    Assert-Core ($rendered -notmatch 'windows-powershell-prelude|PSEdition\s*-eq\s*''Desktop''') "$($template.Name) must not rebuild Desktop module paths"
   }
-  $wingetTemplate = Join-Path $checkout 'home/run_onchange_before_windows-00-winget.ps1.tmpl'
-  $wingetScript = Invoke-CoreChezmoi @('execute-template', '--file', $wingetTemplate)
-  Assert-Core ($wingetScript -notmatch 'apply-kbdneo|apply-zen|Add-WindowsCapability|Start-Service|sshd') 'user apply must not execute Administrator or OpenSSH service operations'
-  $nativeState = @{ Count = 0; ExitCode = 0 }
-  function winget {
-    Assert-Core ($args.Count -eq 4 -and $args[0] -eq 'configure' -and $args[1] -eq '--file' -and $args[2] -eq (Join-Path $checkout 'windows/configuration.winget') -and $args[3] -eq '--accept-configuration-agreements') 'winget must receive the real document as one argument, including spaces'
-    $nativeState.Count++
-    $global:LASTEXITCODE = $nativeState.ExitCode
+  $env:CORE_ENGINE_LOG = Join-Path $fixtureRoot 'engine-calls.log'
+  $env:CORE_ENGINE_EXIT = '0'
+  $env:CORE_REQUIRE_BEFORE = '0'
+  $env:CORE_AFTER_FILE = Join-Path $target '.fixture-after'
+  function Get-CoreEngineCallCount {
+    if (-not (Test-Path -LiteralPath $env:CORE_ENGINE_LOG)) { return 0 }
+    return [IO.File]::ReadAllLines($env:CORE_ENGINE_LOG).Count
   }
-  & ([scriptblock]::Create($wingetScript))
-  Assert-Core ($nativeState.Count -eq 1) 'valid native root should invoke WinGet exactly once'
-  $nativeState.ExitCode = 23
+  $engineTemplate = Join-Path $checkout 'home/run_onchange_before_windows-00-workstation.ps1.tmpl'
+  $engineScript = Invoke-CoreChezmoi @('execute-template', '--file', $engineTemplate)
+  Assert-Core ($engineScript -notmatch 'winget configure|Add-WindowsCapability|Start-Service|sshd|ExecutionPolicy') 'user apply must not run the retired provisioner or Administrator service operations'
+  & ([scriptblock]::Create($engineScript))
+  Assert-Core ((Get-CoreEngineCallCount) -eq 1) 'valid native root should invoke the fake engine exactly once'
+  Assert-Core ([IO.File]::ReadAllLines($env:CORE_ENGINE_LOG)[0].Replace('\', '/') -ceq ((Join-Path $checkout 'windows/workstation.ps1').Replace('\', '/') + '|-Apply')) 'pwsh must receive the checkout entrypoint as one argument, including spaces'
+  $env:CORE_ENGINE_EXIT = '23'
   $caught = $false
-  try { & ([scriptblock]::Create($wingetScript)) } catch { $caught = $_.Exception.Message -match 'exit code 23' }
-  Assert-Core $caught 'WinGet native exit 23 must be a terminating apply failure'
-  $nativeState.ExitCode = 0
-  $beforeRejection = $nativeState.Count
+  try { & ([scriptblock]::Create($engineScript)) } catch { $caught = $_.Exception.Message -match 'exit code 23' }
+  Assert-Core ($caught -and (Get-CoreEngineCallCount) -eq 2) 'engine native exit 23 must be a terminating apply failure'
+  $env:CORE_ENGINE_EXIT = '0'
+  $beforeRejection = Get-CoreEngineCallCount
   Write-CoreFile (Join-Path $checkout '.chezmoiroot') "wrong`n"
   $caught = $false
-  try { & ([scriptblock]::Create($wingetScript)) } catch { $caught = $_.Exception.Message -match 'chezmoiroot' }
-  Assert-Core ($caught -and $nativeState.Count -eq $beforeRejection) 'wrong .chezmoiroot must fail before invoking WinGet'
+  try { & ([scriptblock]::Create($engineScript)) } catch { $caught = $_.Exception.Message -match 'chezmoiroot' }
+  Assert-Core ($caught -and (Get-CoreEngineCallCount) -eq $beforeRejection) 'wrong .chezmoiroot must fail before invoking the engine'
   Write-CoreFile (Join-Path $checkout '.chezmoiroot') "home`n"
   $platformFixture.checkout = Join-Path $fixtureRoot 'wrong checkout'
-  $wrongRootScript = Invoke-CoreChezmoi @('execute-template', '--file', $wingetTemplate)
+  $wrongRootScript = Invoke-CoreChezmoi @('execute-template', '--file', $engineTemplate)
   $caught = $false
   try { & ([scriptblock]::Create($wrongRootScript)) } catch { $caught = $_.Exception.Message -match 'checkout root disagrees' }
-  Assert-Core ($caught -and $nativeState.Count -eq $beforeRejection) 'persisted platform checkout mismatch must fail before WinGet'
+  Assert-Core ($caught -and (Get-CoreEngineCallCount) -eq $beforeRejection) 'persisted platform checkout mismatch must fail before the engine'
   $platformFixture.checkout = $checkout
-  $documentPath = Join-Path $checkout 'windows/configuration.winget'
-  $originalDocument = [IO.File]::ReadAllText($documentPath)
-  $dockerResources = @((($originalDocument | ConvertFrom-Json).resources) | Where-Object { $_.metadata.PSObject.Properties['application'] -and $_.metadata.application.id -eq 'Docker.DockerDesktop' })
-  Assert-Core ($dockerResources.Count -eq 1 -and $dockerResources[0].metadata.application.scope -eq 'machine' -and $dockerResources[0].metadata.winget.securityContext -eq 'elevated') 'hashed chezmoi document must contain exactly one approved machine Docker installer'
-  Assert-Core ($dockerResources[0].metadata.application.versionPolicy -eq 'self-updating' -and -not $dockerResources[0].metadata.application.PSObject.Properties['version']) 'chezmoi must not pin or downgrade Docker Desktop'
-  Write-CoreFile $documentPath ($originalDocument + "`n")
+  $otherSource = Join-Path $checkout 'other source'
+  $null = New-Item -ItemType Directory -Path $otherSource -Force
+  # chezmoi reports sourceDir with forward slashes, which the template's dir function requires.
+  $override.chezmoi.sourceDir = $otherSource.Replace('\', '/')
+  $wrongSourceScript = Invoke-CoreChezmoi @('execute-template', '--file', $engineTemplate)
+  $override.chezmoi.Remove('sourceDir')
   $caught = $false
-  try { & ([scriptblock]::Create($wingetScript)) } catch { $caught = $_.Exception.Message -match 'changed after rendering' }
-  Assert-Core ($caught -and $nativeState.Count -eq $beforeRejection) 'hash drift after render must fail before WinGet'
-  Write-CoreFile $documentPath $originalDocument
-  Remove-Item Function:winget
-  # Real chezmoi run_onchange state/order, with only this script and a harmless
-  # file in a second fixture source. The native double records child calls.
+  try { & ([scriptblock]::Create($wrongSourceScript)) } catch { $caught = $_.Exception.Message -match 'Effective chezmoi source directory disagrees' }
+  Assert-Core ($caught -and (Get-CoreEngineCallCount) -eq $beforeRejection) 'effective source mismatch must fail before the engine'
+  foreach ($relative in $engineInputs) {
+    $path = Join-Path $checkout $relative
+    $original = [IO.File]::ReadAllText($path)
+    Write-CoreFile $path ($original + "`n")
+    $caught = $false
+    try { & ([scriptblock]::Create($engineScript)) } catch { $caught = $_.Exception.Message -match 'changed after rendering' }
+    Assert-Core ($caught -and (Get-CoreEngineCallCount) -eq $beforeRejection) "$relative drift must fail before the engine"
+    $changedScript = Invoke-CoreChezmoi @('execute-template', '--file', $engineTemplate)
+    Assert-Core ($changedScript -cne $engineScript) "$relative must invalidate rendered run_onchange content"
+    Remove-Item -LiteralPath $path
+    $caught = $false
+    try { & ([scriptblock]::Create($engineScript)) } catch { $caught = $_.Exception.Message -match 'source is missing' }
+    Assert-Core ($caught -and (Get-CoreEngineCallCount) -eq $beforeRejection) "$relative absence must fail before the engine"
+    Write-CoreFile $path $original
+  }
+  # Real chezmoi owns run_onchange state and before-file ordering. Only the fake
+  # standalone engine and one harmless managed file exist in this second source.
   $checkout = Join-Path $fixtureRoot 'onchange checkout with spaces'
   $target = Join-Path $fixtureRoot 'onchange profile'
   $config = Join-Path $fixtureRoot 'onchange.toml'
   $state = Join-Path $fixtureRoot 'onchange-state.boltdb'
   $platformFixture.checkout = $checkout
-  $null = New-Item -ItemType Directory -Path (Join-Path $checkout 'home/.chezmoidata'), (Join-Path $checkout 'home/.chezmoitemplates'), (Join-Path $checkout 'windows'), $target -Force
-  Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/.chezmoidata/hosts.toml') -Destination (Join-Path $checkout 'home/.chezmoidata/hosts.toml')
-  Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/.chezmoidata/credentials.toml') -Destination (Join-Path $checkout 'home/.chezmoidata/credentials.toml')
-  Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/.chezmoi.toml.tmpl') -Destination (Join-Path $checkout 'home/.chezmoi.toml.tmpl')
-  Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/run_onchange_before_windows-00-winget.ps1.tmpl') -Destination (Join-Path $checkout 'home/run_onchange_before_windows-00-winget.ps1.tmpl')
-  Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'home/.chezmoitemplates/windows-powershell-prelude.ps1') -Destination (Join-Path $checkout 'home/.chezmoitemplates/windows-powershell-prelude.ps1')
+  $null = New-Item -ItemType Directory -Path (Join-Path $checkout 'home/.chezmoidata'), $target -Force
+  foreach ($relative in @('.chezmoidata/hosts.toml', '.chezmoidata/credentials.toml', '.chezmoi.toml.tmpl', 'run_onchange_before_windows-00-workstation.ps1.tmpl')) {
+    Copy-Item -LiteralPath (Join-Path $RepositoryRoot ('home/' + $relative)) -Destination (Join-Path $checkout ('home/' + $relative))
+  }
   Write-CoreFile (Join-Path $checkout '.chezmoiroot') "home`n"
-  Write-CoreFile (Join-Path $checkout 'windows/configuration.winget') $originalDocument
-  Write-CoreFile (Join-Path $checkout 'home/dot_fixture-after') "package-before-file`n"
+  Initialize-CoreEngine $checkout
+  Write-CoreFile (Join-Path $checkout 'home/dot_fixture-after') "engine-before-file`n"
   $null = Invoke-CoreNative git @('init', '-q', $checkout)
-  $override.data = @{ checkMode = $true }
   Initialize-CoreConfig
   $onchangeConfig = Invoke-CoreChezmoi @('dump-config', '--format=json') | ConvertFrom-Json
-  Assert-Core ($onchangeConfig.interpreters.ps1.command -ceq 'powershell.exe') 'onchange fixture must use the rendered Windows init interpreter'
-  if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
-    # Linux cannot execute in-box Windows PowerShell. Adapt execution only after
-    # asserting the production init above; Windows exercises it unchanged.
-    $onchangeConfig.interpreters.ps1.command = (Get-Process -Id $PID).Path
-    $config = Join-Path $fixtureRoot 'onchange-linux.json'
-    Write-CoreFile $config ($onchangeConfig | ConvertTo-Json -Depth 30)
-  }
-  $bin = Join-Path $fixtureRoot 'fixture executables'
-  $null = New-Item -ItemType Directory -Path $bin
-  $env:CORE_WINGET_LOG = Join-Path $fixtureRoot 'winget-calls.log'
+  Assert-Core ($onchangeConfig.interpreters.ps1.command -ceq 'pwsh') 'onchange fixture must use the persisted PowerShell 7 host'
+  $env:CORE_ENGINE_LOG = Join-Path $fixtureRoot 'onchange-engine-calls.log'
   $env:CORE_AFTER_FILE = Join-Path $target '.fixture-after'
-  $env:CORE_MODULE_PATH_LOG = Join-Path $fixtureRoot 'classic-module-path.log'
   $env:CORE_REQUIRE_BEFORE = '1'
-  $env:CORE_WINGET_EXIT = '0'
-  if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) {
-    Write-CoreFile (Join-Path $bin 'winget.cmd') (@'
-@echo off
-if "%CORE_REQUIRE_BEFORE%"=="1" if exist "%CORE_AFTER_FILE%" exit /b 31
-echo %*>>"%CORE_WINGET_LOG%"
-echo %PSModulePath%>"%CORE_MODULE_PATH_LOG%"
-exit /b %CORE_WINGET_EXIT%
-'@).Replace("`n", "`r`n")
-  } else {
-    $double = Join-Path $bin 'winget'
-    Write-CoreFile $double (@'
-#!/bin/sh
-if [ "$CORE_REQUIRE_BEFORE" = 1 ] && [ -e "$CORE_AFTER_FILE" ]; then exit 31; fi
-printf '%s\n' "$*" >> "$CORE_WINGET_LOG"
-exit "$CORE_WINGET_EXIT"
-'@ + "`n")
-    $null = Invoke-CoreNative chmod @('+x', $double)
-  }
-  $env:PATH = $bin + [IO.Path]::PathSeparator + $saved.PATH
-  $viaPowerShell7 = [Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT -and $null -ne (Get-Command pwsh -CommandType Application -ErrorAction SilentlyContinue)
-  if ($viaPowerShell7) {
-    # Hosted runners also have an ambient pwsh behind the locked one. Exercise
-    # that discovery shape without installing another runtime or invoking it.
-    $secondaryShell = Join-Path $fixtureRoot 'second PowerShell on PATH'
-    Write-CoreFile (Join-Path $secondaryShell 'pwsh.cmd') "@echo off`r`nexit /b 89`r`n"
-    $env:PATH += [IO.Path]::PathSeparator + $secondaryShell
-    Assert-Core (@(Get-Command pwsh -CommandType Application).Count -gt 1) 'PowerShell discovery regression must expose multiple PATH candidates'
-  }
-  $null = Invoke-CoreChezmoi @('apply') -ViaPowerShell7:$viaPowerShell7
-  if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) {
-    $classicModules = Join-Path (Split-Path (Get-Command powershell.exe -CommandType Application | Select-Object -First 1).Source -Parent) 'Modules'
-    Assert-Core ([IO.File]::ReadAllText($env:CORE_MODULE_PATH_LOG).StartsWith($classicModules + ';', [StringComparison]::OrdinalIgnoreCase)) 'chezmoi must run Classic with its own module defaults, not inherited Core module directories'
-    if ($viaPowerShell7) { Write-Output 'chezmoi-core: real PowerShell 7 -> chezmoi -> Windows PowerShell module boundary passed' }
-  }
-  Assert-Core ((Test-Path -LiteralPath $env:CORE_AFTER_FILE) -and [IO.File]::ReadAllLines($env:CORE_WINGET_LOG).Count -eq 1) 'hashed before script must install before managed files'
+  $null = Invoke-CoreChezmoi @('apply')
+  Assert-Core ((Test-Path -LiteralPath $env:CORE_AFTER_FILE) -and (Get-CoreEngineCallCount) -eq 1) 'hashed before script must execute the engine before managed files'
   $env:CORE_REQUIRE_BEFORE = '0'
   $null = Invoke-CoreChezmoi @('apply')
-  Assert-Core ([IO.File]::ReadAllLines($env:CORE_WINGET_LOG).Count -eq 1) 'unchanged apply must not rerun WinGet'
+  Assert-Core ((Get-CoreEngineCallCount) -eq 1) 'unchanged apply must not rerun the engine'
   $null = Invoke-CoreChezmoi @('verify')
-  Write-CoreFile (Join-Path $checkout 'windows/configuration.winget') ($originalDocument + "`n")
-  $env:CORE_WINGET_EXIT = '23'
+  $dataPath = Join-Path $checkout 'windows/workstation.json'
+  Write-CoreFile $dataPath ([IO.File]::ReadAllText($dataPath) + "`n")
+  $env:CORE_ENGINE_EXIT = '23'
   $failedApply = Invoke-CoreChezmoi @('apply') -Failure
-  Assert-Core ($failedApply -match 'exit code 23' -and [IO.File]::ReadAllLines($env:CORE_WINGET_LOG).Count -eq 2) 'failed native exit must fail real chezmoi apply with its code'
-  $env:CORE_WINGET_EXIT = '0'
+  Assert-Core ($failedApply -match 'exit code 23' -and (Get-CoreEngineCallCount) -eq 2) 'failed engine exit must fail real chezmoi apply with its code'
+  $env:CORE_ENGINE_EXIT = '0'
   $null = Invoke-CoreChezmoi @('apply')
-  Assert-Core ([IO.File]::ReadAllLines($env:CORE_WINGET_LOG).Count -eq 3) 'failed onchange state must not be recorded as successful'
+  Assert-Core ((Get-CoreEngineCallCount) -eq 3) 'failed onchange state must not be recorded as successful'
   $null = Invoke-CoreChezmoi @('apply')
-  Assert-Core ([IO.File]::ReadAllLines($env:CORE_WINGET_LOG).Count -eq 3) 'unchanged successful document must not rerun after recovery'
-  foreach ($entryPoint in $renderedEntryPoints.Keys) {
-    Assert-Core (($renderedEntryPoints[$entryPoint] -replace '\A#![^\r\n]*\r?\n', '').StartsWith($prelude)) "$entryPoint must include the shared Windows PowerShell prelude first"
-  }
-  Write-Output 'chezmoi-core: native init, effective Git/GCM, SSH pins/options, script AST and hashed WinGet/order/failure fixtures passed'
+  Assert-Core ((Get-CoreEngineCallCount) -eq 3) 'unchanged successful engine inputs must not rerun after recovery'
+  Write-Output 'chezmoi-core: native init, effective Git/GCM, SSH pins/options, script AST and hashed engine/order/failure fixtures passed'
 } finally {
   foreach ($name in $variables) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
   if (Test-Path -LiteralPath $fixtureRoot) { Remove-Item -LiteralPath $fixtureRoot -Recurse -Force }

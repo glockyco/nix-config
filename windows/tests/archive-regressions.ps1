@@ -46,21 +46,27 @@ try {
     if ([Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $output 'file.txt'))) -cne [Convert]::ToBase64String($payload)) { throw 'Inbox tar extraction did not preserve payload bytes' }
     Write-Output 'PASS Windows inbox tar archive extraction with fake PATH tar first'
     if ($nativeWindows) {
-        # A real 7z payload exercises the shipped ImageMagick extractor, not a ZIP
-        # renamed to .7z. Only extraction uses native code; no tool is installed/run.
+        # A real 7z payload exercises only the engine's private archive extractor.
+        # The fixture executable contains text and is never invoked.
         $imageArchive = Join-Path $temp 'ImageMagick fixture.7z'
         [IO.File]::WriteAllBytes((Join-Path $input 'magick.exe'), $payload)
         $created = & $originalProcess -Command $inboxTar -Arguments @('--format=7zip', '-cf', $imageArchive, '-C', $input, 'magick.exe')
         if ($created.ExitCode -ne 0) { throw "Cannot create isolated 7z archive: $($created.Output)" }
         $signature = [IO.File]::ReadAllBytes($imageArchive)
         if ([Convert]::ToBase64String($signature[0..5]) -cne 'N3q8rycc') { throw 'ImageMagick fixture is not an actual 7z archive' }
-        . (Join-Path $RepositoryRoot 'windows/tests/native-contract.ps1')
-        . (Join-Path $RepositoryRoot 'windows/tests/installer-doubles.ps1')
-        $document = [IO.File]::ReadAllText((Join-Path $RepositoryRoot 'windows/configuration.winget')) | ConvertFrom-Json
-        $imageResources = @($document.resources | Where-Object { $_.PSObject.Properties['metadata'] -and $_.metadata.PSObject.Properties['application'] -and $_.metadata.application.id -eq 'ImageMagick.ImageMagick' })
-        Assert-Contract ($imageResources.Count -eq 1) 'ImageMagick actual 7z fixture: required archive resource is missing or ambiguous'
-        Invoke-InstallerFixture -Resource $imageResources[0] -Scenario 'missing' -Root $temp -ArchivePath $imageArchive
-        Write-Output 'PASS ImageMagick actual 7z extraction with absolute inbox tar and fake PATH tar first'
+        $module = Import-Module (Join-Path $RepositoryRoot 'windows/Workstation.psm1') -Force -PassThru
+        try {
+            $imageOutput = Join-Path $temp 'ImageMagick extracted'
+            $null = New-Item -ItemType Directory -Path $imageOutput -Force
+            & $module {
+                param([string]$Archive, [string]$Destination)
+                Expand-WorkstationArchive -Resource @{ archiveKind = '7z' } -Archive $Archive -Destination $Destination
+            } $imageArchive $imageOutput
+            if ([Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $imageOutput 'magick.exe'))) -cne [Convert]::ToBase64String($payload)) {
+                throw 'Workstation actual 7z extraction did not preserve payload bytes'
+            }
+        } finally { Remove-Module $module }
+        Write-Output 'PASS Workstation actual 7z extraction with absolute inbox tar and fake PATH tar first'
     }
 } finally {
     $env:PATH = $oldPath
