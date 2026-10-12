@@ -98,13 +98,7 @@ function Assert-NativeHookOwnership {
     param([string]$HookPath)
     if (-not (Test-Path -LiteralPath $HookPath)) { return }
     $content = [IO.File]::ReadAllText($HookPath)
-    $expected = Get-NativeHookContent
-    # Only migrate the exact prior repository-owned launcher, never a modified hook.
-    $previous = $expected.Replace('native pre-commit v2', 'native pre-commit v1').
-        Replace('pwsh.exe', 'powershell.exe').
-        Replace('PowerShell 7 is required; run windows/bootstrap.ps1.', 'Windows PowerShell is required; run windows/dev/bootstrap.ps1.').
-        Replace('-NoProfile -NonInteractive -File', '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File')
-    if ($content -cne $expected -and $content -cne $previous) {
+    if ($content -cne (Get-NativeHookContent)) {
         throw "Refusing to replace unrelated or modified hook '$HookPath'; review it before native bootstrap."
     }
 }
@@ -141,11 +135,18 @@ function Invoke-NativeBootstrap {
     $artifacts = @($lock.artifacts | Where-Object { -not $_.testOnly -or $IncludeTestDependencies })
     $alreadyInstalled = Test-Path -LiteralPath $ToolsRoot
     if ($alreadyInstalled) {
-        # Existing managed tools must be healthy; never hide missing files, version drift or lock changes by reinstalling.
-        $manifest = Get-Content -LiteralPath (Join-Path $ToolsRoot 'tools.json') -Raw | ConvertFrom-Json
-        $installedTools = @($lock.tools | Where-Object { -not $_.testOnly -or $manifest.includeTestDependencies })
-        foreach ($definition in $installedTools) { $null = Get-NativeTool -Name $definition.id -ToolsRoot $ToolsRoot }
-        if (-not $IncludeTestDependencies -or $manifest.includeTestDependencies) {
+        $current = $true
+        try {
+            $manifest = Get-Content -LiteralPath (Join-Path $ToolsRoot 'tools.json') -Raw | ConvertFrom-Json
+            $installedTools = @($lock.tools | Where-Object { -not $_.testOnly -or $manifest.includeTestDependencies })
+            foreach ($definition in $installedTools) { $null = Get-NativeTool -Name $definition.id -ToolsRoot $ToolsRoot }
+        } catch {
+            # A changed lock, version drift or a missing file means the tree no longer matches the lock.
+            # Reinstall through the staged swap below, which keeps the old tree until the new one verifies.
+            Write-Output "Replacing native development tools at $ToolsRoot because they no longer match windows/dev/dependencies.lock.json"
+            $current = $false
+        }
+        if ($current -and (-not $IncludeTestDependencies -or $manifest.includeTestDependencies)) {
             if ($ArchiveCacheRoot) {
                 # Even an already-installed tool tree must not hide corruption in restored archives.
                 foreach ($artifact in $artifacts) {

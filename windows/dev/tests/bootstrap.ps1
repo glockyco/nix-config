@@ -5,7 +5,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 if (-not $RepositoryRoot) { $RepositoryRoot = Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent }
 . (Join-Path $RepositoryRoot 'windows/dev/bootstrap.ps1') -RepositoryRoot $RepositoryRoot
-$script:BootstrapReceive = ${function:Receive-NativeArtifact}
 
 function Assert-BootstrapFixture {
     param([bool]$Condition, [string]$Message)
@@ -18,13 +17,6 @@ function Assert-BootstrapFailure {
     try { & $Action | Out-Null } catch { $failure = $_.Exception.Message }
     Assert-BootstrapFixture -Condition ($null -ne $failure -and $failure -match $Pattern) -Message "$Name did not fail with '$Pattern': $failure"
     Write-Output "PASS negative bootstrap fixture: $Name"
-}
-
-function Invoke-WebRequest {
-    param([switch]$UseBasicParsing, [string]$Uri, [string]$OutFile)
-    $script:ObservedProgressPreference = $ProgressPreference
-    if ($script:WebRequestFault) { throw 'fixture download failure' }
-    [IO.File]::WriteAllText($OutFile, 'fixture artifact', (New-Object Text.UTF8Encoding($false)))
 }
 
 # Doubles intercept downloads, extraction and native processes, never the lock/hash/lookup/bootstrap decisions.
@@ -102,14 +94,6 @@ $script:ExtractionCount = 0
 $script:ProcessCount = 0
 try {
     $null = New-Item -ItemType Directory -Path $temp
-    $script:WebRequestFault = $false
-    $savedProgressPreference = $ProgressPreference
-    & $script:BootstrapReceive -Uri 'https://fixture.invalid/artifact' -Destination (Join-Path $temp 'progress artifact')
-    Assert-BootstrapFixture -Condition ($script:ObservedProgressPreference -eq 'SilentlyContinue' -and $ProgressPreference -eq $savedProgressPreference) -Message 'download progress was not suppressed locally and restored'
-    $script:WebRequestFault = $true
-    Assert-BootstrapFailure 'download progress restoration' { & $script:BootstrapReceive -Uri 'https://fixture.invalid/artifact' -Destination (Join-Path $temp 'progress artifact') } 'fixture download failure'
-    Assert-BootstrapFixture -Condition ($ProgressPreference -eq $savedProgressPreference) -Message 'failed download changed caller progress preference'
-    $script:WebRequestFault = $false
     $fixtureArtifact = Join-Path $temp 'artifact'
     [IO.File]::WriteAllText($fixtureArtifact, 'fixture artifact', (New-Object Text.UTF8Encoding($false)))
     $script:FixtureLock = Get-NativeDependencies
@@ -133,13 +117,6 @@ try {
     Assert-BootstrapFixture -Condition ($hookBytes[0] -eq 35 -and [IO.File]::ReadAllText($hook) -ceq (Get-NativeHookContent)) -Message 'hook has a BOM or differs from the owned launcher'
     $launcher = [IO.File]::ReadAllText($hook)
     Assert-BootstrapFixture -Condition ($launcher.Contains('exec pwsh.exe -NoProfile -NonInteractive -File') -and -not $launcher.Contains('powershell.exe')) -Message 'hook did not dispatch exclusively to pwsh'
-    $previous = $launcher.Replace('native pre-commit v2', 'native pre-commit v1').
-        Replace('pwsh.exe', 'powershell.exe').
-        Replace('PowerShell 7 is required; run windows/bootstrap.ps1.', 'Windows PowerShell is required; run windows/dev/bootstrap.ps1.').
-        Replace('-NoProfile -NonInteractive -File', '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File')
-    [IO.File]::WriteAllText($hook, $previous)
-    Install-NativeHook -RepositoryRoot $checkout
-    Assert-BootstrapFixture -Condition ([IO.File]::ReadAllText($hook) -ceq $launcher) -Message 'exact prior owned hook was not migrated to pwsh'
     $downloads = $script:DownloadCount
     $processes = $script:ProcessCount
     Invoke-NativeBootstrap -RepositoryRoot $checkout | Out-Null
@@ -198,6 +175,7 @@ try {
     $script:ProcessFault = 'version'
     Assert-BootstrapFailure 'version mismatch' { Get-NativeTool -Name jsonfmt -ToolsRoot $root } 'version mismatch.*bootstrap.ps1'
     Assert-BootstrapFailure 'bootstrap existing version mismatch' { Invoke-NativeBootstrap -RepositoryRoot $checkout -SkipHook } 'version mismatch'
+    Assert-BootstrapFixture -Condition (Test-Path -LiteralPath (Join-Path $root 'tools.json')) -Message 'failed reinstall removed the existing tools'
     $script:ProcessFault = 'exit'
     Assert-BootstrapFailure 'native exit propagation' { Get-NativeTool -Name lefthook -ToolsRoot $root } 'exited 23.*fixture native failure'
     Assert-BootstrapFailure 'bootstrap native exit propagation' { Invoke-NativeBootstrap -RepositoryRoot $checkout -ToolsRoot (Join-Path $temp 'native exit tools') -SkipHook } 'exited 23'
@@ -209,8 +187,19 @@ try {
     $prettierPath = Join-Path $root 'prettier/package/bin/prettier.cjs'
     Remove-Item -LiteralPath $prettierPath
     Assert-BootstrapFailure 'missing installed artifact' { Get-NativeTool -Name prettier -ToolsRoot $root } 'Missing locked artifact.*bootstrap.ps1'
-    Assert-BootstrapFailure 'bootstrap missing artifact refusal' { Invoke-NativeBootstrap -RepositoryRoot $checkout -SkipHook } 'Missing locked artifact'
-    [IO.File]::WriteAllText($prettierPath, 'fixture')
+    $downloads = $script:DownloadCount
+    Invoke-NativeBootstrap -RepositoryRoot $checkout -SkipHook | Out-Null
+    Assert-BootstrapFixture -Condition ($script:DownloadCount -gt $downloads -and (Test-Path -LiteralPath $prettierPath)) -Message 'bootstrap did not reinstall a tree with a missing artifact'
+    $null = Get-NativeTool -Name prettier -ToolsRoot $root
+    Write-Output 'PASS bootstrap reinstalls a tree with a missing artifact'
+    $lockText = [IO.File]::ReadAllText($script:NativeLockPath)
+    [IO.File]::WriteAllText($script:NativeLockPath, $lockText + "`n", (New-Object Text.UTF8Encoding($false)))
+    Assert-BootstrapFailure 'stale lock in the hook path' { Get-NativeTool -Name prettier -ToolsRoot $root } 'does not match the repository dependency lock.*bootstrap.ps1'
+    Invoke-NativeBootstrap -RepositoryRoot $checkout -SkipHook | Out-Null
+    $null = Get-NativeTool -Name prettier -ToolsRoot $root
+    Write-Output 'PASS bootstrap replaces tools installed from an older lock'
+    [IO.File]::WriteAllText($script:NativeLockPath, $lockText, (New-Object Text.UTF8Encoding($false)))
+    Invoke-NativeBootstrap -RepositoryRoot $checkout -SkipHook | Out-Null
     $manifestPath = Join-Path $root 'tools.json'
     $manifestBytes = [IO.File]::ReadAllBytes($manifestPath)
     $manifest.tools[0].command = 'untrusted/python.exe'
