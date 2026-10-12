@@ -55,6 +55,8 @@ The default checker also renders Windows chezmoi scripts, AST-parses their actua
 
 Windows CI retains both legacy Windows PowerShell 5.1 and locked PowerShell 7 document/fixture jobs until cutover. The unchanged native archive fixture runs in pwsh from either legacy checker because it uses the migrated development bootstrap. A parallel runner-pwsh engine job runs shared formatting once and static/mock checks without WinGet/DSC provisioning or live apply. It caches checksum-verified formatter archive inputs and pinned engine modules. Legacy caches still contain archives only and recheck hashes before extraction. `check (windows-latest)` remains the required aggregate, rejecting failed/cancelled affected children. Docs-only changes run formatting without engine or legacy fixtures. Gate durations are printed. Record actual Actions job/step timings in acceptance evidence.
 
+CLI fallback discovery follows PATH precedence and selects one executable. It never concatenates multiple `Get-Command` application matches. Portable applications still require exactly one executable within their declared package root. The retained archive fixture uses the first PATH-resolved pwsh, which CI places at its locked host path.
+
 The Windows PowerShell invocation uses a process-only execution-policy setting for the reviewed repository fixtures; it changes no persistent policy and cannot override managed policy. Do not modify employer policy to make a check pass. If managed execution restrictions still reject the scripts, record that prerequisite rather than bypassing it.
 
 ## Parallel engine acceptance and recovery
