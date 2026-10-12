@@ -509,29 +509,6 @@
         "type": "github"
       }
     },
-    "personal-omp-plugin": {
-      "inputs": {
-        "llm-agents": [
-          "llm-agents"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1791363850,
-        "narHash": "sha256-MGf5bbGqw3DIOXEeRVym+qBQwqOHfypqs0ddsGu0PTE=",
-        "owner": "glockyco",
-        "repo": "omp-agent-setup",
-        "rev": "b420ea76eceed3681e7e8a48d639324f298e772e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "glockyco",
-        "repo": "omp-agent-setup",
-        "type": "github"
-      }
-    },
     "plannotator-packages": {
       "inputs": {
         "bun2nix": "bun2nix_2",
@@ -566,7 +543,6 @@
         "nix-index-database": "nix-index-database",
         "nixos-wsl": "nixos-wsl",
         "nixpkgs": "nixpkgs_3",
-        "personal-omp-plugin": "personal-omp-plugin",
         "plannotator-packages": "plannotator-packages",
         "treefmt-nix": "treefmt-nix_3"
       }

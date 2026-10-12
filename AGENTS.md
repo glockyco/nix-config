@@ -6,7 +6,7 @@ The [README](README.md) covers hosts, checks, activation, updates and recovery. 
 
 Use OpenSpec for permanent behavior changes. Read all artifacts of the selected change before editing implementation files. Validate with `openspec validate <change> --strict` and archive only after every acceptance gate passes. Accepted contracts live in `openspec/specs/`. An unchecked task or an `in-progress` status does not authorize deferred work.
 
-The personal plugin owns the OpenSpec adapters, and its workflow commands are `/personal:opsx-*`. Do not run `openspec init` here. The `personal-omp-plugin` input only supplies the OpenSpec checks.
+The personal plugin owns the OpenSpec adapters, and its workflow commands are `/personal:opsx-*`. Do not run `openspec init` here.
 
 [docs/plans](docs/plans/INDEX.md) holds old plans. Keep them until a reviewed change replaces them.
 

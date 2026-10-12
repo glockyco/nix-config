@@ -17,3 +17,22 @@ pre-commit:
       skip:
         - run: test "$OS" != Windows_NT
       run: pwsh.exe -NoProfile -NonInteractive -File windows/dev/hook.ps1
+    # Staged OpenSpec artifacts get the same two strict validations as the
+    # reusable CI workflow, including archived-task completeness.
+    - name: openspec-unix
+      glob: "openspec/**"
+      skip:
+        - run: test "$OS" = Windows_NT
+      run: |
+        nix develop --command sh -eu -c '
+          export OPENSPEC_TELEMETRY=0
+          help=$(openspec validate --help)
+          case $help in *--archived*) ;; *) echo "openspec cannot validate archived changes" >&2; exit 1 ;; esac
+          openspec validate --all --strict --no-interactive
+          openspec validate --archived --strict --no-interactive
+        '
+    - name: openspec-windows
+      glob: "openspec/**"
+      skip:
+        - run: test "$OS" != Windows_NT
+      run: pwsh.exe -NoProfile -NonInteractive -File windows/dev/openspec.ps1
