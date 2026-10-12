@@ -1,2 +1,0 @@
-# Native clones must keep the script executable by WSL before chezmoi sets Git defaults.
-nix-gate.sh text eol=lf
