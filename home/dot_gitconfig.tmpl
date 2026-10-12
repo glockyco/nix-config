@@ -30,6 +30,12 @@
 [includeIf "gitdir:{{ $platform.ghqRoot }}/github.com/"]
     path = ~/.config/git/github.gitconfig
 {{ if $windows -}}
+[url "https://github.com/"]
+    insteadOf = git@github.com:
+    insteadOf = ssh://git@github.com/
+[url "https://gitlab.scch.at/"]
+    insteadOf = git@gitlab.scch.at:
+    insteadOf = ssh://git@gitlab.scch.at/
 [credential]
     helper =
     helper = {{ printf "!\"%s/%s/%s\"" ($platform.home | replace "\\" "/") $platform.gitDirectory $platform.gcmHelper | quote }}

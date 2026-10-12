@@ -129,6 +129,14 @@ exit $LASTEXITCODE
     Assert-Core ((Get-CoreGit $entry[0]) -eq $entry[1]) "effective Git $($entry[0]) drifted"
   }
   Assert-Core ((Get-CoreGit 'ghq.root') -eq $platformFixture.ghqRoot) 'effective native ghq root drifted'
+  foreach ($hostName in @('github.com', 'gitlab.scch.at')) {
+    $rewrites = Invoke-CoreNative git @('config', '--get-all', "url.https://$hostName/.insteadOf")
+    Assert-Core (($rewrites -split "`r?`n" -join '|') -ceq "git@${hostName}:|ssh://git@$hostName/") "$hostName HTTPS rewrite forms drifted"
+    foreach ($remote in @("git@${hostName}:owner/project.git", "ssh://git@$hostName/owner/project.git")) {
+      $resolved = Invoke-CoreNative git @('ls-remote', '--get-url', $remote)
+      Assert-Core ($resolved -ceq "https://$hostName/owner/project.git") "$remote must resolve over HTTPS"
+    }
+  }
   $helper = Invoke-CoreNative git @('config', '--get-all', 'credential.helper')
   $expectedHelper = '!"' + $target.Replace('\', '/') + '/AppData/Local/Programs/Git/mingw64/bin/git-credential-manager.exe"'
   $helperValues = @($helper -split "`r?`n")
