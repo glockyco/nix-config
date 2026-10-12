@@ -77,5 +77,5 @@ Desktop SSH, RDP and SMB SHALL retain effective approved-tailnet restrictions. N
 #### Scenario: Preserve the installed fleet
 
 - **WHEN** desktop setup or Korolev retirement completes
-- **THEN** approved Mac and desktop keys reach native Windows Korolev over Tailscale and non-tailnet SSH remains blocked
+- **THEN** the approved Mac key reaches native Windows Korolev over Tailscale and non-tailnet SSH remains blocked
 - **AND** native Korolev-to-Mac user command-status checks pass without a Linux builder/distribution

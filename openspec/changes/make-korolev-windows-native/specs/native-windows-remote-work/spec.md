@@ -2,7 +2,7 @@
 
 ### Requirement: Authenticated terminal access from each source
 
-The Pro, Air and native Windows Korolev SHALL reach `desktop` with native OpenSSH, independently approved credentials and a pinned server identity. The Pro and desktop SHALL likewise reach Windows Korolev with separate source keys. Commands SHALL preserve native Windows shell behavior and exit status. Network membership SHALL not grant account access; revoking one source key SHALL not revoke others.
+The Pro, Air and native Windows Korolev SHALL reach `desktop` with native OpenSSH, independently approved credentials and a pinned server identity. The Pro SHALL likewise reach Windows Korolev with its own source key. Commands run without a terminal SHALL preserve native Windows shell behavior and exit status. Network membership SHALL not grant account access; revoking one source key SHALL not revoke others.
 
 #### Scenario: Use the desktop from each source
 
@@ -23,14 +23,14 @@ The Pro, Air and native Windows Korolev SHALL reach `desktop` with native OpenSS
 
 #### Scenario: Reach the standard work account
 
-- **WHEN** the Pro or desktop authenticates to Windows Korolev
+- **WHEN** the Pro authenticates to Windows Korolev
 - **THEN** it reaches the approved standard account without password or keyboard-interactive fallback
 - **AND** a command exiting 23 returns status 23
 - **AND** a privileged service operation still requires separate owner-assisted local Administrator approval
 
 ### Requirement: Tailnet-only access and existing fleet isolation
 
-Desktop SSH, RDP and SMB SHALL retain effective approved-tailnet restrictions. Native Korolev SSH SHALL be bound/restricted to its tailnet addresses with independently approved keys. The Pro's builder access SHALL remain usable through Windows Tailscale; WSL SHALL retain its no-listener boundary. Loss of Tailscale SHALL not create a permissive fallback. Independent authenticated desktop relay products remain outside this service boundary and SHALL be enumerated with effective firewall scope.
+Desktop SSH, RDP and SMB SHALL retain effective approved-tailnet restrictions. Native Korolev SSH SHALL be bound/restricted to its tailnet addresses with independently approved keys. WSL SHALL retain its no-listener boundary. Loss of Tailscale SHALL not create a permissive fallback. Independent authenticated desktop relay products remain outside this service boundary and SHALL be enumerated with effective firewall scope.
 
 #### Scenario: Compare allowed and denied paths
 
@@ -46,5 +46,5 @@ Desktop SSH, RDP and SMB SHALL retain effective approved-tailnet restrictions. N
 #### Scenario: Preserve the installed fleet
 
 - **WHEN** desktop setup completes
-- **THEN** approved Mac and desktop keys reach Windows Korolev over Tailscale, while non-tailnet SSH and WSL inbound services remain blocked
-- **AND** the existing Korolev-to-Pro remote build and command-status checks still pass
+- **THEN** the approved Mac key reaches Windows Korolev over Tailscale, while non-tailnet SSH and WSL inbound services remain blocked
+- **AND** Korolev's native command-status check against the Pro still passes

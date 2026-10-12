@@ -90,7 +90,7 @@ Repository-rendered policy SHALL grant every tailnet node access to all ports on
 
 #### Scenario: Connect to native Korolev
 
-- **WHEN** the Mac or desktop connects to Windows Korolev over the tailnet
+- **WHEN** the Mac connects to Windows Korolev over the tailnet
 - **THEN** policy permits the network path and the separately approved OpenSSH key authenticates
 - **AND** this grant does not create a WSL listener or authorize Windows account access by membership alone
 
@@ -110,14 +110,13 @@ Repository-rendered policy SHALL grant every tailnet node access to all ports on
 
 ### Requirement: Windows Korolev SSH boundary
 
-Korolev SHALL accept key-only OpenSSH Server access to its standard Windows account with independently revocable Mac and desktop source keys. Effective listening and firewall settings SHALL restrict SSH to its current tailnet addresses; no broader rule or lost-Tailscale fallback SHALL permit non-tailnet access. Services SHALL not rely on a WSL node or listener.
+Korolev SHALL accept key-only OpenSSH Server access to its standard Windows account with the Mac's own revocable source key. Effective listening and firewall settings SHALL restrict SSH to its current tailnet addresses; no broader rule or lost-Tailscale fallback SHALL permit non-tailnet access. Services SHALL not rely on a WSL node or listener.
 
-#### Scenario: Reach native Korolev from each durable source
+#### Scenario: Reach native Korolev from the Mac
 
-- **WHEN** the Mac and desktop use their pinned Korolev endpoints
-- **THEN** each reaches native Windows with its own approved source key and remote exit status 23 is preserved
+- **WHEN** the Mac uses its pinned Korolev endpoints
+- **THEN** it reaches native Windows with its approved source key and remote exit status 23 is preserved
 - **AND** SFTP round-trips a disposable file with matching bytes
-- **AND** revoking one source key does not revoke the other
 
 #### Scenario: Deny an unapproved path or key
 
@@ -130,14 +129,3 @@ Korolev SHALL accept key-only OpenSSH Server access to its standard Windows acco
 - **WHEN** Tailscale stops or the machine restarts without a usable tailnet address
 - **THEN** no wildcard/LAN SSH listener or permissive firewall fallback is introduced
 - **AND** access is restored only through the declared tailnet path once the service is available
-
-### Requirement: WSL uses the Windows tailnet transport
-
-WSL SHALL retain root-only Darwin-builder authentication and pinned server verification while routing through Windows Tailscale and Windows DNS tunneling. A separate WSL Tailscale daemon, device identity, port proxy or public service SHALL not be required. Native Windows user SSH SHALL never use the root builder key.
-
-#### Scenario: Build through the Windows tunnel
-
-- **WHEN** the WSL Nix daemon requests a fresh Darwin derivation after cutover and a coordinated WSL restart
-- **THEN** MagicDNS resolves the Mac, the root-owned builder key authenticates and the Mac builds the nonce-bearing output
-- **AND** public DNS and applicable employer DNS continue to resolve
-- **AND** no duplicate Linux Tailscale node is needed
