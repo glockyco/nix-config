@@ -19,7 +19,7 @@ Existing live state supplied by the owner on 2026-10-07: per-user Git 2.55.0.5 i
 | `windows/check.ps1` and fixtures              | Native validation/parser/ownership checks; never live apply.                                                                                                                                                                  |
 | `home/` and shared TOML                       | Chezmoi owns portable Git/gh/SSH and Windows app declarations, pinned assets and user setup; undeclared app state remains app-owned.                                                                                          |
 | OMP/plugin/Tern/Plannotator                   | Explicit upstream user installations described below, not Nix activation or automatic configuration apply.                                                                                                                    |
-| Profiles, credentials, sessions, repositories | Application/user owned. Never copy authentication databases, private keys, browser profiles or another platform's OMP state.                                                                                                  |
+| Profiles, credentials, sessions, repositories | Application/user owned. Never copy authentication databases, private keys or browser profiles. Only the three reviewed OMP decision files may cross platforms through the bounded procedure below.                            |
 
 Run the document, user setup and chezmoi as standard `jglock` (`scch\jglock`), never as Administrator and never against the Administrator HOME/HKCU. Only Zen, Tailscale and Docker Desktop are machine-scope package exceptions. The owner supplies the separate Administrator credential for their approved installer prompts. Intune-owned runtime dependencies are prerequisites to inspect, not additional installers. OpenSSH capability/service/firewall setup is a separately approved manual operation, not another general-purpose Administrator script or a document resource. Do not bypass employer restrictions.
 
@@ -212,6 +212,76 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\Windo
 Keep German QWERTZ **first/default**, native Neo second. Office derives character shortcuts from the first loaded layout; making Neo first breaks that boundary. Elevated ReNeo supplies all layers in ordinary/elevated apps over QWERTZ, but secure-desktop UAC accepts QWERTZ only. Select `Deutsch (Neo)` using `Win+Space` before UAC for the native base layer there; higher layers remain unavailable on the secure desktop. After switching, change foreground windows once or reload ReNeo so it detects the layout. Verify Office copy/paste and declared character shortcuts in both layouts.
 
 Repeat all three tests from the standard account. Require desired state; repeat apply/test in each original account context and require no changes. Inspect actual Windows dark modes, UI/input language, app themes, PowerToys module behavior, AltSnap snapping and undeclared UI/profile preservation. A schema/parser pass is not these live checks.
+
+## Owner-assisted project migration
+
+The owner-approved 2026-10-12 transfer carries pending work as-is, without publishing. Native roots below are relative to `C:\Users\jglock\src`. Every repository and initialized submodule verified with zero transfer differences. Transfer parity is not project acceptance. [Migration evidence](../../openspec/changes/retire-korolev-wsl-host/evidence.md) records preserved branches, stashes, file counts and exclusions.
+
+| Project and native path                                   | Host requirement | Acceptance status and links                                                                                                                                                                                                                             |
+| --------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `github.com\glockyco\phd-thesis`                          | Mac + Windows    | Windows 230-page build, hooks, OpenSpec and wrapper tests passed. [Project PR #4](https://github.com/glockyco/phd-thesis/pull/4). Five initialized `projects/` submodules transferred at recorded commits. Mac acceptance not recorded here.            |
+| `github.com\glockyco\Teralizer-Paper`                     | Mac + Windows    | Windows 58-page build and OpenSpec passed. Includes `correspondence` on `main`. [Project](https://github.com/glockyco/Teralizer-Paper). Mac acceptance not recorded here.                                                                               |
+| `github.com\glockyco\test-generalization`                 | Mac + Windows    | Docker toolchain/materialized-symlink acceptance pending. Origin is [Teralizer](https://github.com/glockyco/Teralizer). `jpf-symbc` and `projects/EqBench` remain uninitialized.                                                                        |
+| `github.com\glockyco\omp-agent-setup`                     | Mac + Windows    | Windows local check passed 156 tests with Python 3.13/pywinpty. [Project](https://github.com/glockyco/omp-agent-setup). Mac acceptance not recorded here.                                                                                               |
+| `github.com\glockyco\nix-config`                          | Mac + Windows    | Existing native checkout reconciled, no WSL branch transfer needed. [C3 evidence](../../openspec/changes/make-korolev-windows-native/evidence.md). Retirement/Mac integrated gates pending.                                                             |
+| `gitlab.scch.at\foci\aisys\saner2027-paper`               | Korolev          | 732 passed, two skipped, both PDFs built on local `korolev-native` commit `0b26b43`. Includes Overleaf `paper`. UNC output share reachable, `S:` unmapped. Container replication pending. [Project](https://gitlab.scch.at/foci/aisys/saner2027-paper). |
+| `gitlab.scch.at\foci\aisys\saner2027-overleaf`            | Korolev          | Windows 12-page build passed. [Project](https://gitlab.scch.at/foci/aisys/saner2027-overleaf).                                                                                                                                                          |
+| `gitlab.scch.at\foci\aisys\andritz\anita`                 | Korolev          | `uv sync` and catalog notebook execution passed without changing owner state. [Project](https://gitlab.scch.at/foci/aisys/andritz/anita).                                                                                                               |
+| `gitlab.scch.at\foci\aisys\andritz\aqua`                  | Korolev          | 845 tests, ruff and ty passed on local `korolev-native` commit `e7755ff`. Compose gate pending. [Project](https://gitlab.scch.at/foci/aisys/andritz/aqua).                                                                                              |
+| `gitlab.scch.at\scch\internal-tools\not-so-personalwolke` | Korolev          | Untracked booking skill and local `nix-dev-shell` preserved. Compose gate pending. [Project](https://gitlab.scch.at/scch/internal-tools/not-so-personalwolke).                                                                                          |
+
+Reference clones `can1357/oh-my-pi*` and `backnotprop/plannotator` are excluded. The owner dropped `/tmp/haroon/LLMCodeImpact` from native migration and retains it only in the private WSL export. Disposable dataset-packaging fixtures and smoke repositories are excluded. The export location is `C:\Users\jglock\Backups\wsl\`, retained privately for three months of native use and then deleted. Export and unregister are not yet completed or authorized by this checklist.
+
+### Transfer procedure
+
+1. Inventory HEAD, branches/remotes/upstreams, porcelain status, fixed-option `git diff --binary HEAD` checksum, stash list, `.git/info/exclude`, untracked/ignored files and initialized submodules. Finish source omp sessions with `/exit`. Leave transcripts in WSL.
+1. In each source repository and initialized submodule, create temporary `refs/migrate/head`, `refs/migrate/worktree` from `git stash create`, and `refs/migrate/stash/N` for every stash. Bundle kept branches, tags, remote-tracking refs and temporary refs with `git bundle create <bundle> <refs...>`. Delete temporary source refs afterward. Skip a branch only when `git cherry` proves every commit patch-equivalent against its origin branch or origin's default branch. Always keep the checked-out branch.
+1. Archive untracked/ignored files in pax tars and local LFS objects separately. Exclude platform environments, symlinks and Windows-invalid names. Record exclusions explicitly. Do not discard pending owner data or publish it.
+1. Initialize each new native repository, restore LFS objects first, then `git fetch <bundle> '+refs/*:refs/*'`. Recreate remotes, mapping origin to HTTPS, and restore upstream configuration and HEAD. Set `GIT_LFS_SKIP_SMUDGE=1` for `git reset --hard`, only inside the newly initialized destination, then run `git lfs checkout`. Reconcile an existing native checkout rather than resetting it.
+1. Restore each stash with `git stash store`, apply `refs/migrate/worktree` with `git stash apply --index`, and extract file tars. Materialize initialized nested repositories, run HTTPS `git submodule init`, then `git submodule absorbgitdirs`. Leave source-uninitialized submodules uninitialized.
+1. Compare ref names/SHAs, HEAD, porcelain status after recorded exclusions, diff checksum, stash list and copied counts/bytes. Require zero differences before refresh. Run `git fetch --prune` over HTTPS. Skip the retained `macbook-pro` remote until native Mac SSH exists. Keep WSL as a second copy until verified export.
+
+Docker installation occurred after cloning. Native Docker/Compose smoke passed before project container acceptance. Container gates and each project's Mac requirement still block destructive retirement.
+
+### Native HTTPS credentials
+
+Run `gh auth login --web --git-protocol https` and let the owner confirm in their browser. GitHub Git uses `gh auth git-credential`. For GitLab, create an owner-local repository-only token with `read_repository` and `write_repository`, then hand it directly to Git Credential Manager via `git credential approve`. Do not print the token or include it in shell history. The observed legacy token expires 2027-10-11. Fine-grained Git/LFS coverage was not assumed.
+
+For `git.overleaf.com`, let the owner generate a fresh Git authentication token and store it in GCM with username `git`. Close token pages after storage. Never copy credentials from WSL. Read-only `git ls-remote` with `GCM_INTERACTIVE=never` proves reuse without prompting.
+
+## Bounded OMP decision migration
+
+After source sessions finish, only `architecture.md`, `product.md` and `style.md` may be copied from a reviewed WSL bank. Never copy `queue/`, `state.json`, transcripts, authentication/session databases, plugin caches or whole `~/.omp`. Back up existing native decision files and have the owner reconcile conflicts. This exception does not transfer sessions or claim process survival.
+
+Bank identity is `<basename>-<Bun.hash(cwd).toString(36)>`, using the resolved cwd exactly as omp sees it on each platform. Compute with that platform's Bun and path resolution. Do not guess hashes, case-normalize Windows paths or reuse Linux bank names. For `C:\Users\jglock\src\gitlab.scch.at\foci\aisys\saner2027-paper`, the native bank is `saner2027-paper-3cdx7sc59ezhj`, paired with WSL `saner2027-paper-168zanlieu4n9`. Banks live under `~/.omp/agent/memories/sharpshooter/`. Compare copied bytes and start a fresh native session to prove decision discovery. [Verified mappings](../../openspec/changes/retire-korolev-wsl-host/evidence.md#tasks-31-32-and-33-bounded-decision-banks).
+
+### Booking plugin and provider login
+
+Use the approved private marketplace, not a skill copy inside personalwolke:
+
+```powershell
+omp plugin marketplace add glockyco/omp-booking
+omp plugin install --scope user booking@glockyco-booking
+```
+
+Upgrade through the manager:
+
+```powershell
+omp plugin marketplace update glockyco-booking
+omp plugin upgrade --scope user booking@glockyco-booking
+```
+
+Start a fresh omp session after installation or upgrade. Verify `skill:book-project-hours` discovery and harmless evidence-helper execution. The helper honors `PI_CODING_AGENT_DIR` and repeated `--session-root`, including retained WSL transcripts when explicitly selected. Booking real hours requires separate owner authorization. Observed plugins are `personal@glockyco` 0.4.0 and `booking@glockyco-booking` 0.1.0 on the sole Tern-managed `%LOCALAPPDATA%\Tern\omp\bin\omp.exe`.
+
+Reproduce only the nonsecret provider definition in `%USERPROFILE%\.omp\agent\models.yml`, preserving other native definitions:
+
+```yaml
+providers:
+  litellm:
+    baseUrl: https://vllm-api.scch.at/v1
+```
+
+Do not copy WSL's stored credential. The owner must run `/login` in native omp and obtain one real provider response. Configuration exists, but login/response acceptance remains pending.
 
 ## Explicit Tern, OMP, plugin and annotation flows
 
