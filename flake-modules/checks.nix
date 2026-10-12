@@ -397,10 +397,6 @@
           peers = tailnetPeers;
           inherit tailnetPolicyRenderer;
         };
-        tailnetRemoteAccessReview = pkgs.runCommand "check-korolev-remote-access" { } ''
-          ${pkgs.python3}/bin/python ${../checks/tailnet-policy-remote-access.py} ${../docs/operations/korolev-remote-access.md}
-          touch "$out"
-        '';
         openspecContracts = inputs.personal-omp-plugin.lib.openspecCheck {
           inherit pkgs;
           src = ../.;

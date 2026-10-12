@@ -4,14 +4,14 @@ Korolev is a Windows 11 laptop managed by the employer through Intune. Work as t
 
 ## What owns what
 
-| Source                                                       | Owns                                                           |
-| ------------------------------------------------------------ | -------------------------------------------------------------- |
-| `windows/workstation.json`                                   | Applications, their versions and user settings                 |
-| `windows/npm/`                                               | Native language servers and OpenSpec, locked by npm            |
-| `windows/Workstation.psm1`                                   | The engine that tests and applies `workstation.json`           |
-| `home/`                                                      | User files and app settings, applied by chezmoi                |
-| `windows/apply-kbdneo.ps1`, `windows/apply-zen-policies.ps1` | The only two Administrator operations                          |
-| Applications themselves                                      | Profiles, credentials, sessions and anything not declared here |
+| Source                     | Owns                                                           |
+| -------------------------- | -------------------------------------------------------------- |
+| `windows/workstation.json` | Applications, their versions and user settings                 |
+| `windows/npm/`             | Native language servers and OpenSpec, locked by npm            |
+| `windows/Workstation.psm1` | The engine that tests and applies `workstation.json`           |
+| `home/`                    | User files and app settings, applied by chezmoi                |
+| `windows/apply-*.ps1`      | The only Administrator operations: Neo, Zen policies and SSH   |
+| Applications themselves    | Profiles, credentials, sessions and anything not declared here |
 
 `chezmoi apply` runs the engine first and then writes user files. Run the engine directly to see what differs without changing anything:
 
@@ -50,7 +50,7 @@ It prints one `desired:` or `drift:` line per resource and exits 0 when everythi
 
    Zen, Tailscale and Docker Desktop install for all users, so their installers ask for Administrator credentials. `verify` excludes scripts because the app stop/restart and Tern PATH scripts run on every apply.
 
-1. After Zen is installed, run `pwsh -NoProfile -File <checkout>\windows\apply-zen-policies.ps1` in an Administrator PowerShell 7. Both Administrator scripts accept `-Test` to check without changing anything.
+1. After Zen is installed, run `pwsh -NoProfile -File <checkout>\windows\apply-zen-policies.ps1` in an Administrator PowerShell 7. The Administrator scripts accept `-Test` to check without changing anything.
 
 1. Sign out and back in. Windows then picks up the UI language, input methods and the ReNeo launcher. ReNeo asks for Administrator credentials at every sign-in.
 
@@ -60,6 +60,7 @@ It prints one `desired:` or `drift:` line per resource and exits 0 when everythi
    - Create a Zen profile, then run `chezmoi apply` again to install its theme.
    - Install Tern, OMP, the plugins and Plannotator as described below.
    - Install TeX Live as described below.
+   - Enroll Tailscale and set up SSH as described in [Korolev remote access](korolev-remote-access.md).
    - Sign in to GitHub (`gh auth login --web --git-protocol https`), GitLab and Overleaf. Git Credential Manager stores the tokens.
 
 ## Keyboard layouts

@@ -45,7 +45,7 @@ jobs:
               for path in filter(None, paths):
                   classified = False
                   # These include content read by fleetSurface, OpenSpec and
-                  # chezmoi checks, plus the remote-access runbook assertion.
+                  # chezmoi checks.
                   if (
                       path.endswith(".nix")
                       or path in ("flake.lock", "formatting.json", ".chezmoiroot")
@@ -53,7 +53,6 @@ jobs:
                           "flake-modules/", "modules/", "hosts/", "packages/",
                           "checks/", "lib/", "overlays/", "dns/", "home/", "openspec/",
                       ))
-                      or path == "docs/operations/korolev-remote-access.md"
                   ):
                       affected["nix"] = classified = True
                   if path.startswith(("windows/", "home/")) or path in ("formatting.json", "lefthook.yml", ".chezmoiroot", ".gitattributes"):

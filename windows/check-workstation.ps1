@@ -35,7 +35,7 @@ try {
         if (Test-Path -LiteralPath $path -PathType Leaf) { $path }
     } | Sort-Object -Unique)
     $testPaths = @($sourcePaths | Where-Object { $_ -like (Join-Path $PSScriptRoot 'tests/*.Tests.ps1') })
-    $administratorPaths = @('apply-kbdneo.ps1', 'apply-zen-policies.ps1') | ForEach-Object { Join-Path $PSScriptRoot $_ }
+    $administratorPaths = @('apply-kbdneo.ps1', 'apply-openssh.ps1', 'apply-zen-policies.ps1') | ForEach-Object { Join-Path $PSScriptRoot $_ }
 
     Invoke-WorkstationGate 'PowerShell parser' {
         foreach ($path in $enginePaths + $administratorPaths) {
