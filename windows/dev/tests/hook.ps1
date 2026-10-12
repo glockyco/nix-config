@@ -26,13 +26,12 @@ try {
     Assert-Fixture ($paths.Count -eq 1 -and $paths[0] -ceq 'space name.md') 'Staged path with spaces was corrupted'
     $format = { param($root, $tools, $files) Invoke-NativeFormatting -RepositoryRoot $root -ToolsRoot $tools -Paths $files -Check }
     $noWindows = { param($root) $script:windowsCalled = $true }
-    $neverNix = { param($root) throw 'Native-only commit unexpectedly required Nix' }
-    Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot (Join-Path $work 'missing-tools') -NixGate $neverNix -FormatGate $format -WindowsGate $noWindows } 'bootstrap|environment|missing' 'missing pinned tools'
+    Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot (Join-Path $work 'missing-tools') -FormatGate $format -WindowsGate $noWindows } 'bootstrap|environment|missing' 'missing pinned tools'
     $mock = Join-Path $work 'mock formatter.ps1'
     [IO.File]::WriteAllText($mock, 'param([string]$Path); if ([IO.File]::ReadAllText($Path) -eq "bad") { [IO.File]::WriteAllText($Path, "good") }; exit 0')
     function Get-NativeTool { param($Name, $ToolsRoot) [pscustomobject]@{ command = $hostExecutable; prefixArguments = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', $mock) } }
     $script:windowsCalled = $false
-    Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format -WindowsGate $noWindows
+    Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -FormatGate $format -WindowsGate $noWindows
     Assert-Fixture $script:windowsCalled 'Native invariant gate did not run'
     Write-Host 'PASS native-only staged commit (no Nix)'
     # Keep both real default gates. Double their checkers only in this disposable
@@ -49,36 +48,27 @@ $invocation = @{ staticOnly = $StaticOnly.IsPresent; processId = $PID; hostMajor
 if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'engine-fail.txt')) { exit 24 }
 exit 0
 '@)
-    Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format
+    Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -FormatGate $format
     $engineInvocation = Get-Content -LiteralPath (Join-Path $windowsRoot 'engine-invocation.json') -Raw | ConvertFrom-Json
     Assert-Fixture $engineInvocation.staticOnly 'Default engine gate did not forward -StaticOnly'
     Assert-Fixture ($engineInvocation.processId -ne $PID -and $engineInvocation.hostMajor -ge 7 -and -not $engineInvocation.leakedHelper) 'Default engine gate did not isolate its PowerShell 7 host'
     Write-Host 'PASS default engine static gate isolates host scope and forwards -StaticOnly'
     [IO.File]::WriteAllText((Join-Path $windowsRoot 'engine-fail.txt'), 'fail')
-    Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format } 'Workstation static gate failed \(exit 24\)' 'default engine static gate failure propagation'
+    Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -FormatGate $format } 'Workstation static gate failed \(exit 24\)' 'default engine static gate failure propagation'
     Remove-Item -LiteralPath (Join-Path $windowsRoot 'engine-fail.txt')
     [IO.File]::WriteAllText((Join-Path $work 'space name.md'), 'bad')
-    Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format -WindowsGate $noWindows } 'Unformatted native' 'unformatted native rejection'
+    Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -FormatGate $format -WindowsGate $noWindows } 'Unformatted native' 'unformatted native rejection'
+    [IO.File]::WriteAllText((Join-Path $work 'space name.md'), 'good')
     [IO.File]::WriteAllText((Join-Path $work 'fixture.nix'), '{}')
     & git -C $work add -- fixture.nix
     if ($LASTEXITCODE -ne 0) { throw 'Cannot stage Nix fixture' }
-    Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate { throw 'Staged .nix requires declared Nix/WSL environment' } -FormatGate $format -WindowsGate $noWindows } 'Nix/WSL' 'staged Nix without environment'
-    Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate { throw 'Wrong checkout: WSL must validate exact native checkout' } -FormatGate $format -WindowsGate $noWindows } 'Wrong checkout' 'wrong checkout rejection'
-    # Exercise the real WSL adapter's missing-runtime and result propagation,
-    # without starting WSL or installing anything on the live host.
-    function Get-Command { param($Name, $CommandType, $ErrorAction) return $null }
-    Expect-Failure { Invoke-SameCheckoutNixGate $work } 'Staged .nix.*WSL' 'missing WSL diagnostic'
-    function Get-Command { param($Name, $CommandType, $ErrorAction) [pscustomobject]@{ Source = 'fixture-wsl' } }
-    function Invoke-CapturedProcess {
-        param($Command, $Arguments, $WorkingDirectory)
-        if ($Arguments -contains '/bin/wslpath') { return [pscustomobject]@{ code = 0; output = '/wrong/checkout'; error = '' } }
-        [pscustomobject]@{ code = 23; output = ''; error = 'Wrong checkout: native proof file does not match' }
-    }
-    Expect-Failure { Invoke-SameCheckoutNixGate $work } 'exit 23.*Wrong checkout' 'WSL wrong-checkout and native exit propagation'
-    Assert-Fixture (@(Get-ChildItem -LiteralPath $work -Filter '.native-nix-gate-*' -Force).Count -eq 0) 'Nix proof file leaked'
+    $script:windowsCalled = $false
+    $notice = @(Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -FormatGate $format -WindowsGate $noWindows 6>&1) -join "`n"
+    Assert-Fixture ($notice -match 'fixture\.nix' -and $notice -match 'CI') 'Staged Nix files were not named as checked by CI'
+    Assert-Fixture $script:windowsCalled 'Native invariant gate did not run beside staged Nix'
+    Write-Host 'PASS staged Nix named as checked by CI'
 } finally {
     ${function:Get-NativeTool} = $originalLookup
     if (Test-Path -LiteralPath $work) { Remove-Item -LiteralPath $work -Recurse -Force }
 }
-& (Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) 'tests/wsl-hook-regressions.ps1') -RepositoryRoot $RepositoryRoot
 Write-Host 'PASS native hook fixtures'

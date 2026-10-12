@@ -51,7 +51,7 @@ pwsh -NoProfile -File .\windows\dev\format.ps1 -Check
 pwsh -NoProfile -File .\windows\dev\ci.ps1
 ```
 
-The tools live below the checkout's Git directory and are pinned in `windows/dev/dependencies.lock.json`. `ci.ps1` validates the declaration and runs the mocked engine tests and chezmoi fixtures. It never changes the real machine. The pre-commit hook runs the static checks. A commit that stages `.nix` files formats them through the `NixOS` WSL distribution.
+The tools live below the checkout's Git directory and are pinned in `windows/dev/dependencies.lock.json`. `ci.ps1` validates the declaration and runs the mocked engine tests and chezmoi fixtures. It never changes the real machine. The pre-commit hook runs the static checks. Windows has no Nix, so the hook only names staged `.nix` files, and CI's Nix formatting check is their gate.
 
 Before merging a change to `windows/` or to Windows files in `home/`, run the engine's dry run and `chezmoi apply` on Korolev from the PR branch. See [Korolev Windows](docs/operations/korolev-windows.md).
 

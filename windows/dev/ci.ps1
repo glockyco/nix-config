@@ -75,8 +75,8 @@ try {
     )) {
         Invoke-CiScript $relative @('-RepositoryRoot', $RepositoryRoot)
     }
-    # Hook fixtures include WSL transport doubles. Chez fixtures include checkout
-    # and app regressions, rendered-template ASTs and a dedicated fake engine.
+    # Chezmoi fixtures include checkout and app regressions, rendered-template
+    # ASTs and a dedicated fake engine.
     Invoke-CiScript 'windows/dev/tests/native-smoke.ps1' @('-RepositoryRoot', $RepositoryRoot, '-ArchiveCacheRoot', $ArchiveCacheRoot)
     Write-Output 'Windows static, mocked engine and isolated native/chezmoi fixture checks passed. This is not live workstation acceptance.'
 } catch {
