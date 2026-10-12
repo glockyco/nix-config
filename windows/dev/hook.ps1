@@ -44,6 +44,8 @@ function Invoke-NativeCommitGate {
             $hostCommand = (Get-Process -Id $PID).Path
             & $hostCommand -NoProfile -NonInteractive -File (Join-Path $root 'windows/check.ps1') -SkipFixtures
             if ($LASTEXITCODE -ne 0) { throw "Windows invariant gate failed (exit $LASTEXITCODE)" }
+            & $hostCommand -NoProfile -NonInteractive -File (Join-Path $root 'windows/check-workstation.ps1') -StaticOnly
+            if ($LASTEXITCODE -ne 0) { throw "Workstation static gate failed (exit $LASTEXITCODE)" }
         }
     )
     $paths = @(Get-GitFormattingPaths -RepositoryRoot $RepositoryRoot -Staged)

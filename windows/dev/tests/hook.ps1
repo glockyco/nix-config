@@ -35,8 +35,8 @@ try {
     Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format -WindowsGate $noWindows
     Assert-Fixture $script:windowsCalled 'Native invariant gate did not run'
     Write-Host 'PASS native-only staged commit (no Nix)'
-    # Keep the real default Windows gate; only its checker is doubled in the
-    # disposable checkout, so host isolation, forwarding and exits are covered.
+    # Keep both real default gates. Double their checkers only in this disposable
+    # checkout to cover fresh host isolation, argument forwarding and exit codes.
     $windowsRoot = Join-Path $work 'windows'
     New-Item -ItemType Directory -Path $windowsRoot | Out-Null
     [IO.File]::WriteAllText((Join-Path $windowsRoot 'check.ps1'), @'
@@ -49,9 +49,26 @@ $optional = ([PSCustomObject]@{}).application
 if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'fail.txt')) { exit 23 }
 exit 0
 '@)
+    [IO.File]::WriteAllText((Join-Path $windowsRoot 'check-workstation.ps1'), @'
+param([switch]$StaticOnly)
+$ErrorActionPreference = 'Stop'
+$optional = ([PSCustomObject]@{}).application
+$helper = Get-Command Invoke-NativeProcess -CommandType Function -ErrorAction SilentlyContinue
+$invocation = @{ staticOnly = $StaticOnly.IsPresent; processId = $PID; hostMajor = $PSVersionTable.PSVersion.Major; leakedHelper = [bool]$helper }
+[IO.File]::WriteAllText((Join-Path $PSScriptRoot 'engine-invocation.json'), ($invocation | ConvertTo-Json))
+if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'engine-fail.txt')) { exit 24 }
+exit 0
+'@)
     Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format
     Assert-Fixture ([IO.File]::ReadAllText((Join-Path $windowsRoot 'invocation.txt')) -ceq 'True') 'Default Windows gate did not forward -SkipFixtures'
     Write-Host 'PASS default Windows gate isolates host scope and forwards -SkipFixtures'
+    $engineInvocation = Get-Content -LiteralPath (Join-Path $windowsRoot 'engine-invocation.json') -Raw | ConvertFrom-Json
+    Assert-Fixture $engineInvocation.staticOnly 'Default engine gate did not forward -StaticOnly'
+    Assert-Fixture ($engineInvocation.processId -ne $PID -and $engineInvocation.hostMajor -ge 7 -and -not $engineInvocation.leakedHelper) 'Default engine gate did not isolate its PowerShell 7 host'
+    Write-Host 'PASS default engine static gate isolates host scope and forwards -StaticOnly'
+    [IO.File]::WriteAllText((Join-Path $windowsRoot 'engine-fail.txt'), 'fail')
+    Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format } 'Workstation static gate failed \(exit 24\)' 'default engine static gate failure propagation'
+    Remove-Item -LiteralPath (Join-Path $windowsRoot 'engine-fail.txt')
     [IO.File]::WriteAllText((Join-Path $windowsRoot 'fail.txt'), 'fail')
     Expect-Failure { Invoke-NativeCommitGate -RepositoryRoot $work -ToolsRoot $work -NixGate $neverNix -FormatGate $format } 'Windows invariant gate failed \(exit 23\)' 'default Windows gate failure propagation'
     [IO.File]::WriteAllText((Join-Path $work 'space name.md'), 'bad')

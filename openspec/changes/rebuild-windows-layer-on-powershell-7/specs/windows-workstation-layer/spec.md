@@ -158,22 +158,28 @@ The engine SHALL converge the existing supported registry, keyboard, Explorer, r
 
 ### Requirement: Excluded Windows surface
 
-The engine SHALL NOT write taskbar state, default application associations, CloudStore or centrally managed application installation state. The old taskbar visibility mutation SHALL be retired and documented as a deliberate parity difference. It SHALL NOT restart Explorer to enforce that setting.
+The engine SHALL NOT write taskbar pinned-application lists, default application associations, CloudStore or centrally managed application installation state. Approved taskbar visibility SHALL remain declared as a typed setting with StuckRects3 byte 8 equal to 2. Explorer SHALL restart only when that value actually changes, never on a no-op apply.
 
 #### Scenario: Keep unsupported surfaces user-owned
 
 - **WHEN** the engine runs dry run or apply
-- **THEN** no taskbar, default-association or CloudStore mutation is planned or executed
+- **THEN** no taskbar pinned-application list, default-association or CloudStore mutation is planned or executed
 
 #### Scenario: Inspect the excluded surface
 
 - **WHEN** the layer and runbook are reviewed
-- **THEN** exclusions have reasons and no taskbar, association or CloudStore writes exist
+- **THEN** exclusions have reasons and no pinned-application list, association or CloudStore writes exist
 - **AND** manual Night Light remains sunset to sunrise at 50 percent strength
+
+#### Scenario: Preserve taskbar visibility idempotently
+
+- **WHEN** taskbar auto-hide is enabled and apply runs
+- **THEN** only the declared byte becomes 2 and Explorer restarts once
+- **AND** an already-desired taskbar triggers neither a registry write nor an Explorer restart
 
 ### Requirement: Validation before and after apply
 
-Data SHALL be validated against its schema and privilege/ownership invariants before execution. Dry run SHALL report every declared resource as desired or drift, make no persistent or temporary writes, return zero only for full convergence, return nonzero for drift and distinguish execution errors. Apply SHALL test before setting, mutate only drifted resources, confirm each change and propagate native failures by exit code rather than stderr. Installed WinGet discovery SHALL be batched once per run without scope filtering. Portable executables SHALL resolve from their selected package root or approved PATH resolution, never an assumed WinGet Links directory.
+Data SHALL be validated against its schema and privilege/ownership invariants before execution. Dry run SHALL report every declared resource as desired or drift, make no persistent or temporary writes, return zero only for full convergence, return nonzero for drift and distinguish execution errors. Apply SHALL test before setting, mutate only drifted resources, confirm each change and propagate native failures by exit code rather than stderr. Installed WinGet discovery SHALL use one initial batch without scope filtering and, only after installs or updates, one fresh batch to verify all changed packages together. Portable executables SHALL resolve from their selected package root or approved PATH resolution, never an assumed WinGet Links directory.
 
 #### Scenario: Preview a converged workstation
 
@@ -189,7 +195,8 @@ Data SHALL be validated against its schema and privilege/ownership invariants be
 #### Scenario: Batch WinGet and preserve per-user MSI detection
 
 - **WHEN** a run checks all WinGet declarations including Pandoc
-- **THEN** one installed snapshot serves the entire run without --scope filtering
+- **THEN** one initial installed snapshot serves all tests without --scope filtering
+- **AND** only actual installations or updates trigger one fresh batch for all changed-package postconditions
 - **AND** any needed user installation still explicitly supplies --scope user
 
 #### Scenario: Treat native stderr correctly

@@ -1,0 +1,838 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "applications": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "scope": {
+                "enum": [
+                  "user",
+                  "machine"
+                ]
+              },
+              "versionPolicy": {
+                "enum": [
+                  "present",
+                  "pinned"
+                ]
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1
+              },
+              "consumer": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "winget"
+              },
+              "executable": {
+                "type": "string",
+                "minLength": 1
+              },
+              "installerType": {
+                "enum": [
+                  "zip",
+                  "portable",
+                  "inno",
+                  "wix",
+                  "burn"
+                ]
+              },
+              "requiresVCRuntime": {
+                "type": "boolean"
+              },
+              "installArguments": {
+                "type": "string",
+                "minLength": 1
+              },
+              "directory": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "id",
+              "roles",
+              "scope",
+              "versionPolicy"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "versionPolicy": {
+                      "const": "pinned"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "version",
+                    "consumer"
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "version"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "consumer"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "scope": {
+                "enum": [
+                  "user",
+                  "machine"
+                ]
+              },
+              "versionPolicy": {
+                "enum": [
+                  "present",
+                  "pinned"
+                ]
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1
+              },
+              "consumer": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "archive"
+              },
+              "root": {
+                "enum": [
+                  "LOCALAPPDATA",
+                  "APPDATA"
+                ]
+              },
+              "directory": {
+                "type": "string",
+                "minLength": 1
+              },
+              "releaseVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "pattern": "^https://"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archiveKind": {
+                "enum": [
+                  "zip",
+                  "7z"
+                ]
+              },
+              "payload": {
+                "type": "string",
+                "minLength": 1
+              },
+              "executable": {
+                "type": "string",
+                "minLength": 1
+              },
+              "versionSource": {
+                "enum": [
+                  "file",
+                  "command"
+                ]
+              },
+              "versionArgs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "ownedFiles": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "preserveFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "process": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "id",
+              "roles",
+              "scope",
+              "versionPolicy",
+              "root",
+              "directory",
+              "releaseVersion",
+              "url",
+              "sha256",
+              "archiveKind",
+              "payload",
+              "executable",
+              "versionSource"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "versionPolicy": {
+                      "const": "pinned"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "version",
+                    "consumer"
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "version"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "consumer"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "scope": {
+                "enum": [
+                  "user",
+                  "machine"
+                ]
+              },
+              "versionPolicy": {
+                "enum": [
+                  "present",
+                  "pinned"
+                ]
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1
+              },
+              "consumer": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "npm"
+              },
+              "directory": {
+                "type": "string",
+                "minLength": 1
+              },
+              "nodeId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "manifest": {
+                "type": "object",
+                "required": [
+                  "dependencies"
+                ],
+                "properties": {
+                  "dependencies": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "lock": {
+                "type": "object",
+                "required": [
+                  "lockfileVersion",
+                  "packages"
+                ]
+              },
+              "packages": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "version": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "integrity": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "tarball": {
+                      "type": "string",
+                      "pattern": "^https://"
+                    },
+                    "bin": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "integrity",
+                    "tarball",
+                    "bin"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "id",
+              "roles",
+              "scope",
+              "versionPolicy",
+              "directory",
+              "nodeId",
+              "manifest",
+              "lock",
+              "packages"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "versionPolicy": {
+                      "const": "pinned"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "version",
+                    "consumer"
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "version"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "consumer"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "scope": {
+                "enum": [
+                  "user",
+                  "machine"
+                ]
+              },
+              "versionPolicy": {
+                "enum": [
+                  "present",
+                  "pinned"
+                ]
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1
+              },
+              "consumer": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "font"
+              },
+              "releaseVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "pattern": "^https://"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "fonts": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "registryName": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  },
+                  "required": [
+                    "registryName",
+                    "sha256"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "id",
+              "roles",
+              "scope",
+              "versionPolicy",
+              "releaseVersion",
+              "url",
+              "sha256",
+              "fonts"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "versionPolicy": {
+                      "const": "pinned"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "version",
+                    "consumer"
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "version"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "consumer"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "settings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "registry"
+              },
+              "path": {
+                "type": "string",
+                "pattern": "^HKCU:\\\\"
+              },
+              "valueName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ensure": {
+                "enum": [
+                  "present",
+                  "absent"
+                ]
+              },
+              "type": {
+                "enum": [
+                  "String",
+                  "ExpandString",
+                  "DWord"
+                ]
+              },
+              "value": {
+                "type": [
+                  "string",
+                  "integer"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "path",
+              "valueName",
+              "ensure"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "ensure": {
+                      "const": "present"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "type",
+                    "value"
+                  ],
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "type": {
+                            "const": "DWord"
+                          }
+                        }
+                      },
+                      "then": {
+                        "properties": {
+                          "value": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 4294967295
+                          }
+                        }
+                      },
+                      "else": {
+                        "properties": {
+                          "value": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "type"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "value"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "language"
+              },
+              "languages": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "ui": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "languages",
+              "ui"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "inputMethods"
+              },
+              "ordered": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "default": {
+                "type": "string",
+                "minLength": 1
+              },
+              "neoRegistryPath": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "ordered",
+              "default",
+              "neoRegistryPath"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "appearance"
+              },
+              "wallpaper": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "wallpaper"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "animation"
+              },
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "enabled"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "taskbarVisibility"
+              },
+              "path": {
+                "const": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3"
+              },
+              "valueName": {
+                "const": "Settings"
+              },
+              "index": {
+                "const": 8
+              },
+              "value": {
+                "const": 2
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "path",
+              "valueName",
+              "index",
+              "value"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "applications",
+    "settings"
+  ]
+}
