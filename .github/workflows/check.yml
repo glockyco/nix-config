@@ -79,17 +79,13 @@ jobs:
     with:
       openspec-root: '.'
 
-  check:
+  darwin:
+    name: check (macos-15)
     needs: changes
     if: needs.changes.outputs.nix == 'true'
-    # `nix flake check` only checks the runner's own system, so the fleet needs
-    # one runner per system in `systems`. The macOS 14 and newer labels are
-    # Apple Silicon; `ubuntu-latest` covers `x86_64-linux`.
-    strategy:
-      fail-fast: false
-      matrix:
-        runner: [macos-15, ubuntu-latest]
-    runs-on: ${{ matrix.runner }}
+    # Static job names preserve both required contexts even when Nix is skipped.
+    # `nix flake check` covers only the runner's own system.
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -105,24 +101,26 @@ jobs:
 
       # Reject uncached source toolchains and language servers before building
       # repository checks. This app needs store access outside a check sandbox.
-      - if: runner.os == 'macOS'
-        run: nix run .#check-darwin-build-plans
+      - run: nix run .#check-darwin-build-plans
 
-      # Each system builds its host-prefixed system and home closures, module
-      # import checks, and formatting checks. Evaluation or build failure fails
-      # this job.
-      #
-      # Each leg runs the Nix that its host runs, because `nix flake check` is
-      # implementation-sensitive: revision f24e147 passed on this runner under
-      # Determinate Nix and failed on the WSL host under the pinned Nix, which
-      # refuses to evaluate a package whose `meta.platforms` excludes the
-      # system. The macOS runner and the Darwin host both use Determinate Nix,
-      # so only the Linux leg has to fetch its host's Nix.
-      - if: runner.os == 'macOS'
-        run: nix flake check --print-build-logs
+      - run: nix flake check --print-build-logs
 
-      - if: runner.os == 'Linux'
-        run: |
+  linux:
+    name: check (ubuntu-latest)
+    needs: changes
+    if: needs.changes.outputs.nix == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: DeterminateSystems/determinate-nix-action@4d65ea9cab522b6d9f29a170aed23ededc1b27af # v3
+        with:
+          extra-conf: |
+            extra-substituters = https://cache.numtide.com
+            extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
+
+      # Linux retains its host's Nix implementation until WSL retirement.
+      # Determinate Nix previously accepted an output that this pin rejected.
+      - run: |
           nix build .#nixosConfigurations.korolev.config.nix.package --out-link "$RUNNER_TEMP/host-nix"
           "$RUNNER_TEMP/host-nix/bin/nix" \
             --extra-experimental-features 'nix-command flakes' \

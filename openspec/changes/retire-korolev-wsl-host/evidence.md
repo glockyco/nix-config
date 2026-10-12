@@ -97,4 +97,14 @@ Korolev uses the sole Tern-managed `%LOCALAPPDATA%\Tern\omp\bin\omp.exe`, with m
 | test-generalization  | Docker toolchain and materialized-symlink acceptance pending.                                                                                                                                                                                                                                                                                                |
 | not-so-personalwolke | Compose acceptance pending.                                                                                                                                                                                                                                                                                                                                  |
 
-Personal-project Mac-plus-Windows acceptance and remaining container gates are not fully proved here. Tasks 2.8, 3.4 and all groups 4 through 8 remain unticked. No export or unregister success is claimed.
+Personal-project Mac-plus-Windows acceptance and remaining container gates are not fully proved here. Tasks 2.8, 3.4 and groups 4 through 8 remain incomplete, except for the separately verified task 4.2 below. No export or unregister success is claimed.
+
+## Task 4.2: portable OpenSpec CI
+
+The reviewed v0.4.0 annotated tag resolves to commit `aa97a3febee50f00ee7e4e43a81edc211ad7f8d7`. Its reusable workflow exposes only the optional repository-relative `openspec-root` input. nix-config supplies `'.'` and passes no CLI version, flags or archived opt-out.
+
+[PR #82](https://github.com/glockyco/nix-config/pull/82), [OpenSpec job](https://github.com/glockyco/nix-config/actions/runs/38265496562/job/114866498796), checked out nix-config's caller merge revision `34fd0d3fec92446cc03b3cda14d5c00f867acfd4`, including head `2c49147f223ee71656910bf0b8918503d1bfd743`. The runner installed the workflow-owned `@fission-ai/openspec@1.14.0` in scratch. Strict noninteractive all-contract validation passed 25 items. Strict noninteractive archived validation passed 45 items. The job passed in 9 seconds.
+
+Local fixtures executed the released workflow's exact gate script. A CLI double without `--archived` failed with the declared unsupported-archive diagnostic. Nonzero all-contract and archived validation each failed the gate. The successful fixture recorded exactly `validate --help`, `validate --all --strict --no-interactive` and `validate --archived --strict --no-interactive`. All fixture scratch directories were removed.
+
+Task 4.7 remains unchecked. `personal-omp-plugin`, `openspecContracts` and `openspecAdapters` remain in the flake and lock. This CI addition does not claim local-hook cutover or authorize their removal.
