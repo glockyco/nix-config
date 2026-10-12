@@ -1,3 +1,4 @@
+# Disposable Windows-only CI selection probe.
 [CmdletBinding()]
 param(
   [string]$DocumentPath,
