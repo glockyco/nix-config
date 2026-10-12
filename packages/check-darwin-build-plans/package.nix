@@ -125,10 +125,11 @@ writeShellApplication {
         flake = builtins.getFlake (builtins.getEnv "PLAN_FLAKE");
         system = builtins.getEnv "PLAN_SYSTEM";
       in builtins.concatLists (map (group:
-        map (attr: {
+        let groupOutputs = builtins.getAttr system (builtins.getAttr group flake);
+        in map (attr: {
           inherit group attr;
-          drv = flake.''${group}.''${system}.''${attr}.drvPath;
-        }) (builtins.attrNames flake.''${group}.''${system})
+          drv = (builtins.getAttr attr groupOutputs).drvPath;
+        }) (builtins.attrNames groupOutputs)
       ) [ "checks" "packages" "devShells" ])
     ')"
     outputs="$(printf '%s' "$outputs" | jq -r '.[] | [.group, .attr, .drv] | @tsv')"
