@@ -4,56 +4,55 @@
 
 ### Requirement: One formatting configuration for both gates
 
-Local and CI formatting SHALL consume one platform-neutral formatter/pattern/exclusion/options declaration. Mac/CI Nix and native Windows adapters SHALL use its pinned equivalents without a second list. Every staged .nix file on native Windows SHALL fail clearly with Mac/CI guidance, without checking for WSL availability, delegation or successful skip. Nix formatting SHALL run on the Mac and applicable Linux/Darwin CI only.
+Local and CI formatting SHALL consume the existing single platform-neutral formatter declaration. The PowerShell 7 Windows adapter SHALL use locked native tooling. It SHALL NOT format staged Nix files or invoke WSL, and it SHALL name staged Nix files as left to the Nix formatting checks in CI and on the Mac. Native-only work SHALL not require Nix. Missing tools SHALL fail rather than silently skip. Windows engine checks SHALL use proportional mocked behavior coverage, not mutations of a bespoke checker.
+
+#### Scenario: Stage native-only work
+
+- **WHEN** native Windows precommit checks native-only staged files
+- **THEN** PowerShell 7 invokes declared formatters and the engine's static/schema boundary checks
+- **AND** it does not invoke DSC document validation or a second PowerShell host
+
+#### Scenario: Stage Nix without its environment
+
+- **WHEN** a native Windows commit stages Nix files
+- **THEN** the hook checks the other staged files and names the Nix files as checked by CI
+- **AND** CI's Nix formatting check rejects a pull request with unformatted Nix
 
 #### Scenario: Unformatted file reaches a commit
 
-- **WHEN** a maintainer commits a file that the formatting configuration would rewrite
-- **THEN** the commit is rejected
+- **WHEN** staged content that the platform's hook formats differs from shared formatter output
+- **THEN** the commit gate rejects it
 
 #### Scenario: Unformatted file reaches continuous integration
 
-- **WHEN** a branch contains a file that the formatting configuration would rewrite
+- **WHEN** committed content differs from shared formatter output
 - **THEN** CI fails
 
 #### Scenario: A formatter is added
 
-- **WHEN** a formatter is added to the declaration
-- **THEN** local and CI gates apply it without a second edit
-
-#### Scenario: Stage Nix from native Windows without Nix
-
-- **WHEN** a native Windows commit stages any .nix file
-- **THEN** the hook fails with guidance to commit Nix changes from the Mac and run Nix gates on Mac/CI
-- **AND** presence of wsl.exe or another Linux environment does not change the result
-- **AND** no platform skip or missing-tool condition turns failure into success
-
-#### Scenario: Stage native-only work
-
-- **WHEN** standard Windows stages only native-supported files
-- **THEN** the gate uses the shared declaration and pinned native tools without Nix
-- **AND** Windows CI runs the same native checks
+- **WHEN** the shared formatter declaration gains a formatter
+- **THEN** both gates consume it without a duplicate list edit
 
 ### Requirement: The commit hook is installed from the development shell
 
-The declared environment SHALL install lefthook in its checkout: a pinned Nix shell on Mac/CI and native bootstrap on Windows. Git clients outside it SHALL resolve its pinned tools or fail clearly. OpenSpec SHALL resolve from the host's declared installation. Platform dispatch SHALL never silently skip staged Nix validation or invoke WSL.
+Darwin SHALL retain pinned Nix-shell hook installation. Windows SHALL retain explicit repository-local native development bootstrap and lefthook installation, running all hooks and tooling under PowerShell 7. Only the separate minimal fresh-machine pwsh/Git/chezmoi prerequisite bootstrap MAY use Windows PowerShell 5.1. Re-entry SHALL not duplicate hooks or silently retire unrelated hooks. Git clients outside the declared environment SHALL resolve pinned tools or fail with an actionable diagnostic. No hook SHALL invoke WSL.
+
+#### Scenario: Bootstrap native development
+
+- **WHEN** a standard Windows user enters the native development environment
+- **THEN** pinned tools and local test dependencies resolve and lefthook is installed for that checkout
+- **AND** subsequent Git/Fork commits invoke the PowerShell 7 gate and propagate failures
 
 #### Scenario: First entry into the shell
 
-- **WHEN** a maintainer enters the environment in a checkout with no hook
-- **THEN** lefthook installs and the next commit runs the gates
+- **WHEN** the declared environment is entered without an installed hook
+- **THEN** the hook is installed and subsequent commits run the gate
 
 #### Scenario: Commit from an environment without the shell
 
-- **WHEN** a Git client outside the environment triggers its hook
-- **THEN** pinned tools run or a missing-environment diagnostic fails
-- **AND** no required gate silently skips
-
-#### Scenario: Install from native Windows
-
-- **WHEN** the user bootstraps Windows development
-- **THEN** lefthook works from native Git and Fork
-- **AND** re-entry duplicates no hook and retires no unrelated hook without review
+- **WHEN** Git invokes a hook outside the declared environment
+- **THEN** pinned tooling resolves or an actionable missing-environment error rejects the commit
+- **AND** staged Nix files are either validated or named as left to CI, never skipped silently
 
 ### Requirement: A development shell on every supported system
 
@@ -76,24 +75,30 @@ Every declared Nix system SHALL retain a pinned shell; native Windows SHALL use 
 
 ### Requirement: Each gate runs its host's Nix implementation
 
-Darwin gates SHALL use the Mac's declared Nix implementation. Generic Linux CI SHALL use its explicitly declared CI implementation without resolving the retired Korolev host. Windows SHALL use native schema/WinGet/parser/PowerShell/formatting checks, not Nix or WSL. All required platform, portable OpenSpec and live policy checks SHALL pass before protected-main deployment acceptance.
+Darwin gates SHALL use the Mac's declared Nix implementation, and generic Linux CI SHALL use its explicitly declared CI implementation without resolving a retired host. Windows SHALL use one native PowerShell 7 CI job named `check (windows-latest)` with applicable shared formatting, built-in JSON-schema validation, PSScriptAnalyzer, parser checks, privilege invariants and mocked Pester behavior tests. CI SHALL neither provision WinGet/DSC providers nor apply workstation resources. Pester 5 and PSScriptAnalyzer SHALL be pinned development dependencies installed through PSResourceGet into repository-local or runner-local paths, never an owner's global profile. Failed or skipped required checks SHALL not count as successful Windows acceptance.
+
+#### Scenario: Run proportional Windows CI
+
+- **WHEN** a pull request changes the Windows layer
+- **THEN** one pwsh-only job runs the schema, analyzer, invariants and mocked behavior tests
+- **AND** applicable shared formatting runs once and timings are recorded
+- **AND** no Windows PowerShell 5.1 matrix, WinGet Configuration provider provisioning or live apply runs
+
+#### Scenario: Isolate test dependencies
+
+- **WHEN** local checks or CI provision Pester and PSScriptAnalyzer
+- **THEN** pinned modules are available only from the selected development dependency path
+- **AND** missing modules fail with an actionable setup command rather than skip tests
 
 #### Scenario: An output evaluates on one implementation only
 
-- **WHEN** an output fails under its declared host/CI Nix implementation
-- **THEN** that CI leg fails even if another implementation accepts it
+- **WHEN** a flake output fails under its host's declared Nix despite passing under the runner default
+- **THEN** that system's CI leg fails
 
 #### Scenario: Inspect gate equivalence
 
-- **WHEN** Mac host and Darwin CI commands are compared
-- **THEN** they use the same Nix implementation/check set
-- **AND** Linux CI identifies its own implementation and evaluates no removed NixOS host
-
-#### Scenario: Windows configuration regresses
-
-- **WHEN** native Windows document, syntax or ownership checks fail
-- **THEN** Windows and protected-main acceptance fail even if Nix jobs pass
-- **AND** successful Linux-only completion does not authorize policy deployment
+- **WHEN** local and CI gate commands are compared
+- **THEN** Nix hosts use the same declared Nix and Windows uses the same PowerShell 7 static/mock check set
 
 ### Requirement: One declaration for each cross-platform fact
 

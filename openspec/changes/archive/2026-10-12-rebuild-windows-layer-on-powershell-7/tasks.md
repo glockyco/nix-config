@@ -25,4 +25,4 @@
 
 ## 4. Shared development hook deployment
 
-- [ ] 4.1 After merge, rerun native development bootstrap in updated main to migrate the exact shared repository-owned Git launcher to pwsh. Until then, mixed-version worktrees use worktree-local hooksPath and shared main retains its PowerShell 5.1 launcher.
+- [x] 4.1 After merge, rerun native development bootstrap in updated main to migrate the exact shared repository-owned Git launcher to pwsh. On 2026-10-12 at `87c1891`, the stale shared tools directory was removed and bootstrap reprovisioned it. `.git/hooks/pre-commit` now launches pwsh, `git hook run pre-commit` passed in the main checkout, and the temporary worktree and its `extensions.worktreeConfig` setting were removed.

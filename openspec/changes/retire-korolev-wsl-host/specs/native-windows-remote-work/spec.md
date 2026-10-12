@@ -37,6 +37,12 @@ OMP SHALL operate in a local desktop Windows checkout using native Windows tools
 - **THEN** no executable/interpreter used by the native Windows agent resolves through WSL or a Nix store
 - **AND** provider authentication was established locally, not copied from another machine
 
+#### Scenario: Update the native installation
+
+- **WHEN** the operator explicitly updates the desktop's OMP and published personal plugin through their upstream commands
+- **THEN** a fresh native session verifies observed executable/plugin versions and personal behavior
+- **AND** native writable authentication and saved conversations remain in place
+
 ### Requirement: Graphical access with retained disconnected sessions
 
 The Pro SHALL have a usable RDP client path to desktop with verified server identity and Network Level Authentication. Graphical access from Air and native Korolev SHALL remain out of scope; they require SSH and file transfer only. RDP disconnect SHALL retain ordinary computation in the existing Windows user session. Setup SHALL NOT disable locking or bypass elevation prompts.

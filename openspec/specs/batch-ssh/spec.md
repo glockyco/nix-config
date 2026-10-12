@@ -8,7 +8,7 @@ Provides a deterministic SSH endpoint for unattended commands to each remote des
 
 ### Requirement: Dedicated batch endpoint
 
-The workstation SHALL provide a named SSH endpoint for unattended commands to each remote destination that automation drives, currently the MacBook Air, the Windows desktop, and, from the WSL host, the MacBook Pro. Each endpoint SHALL identify the same remote host and account as its interactive counterpart, and SHALL be named after that counterpart so the pair is discoverable from the declaration.
+The workstation SHALL provide a named SSH endpoint for unattended commands to each remote destination that automation drives, currently the MacBook Air, the Windows desktop, and, from a declared source workstation, the MacBook Pro. Chezmoi SHALL render the user SSH endpoints from declared shared endpoint facts on each supported platform. Each endpoint SHALL identify the same remote host and account as its interactive counterpart, and SHALL be named after that counterpart so the pair is discoverable from the declaration.
 
 #### Scenario: Batch endpoint resolves the Air
 
@@ -23,13 +23,13 @@ The workstation SHALL provide a named SSH endpoint for unattended commands to ea
 
 #### Scenario: Batch endpoint resolves the MacBook Pro
 
-- **WHEN** automation on the WSL host connects through `macbook-pro-batch`
-- **THEN** the command runs under the MacBook Pro's declared user with the WSL user's own key
+- **WHEN** automation on a declared source workstation connects through `macbook-pro-batch`
+- **THEN** the command runs under the MacBook Pro's declared user with the source user's own key
 - **AND** it resolves the Mac by its tailnet name and verifies the declared host key
 
 ### Requirement: Non-interactive command lifecycle
 
-The batch endpoint SHALL disable terminal allocation, interactive authentication prompts, connection multiplexing, and connection persistence. A completed remote command SHALL release its local SSH process without waiting for an interactive connection's persistence interval. The endpoint SHALL preserve the SSH standard streams required by protocol-driven clients.
+On every supported operating system, the batch endpoint SHALL disable terminal allocation, interactive authentication prompts, connection multiplexing, and connection persistence. A completed remote command SHALL release its local SSH process without waiting for an interactive connection's persistence interval. The endpoint SHALL preserve the SSH standard streams required by protocol-driven clients.
 
 #### Scenario: Successful command exits promptly
 
@@ -58,7 +58,7 @@ The batch endpoint SHALL disable terminal allocation, interactive authentication
 
 ### Requirement: Interactive SSH compatibility
 
-A batch endpoint SHALL NOT change terminal, stdin, authentication, multiplexing, or persistence behavior for the interactive endpoint that shares its destination.
+Platform-supported interactive multiplexing SHALL remain separate from the universally non-multiplexed batch endpoint. A batch endpoint SHALL NOT change terminal, stdin, authentication, multiplexing, or persistence behavior for the interactive endpoint that shares its destination.
 
 #### Scenario: Operator selects interactive endpoint
 
@@ -82,11 +82,11 @@ Automation that invokes a tool absent from the Air's non-interactive `PATH` SHAL
 
 ### Requirement: Verifiable batch boundary
 
-The workstation configuration SHALL provide static checks for the batch endpoint's transport settings and a documented live verification for command completion, failure propagation, and remote Docker access.
+The workstation configuration SHALL provide static checks of the actual chezmoi-rendered batch endpoint transport settings and a documented live verification for command completion, failure propagation, and remote Docker access.
 
 #### Scenario: Daemon-free configuration validation
 
-- **WHEN** workstation flake checks run without access to the MacBook Air
+- **WHEN** workstation configuration checks run without access to the MacBook Air
 - **THEN** they verify the declared host identity and non-interactive transport settings without opening an SSH connection
 
 #### Scenario: Live acceptance

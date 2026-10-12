@@ -17,8 +17,8 @@ Every managed host SHALL make a Nix-managed `uv` executable available in the con
 
 #### Scenario: Shared package configuration is evaluated
 
-- **WHEN** either managed host evaluates its Home Manager configuration
-- **THEN** the evaluated user package set contains the Nixpkgs `uv` package
+- **WHEN** either managed host evaluates its system configuration
+- **THEN** the evaluated users.users.<name>.packages set contains the Nixpkgs `uv` package
 
 ### Requirement: Python dependencies remain project-local
 

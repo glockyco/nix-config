@@ -1,5 +1,23 @@
 # Spec Delta
 
+## ADDED Requirements
+
+### Requirement: Host-local annotation browser boundary
+
+Review servers SHALL bind loopback only and open the host-local browser on Mac and native Windows Korolev. No Linux relay, tailnet publication, remote sharing, firewall access or activation service SHALL be used. Noninteractive/remote invocation SHALL fail clearly rather than publish automatically. Native Windows acceptance SHALL depend on the released support-native-windows adapter.
+
+#### Scenario: Annotate natively through Tern on Windows
+
+- **WHEN** a local native OMP session in Tern starts annotation in a Korolev Windows checkout
+- **THEN** the Windows browser reaches the temporary native loopback review and feedback returns to that session
+- **AND** no NixOS distribution, Linux listener or tailnet publication participates
+
+#### Scenario: Annotate on macOS
+
+- **WHEN** a local upstream OMP session in Tern starts annotation on macbook-pro
+- **THEN** the local browser displays the review and feedback returns to that session
+- **AND** no persistent network service is installed
+
 ## MODIFIED Requirements
 
 ### Requirement: Declarative executable and adapter ownership
@@ -28,18 +46,9 @@ Each host SHALL use unmodified vendor Plannotator through its declared platform 
 - **THEN** review verifies annotation-only feedback and explicit cancellation on affected hosts
 - **AND** routine complete flake lock updates cannot advance the declared Mac application source
 
+## REMOVED Requirements
+
 ### Requirement: Local annotation browser boundary
 
-Review servers SHALL bind loopback only and open the host-local browser on Mac and native Windows Korolev. No Linux relay, tailnet publication, remote sharing, firewall access or activation service SHALL be used. Noninteractive/remote invocation SHALL fail clearly rather than publish automatically. Native Windows acceptance SHALL depend on the released support-native-windows adapter.
-
-#### Scenario: Annotate natively through Tern on Windows
-
-- **WHEN** a local native OMP session in Tern starts annotation in a Korolev Windows checkout
-- **THEN** the Windows browser reaches the temporary native loopback review and feedback returns to that session
-- **AND** no NixOS distribution, Linux listener or tailnet publication participates
-
-#### Scenario: Annotate on macOS
-
-- **WHEN** a local upstream OMP session in Tern starts annotation on macbook-pro
-- **THEN** the local browser displays the review and feedback returns to that session
-- **AND** no persistent network service is installed
+**Reason**: Its WSL annotation scenario describes a retired host.
+**Migration**: Use `Host-local annotation browser boundary`, which keeps loopback-only review servers and the host-local browser on the Mac and native Windows Korolev.

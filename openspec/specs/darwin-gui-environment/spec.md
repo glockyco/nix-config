@@ -8,7 +8,7 @@ Ensure the managed Mac user session can run Nix-backed repository checks from GU
 
 ### Requirement: Darwin saves a persistent Nix lookup path
 
-The Darwin host SHALL save a persistent user-domain `PATH` that includes the installed Nix executable directory and the standard macOS command directories. It SHALL NOT alter Git hooks or install project tools globally. An application-specific `PATH` can override the saved value.
+The Darwin host SHALL save a persistent user-domain `PATH` that includes the installed Nix executable directory and the standard macOS command directories. System activation SHALL own this persistent path independently of chezmoi shell files. It SHALL NOT alter Git hooks or install project tools globally. An application-specific `PATH` can override the saved value.
 
 #### Scenario: Activation saves the PATH
 

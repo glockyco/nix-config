@@ -8,14 +8,16 @@ Define how packaged Darwin activation concerns apply state that Nix cannot link 
 
 ### Requirement: Activation changes host state only where it differs from the declaration
 
-Each activation concern SHALL read the current host state, compare it with the declared state, and mutate only the part that differs. A second activation of the same generation SHALL change no file, run no reload, and call no platform command that writes. Each concern SHALL report on standard error whether it was current or what it changed.
+System activation SHALL retain power/Rosetta ownership; chezmoi change scripts SHALL invoke packaged helpers for layouts, handlers, shortcuts and Terminal fonts, and modify templates SHALL merge declared Karabiner settings. Each invoked concern SHALL compare before writing, mutate only declared differences and report current or changed state. Reapplying unchanged user source SHALL perform no user setup writes.
+
+The user-helper scenarios below apply when a source change schedules the helper or an operator explicitly reruns it for recovery. Unchanged change scripts SHALL NOT be treated as an external-preference drift scheduler.
 
 #### Scenario: Second activation of the same generation
 
 - **WHEN** the user activates a generation that is already active
 - **THEN** no file under `~/Library/Keyboard Layouts`, `~/.config/karabiner`, or `~/Applications` changes its content or modification time
 - **AND** no `lsregister`, `pmset`, or `defaults import` call runs
-- **AND** the activation output reports each concern as current
+- **AND** invoked helper output reports current state and unchanged chezmoi change scripts are skipped
 
 #### Scenario: Keyboard layout bundle differs
 
@@ -31,14 +33,14 @@ Each activation concern SHALL read the current host state, compare it with the d
 
 #### Scenario: Karabiner configuration is current
 
-- **WHEN** the installed `karabiner.json` has the same content as the generated file
+- **WHEN** the installed `karabiner.json` has the same declared managed settings as the modify template
 - **THEN** activation does not rewrite the file
 - **AND** Karabiner-Elements does not reload
 
 #### Scenario: Karabiner configuration differs
 
-- **WHEN** the installed `karabiner.json` differs from the generated file or is absent
-- **THEN** activation installs the generated file with mode `0600` in a directory with mode `0700`
+- **WHEN** the installed `karabiner.json` has different declared managed settings or is absent
+- **THEN** chezmoi merges the declared settings while preserving unrelated profiles and rules, with mode `0600` in a directory with mode `0700`
 
 #### Scenario: File-type bundle is current
 
@@ -126,12 +128,17 @@ An activation concern SHALL exit non-zero, and activation SHALL stop, when a pla
 - **THEN** activation fails
 - **AND** activation does not import that domain
 
-### Requirement: A Home Manager dry run writes nothing
+### Requirement: A chezmoi dry run writes nothing
 
-Each Home Manager activation concern SHALL run through the `run` helper so that a dry run prints the command and executes nothing. A dry run SHALL NOT invoke the packaged program and SHALL change no path that the concern owns.
+A user configuration dry run SHALL show the planned file and setup changes without executing setup helpers or changing destination state. It SHALL NOT print decrypted credential contents into recorded output.
 
 #### Scenario: Dry run of the user activation
 
-- **WHEN** the user runs the Home Manager activation of a generation with `DRY_RUN` set
-- **THEN** the output names each activation program that would run
-- **AND** every file and directory owned by those activation concerns remains unchanged
+- **WHEN** the user previews ordinary configuration with chezmoi dry-run mode
+- **THEN** pending user changes are shown without executing packaged setup helpers
+- **AND** every file, directory and preference owned by those concerns remains unchanged
+
+#### Scenario: Preview a secret change safely
+
+- **WHEN** an operator inspects encrypted credential changes
+- **THEN** the preview records only source/path and permission metadata, not decrypted values
