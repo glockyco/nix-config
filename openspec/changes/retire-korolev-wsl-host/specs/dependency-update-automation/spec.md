@@ -17,7 +17,7 @@ Central automation SHALL own Nix inputs; Renovate SHALL own Actions/non-Nix depe
 
 ### Requirement: Required merge checks
 
-Main SHALL require current Darwin Nix, Linux-generic CI, native Windows, portable OpenSpec and applicable live policy jobs for humans/automation including administrators. It SHALL require an up-to-date PR branch and linear history, rejecting force-push/deletion. Checks SHALL not build the removed Korolev host or depend on its builder.
+Main SHALL require current Darwin Nix, Linux-generic CI, native Windows, portable OpenSpec and applicable live policy jobs for humans/automation including administrators. It SHALL require linear history, rejecting force-push/deletion, but SHALL NOT require a PR branch to be up to date with main before merging. Checks SHALL not build the removed Korolev host or depend on its builder.
 
 #### Scenario: A required check fails
 

@@ -129,6 +129,14 @@ Chezmoi data lost Korolev's Linux platform and the WSL role. The templates lost 
 
 CI's Linux job runs `nix flake check` with the Determinate Nix that the action installs, as the Darwin job does. Policy deployment needs no change, because `tailnet-policy.yml` applies only after a successful `check` run on `main`, and that workflow includes the reusable OpenSpec job and every platform job. README and AGENTS name the Mac as the only Nix host. The Docker Desktop installation, its Intune update ownership, licensing, UAC and the `S:\` share boundary were already documented in `docs/operations/container-runtime.md`. `windows/workstation.json` declares `Docker.DockerDesktop` once, and `windows/managed-applications.json` records its dated removal from the exclusion list. Native TeX Live and TexLab stay owned by `make-korolev-windows-native` ([evidence](../make-korolev-windows-native/evidence.md#plannotator-binary-only-install-and-native-tex-live-2026-10-12)). No current runbook sends LaTeX work to the Mac or WSL.
 
+## Merge, policy apply and task 6.6 preparation
+
+#99 merged as `6f9b477` with every required check green. The `check` run on `main` passed, and `tailnet-policy` run `38313906851` applied the reordered policy (`apply: success`). Afterwards Korolev's `macbook-pro-batch` and the Mac's `korolev-batch` each returned 23. The Mac's checkout fast-forwarded to `6f9b477` with no pending chezmoi change. Its next system differs from the running one only in `nix.custom.conf`, where `trusted-users` disappears, and in the authorized-keys file. Task 6.6 waits for the owner's `darwin-switch`.
+
+## Task 7.3: branch protection
+
+On 2026-10-13 the owner authorized requiring the OpenSpec job but not up-to-date branches, so auto-merge does not need a rebase and a second CI run whenever pull requests overlap. Main now requires `check (macos-15)`, `check (ubuntu-latest)`, `check (windows-latest)`, `test` and `openspec / validate`, with `strict` false. Administrators are included, history must stay linear, and force pushes and deletions are refused. No required context belongs to the removed host, because the Linux job keeps its name and now runs only the generic checks. The spec delta for required merge checks states the up-to-date exception.
+
 ## Affected-job and Darwin evaluation acceptance
 
 Measurements below come from GitHub-hosted Actions job and step timestamps on 2026-10-12. Workflow wall time is creation to the last job's completion, including runner allocation. These are observations, not controlled benchmarks.
