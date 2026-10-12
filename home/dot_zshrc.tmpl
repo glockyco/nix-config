@@ -39,8 +39,3 @@ alias ll='eza -l'
 alias la='eza -a'
 alias lla='eza -la'
 alias lt='eza --tree'
-{{ if and (eq .chezmoi.os "linux") $host.roles.wslWorkstation }}
-if [[ -t 0 ]]; then
-  export GPG_TTY=$(tty)
-fi
-{{ end -}}

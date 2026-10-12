@@ -117,13 +117,7 @@ jobs:
             extra-substituters = https://cache.numtide.com
             extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
 
-      # Linux retains its host's Nix implementation until WSL retirement.
-      # Determinate Nix previously accepted an output that this pin rejected.
-      - run: |
-          nix build .#nixosConfigurations.korolev.config.nix.package --out-link "$RUNNER_TEMP/host-nix"
-          "$RUNNER_TEMP/host-nix/bin/nix" \
-            --extra-experimental-features 'nix-command flakes' \
-            flake check --print-build-logs
+      - run: nix flake check --print-build-logs
 
   windows:
     name: check (windows-latest)

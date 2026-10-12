@@ -5,6 +5,12 @@
     purpose = "Durable personal desktop.";
   };
 
+  korolev = {
+    tag = "tag:korolev";
+    lifecycle = "durable";
+    purpose = "Work laptop on native Windows, configured outside Nix.";
+  };
+
   macbook-air = {
     tag = "tag:macbook-air";
     lifecycle = "temporary";

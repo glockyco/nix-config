@@ -19,7 +19,6 @@ desktop = true
 postgresql = true
 containerClient = true
 airClient = true
-wslWorkstation = false
 
 [hosts.macbook-pro.container]
 cpu = 8
@@ -142,13 +141,6 @@ authorName = "Johann Glock"
 defaultEmail = "johann.glock@scch.at"
 githubNoReplyEmail = "11704293+glockyco@users.noreply.github.com"
 
-[hosts.korolev.platforms.linux]
-username = "user"
-home = "/home/user"
-checkout = "/home/user/src/github.com/glockyco/nix-config"
-ghqRoot = "/home/user/src"
-ghProtocol = "https"
-
 [hosts.korolev.platforms.windows]
 username = "jglock"
 home = 'C:\Users\jglock'
@@ -169,4 +161,3 @@ desktop = false
 postgresql = false
 containerClient = false
 airClient = false
-wslWorkstation = true

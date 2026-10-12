@@ -17,27 +17,17 @@ def main():
     root = Path(rendered)
     facts = json.loads((root / "facts.json").read_text())
     host = facts["hosts"][host_name]
-    platform = host["platforms"]["darwin" if "darwin" in host["platforms"] else "linux"]
-    darwin = "darwin" in host["platforms"]
+    platform = host["platforms"]["darwin"]
     windows = endpoint in ("desktop", "korolev")
     if windows:
-        require(
-            host["roles"]["desktop"]
-            or (endpoint == "desktop" and host["roles"]["wslWorkstation"]),
-            f"{endpoint} endpoint without client role",
-        )
-        destination = dict(facts["ssh"][endpoint])
-        if not darwin:
-            destination["hostName"] += "." + facts["ssh"]["tailnetDnsDomain"]
-    elif endpoint == "air":
-        require(host["roles"]["airClient"], "Air endpoint without Air role")
-        destination = facts["air"]
+        require(host["roles"]["desktop"], f"{endpoint} endpoint without desktop role")
+        destination = facts["ssh"][endpoint]
     else:
-        require(host["roles"]["wslWorkstation"], "Mac endpoint without WSL role")
-        destination = {
-            "hostName": endpoint + "." + facts["ssh"]["tailnetDnsDomain"],
-            "user": facts["hosts"][endpoint]["platforms"]["darwin"]["username"],
-        }
+        require(
+            endpoint == "air" and host["roles"]["airClient"],
+            "Air endpoint without Air role",
+        )
+        destination = facts["air"]
     with tempfile.TemporaryDirectory() as temporary:
         temporary = Path(temporary)
         config = temporary / "ssh-config"
@@ -62,7 +52,7 @@ def main():
                 "stdinnull": "no",
             }.items():
                 require(effective.get(key) == expected, f"{alias}: {key} != {expected}")
-            if endpoint != "air":
+            if windows:
                 for key, expected in {
                     "stricthostkeychecking": "true",
                     "passwordauthentication": "no",
@@ -73,28 +63,14 @@ def main():
                     require(
                         effective.get(key) == expected, f"{alias}: {key} != {expected}"
                     )
-                pin = root / (
-                    f"home/.ssh/{endpoint}-known-hosts"
-                    if windows
-                    else "home/.ssh/builder-known-hosts"
-                )
+                pin = root / f"home/.ssh/{endpoint}-known-hosts"
                 require(
                     effective.get("userknownhostsfile") == str(pin),
                     f"{alias}: alternate known-host source",
                 )
-                key = (
-                    facts["ssh"][endpoint]
-                    if windows
-                    else facts["ssh"]["hostKeys"][endpoint]
-                )["publicKey"]
-                if windows:
-                    name = facts["ssh"][endpoint]["hostName"]
-                    pins = {f"{name},{name}.{facts['ssh']['tailnetDnsDomain']} {key}"}
-                else:
-                    pins = {
-                        f"{name},{name}.{facts['ssh']['tailnetDnsDomain']} {data['publicKey']}"
-                        for name, data in facts["ssh"]["hostKeys"].items()
-                    }
+                key = facts["ssh"][endpoint]["publicKey"]
+                name = facts["ssh"][endpoint]["hostName"]
+                pins = {f"{name},{name}.{facts['ssh']['tailnetDnsDomain']} {key}"}
                 require(
                     set(pin.read_text().splitlines()) == pins,
                     f"{alias}: pin contents drift",
@@ -118,34 +94,26 @@ def main():
                     fingerprint == expected_fingerprint,
                     f"{alias}: pin fingerprint drift",
                 )
-                if windows:
-                    require(
-                        fingerprint == facts["ssh"][endpoint]["fingerprint"],
-                        f"{endpoint} pin fingerprint drift",
-                    )
-                if not windows:
-                    require(
-                        effective.get("identityfile")
-                        == str(root / "home/.ssh/id_ed25519"),
-                        "Mac user key is not separate from root builder",
-                    )
-                elif darwin:
-                    require(
-                        "Secretive" in effective.get("identityagent", ""),
-                        f"{endpoint} Secretive agent drift",
-                    )
-                    require(
-                        effective.get("identitiesonly") == "no",
-                        f"{endpoint} excludes Secretive identities",
-                    )
+                require(
+                    fingerprint == facts["ssh"][endpoint]["fingerprint"],
+                    f"{endpoint} pin fingerprint drift",
+                )
+                require(
+                    "Secretive" in effective.get("identityagent", ""),
+                    f"{endpoint} Secretive agent drift",
+                )
+                require(
+                    effective.get("identitiesonly") == "no",
+                    f"{endpoint} excludes Secretive identities",
+                )
         interactive = options[endpoint]
         batch = options[endpoint + "-batch"]
         for key, expected in {
             "batchmode": "no",
-            "controlmaster": "auto" if darwin else "false",
+            "controlmaster": "auto",
             "requesttty": "auto",
             "connecttimeout": "none",
-            "controlpersist": "3600" if darwin else "no",
+            "controlpersist": "3600",
         }.items():
             require(
                 interactive.get(key) == expected, f"{endpoint}: interactive {key} drift"
@@ -159,7 +127,7 @@ def main():
         }.items():
             require(batch.get(key) == expected, f"{endpoint}: batch {key} drift")
         require("controlpath" not in batch, f"{endpoint}: batch has ControlPath")
-        if darwin and endpoint == "desktop":
+        if endpoint == "desktop":
             hardware = subprocess.check_output(
                 ["ssh", "-G", "-F", str(config), "github-yubikey"], text=True
             )

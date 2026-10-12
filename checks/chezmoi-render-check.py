@@ -258,56 +258,11 @@ def assert_portable(fixture, facts):
             fixture.run("apply", "--exclude=scripts", *targets)
 
 
-def assert_git_worktrees(fixture, facts):
-    host = facts["hosts"][fixture.host]
-    if fixture.target_os == "darwin":
-        require(
-            "insteadOf" not in (fixture.target / ".gitconfig").read_text(),
-            "Windows HTTPS rewrites must not change Mac Git transport",
-        )
-    if not host["roles"].get("wslWorkstation"):
-        return
-    # The same conditional include is tested after substituting only its
-    # declared home prefix, allowing a disposable worktree outside real HOME.
-    platform = host["platforms"][fixture.target_os]
-    config = fixture.target / ".gitconfig"
-    original = config.read_text()
-    git_home = fixture.work / "git-home"
-    config.write_text(original.replace(platform["home"], str(git_home)))
-    try:
-        for directory, email in [
-            ("src/gitlab.scch.at/work", host["git"]["defaultEmail"]),
-            ("src/github.com/any-owner/project", host["git"]["githubNoReplyEmail"]),
-            ("other/project", host["git"]["defaultEmail"]),
-        ]:
-            repo = git_home / directory
-            repo.mkdir(parents=True)
-            subprocess.run(
-                ["git", "init", "-q", str(repo)], env=fixture.env, check=True
-            )
-            require(
-                git_value(fixture, "user.email", repo) == email,
-                "conditional Git identity drift",
-            )
-            subprocess.run(
-                [
-                    "git",
-                    "-C",
-                    str(repo),
-                    "config",
-                    "user.email",
-                    "fixture-local@example.invalid",
-                ],
-                env=fixture.env,
-                check=True,
-            )
-            require(
-                git_value(fixture, "user.email", repo)
-                == "fixture-local@example.invalid",
-                "local Git override lost",
-            )
-    finally:
-        config.write_text(original)
+def assert_git_transport(fixture):
+    require(
+        "insteadOf" not in (fixture.target / ".gitconfig").read_text(),
+        "Windows HTTPS rewrites must not change Mac Git transport",
+    )
 
 
 def assert_modify_files(fixture, manifest):
@@ -714,28 +669,25 @@ def main():
                 ".config/credentials/**" in lines(checked),
                 "production ciphertext not excluded in checkMode",
             )
-        for excluded_os in ("linux", "windows"):
-            overrides = {
-                "chezmoi": fixture.overrides["chezmoi"] | {"os": excluded_os},
-                "checkMode": False,
-                **({"host": "korolev"} if excluded_os == "windows" else {}),
-            }
-            selected = fixture.run(
-                "execute-template", input=ignore, overrides=overrides
-            )
-            require(
-                {".config/credentials", ".config/credentials/**"} <= lines(selected),
-                f"{excluded_os} exposes production credentials without checkMode",
-            )
-            managed = fixture.run("managed", overrides=overrides).splitlines()
-            require(
-                not any(
-                    path == ".config/credentials"
-                    or path.startswith(".config/credentials/")
-                    for path in managed
-                ),
-                f"{excluded_os} manages production credential sources",
-            )
+        # A Windows render must exclude the Mac's credential sources.
+        overrides = {
+            "chezmoi": fixture.overrides["chezmoi"] | {"os": "windows"},
+            "checkMode": False,
+            "host": "korolev",
+        }
+        selected = fixture.run("execute-template", input=ignore, overrides=overrides)
+        require(
+            {".config/credentials", ".config/credentials/**"} <= lines(selected),
+            "Windows exposes production credentials without checkMode",
+        )
+        managed = fixture.run("managed", overrides=overrides).splitlines()
+        require(
+            not any(
+                path == ".config/credentials" or path.startswith(".config/credentials/")
+                for path in managed
+            ),
+            "Windows manages production credential sources",
+        )
         assert_init(fixture)
         if "karabiner" in manifest:
             zed = fixture.target / ".config/zed/settings.json"
@@ -835,7 +787,7 @@ def main():
             "production secret reached check target",
         )
         assert_portable(fixture, facts)
-        assert_git_worktrees(fixture, facts)
+        assert_git_transport(fixture)
         assert_modify_files(fixture, manifest)
         changed_host = copy.deepcopy(facts["hosts"][fixture.host])
         changed_host["git"]["defaultEmail"] = "shared-fixture@example.invalid"

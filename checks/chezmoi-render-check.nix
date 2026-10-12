@@ -22,7 +22,7 @@ runCommand "check-${host.name}-chezmoi"
     ];
     inherit userPath;
     hostName = host.name;
-    targetOS = if host.kind == "darwin" then "darwin" else "linux";
+    targetOS = "darwin";
     resourceManifest = builtins.toJSON resources;
     source = lib.cleanSource ../.;
   }

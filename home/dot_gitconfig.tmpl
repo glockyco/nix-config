@@ -26,10 +26,9 @@
     path = ~/.config/delta/catppuccin.gitconfig
 [ghq]
     root = {{ $platform.ghqRoot | quote }}
-{{ if or (and (eq .chezmoi.os "linux") $host.roles.wslWorkstation) $windows }}
+{{ if $windows }}
 [includeIf "gitdir:{{ $platform.ghqRoot }}/github.com/"]
     path = ~/.config/git/github.gitconfig
-{{ if $windows -}}
 [url "https://github.com/"]
     insteadOf = git@github.com:
     insteadOf = ssh://git@github.com/
@@ -39,11 +38,6 @@
 [credential]
     helper =
     helper = {{ printf "!\"%s/%s/%s\"" ($platform.home | replace "\\" "/") $platform.gitDirectory $platform.gcmHelper | quote }}
-{{ else -}}
-[credential]
-    helper = manager
-    credentialStore = gpg
-{{ end -}}
 [credential "https://git.overleaf.com"]
     provider = generic
 {{ end -}}

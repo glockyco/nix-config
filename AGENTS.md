@@ -12,7 +12,7 @@ The personal plugin owns the OpenSpec adapters, and its workflow commands are `/
 
 ## Boundaries
 
-- Nix owns packages and host configuration on macOS and Linux, never OMP. OMP comes from its official installer on macOS and from Tern on Windows, and the plugin manager installs its plugins. Do not add wrappers, launcher flags, patched sources or activation steps that install, update or reconfigure OMP.
+- Nix owns packages and host configuration on macOS, never OMP. OMP comes from its official installer on macOS and from Tern on Windows, and the plugin manager installs its plugins. Do not add wrappers, launcher flags, patched sources or activation steps that install, update or reconfigure OMP.
 - Chezmoi owns user files from `home/`. Read shared TOML facts through the typed host registry in Nix and directly in templates, and never duplicate them. The system switch precedes the user apply. Never run chezmoi as root or let it manage application runtime data.
 - Keep project SDKs, builds and domain skills in their own repositories. Add a workstation language-server override only after a representative project proves it necessary.
 - Do not run Windows resources from Nix activation. The owner runs the Administrator scripts `windows/apply-*.ps1`, which are the only elevated operations.

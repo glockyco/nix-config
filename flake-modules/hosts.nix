@@ -21,25 +21,23 @@ let
       ];
     }).config.host
   );
-  configurations =
-    kind: builder:
-    lib.mapAttrs (
-      name: host:
-      withSystem host.system (
-        { pkgs, ... }:
-        builder {
-          specialArgs = { inherit inputs; };
-          modules = [
-            {
-              nixpkgs.pkgs = pkgs;
-              fleet.hosts = config.fleet.hosts;
-              host.name = name;
-            }
-            (../hosts + "/${name}/default.nix")
-          ];
-        }
-      )
-    ) (lib.filterAttrs (_: host: host.kind == kind) config.fleet.hosts);
+  configurations = lib.mapAttrs (
+    name: host:
+    withSystem host.system (
+      { pkgs, ... }:
+      inputs.nix-darwin.lib.darwinSystem {
+        specialArgs = { inherit inputs; };
+        modules = [
+          {
+            nixpkgs.pkgs = pkgs;
+            fleet.hosts = config.fleet.hosts;
+            host.name = name;
+          }
+          (../hosts + "/${name}/default.nix")
+        ];
+      }
+    )
+  ) config.fleet.hosts;
 in
 {
   options.fleet.hosts = lib.mkOption {
@@ -54,8 +52,11 @@ in
 
   config = {
     fleet.hosts = declaredHosts;
-    systems = lib.unique (lib.mapAttrsToList (_: host: host.system) config.fleet.hosts);
-    flake.darwinConfigurations = configurations "darwin" inputs.nix-darwin.lib.darwinSystem;
-    flake.nixosConfigurations = configurations "nixos" inputs.nixpkgs.lib.nixosSystem;
+    # Linux has no host. CI still runs the generic checks there: formatting,
+    # DNS, the tailnet policy and the packages that build on Linux.
+    systems = lib.unique (
+      lib.mapAttrsToList (_: host: host.system) config.fleet.hosts ++ [ "x86_64-linux" ]
+    );
+    flake.darwinConfigurations = configurations;
   };
 }

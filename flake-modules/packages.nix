@@ -28,15 +28,13 @@ in
     let
       # Flake packages and hosts consume this one overlay-extended package set.
       pkgs = inputs.nixpkgs.legacyPackages.${system}.extend self.overlays.default;
-      hasDarwinHost = lib.any (host: host.system == system && host.kind == "darwin") (
-        builtins.attrValues config.fleet.hosts
-      );
+      hasDarwinHost = lib.any (host: host.system == system) (builtins.attrValues config.fleet.hosts);
       # The temporary Air tools belong to the Air role. Export them only for a
       # system where a host selects that role, so a host without the role
       # publishes no Air command and no Air release gate.
-      hasAirClient = lib.any (
-        host: host.system == system && host.kind == "darwin" && host.roles.airClient
-      ) (builtins.attrValues config.fleet.hosts);
+      hasAirClient = lib.any (host: host.system == system && host.roles.airClient) (
+        builtins.attrValues config.fleet.hosts
+      );
       # Export the overlay's own derivations, so an exported package and the
       # package a host installs are one value with one call site.
       packageNames = builtins.attrNames (
