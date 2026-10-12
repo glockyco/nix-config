@@ -294,8 +294,15 @@
           };
         }
         // lib.optionalAttrs (host.roles.desktop || host.roles.wslWorkstation) {
-          desktop-batch-configuration = pkgs.callPackage ../checks/desktop-batch-config-check.nix {
+          desktop-batch-configuration = pkgs.callPackage ../checks/ssh-endpoint-config-check.nix {
             inherit host renderedHome;
+            endpoint = "desktop";
+          };
+        }
+        // lib.optionalAttrs (host.kind == "darwin" && host.roles.desktop) {
+          korolev-batch-configuration = pkgs.callPackage ../checks/ssh-endpoint-config-check.nix {
+            inherit host renderedHome;
+            endpoint = "korolev";
           };
         }
         // lib.optionalAttrs (host.kind == "darwin" && host.roles.airClient) {

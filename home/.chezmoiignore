@@ -57,6 +57,9 @@ Air
 {{ if not (or (and (eq .chezmoi.os "darwin") $machine.roles.desktop) (and (eq .chezmoi.os "linux") $machine.roles.wslWorkstation) $windows) }}
 .ssh/desktop-known-hosts
 {{ end }}
+{{ if not (and (eq .chezmoi.os "darwin") $machine.roles.desktop) }}
+.ssh/korolev-known-hosts
+{{ end }}
 {{ if eq .chezmoi.os "windows" }}
 .zshenv
 .zshrc

@@ -92,11 +92,12 @@ SSH endpoints come from [home/private_dot_ssh/config.tmpl](home/private_dot_ssh/
 | Command                      | Result                                                                                                   |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `ssh desktop`                | PowerShell on the personal desktop                                                                       |
+| `ssh korolev`                | PowerShell on Korolev, from the Mac, while Korolev is on the office network or VPN                       |
 | `ssh macbook-pro`            | A shell on the Mac, from Korolev                                                                         |
 | `ssh <host>-batch 'exit 23'` | The same host for unattended commands, with stdin preserved, no terminal and an 8-second connect timeout |
 | `sftp desktop-batch`         | File transfer. Windows paths take the form `/D:/Projects/ynab`                                           |
 
-Windows App on the Mac connects to the desktop at `desktop.tail8768af.ts.net`. The desktop has one session, so connecting takes it over. [Personal desktop](docs/operations/desktop.md) covers its keys and OpenSSH updates. Korolev's OpenSSH server follows the [remote-access runbook](docs/operations/korolev-remote-access.md).
+Windows App on the Mac connects to the desktop at `desktop.tail8768af.ts.net`. The desktop has one session, so connecting takes it over. [Personal desktop](docs/operations/desktop.md) covers its keys and OpenSSH updates. [Korolev remote access](docs/operations/korolev-remote-access.md) covers Korolev's SSH server.
 
 The Air is borrowed and temporary. [Issue #17](https://github.com/glockyco/nix-config/issues/17) tracks its removal.
 
