@@ -185,6 +185,10 @@ function Invoke-InstallerFixture {
         $versionIndex = [Array]::IndexOf($arguments, '--version')
         Assert-Contract (($versionIndex -ge 0) -eq ($spec.policy -eq 'exact')) "resource $($Resource.name): wrong version-policy execution"
         if ($versionIndex -ge 0) { Assert-Contract ($arguments[$versionIndex + 1] -eq $spec.version) "resource $($Resource.name): wrong exact version execution" }
+        if ($spec.id -eq 'Docker.DockerDesktop') {
+          $overrideIndex = [Array]::IndexOf($arguments, '--override')
+          Assert-Contract ($overrideIndex -ge 0 -and $arguments[$overrideIndex + 1] -ceq 'install --quiet --backend=wsl-2 --no-windows-containers') "resource $($Resource.name): native Docker installer override boundary differs"
+        }
         if ($spec.installerType) {
           $typeIndex = [Array]::IndexOf($arguments, '--installer-type')
           Assert-Contract ($typeIndex -ge 0 -and $arguments[$typeIndex + 1] -eq $spec.installerType) "resource $($Resource.name): wrong installer type execution"

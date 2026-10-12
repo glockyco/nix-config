@@ -166,6 +166,9 @@ try {
   Write-AppsFixture $fork '{"GitInstancePath":"old-wslgit","ui":{"column":37},"repository":"keep me"}'
   Write-AppsFixture $powerToys '{"startup":false,"enabled":{"CmdPal":false,"FutureModule":true},"ui":{"window":123}}'
   Write-AppsFixture $reneo '{"standaloneMode":false,"runtime":{"lastLayout":"keep"}}'
+  $dockerSettings = Join-Path $script:AppsHome 'AppData/Roaming/Docker/settings-store.json'
+  $dockerState = '{"wslEngineEnabled":true,"auth":"fixture-only","ui":{"keep":true}}'
+  Write-AppsFixture $dockerSettings $dockerState
   [void][IO.Directory]::CreateDirectory((Split-Path -Parent $altSnap))
   $altSnapUnrelated = 'Unrelated=keep ' + [char]0x00fc + [char]0x03bb + [char]0x6771
   [IO.File]::WriteAllText($altSnap, "[General]`r`nAero=0`r`nAutoSnap=0`r`n$altSnapUnrelated`r`n[Input]`r`nHotkeys=keep`r`n", [Text.UnicodeEncoding]::new($false, $true))
@@ -242,6 +245,7 @@ try {
   Assert-Apps ($actual.enabled.FutureModule -eq $true -and $actual.ui.window -eq 123) 'PowerToys undeclared module/UI state'
   $actual = [IO.File]::ReadAllText($reneo) | ConvertFrom-Json
   Assert-Apps ($actual.standaloneLayout -eq 'Neo' -and $actual.standaloneMode -eq $true -and $actual.runtime.lastLayout -eq 'keep') 'ReNeo declared keys and runtime state'
+  Assert-Apps ([IO.File]::ReadAllText($dockerSettings) -ceq $dockerState) 'Docker settings, authentication and runtime state remain app-owned'
   $actual = [IO.File]::ReadAllText($altSnap)
   foreach ($line in @('Aero=1', 'SmartAero=1', 'AutoSnap=2', 'AeroHoffset=50', 'AeroVoffset=50', 'Unrelated=keep', 'Hotkeys=keep')) { Assert-Apps ($actual.Contains($line)) "AltSnap $line" }
   Assert-Apps ($actual.Contains($altSnapUnrelated)) 'AltSnap unrelated non-ASCII content survives UTF-16 modification'
@@ -266,7 +270,7 @@ try {
     Assert-Apps (-not ($bytes.Length -ge 3 -and $bytes[0] -eq 239 -and $bytes[1] -eq 187 -and $bytes[2] -eq 191)) "no BOM: $path"
   }
   $snapshot = @{}
-  foreach ($path in @($zed, $fork, $powerToys, $reneo, $altSnap, $keymap, (Join-Path $relativeProfile 'user.js'))) { $snapshot[$path] = (Get-FileHash $path -Algorithm SHA256).Hash }
+  foreach ($path in @($zed, $fork, $powerToys, $reneo, $altSnap, $keymap, $dockerSettings, (Join-Path $relativeProfile 'user.js'))) { $snapshot[$path] = (Get-FileHash $path -Algorithm SHA256).Hash }
   $script:AppsEvents.Clear()
   & $beforePath
   $null = Invoke-AppsApply 'apply'

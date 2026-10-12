@@ -156,9 +156,11 @@ function Test-DocumentScriptBoundary {
     $value = $node.Value
     Assert-Contract ($value -notmatch '(?i)CloudStore|DefaultAssociations|UserChoice|SetUserFTA|DISM.+DefaultApp') "${label}: forbidden CloudStore/default-association claim $value"
     Assert-Contract ($value -notmatch '(?i)[\\/]Users[\\/][^\\/]') "${label}: hard-coded user/Administrator profile confusion"
+    Assert-Contract ($value -notmatch '(?i)docker-users|--always-run-service|--backend=(hyper-v|windows)|--accept-license') "${label}: unapproved Docker privilege/backend/license change"
   }
   foreach ($command in $Record.Commands) {
     Assert-Contract ($command.GetCommandName() -notin @('Enable-WindowsOptionalFeature', 'Add-WindowsCapability', 'Install-WindowsFeature', 'New-NetFirewallRule', 'Set-Service', 'Start-Service')) "${label}: feature/service ownership is forbidden"
+    Assert-Contract ($command.GetCommandName() -notin @('Add-LocalGroupMember', 'Remove-LocalGroupMember', 'New-LocalGroup')) "${label}: group membership ownership is forbidden"
   }
   # HKLM is allowed only as a Neo prerequisite read. User scripts must not own machine paths.
   $machine = @($Record.Strings | Where-Object { $_.Value -match '(?i)^(Registry::)?(HKLM|HKEY_LOCAL_MACHINE)' })
@@ -253,6 +255,11 @@ function Test-ScriptInstaller {
     }
     $scopeIndex = [Array]::IndexOf($args, '--scope')
     Assert-Contract ($scopeIndex -ge 0 -and $args[$scopeIndex + 1] -eq $app.scope -and '--exact' -in $args -and '--source' -in $args -and '--id' -in $args) "${label}: installer must enforce exact ID/source and --scope $($app.scope)"
+    if ($app.id -eq 'Docker.DockerDesktop') {
+      $overrideIndex = [Array]::IndexOf($args, '--override')
+      Assert-Contract ($overrideIndex -ge 0 -and $args[$overrideIndex + 1] -ceq 'install --quiet --backend=wsl-2 --no-windows-containers') "${label}: Docker must override catalog license acceptance with the reviewed WSL 2 Linux-only arguments"
+      Assert-Contract (($args -join ' ') -notmatch '--accept-license|--always-run-service') "${label}: unapproved Docker privilege/backend/license change"
+    }
     $selectorMembers = @($selector.FindAll({ param($n) $n -is [System.Management.Automation.Language.MemberExpressionAst] }, $true) | ForEach-Object { $_.Member.Value })
     Assert-Contract ('id' -in $selectorMembers) "${label}: installer ID does not derive from specification"
     if ($app.versionPolicy -eq 'exact') {
@@ -387,7 +394,8 @@ function Test-WindowsDocument {
   Assert-Contract (@($Document.resources).Count -gt 0) 'configuration.winget resources: empty document'
   Assert-Contract ($Managed.auditedOn -match '^\d{4}-\d{2}-\d{2}$' -and $Managed.revisedOn -match '^\d{4}-\d{2}-\d{2}$') 'managed-applications.json: missing dated audit'
   Assert-Contract (@($Managed.identifiers | Where-Object { $_ -isnot [string] -or $_ -notmatch '\S' }).Count -eq 0 -and @($Managed.identifiers | Select-Object -Unique).Count -eq @($Managed.identifiers).Count) 'managed-applications.json: exclusion identifiers must be unique nonempty strings'
-  Assert-Contract ('Git.Git' -notin $Managed.identifiers -and 'Docker.DockerDesktop' -in $Managed.identifiers) 'managed-applications.json: per-user Git/Docker exclusion boundary differs'
+  Assert-Contract ('Git.Git' -notin $Managed.identifiers -and 'Docker.DockerDesktop' -notin $Managed.identifiers) 'managed-applications.json: repository Git/Docker installation boundary differs'
+  Assert-Contract ($Managed.dockerScopeEvidence -match '2026-10-11|20261011' -and $Managed.dockerScopeEvidence -match '2026-10-12' -and $Managed.dockerScopeEvidence -match 'update' -and $Managed.dockerScopeEvidence -match 'licensing') 'managed-applications.json: missing dated Docker update-only and entitlement evidence'
   $names = @{}
   foreach ($resource in $Document.resources) {
     $label = "resource $($resource.name)"
@@ -409,8 +417,9 @@ function Test-WindowsDocument {
     'markdown-lsp' = 'FelixZeller.markdown-oxide'; 'document-compiler' = 'Typst.Typst'; 'typst-lsp' = 'Myriad-Dreamin.Tinymist'; shell = 'PowerShell.PowerShell'; 'github-cli' = 'GitHub.cli'
     'latex-lsp' = 'TexLab.TexLab'; 'pdf-text' = 'oschwartz10612.Poppler'; 'document-converter' = 'JohnMacFarlane.Pandoc'; 'pdf-transform' = 'QPDF.QPDF'; 'image-converter' = 'ImageMagick.ImageMagick'
     openspec = '@fission-ai/openspec'; 'python-lsp' = '@fission-ai/openspec'; 'typescript-lsp' = '@fission-ai/openspec'; 'svelte-lsp' = '@fission-ai/openspec'
+    'container-runtime' = 'Docker.DockerDesktop'
   }
-  $selfUpdating = @('Zen-Team.Zen-Browser', 'ZedIndustries.Zed', 'Brave.Brave', 'Ferdium.Ferdium', 'Git.Git')
+  $selfUpdating = @('Zen-Team.Zen-Browser', 'ZedIndustries.Zed', 'Brave.Brave', 'Ferdium.Ferdium', 'Git.Git', 'Docker.DockerDesktop')
   # Test order: prerequisites must precede their consumers because apply runs units in document order.
   $resourceOrder = @($Document.resources | ForEach-Object { [string]$_.name })
   $runtimeIndex = -1
@@ -430,7 +439,7 @@ function Test-WindowsDocument {
     Assert-Contract ($null -eq $resource.dependsOn) "${label}: dependsOn cannot be resolved by winget configure apply; order the prerequisite earlier in the document"
     Assert-Contract ($resource.type -notmatch '(?i)WindowsFeature|OptionalFeature|WindowsCapability') "${label}: Windows feature is forbidden"
     $app = $resource.metadata.application
-    $exception = $null -ne $app -and $app.id -in @('Zen-Team.Zen-Browser', 'Tailscale.Tailscale')
+    $exception = $null -ne $app -and $app.id -in @('Zen-Team.Zen-Browser', 'Tailscale.Tailscale', 'Docker.DockerDesktop')
     Assert-Contract ($(if ($exception) { $resource.metadata.winget.securityContext -eq 'elevated' } else { $resource.metadata.winget.securityContext -ne 'elevated' })) "${label}: unapproved elevated resource or missing approved machine context"
     $keyPath = [string]$resource.properties.keyPath
     Assert-Contract ($keyPath -notmatch '(?i)^(HKLM|HKEY_LOCAL_MACHINE)|CloudStore|UserChoice|DefaultAssociations') "${label}: forbidden machine registry/CloudStore/default-association path $keyPath"
