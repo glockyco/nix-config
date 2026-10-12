@@ -29,15 +29,10 @@
       hostChecks =
         host:
         let
-          configuration =
-            if host.kind == "darwin" then
-              self.darwinConfigurations.${host.name}
-            else
-              self.nixosConfigurations.${host.name};
+          configuration = self.darwinConfigurations.${host.name};
           hostConfig = configuration.config;
           resources = hostConfig.chezmoi.resources or { };
-          settings =
-            if host.kind == "darwin" then hostConfig.determinateNix.customSettings else hostConfig.nix.settings;
+          settings = hostConfig.determinateNix.customSettings;
           installed = map (package: package.drvPath) user.packages;
           installedPackage = package: builtins.elem package.drvPath installed;
           user = hostConfig.users.users.${host.username};
@@ -52,7 +47,7 @@
           };
           sharedFacts =
             (builtins.fromTOML (builtins.readFile ../home/.chezmoidata/hosts.toml)).hosts.${host.name};
-          platformFacts = sharedFacts.platforms.${if host.kind == "darwin" then "darwin" else "linux"};
+          platformFacts = sharedFacts.platforms.darwin;
         in
         {
           system = hostConfig.system.build.toplevel;
@@ -66,19 +61,17 @@
             assert host.git == sharedFacts.git;
             assert host.roles == sharedFacts.roles;
             assert hostConfig.host.roles == hostConfig.host.importedRoles;
-            assert host.kind != "darwin" || host.paths.screenshots == (sharedFacts.paths.screenshots or null);
+            assert host.paths.screenshots == (sharedFacts.paths.screenshots or null);
             assert
-              host.kind != "darwin"
-              ||
-                host.darwin.applications == map (
-                  application:
-                  {
-                    cask = null;
-                    appPath = null;
-                    dockPosition = null;
-                  }
-                  // application
-                ) (sharedFacts.applications or [ ]);
+              host.darwin.applications == map (
+                application:
+                {
+                  cask = null;
+                  appPath = null;
+                  dockPosition = null;
+                }
+                // application
+              ) (sharedFacts.applications or [ ]);
             assert !host.roles.containerClient || host.darwin.containerProfile == sharedFacts.container;
             pkgs.runCommand "check-${host.name}-shared-facts" { } "touch $out";
           nix-settings = pkgs.callPackage ../checks/host-nix-settings-check.nix {
@@ -94,7 +87,7 @@
           agent-tools =
             let
               shared = import ../modules/shared/user-packages.nix { inherit pkgs; };
-              native = lib.optionals (host.kind == "darwin") [
+              native = [
                 pkgs.openssh
                 pkgs.roslyn-language-server
                 darwinSwitch
@@ -117,13 +110,7 @@
                 pkgs.air-batch-check
                 pkgs.air-share-mount
               ];
-              wsl = lib.optionals host.roles.wslWorkstation [
-                pkgs.wsl-open
-                pkgs.git-credential-manager
-                pkgs.gnupg
-                pkgs.pass
-              ];
-              required = shared ++ native ++ desktop ++ container ++ air ++ wsl;
+              required = shared ++ native ++ desktop ++ container ++ air;
               missing = builtins.filter (package: !installedPackage package) required;
               unavailable = builtins.filter (package: !supports package) required;
               helpers = lib.filterAttrs (_: concern: concern ? helper) resources;
@@ -134,19 +121,14 @@
               unavailable == [ ]
             ) "${host.name}: installed package unavailable on ${system}";
             assert lib.assertMsg (
-              installedPackage pkgs.roslyn-language-server == (host.kind == "darwin")
-            ) "${host.name}: Roslyn belongs to the Mac only";
-            assert lib.assertMsg (
               builtins.length installed == builtins.length (lib.unique installed)
             ) "${host.name}: duplicated user package derivation";
             assert builtins.all (
               concern: builtins.any (package: lib.hasPrefix "${package}/" concern.helper) user.packages
             ) (builtins.attrValues helpers);
-            assert
-              host.kind != "darwin"
-              || builtins.elem pkgs.git.drvPath (
-                map (package: package.drvPath) hostConfig.environment.systemPackages
-              );
+            assert builtins.elem pkgs.git.drvPath (
+              map (package: package.drvPath) hostConfig.environment.systemPackages
+            );
             pkgs.runCommand "check-${host.name}-agent-tools" { nativeBuildInputs = [ pkgs.openspec ]; } ''
               reported="$(HOME="$TMPDIR" openspec --version)"
               if [ "$reported" != "${pkgs.openspec.version}" ]; then
@@ -160,115 +142,20 @@
             assert hostConfig.programs.zsh.enableCompletion;
             assert hostConfig.programs.direnv.enable;
             assert hostConfig.programs.direnv.nix-direnv.enable;
-            assert (
-              if host.kind == "darwin" then
-                hostConfig.programs.nix-index.enable
-              else
-                hostConfig.programs.nix-index.enableZshIntegration
-            );
+            assert hostConfig.programs.nix-index.enable;
             assert shell.drvPath == pkgs.zsh.drvPath;
-            assert (
-              if host.kind == "darwin" then
-                hostConfig.programs.zsh.enableAutosuggestions
-                && hostConfig.programs.zsh.enableSyntaxHighlighting
-                && !hostConfig.programs.zsh.enableFzfCompletion
-                && !hostConfig.programs.zsh.enableFzfGit
-                && !hostConfig.programs.zsh.enableFzfHistory
-              else
-                hostConfig.programs.zsh.autosuggestions.enable && hostConfig.programs.zsh.syntaxHighlighting.enable
-            );
-            assert (
-              if host.kind == "nixos" then
-                shell.pname == "zsh"
-                && builtins.any (
-                  entry: lib.hasPrefix (toString shell) (toString entry)
-                ) hostConfig.environment.shells
-              else
-                hostConfig.system.primaryUser == host.username
-            );
+            assert hostConfig.programs.zsh.enableAutosuggestions;
+            assert hostConfig.programs.zsh.enableSyntaxHighlighting;
+            assert !hostConfig.programs.zsh.enableFzfCompletion;
+            assert !hostConfig.programs.zsh.enableFzfGit;
+            assert !hostConfig.programs.zsh.enableFzfHistory;
+            assert hostConfig.system.primaryUser == host.username;
             pkgs.runCommand "check-${host.name}-login-shell" { } "touch $out";
-        }
-        // lib.optionalAttrs (host.kind == "nixos") {
-          tailnet-builder-behavior = pkgs.callPackage ../packages/tailnet-builder-check/tests.nix { };
-          isolation =
-            let
-              builders = builtins.filter (peer: peer.name != host.name && peer.build.logicalCores != null) (
-                builtins.attrValues config.fleet.hosts
-              );
-              buildMachines = hostConfig.nix.buildMachines;
-            in
-            assert !hostConfig.services.openssh.enable;
-            assert hostConfig.networking.firewall.allowedTCPPorts == [ ];
-            assert hostConfig.networking.firewall.allowedUDPPorts == [ ];
-            assert !(hostConfig ? sops);
-            assert !hostConfig.services.tailscale.enable;
-            assert !(hostConfig.systemd.services ? tailscaled);
-            assert !(hostConfig.systemd.services ? tailscaled-set);
-            assert hostConfig.networking.firewall.allowedTCPPortRanges == [ ];
-            assert hostConfig.networking.firewall.allowedUDPPortRanges == [ ];
-            assert hostConfig.services.resolved.enable;
-            assert hostConfig.networking.nameservers == [ "10.255.255.254" ];
-            assert hostConfig.nix.distributedBuilds;
-            assert builtins.length buildMachines == builtins.length builders;
-            assert
-              lib.naturalSort (map (machine: machine.hostName) buildMachines)
-              == lib.naturalSort (map (builder: builder.name) builders);
-            pkgs.runCommand "check-${host.name}-isolation" { } "touch $out";
-          container-runtime =
-            assert hostConfig.virtualisation.podman.enable;
-            assert hostConfig.virtualisation.podman.dockerCompat;
-            assert !hostConfig.virtualisation.podman.dockerSocket.enable;
-            assert !hostConfig.virtualisation.docker.enable;
-            assert !hostConfig.virtualisation.libvirtd.enable;
-            assert
-              hostConfig.virtualisation.containers.containersConf.settings.engine.compose_providers == [
-                "${pkgs.docker-compose}/bin/docker-compose"
-              ];
-            assert !hostConfig.virtualisation.containers.containersConf.settings.engine.compose_warning_logs;
-            pkgs.runCommand "check-${host.name}-container-runtime" { } "touch $out";
-          fonts =
-            assert lib.assertMsg (builtins.elem pkgs.jetbrains-mono.drvPath (
-              map (package: package.drvPath) hostConfig.fonts.packages
-            )) "${host.name}: JetBrains Mono is absent from fonts.packages";
-            assert hostConfig.fonts.fontconfig.enable;
-            assert lib.assertMsg (
-              hostConfig.fonts.fontconfig.defaultFonts.monospace == [ "JetBrains Mono" ]
-            ) "${host.name}: monospace does not default to JetBrains Mono";
-            pkgs.runCommand "check-${host.name}-fonts" { } "touch $out";
-          scch-share =
-            let
-              share = hostConfig.fileSystems."/mnt/s";
-              mountUnit = hostConfig.systemd.units."mnt-s.mount";
-              group = hostConfig.users.groups.${user.group};
-            in
-            assert lib.assertMsg (
-              hostConfig.fileSystems ? "/mnt/s" && share.device == ''\\scch.at\SCCH'' && share.fsType == "drvfs"
-            ) "${host.name}: /mnt/s does not mount the SCCH share through drvfs";
-            assert lib.assertMsg (lib.all (option: builtins.elem option share.options) [
-              "ro"
-              "uid=${toString user.uid}"
-              "gid=${toString group.gid}"
-              "noauto"
-              "x-systemd.automount"
-              "nofail"
-            ]) "${host.name}: /mnt/s is not a read-only automount owned by ${host.username}";
-            assert lib.assertMsg
-              (
-                hostConfig.systemd.units ? "mnt-s.mount"
-                && mountUnit.overrideStrategy == "asDropin"
-                && lib.hasInfix "StartLimitIntervalSec=0" mountUnit.text
-              )
-              "${host.name}: mnt-s.mount keeps the start limit that turns an unreachable share into an empty directory";
-            pkgs.runCommand "check-${host.name}-scch-share" { } "touch $out";
-          omp-browser-runtime = pkgs.callPackage ../checks/omp-browser-runtime-check.nix {
-            systemPath = hostConfig.system.path;
-          };
-          builder-ssh-configuration = pkgs.callPackage ../checks/builder-ssh-config-check.nix {
-            sshConfig = hostConfig.environment.etc."ssh/ssh_config".source;
-            builder = builtins.head hostConfig.nix.buildMachines;
+          darwin-switch-command = pkgs.callPackage ../packages/darwin-switch/tests.nix {
+            darwin-switch = darwinSwitch;
           };
         }
-        // lib.optionalAttrs (host.kind == "darwin" && hostConfig.launchd.daemons ? tailnet-sshd) {
+        // lib.optionalAttrs (hostConfig.launchd.daemons ? tailnet-sshd) {
           tailnet =
             let
               authorizedKeysFile = "/var/lib/tailnet-sshd/authorized_keys/${host.username}";
@@ -288,24 +175,17 @@
             assert !(lib.elem "-e" sshdArguments);
             pkgs.runCommand "check-${host.name}-tailnet" { } "touch $out";
         }
-        // lib.optionalAttrs (host.kind == "darwin") {
-          darwin-switch-command = pkgs.callPackage ../packages/darwin-switch/tests.nix {
-            darwin-switch = darwinSwitch;
-          };
-        }
-        // lib.optionalAttrs (host.roles.desktop || host.roles.wslWorkstation) {
+        // lib.optionalAttrs host.roles.desktop {
           desktop-batch-configuration = pkgs.callPackage ../checks/ssh-endpoint-config-check.nix {
             inherit host renderedHome;
             endpoint = "desktop";
           };
-        }
-        // lib.optionalAttrs (host.kind == "darwin" && host.roles.desktop) {
           korolev-batch-configuration = pkgs.callPackage ../checks/ssh-endpoint-config-check.nix {
             inherit host renderedHome;
             endpoint = "korolev";
           };
         }
-        // lib.optionalAttrs (host.kind == "darwin" && host.roles.airClient) {
+        // lib.optionalAttrs host.roles.airClient {
           air-batch-configuration = pkgs.callPackage ../checks/air-batch-config-check.nix {
             inherit host renderedHome;
           };
@@ -332,25 +212,7 @@
               touch "$out"
             '';
         }
-        // lib.optionalAttrs (host.kind == "nixos" && host.roles.wslWorkstation) {
-          mac-batch-configuration =
-            pkgs.runCommand "check-${host.name}-mac-batch-configuration"
-              {
-                nativeBuildInputs = [
-                  pkgs.python3
-                  pkgs.openssh
-                ];
-              }
-              ''
-                python ${../checks/chezmoi-ssh-check.py} ${renderedHome} ${host.name} ${
-                  (builtins.head (
-                    builtins.filter (peer: peer.kind == "darwin") (builtins.attrValues config.fleet.hosts)
-                  )).name
-                }
-                touch "$out"
-              '';
-        }
-        // lib.optionalAttrs (host.kind == "darwin" && host.roles.containerClient) {
+        // lib.optionalAttrs host.roles.containerClient {
           container-runtime-configuration = pkgs.callPackage ../checks/container-runtime-config-check.nix {
             containerRuntimeCheck = pkgs.container-runtime-check;
             inherit host hostConfig renderedHome;
@@ -407,11 +269,7 @@
           assert builtins.all (
             host:
             let
-              configuration =
-                if host.kind == "darwin" then
-                  self.darwinConfigurations.${host.name}
-                else
-                  self.nixosConfigurations.${host.name};
+              configuration = self.darwinConfigurations.${host.name};
             in
             lib.assertMsg (
               configuration.pkgs.stdenv.hostPlatform.system == system
@@ -431,11 +289,6 @@
       }
       // lib.optionalAttrs (supports pkgs.tailscale-set-after-login) {
         tailscaleSetAfterLogin = pkgs.callPackage ../packages/tailscale-set-after-login/tests.nix { };
-      }
-      // lib.optionalAttrs (supports pkgs.wsl-open) {
-        wslOpenCommand = pkgs.callPackage ../packages/wsl-open/tests.nix {
-          wslOpen = pkgs.wsl-open;
-        };
       }
       // lib.optionalAttrs (supports pkgs.fastmail) {
         fastmailCommand = pkgs.callPackage ../packages/fastmail/tests.nix { };

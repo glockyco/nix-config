@@ -12,7 +12,7 @@ in
       ...
     }:
     let
-      hasDarwinHost = lib.any (host: host.system == system && host.kind == "darwin") hosts;
+      hasDarwinHost = lib.any (host: host.system == system) hosts;
     in
     {
       # Declared for every system, with no platform condition. `.envrc` and
@@ -41,9 +41,9 @@ in
         ]
         # Host tools, not repository tools. `darwin-rebuild` activates the
         # Darwin host, and `dnsconfig.js` needs the credential that
-        # chezmoi decrypts locally into ~/.config/credentials/. The WSL
-        # host declares no secret, so shipping `dnscontrol` there would move
-        # the failure from shell entry into the middle of a DNS operation.
+        # chezmoi decrypts locally into ~/.config/credentials/. CI-only Linux
+        # has no secret, so shipping `dnscontrol` there would move the
+        # failure from shell entry into the middle of a DNS operation.
         ++ lib.optionals hasDarwinHost [
           inputs.nix-darwin.packages.${system}.darwin-rebuild
           pkgs.dnscontrol

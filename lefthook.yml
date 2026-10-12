@@ -1,14 +1,10 @@
 # When formatting runs, not what it formats: formatting.json owns that policy.
-# Unix jobs resolve the pinned treefmt wrapper through nix develop. Native Git
-# and Fork resolve bootstrap-owned tools through the checkout's private Git
+# The macOS job resolves the pinned treefmt wrapper through nix develop. Native
+# Git and Fork resolve bootstrap-owned tools through the checkout's private Git
 # directory; neither arbitrary PATH versions nor missing environments skip a
 # gate. Skip predicates distinguish operating systems only.
 pre-commit:
   jobs:
-    - name: treefmt-linux
-      skip:
-        - run: test "$(uname -s)" != Linux
-      run: nix develop --command treefmt --fail-on-change {staged_files}
     - name: treefmt-darwin
       skip:
         - run: test "$(uname -s)" != Darwin

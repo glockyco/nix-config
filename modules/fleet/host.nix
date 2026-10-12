@@ -26,14 +26,6 @@ in
       description = "System architecture and operating system of this host.";
     };
 
-    kind = mkOption {
-      type = types.enum [
-        "darwin"
-        "nixos"
-      ];
-      description = "System configuration kind of this host.";
-    };
-
     username = mkOption {
       type = nonEmptyString;
       description = "Interactive user managed by the host configuration.";
@@ -51,7 +43,6 @@ in
           "postgresql"
           "containerClient"
           "airClient"
-          "wslWorkstation"
         ]
         (
           role:
@@ -69,7 +60,6 @@ in
           "postgresql"
           "containerClient"
           "airClient"
-          "wslWorkstation"
         ]
         (
           role:
@@ -85,25 +75,7 @@ in
       description = "User-visible computer name, when the platform sets one.";
     };
 
-    timeZone = mkOption {
-      type = nullableString;
-      default = null;
-      description = "Time zone explicitly configured for this host.";
-    };
-
     locale = {
-      timeCategory = mkOption {
-        type = nullableString;
-        default = null;
-        description = "Explicit LC_TIME locale, when supported by the host.";
-      };
-
-      measurementCategory = mkOption {
-        type = nullableString;
-        default = null;
-        description = "Explicit LC_MEASUREMENT locale, when supported by the host.";
-      };
-
       use24HourClock = mkOption {
         type = types.nullOr types.bool;
         default = null;
@@ -251,12 +223,6 @@ in
         default = null;
         description = "Host-specific Colima virtual-machine resources and mounts.";
       };
-    };
-
-    build.logicalCores = mkOption {
-      type = types.nullOr types.ints.positive;
-      default = null;
-      description = "Measured logical CPU count when this host serves as a remote builder.";
     };
 
     tailnet = {

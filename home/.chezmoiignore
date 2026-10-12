@@ -48,13 +48,10 @@ Air
 .config/credentials
 .config/credentials/**
 {{ end }}
-{{ if not (or (and (eq .chezmoi.os "linux") $machine.roles.wslWorkstation) $windows) }}
+{{ if not $windows }}
 .config/git/github.gitconfig
 {{ end }}
-{{ if not (and (eq .chezmoi.os "linux") $machine.roles.wslWorkstation) }}
-.ssh/builder-known-hosts
-{{ end }}
-{{ if not (or (and (eq .chezmoi.os "darwin") $machine.roles.desktop) (and (eq .chezmoi.os "linux") $machine.roles.wslWorkstation) $windows) }}
+{{ if not (or (and (eq .chezmoi.os "darwin") $machine.roles.desktop) $windows) }}
 .ssh/desktop-known-hosts
 {{ end }}
 {{ if not (and (eq .chezmoi.os "darwin") $machine.roles.desktop) }}

@@ -1,10 +1,9 @@
 {{- $host := index .hosts .host -}}
 {{- $mac := eq .chezmoi.os "darwin" -}}
-{{- $linux := eq .chezmoi.os "linux" -}}
 {{- $windows := and (eq .chezmoi.os "windows") (hasKey $host.platforms "windows") -}}
 # Endpoint blocks precede defaults because OpenSSH uses the first value.
 {{ $windowsEndpoints := list -}}
-{{ if or (and $mac $host.roles.desktop) (and $linux $host.roles.wslWorkstation) $windows }}{{ $windowsEndpoints = append $windowsEndpoints "desktop" }}{{ end -}}
+{{ if or (and $mac $host.roles.desktop) $windows }}{{ $windowsEndpoints = append $windowsEndpoints "desktop" }}{{ end -}}
 {{ if and $mac $host.roles.desktop }}{{ $windowsEndpoints = append $windowsEndpoints "korolev" }}{{ end -}}
 {{ range $name := $windowsEndpoints -}}
 {{ $endpoint := index $.ssh $name -}}
@@ -12,7 +11,7 @@ Host {{ $name }}-batch
 {{ range $key, $value := $.ssh.batch }}{{ if not (and $windows (hasPrefix "Control" $key)) }}    {{ $key }} {{ $value }}
 {{ end }}{{ end }}
 Host {{ $name }} {{ $name }}-batch
-    HostName {{ $endpoint.hostName }}{{ if or $linux $windows }}.{{ $.ssh.tailnetDnsDomain }}{{ end }}
+    HostName {{ $endpoint.hostName }}{{ if $windows }}.{{ $.ssh.tailnetDnsDomain }}{{ end }}
     User {{ $endpoint.user }}
     StrictHostKeyChecking yes
     UserKnownHostsFile "{{ $.chezmoi.homeDir | replace "\\" "/" }}/.ssh/{{ $name }}-known-hosts"
@@ -22,15 +21,15 @@ Host {{ $name }} {{ $name }}-batch
     KbdInteractiveAuthentication no
 {{ if hasKey $endpoint "warnWeakCrypto" }}    WarnWeakCrypto {{ $endpoint.warnWeakCrypto }}
 {{ end -}}
-{{ if or $linux $windows }}    IdentityFile {{ $.ssh.userIdentityFile }}
+{{ if $windows }}    IdentityFile {{ $.ssh.userIdentityFile }}
     IdentitiesOnly yes
 {{ end }}
 {{ end -}}
-{{ if or (and $linux $host.roles.wslWorkstation) $windows -}}
+{{ if $windows -}}
 {{ range $name, $pin := .ssh.hostKeys -}}
 {{ $destination := index $.hosts $name -}}
 Host {{ $name }}-batch
-{{ range $key, $value := $.ssh.batch }}{{ if not (and $windows (hasPrefix "Control" $key)) }}    {{ $key }} {{ $value }}
+{{ range $key, $value := $.ssh.batch }}{{ if not (hasPrefix "Control" $key) }}    {{ $key }} {{ $value }}
 {{ end }}{{ end }}
 Host {{ $name }} {{ $name }}-batch
     HostName {{ $name }}.{{ $.ssh.tailnetDnsDomain }}
@@ -38,8 +37,8 @@ Host {{ $name }} {{ $name }}-batch
     IdentityFile {{ $.ssh.userIdentityFile }}
     IdentitiesOnly yes
     StrictHostKeyChecking yes
-    UserKnownHostsFile "{{ $.chezmoi.homeDir | replace "\\" "/" }}/.ssh/{{ if $windows }}{{ $name }}{{ else }}builder{{ end }}-known-hosts"
-    GlobalKnownHostsFile {{ if $windows }}NUL{{ else }}/dev/null{{ end }}
+    UserKnownHostsFile "{{ $.chezmoi.homeDir | replace "\\" "/" }}/.ssh/{{ $name }}-known-hosts"
+    GlobalKnownHostsFile NUL
     UpdateHostKeys no
     PasswordAuthentication no
     KbdInteractiveAuthentication no

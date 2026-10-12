@@ -1,3 +1,0 @@
-{{ range $name, $pin := .ssh.hostKeys -}}
-{{ $name }},{{ $name }}.{{ $.ssh.tailnetDnsDomain }} {{ $pin.publicKey }}
-{{ end -}}

@@ -4,11 +4,10 @@ Configuration for an Apple Silicon MacBook Pro and Korolev, a Windows 11 work la
 
 ## Hosts
 
-| Host                | Platform                | Configured by                                             | Guide                                                                    |
-| ------------------- | ----------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `macbook-pro`       | macOS, `aarch64-darwin` | [nix-darwin](hosts/macbook-pro/default.nix) and chezmoi   | This README                                                              |
-| `korolev`           | Windows 11              | [PowerShell engine](windows/workstation.json) and chezmoi | [Korolev Windows](docs/operations/korolev-windows.md)                    |
-| `korolev` NixOS-WSL | `x86_64-linux`          | [NixOS](hosts/korolev/default.nix)                        | Being retired. See the [WSL guide](docs/operations/wsl-omp-bootstrap.md) |
+| Host          | Platform                | Configured by                                             | Guide                                                 |
+| ------------- | ----------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
+| `macbook-pro` | macOS, `aarch64-darwin` | [nix-darwin](hosts/macbook-pro/default.nix) and chezmoi   | This README                                           |
+| `korolev`     | Windows 11              | [PowerShell engine](windows/workstation.json) and chezmoi | [Korolev Windows](docs/operations/korolev-windows.md) |
 
 Host facts live in `hosts/<name>/host.nix`, typed by [modules/fleet/host.nix](modules/fleet/host.nix). Each `hosts/<name>/default.nix` selects roles from `modules/roles/`. Change a machine value in its host declaration and role policy in its role module.
 
@@ -128,7 +127,7 @@ The Mac runs containers in Colima and Korolev in Docker Desktop. See [container 
 
 ## Secrets
 
-Chezmoi's built-in age decrypts the Mac-only [encrypted sources](home/dot_config/private_credentials/) with `~/.config/sops/age/keys.txt`. [credentials.toml](home/.chezmoidata/credentials.toml) lists the recipient and the credentials, which land in `~/.config/credentials/` with mode 0600. The plaintext persists across reboots, so keep the disk and local backups encrypted. Never commit, print or export the identity or the decrypted values. Linux and Windows skip these sources. There is no offline recovery recipient yet.
+Chezmoi's built-in age decrypts the Mac-only [encrypted sources](home/dot_config/private_credentials/) with `~/.config/sops/age/keys.txt`. [credentials.toml](home/.chezmoidata/credentials.toml) lists the recipient and the credentials, which land in `~/.config/credentials/` with mode 0600. The plaintext persists across reboots, so keep the disk and local backups encrypted. Never commit, print or export the identity or the decrypted values. Windows skips these sources. There is no offline recovery recipient yet.
 
 To preview a change without decrypting credentials, run `chezmoi --override-data '{"checkMode":true}' diff`. Never use that override for a real apply.
 
