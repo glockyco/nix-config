@@ -163,11 +163,6 @@ The Darwin host SHALL accept standard key-only OpenSSH on its tailnet addresses,
 **Reason**: No Korolev Linux Nix daemon remains after the Windows-only cutover.
 **Migration**: Run Nix evaluation/build/activation on the Mac and applicable CI. Remove root client key/path/pin declarations, tailnet-builder-check and only the matching Mac builder authorization/trust; retain native Windows user SSH.
 
-### Requirement: WSL uses the Windows tailnet transport
-
-**Reason**: C3's temporary WSL DNS/builder transport is no longer a supported runtime after retirement.
-**Migration**: Complete C3's acceptance while WSL is still live, then remove the distribution/daemon builder client. Preserve Windows Tailscale/OpenSSH and the Mac's native endpoint.
-
 ### Requirement: Declared access policy
 
 **Reason**: The former requirement includes active Linux-host destination and connectivity scenarios, which are retired rather than retained under misleading headings.
