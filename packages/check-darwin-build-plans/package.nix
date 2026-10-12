@@ -92,20 +92,24 @@ writeShellApplication {
 
     # Match each source derivation itself. A dependency from another forbidden
     # class must not hide a missing pattern, particularly in Roslyn's closure.
+    controls="$(nix eval --json "$nixpkgs#legacyPackages.$system" --apply '
+      pkgs: [
+        { control = "dotnetCorePackages.dotnet_8.vmr"; drv = pkgs.dotnetCorePackages.dotnet_8.vmr.drvPath; }
+        { control = "dotnetCorePackages.dotnet_8.vmr.stage0.vmr"; drv = pkgs.dotnetCorePackages.dotnet_8.vmr.stage0.vmr.drvPath; }
+        { control = "swiftPackages.swift-unwrapped"; drv = pkgs.swiftPackages.swift-unwrapped.drvPath; }
+        { control = "markdown-oxide"; drv = pkgs.markdown-oxide.drvPath; }
+        { control = "roslyn-ls"; drv = pkgs.roslyn-ls.drvPath; }
+      ]
+    ')"
+    controls="$(printf '%s' "$controls" | jq -r '.[] | [.control, .drv] | @tsv')"
     controls_failed=0
-    for control in \
-      dotnetCorePackages.dotnet_8.vmr \
-      dotnetCorePackages.dotnet_8.vmr.stage0.vmr \
-      swiftPackages.swift-unwrapped \
-      markdown-oxide \
-      roslyn-ls; do
-      control_drv="$(nix eval --raw "$nixpkgs#legacyPackages.$system.$control.drvPath")"
+    while IFS=$'\t' read -r control control_drv; do
 
       if ! printf '%s\n' "''${control_drv##*/}" | grep -E -- "$pattern" >/dev/null; then
         echo "control failed: $control ($control_drv) does not match the detection pattern." >&2
         controls_failed=1
       fi
-    done
+    done <<< "$controls"
 
     if [ "$controls_failed" -ne 0 ]; then
       echo "" >&2
@@ -114,29 +118,36 @@ writeShellApplication {
       exit 1
     fi
 
-    # Read the output names from the flake rather than a list kept here, so an
-    # output added later is covered without editing this file.
+    # Read all output names and paths in one evaluation so every output is
+    # covered without repeatedly evaluating the same flake.
+    outputs="$(PLAN_FLAKE="$flake" PLAN_SYSTEM="$system" nix eval --json --impure --expr '
+      let
+        flake = builtins.getFlake (builtins.getEnv "PLAN_FLAKE");
+        system = builtins.getEnv "PLAN_SYSTEM";
+      in builtins.concatLists (map (group:
+        map (attr: {
+          inherit group attr;
+          drv = flake.''${group}.''${system}.''${attr}.drvPath;
+        }) (builtins.attrNames flake.''${group}.''${system})
+      ) [ "checks" "packages" "devShells" ])
+    ')"
+    outputs="$(printf '%s' "$outputs" | jq -r '.[] | [.group, .attr, .drv] | @tsv')"
     violations=0
     checked=0
-    for group in checks packages devShells; do
-      attrs="$(nix eval --json "$flake#$group.$system" --apply builtins.attrNames)"
-      attrs="$(printf '%s' "$attrs" | jq -r '.[]')"
+    while IFS=$'\t' read -r group attr drv; do
+      [ -n "$group" ] || continue
+      checked=$((checked + 1))
+      offenders="$(hits "$drv")"
 
-      for attr in $attrs; do
-        checked=$((checked + 1))
-        drv="$(nix eval --raw "$flake#$group.$system.$attr.drvPath")"
-        offenders="$(hits "$drv")"
+      if [ -n "$offenders" ]; then
+        violations=1
+        offender="''${offenders%%$'\n'*}"
 
-        if [ -n "$offenders" ]; then
-          violations=1
-          offender="''${offenders%%$'\n'*}"
-
-          echo "" >&2
-          echo "$group.$system.$attr reaches $(basename "$offender")" >&2
-          nix why-depends --derivation "$flake#$group.$system.$attr" "$offender" >&2
-        fi
-      done
-    done
+        echo "" >&2
+        echo "$group.$system.$attr reaches $(basename "$offender")" >&2
+        nix why-depends --derivation "$flake#$group.$system.$attr" "$offender" >&2
+      fi
+    done <<< "$outputs"
 
     if [ "$violations" -ne 0 ]; then
       echo "" >&2
