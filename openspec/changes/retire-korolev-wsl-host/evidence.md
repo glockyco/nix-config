@@ -16,7 +16,7 @@ The owner launched Docker Desktop as `jglock` and accepted the subscription agre
 
 ## Tasks 2.1 and 2.2: inventory and preservation
 
-The [runbook checklist](../../../docs/operations/korolev-windows.md#owner-assisted-project-migration) includes every root and nested relationship. The owner chose as-is preservation of unpushed commits, local branches, stashes, uncommitted, untracked and ignored data. Dated warnings were replaced by the observed inventory below, not a presumed clean state.
+The table below covers every root and nested relationship. The owner chose as-is preservation of unpushed commits, local branches, stashes, uncommitted, untracked and ignored data. Dated warnings were replaced by the observed inventory below, not a presumed clean state.
 
 | Native path below `C:\Users\jglock\src`                   | Preserved state                                                                                                                                                                                                                                                             |
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -57,7 +57,7 @@ Owner decisions cover `/tmp/haroon/LLMCodeImpact` and the disposable dataset fix
 
 ## Tasks 3.1, 3.2 and 3.3: bounded decision banks
 
-The runbook permits only `architecture.md`, `product.md` and `style.md`. Bank identity is `<basename>-<Bun.hash(cwd).toString(36)>` using the cwd omp actually sees. The algorithm matched three existing native banks, including UNC and space-containing paths, and the planned saner example.
+Only `architecture.md`, `product.md` and `style.md` were copied. Queues, state, transcripts, authentication and session databases, plugin caches and whole `~/.omp` directories stay on the source. Bank identity is `<basename>-<Bun.hash(cwd).toString(36)>` using the cwd omp actually sees. The algorithm matched three existing native banks, including UNC and space-containing paths, and the planned saner example.
 
 | WSL bank                             | Native bank                         |
 | ------------------------------------ | ----------------------------------- |

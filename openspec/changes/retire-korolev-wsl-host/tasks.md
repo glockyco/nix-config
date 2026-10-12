@@ -11,7 +11,7 @@
 
 ## 2. Preserve source work and establish stable native checkouts
 
-- [x] 2.1 Add the complete owner-assisted project checklist with native paths, nested relationships, host requirements and acceptance links. See [runbook](../../../docs/operations/korolev-windows.md#owner-assisted-project-migration) and [evidence](evidence.md#tasks-21-and-22-inventory-and-preservation).
+- [x] 2.1 Add the complete owner-assisted project checklist with native paths, nested relationships, host requirements and acceptance links. See [evidence](evidence.md#tasks-21-and-22-inventory-and-preservation).
 - [x] 2.2 Inventory actual source branches, remotes, pending work and sessions and record the owner's as-is preservation decision. See [evidence](evidence.md#tasks-21-and-22-inventory-and-preservation).
 - [x] 2.3 Finish all seven WSL omp sessions and the native UNC aqua session. Keep transcripts in WSL for export, without importing them. See [evidence](evidence.md#task-23-source-sessions-closed).
 - [x] 2.4 Carry pending work over as-is using bundles and file archives, without publishing. Preserve unpushed commits, local branches, stashes, uncommitted, untracked and ignored data. The owner publishes when ready. Verify native/source parity and retain WSL as a second copy. See [evidence](evidence.md#task-24-as-is-transfer-without-publication).
@@ -22,7 +22,7 @@
 
 ## 3. Port bounded OMP decisions, provider configuration and booking skill
 
-- [x] 3.1 Document the narrow decision-file exception without permitting queues, state, transcripts, auth/session databases, caches or whole-profile copying. See [runbook](../../../docs/operations/korolev-windows.md#bounded-omp-decision-migration).
+- [x] 3.1 Document the narrow decision-file exception without permitting queues, state, transcripts, auth/session databases, caches or whole-profile copying. See [evidence](evidence.md#tasks-31-32-and-33-bounded-decision-banks).
 - [x] 3.2 Calculate exact source/native bank identities with the actual cwd and Bun hash. Verify the saner example and record each migrated bank. See [evidence](evidence.md#tasks-31-32-and-33-bounded-decision-banks).
 - [x] 3.3 After source sessions end, reconcile native banks and copy only the three decision files byte-identically. Prove discovery in fresh native sessions and exclude runtime state. See [evidence](evidence.md#tasks-31-32-and-33-bounded-decision-banks).
 - [ ] 3.4 Reproduce the nonsecret `litellm` definition from WSL `~/.omp/agent/models.yml` in Windows `%USERPROFILE%\.omp\agent\models.yml` with `baseUrl: https://vllm-api.scch.at/v1`, preserving other definitions; verify owner-native login and a real provider response without transferring secrets or printing credentials.

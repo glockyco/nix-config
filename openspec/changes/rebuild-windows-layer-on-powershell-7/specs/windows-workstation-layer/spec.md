@@ -2,7 +2,7 @@
 
 ### Requirement: Rendered Windows configuration artifacts
 
-The repository SHALL maintain declarative JSON application/settings data, its schema, one PowerShell 7 convergence module and narrow standalone Zen-policy and Neo-driver Administrator scripts under `windows/`. The engine SHALL own installations and supported user settings. Chezmoi SHALL exclusively own user/app files. Nix activation SHALL neither write Windows paths nor apply Windows artifacts. After accepted migration, no WinGet Configuration document or embedded DSC test/set scripts SHALL remain.
+The repository SHALL maintain declarative JSON application/settings data, its schema, one PowerShell 7 convergence module and narrow standalone Zen-policy and Neo-driver Administrator scripts under `windows/`. The engine SHALL own installations and supported user settings. Chezmoi SHALL exclusively own user/app files. Nix activation SHALL neither write Windows paths nor apply Windows artifacts. No WinGet Configuration document or embedded DSC test/set scripts SHALL remain in the cutover PR.
 
 #### Scenario: Inspect source offline
 
@@ -284,22 +284,24 @@ Checks SHALL derive mutable application/version/release/settings facts from JSON
 
 ### Requirement: Owner-confirmed engine cutover
 
-The engine SHALL initially land alongside the existing document and tests. Only the integrator SHALL dry run or apply against Korolev. The chezmoi interpreter/hook switch and obsolete DSC source deletion SHALL be a separate reviewable commit after accepted live parity. Differences SHALL be explained and accepted rather than masked.
+The PR SHALL contain the engine cutover, hash-protected chezmoi invocation, persisted pwsh interpreter and complete obsolete DSC source deletion. Git history SHALL retain the legacy source for rollback. Only the integrator SHALL dry run or apply against Korolev. Before merge, the integrator SHALL run the dry run and then chezmoi apply from the PR branch, record zero drift or accept every named difference, and confirm post-apply convergence. Source rollback SHALL NOT be represented as restoration of mutated user state. Agents SHALL report only mocked local verification.
 
-#### Scenario: Review before removing the old owner
+#### Scenario: Review before live acceptance
 
-- **WHEN** engine implementation is ready but live parity is unconfirmed
-- **THEN** the old document, tests and chezmoi invocation remain in place
+- **WHEN** the complete cutover PR is ready but live parity is unconfirmed
+- **THEN** the PR remains unmerged
 - **AND** only mocked local verification is reported
+- **AND** the legacy source remains recoverable from Git history rather than an active second implementation
 
 #### Scenario: Complete the approved cutover
 
-- **WHEN** the integrator confirms parity or explicitly accepts named differences
-- **THEN** the separate cutover commit switches chezmoi to the engine and removes obsolete DSC paths
+- **WHEN** the integrator runs the PR branch dry run and chezmoi apply and accepts parity or every named difference
+- **THEN** post-apply convergence and application checks are recorded before merge
+- **AND** no separate post-parity source deletion phase is required
 
 ## REMOVED Requirements
 
 ### Requirement: Checker errors and self-tests have separate paths
 
-**Reason**: The obsolete bespoke document checker and its mutation/self-test interface are removed after parity.
+**Reason**: The obsolete bespoke document checker and its mutation/self-test interface are removed with the complete cutover PR.
 **Migration**: Use the PowerShell 7 schema/invariant gate and Pester behavior tests. Engine entrypoint errors remain distinct from drift.

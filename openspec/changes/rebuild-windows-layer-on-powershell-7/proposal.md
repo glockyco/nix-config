@@ -13,7 +13,7 @@ The Windows layer repeats installation and convergence logic inside 61 WinGet DS
 - Keep the Neo and Zen policy Administrator scripts separate. TeX Live, Tern, OMP, authentication and network cutovers remain explicit owner operations.
 - Replace the two-host DSC CI gate with one pwsh-only Windows job using Pester, Test-Json, PSScriptAnalyzer, privilege invariants and applicable shared formatting.
 - Add a minimal Windows PowerShell 5.1 bootstrap that installs pwsh, Git and chezmoi and hands over without applying workstation resources. Port native development tooling and lefthook dispatch to pwsh in their own pre-parity commit.
-- BREAKING: after owner-confirmed live parity, switch chezmoi to pwsh and remove the WinGet Configuration document, DSC schemas/checker, mutation fixtures, installer doubles and DSC CI provisioning in a separate final commit.
+- BREAKING: switch chezmoi to the hash-protected engine and pwsh, and remove the WinGet Configuration document, DSC schemas/checker, mutation fixtures, installer doubles, Desktop preludes and legacy CI legs in this PR. Live parity and chezmoi apply on the PR branch are owner-run pre-merge gates.
 
 ## Capabilities
 
@@ -30,4 +30,4 @@ None. The existing workstation and repository-gate boundaries own these behavior
 
 Targets the state after `make-korolev-windows-native` is archived, as `retire-korolev-wsl-host` does. Supersedes that change's WinGet document, exact-by-default versions, dual-host schema/parser/fixture and chezmoi interpreter promises. The currently shipped Docker exception takes precedence over the older delta's Docker exclusion. Nix, WSL retirement, tailnet/OpenSSH cutover and macOS are not part of this change.
 
-Implementation first lands alongside the old document and tests. The integrator alone previews/applies on Korolev. The hook/interpreter switch and obsolete-source deletion are separate final commits after accepted parity. Porting native development tooling is its own pre-parity commit. The minimal fresh-machine bootstrap is documented in README and the operations runbook.
+The PR contains the complete cutover. Porting native development tooling remains its own commit. Git history retains the legacy implementation for source rollback. Before merge, the integrator alone runs the engine dry run and then chezmoi apply on Korolev from the PR branch, accepting zero drift or each named difference and recording post-apply convergence. Agents verify only mocks. The minimal fresh-machine bootstrap is documented in README and the operations runbook.

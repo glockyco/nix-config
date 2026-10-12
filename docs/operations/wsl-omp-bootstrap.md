@@ -249,9 +249,7 @@ If recovery fails, roll back locally. Nix rollback neither restores keys nor cha
 
 Windows is the primary workstation; this page retains the secondary WSL import, Linux activation and builder procedures. Use the separate native checkout at `C:\Users\jglock\src\github.com\glockyco\nix-config`, not the Linux checkout for Windows user setup.
 
-Follow [Korolev native Windows operations](korolev-windows.md) for standard-user Git/chezmoi bootstrap, native checks, Neo restart prerequisite, `chezmoi diff/apply/verify`, explicit Zen/Tailscale installer prompts and narrow Administrator operations. There is no Nix-built Windows artifact or Windows generation rollback.
-
-The same runbook owns [native Zed/Fork/Git and Mac LaTeX](korolev-windows.md#native-projects-and-mac-latex), [Tern/OMP/plugin/annotation](korolev-windows.md#explicit-tern-omp-plugin-and-annotation-flows), and [local backup/drift repair/recovery](korolev-windows.md#manual-preferences-and-nontransactional-recovery). Windows user files have one chezmoi owner; application profiles, credentials and runtime databases remain unmanaged. Open Windows repositories locally in Zed and Fork; do not restore the old WSL Git bridge or WSL editor transport.
+Follow [Korolev Windows](korolev-windows.md) for native setup, apply and recovery. Open Windows repositories locally in Zed and Fork, not through WSL.
 
 ## Recover Linux state
 

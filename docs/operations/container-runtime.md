@@ -113,9 +113,9 @@ If this procedure started Colima only for acceptance, finish with `colima stop`.
 
 ## Korolev
 
-Korolev uses native Docker Desktop and its bundled Docker CLI/Compose with the WSL 2 Linux backend. The [native document](../../windows/configuration.winget) owns one self-updating machine-scope `Docker.DockerDesktop` installer. There is no version pin or downgrade of a newer installed release. Intune owns updates, not initial installation, according to the owner-confirmed 2026-10-11 `AppWorkload-20261011-084710.log` evidence. The owner confirmed licensing/entitlement and approved installation on 2026-10-12.
+Korolev uses native Docker Desktop and its bundled Docker CLI and Compose. Intune updates an existing installation but does not install it, so the engine installs it when missing and never pins or downgrades it.
 
-Follow the [standard-user installation and first-launch procedure](korolev-windows.md#docker-desktop-permissions-and-first-launch). The owner supplies UAC credentials only for the approved machine installer, accepts the subscription agreement in Docker Desktop and signs in with the approved entitled account. WSL 2 does not require `docker-users` membership or `--always-run-service`. The resource does not enable privileged Hyper-V/Windows-container features or modify local groups. A separately reviewed group change, if live evidence requires one, needs sign-out/sign-in. Docker Desktop's engine-owned WSL distributions are not the retiring project distro `NixOS`.
+The engine installs Docker Desktop with the WSL 2 backend and without Windows containers, as declared in `windows/workstation.json`. Its installer asks for Administrator credentials. Start Docker Desktop once and accept the subscription agreement yourself. WSL 2 needs no `docker-users` membership, so the engine never changes local groups.
 
 In a fresh standard-user PowerShell, confirm the executable belongs to the native installation, inspect the context and engine, and run a disposable Compose workload. The helper bounds each Docker process to 120 seconds and reports output without falling back to WSL:
 
