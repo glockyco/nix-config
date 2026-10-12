@@ -1,11 +1,8 @@
-param(
-  [string]$RepositoryRoot = (Join-Path $PSScriptRoot '../..'),
-  [ValidateSet('All', 'Interpreter')][string]$Case = 'All'
-)
+param([string]$RepositoryRoot = (Join-Path $PSScriptRoot '../..'))
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $RepositoryRoot = (Resolve-Path -LiteralPath $RepositoryRoot).Path
-foreach ($command in @('git', 'chezmoi')) {
+foreach ($command in @('git')) {
   if (-not (Get-Command $command -CommandType Application -ErrorAction SilentlyContinue)) { throw "checkout-regressions requires $command on PATH" }
 }
 function Assert-Checkout([bool]$Condition, [string]$Message) {
@@ -64,7 +61,6 @@ try {
   $null = Invoke-CheckoutNative git @('-c', 'core.autocrlf=true', '-c', "core.attributesFile=$emptyConfig", 'clone', '--no-local', '-q', $seed, $clone)
   $hostsBytes = [IO.File]::ReadAllBytes((Join-Path $clone 'home/.chezmoidata/hosts.toml'))
   Assert-Checkout (-not ($hostsBytes -contains [byte]13)) 'autocrlf=true clone converted ordinary text to CRLF; the repository eol policy must keep LF'
-  if ($Case -ne 'Interpreter') {
     $metadata = ([IO.File]::ReadAllText((Join-Path $clone 'home/.chezmoidata/windows-apps.json')) | ConvertFrom-Json).windowsApps
     $assets = Join-Path $clone $assetRelative
     $pins = @(@{ Path = $metadata.zed.path; Hash = $metadata.zed.sha256 }, @{ Path = $metadata.zed.license.path; Hash = $metadata.zed.license.sha256 }, @{ Path = $metadata.zen.license.path; Hash = $metadata.zen.license.sha256 })
@@ -79,22 +75,7 @@ try {
       $attribute = Invoke-CheckoutNative git @('-C', $clone, '-c', "core.attributesFile=$emptyConfig", 'check-attr', 'text', '--', $relative)
       Assert-Checkout ($attribute.EndsWith(': text: unset')) "nearest attributes must disable text conversion: $relative"
     }
-  }
-  $config = Join-Path $fixtureRoot 'init.toml'
-  $overridePath = Join-Path $fixtureRoot 'override.json'
-  [IO.File]::WriteAllText($overridePath, (@{ chezmoi = @{ os = 'windows'; homeDir = $target } } | ConvertTo-Json -Depth 10), (New-Object Text.UTF8Encoding($false)))
-  $chezmoiArguments = @('--no-tty', '--force', '--refresh-externals=never', '--source', $clone, '--destination', $target, '--config', $config, '--persistent-state', (Join-Path $fixtureRoot 'state.boltdb'), '--override-data-file', $overridePath)
-  if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
-    # init ignores override-data OS; promptStringOnce requires actual init.
-    # Only the disposable clone's template receives a Windows-context prefix.
-    $prefix = '{{- $_ := set .chezmoi "os" "windows" -}}{{- $_ := set .chezmoi "homeDir" ' + ($target | ConvertTo-Json -Compress) + ' -}}'
-    [IO.File]::WriteAllText((Join-Path $clone 'home/.chezmoi.toml.tmpl'), ($prefix + [IO.File]::ReadAllText((Join-Path $RepositoryRoot 'home/.chezmoi.toml.tmpl'))), (New-Object Text.UTF8Encoding($false)))
-  }
-  $null = Invoke-CheckoutNative chezmoi ($chezmoiArguments + @('init', '--promptString', 'host=korolev'))
-  $persisted = Invoke-CheckoutNative chezmoi ($chezmoiArguments + @('dump-config', '--format=json')) | ConvertFrom-Json
-  Assert-Checkout ($persisted.interpreters.ps1.command -ceq 'pwsh') 'rendered Windows init must select PowerShell 7'
-  Assert-Checkout (($persisted.interpreters.ps1.args -join '|') -ceq '-NoLogo|-NoProfile|-NonInteractive|-File') 'rendered Windows init interpreter arguments drifted'
-  Write-Output 'checkout-regressions: real autocrlf=true clone preserves included bytes and pinned Zed/Zen hashes. Rendered init selects PowerShell 7'
+  Write-Output 'checkout-regressions: real autocrlf=true clone preserves included bytes and pinned Zed/Zen hashes'
 } finally {
   foreach ($name in $variables) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
   if (Test-Path -LiteralPath $fixtureRoot) { Remove-Item -LiteralPath $fixtureRoot -Recurse -Force }

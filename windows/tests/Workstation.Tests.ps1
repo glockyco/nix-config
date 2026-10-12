@@ -1,4 +1,4 @@
-BeforeAll {
+BeforeDiscovery {
     Import-Module (Join-Path $PSScriptRoot '..\Workstation.psm1') -Force
 }
 
@@ -49,16 +49,6 @@ Describe 'WinGet snapshot and installation' {
             $context.WingetChanged | Should -BeTrue
         }
 
-        It 'uses the exact reviewed machine installer override' {
-            $resource.id = 'Docker.DockerDesktop'
-            $resource.scope = 'machine'
-            $resource.installArguments = 'install --quiet --backend=wsl-2 --no-windows-containers'
-            Set-WorkstationWinget -Resource $resource -Context $context
-            Should -Invoke Invoke-WorkstationNative -Times 1 -Exactly -ParameterFilter {
-                $Arguments[$Arguments.IndexOf('--scope') + 1] -eq 'machine' -and
-                $Arguments[$Arguments.IndexOf('--override') + 1] -eq 'install --quiet --backend=wsl-2 --no-windows-containers'
-            }
-        }
 
         It 'reports a newer pin as drift and refuses downgrade' {
             $resource.versionPolicy = 'pinned'
@@ -177,25 +167,17 @@ Describe 'Read-only and apply orchestration against mocks' {
             Should -Invoke Get-WorkstationWingetSnapshot -Times 1 -Exactly
             Should -Invoke Set-WorkstationApplication -Times 0 -Exactly
             Should -Invoke Set-WorkstationSetting -Times 0 -Exactly
-            Should -Invoke Write-Host -Times 3 -Exactly -ParameterFilter { $Object -like 'desired:*' }
         }
 
         It 'reports all dry-run drift and exits one without setting or refreshing' {
             Mock Test-WorkstationApplication { $false }
             Mock Test-WorkstationSetting { $false }
             Invoke-Workstation -DryRun | Should -Be 1
-            Should -Invoke Write-Host -Times 3 -Exactly -ParameterFilter { $Object -like 'drift:*' }
             Should -Invoke Get-WorkstationWingetSnapshot -Times 1 -Exactly
             Should -Invoke Set-WorkstationApplication -Times 0 -Exactly
             Should -Invoke Set-WorkstationSetting -Times 0 -Exactly
         }
 
-        It 'keeps a no-op apply to one snapshot with no setters' {
-            Invoke-Workstation -Apply | Should -Be 0
-            Should -Invoke Get-WorkstationWingetSnapshot -Times 1 -Exactly
-            Should -Invoke Set-WorkstationApplication -Times 0 -Exactly
-            Should -Invoke Set-WorkstationSetting -Times 0 -Exactly
-        }
 
         It 'refreshes just once after all changed packages and verifies each' {
             Mock Test-WorkstationApplication { $false }

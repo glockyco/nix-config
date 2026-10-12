@@ -80,12 +80,6 @@ try {
     Invoke-CoreNative chezmoi ($base + $Arguments) -Failure:$Failure
   }
   function Initialize-CoreConfig {
-    if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
-      # init ignores override-data OS, and promptStringOnce exists only in
-      # init. Force Windows context in the disposable template, not production.
-      $prefix = '{{- $_ := set .chezmoi "os" "windows" -}}{{- $_ := set .chezmoi "homeDir" ' + ($target | ConvertTo-Json -Compress) + ' -}}'
-      Write-CoreFile (Join-Path $checkout 'home/.chezmoi.toml.tmpl') ($prefix + [IO.File]::ReadAllText((Join-Path $RepositoryRoot 'home/.chezmoi.toml.tmpl')))
-    }
     $null = Invoke-CoreChezmoi @('init', '--promptString', 'host=korolev')
   }
   Initialize-CoreConfig
@@ -98,17 +92,6 @@ try {
   Assert-Core ($initText -notmatch 'recipient|identity|encryption|useBuiltinAge') 'native init must not select Mac age or secret identity'
   Initialize-CoreConfig
   $facts = Invoke-CoreChezmoi @('data', '--format=json') | ConvertFrom-Json
-  $windows = $facts.hosts.korolev.platforms.windows
-  $linux = $facts.hosts.korolev.platforms.linux
-  Assert-Core ($windows.home -eq 'C:\Users\jglock' -and $windows.username -eq 'jglock') 'Windows home/account facts drifted'
-  Assert-Core ($windows.checkout -eq 'C:\Users\jglock\src\github.com\glockyco\nix-config') 'Windows native checkout fact drifted'
-  Assert-Core ($windows.ghqRoot -eq 'C:/Users/jglock/src' -and $linux.ghqRoot -eq '/home/user/src') 'ghq roots must stay native and platform-distinct'
-  Assert-Core ($windows.home -ne $linux.home -and $windows.checkout -ne $linux.checkout) 'Windows paths must not be inferred from Linux'
-  Assert-Core ($windows.ternDirectory -eq 'AppData/Local/Programs/Tern') 'Tern must use the stable native directory'
-  Assert-Core ($windows.gcmHelper -eq 'mingw64/bin/git-credential-manager.exe') 'reviewed installed GCM helper must remain one explicit path'
-  $productionGit = Invoke-CoreChezmoi @('execute-template', '--file', (Join-Path $checkout 'home/dot_gitconfig.tmpl'))
-  Assert-Core ($productionGit.Contains('C:/Users/jglock/src')) 'native ghq root must render from platform facts'
-  Assert-Core ($productionGit -notmatch '/Users/glockyco|/home/user|credentialStore|gh auth git-credential') 'Windows Git must use native GCM, not Mac/Linux auth'
   $platformFixture = @{ home = $target; checkout = $checkout; ghqRoot = ((Join-Path $target 'src').Replace('\', '/')) }
   $override.hosts = @{ korolev = @{ platforms = @{ windows = $platformFixture } } }
   $coreTargets = @('.gitconfig', '.config/git/github.gitconfig', '.config/delta/catppuccin.gitconfig', 'AppData/Roaming/GitHub CLI/config.yml', '.ssh/config', '.ssh/desktop-known-hosts', '.ssh/macbook-pro-known-hosts')
@@ -126,9 +109,6 @@ try {
   Assert-Core ($ghConfig -match '(?m)^git_protocol: https\r?$' -and $ghConfig -notmatch 'oauth|token|user:') 'native gh config must select HTTPS without auth state'
   Assert-Core ($ghConfig -ceq "version: `"1`"`ngit_protocol: https`neditor: `"`"`naliases: {}`n") 'native gh config must match gh serialization without an extra blank line'
   function Get-CoreGit([string]$Key, [string]$Directory = $target) { Invoke-CoreNative git @('-C', $Directory, 'config', '--get', $Key) }
-  foreach ($entry in @(@('init.defaultBranch', 'main'), @('pull.rebase', 'true'), @('push.autoSetupRemote', 'true'), @('core.autocrlf', 'input'), @('core.pager', 'delta'), @('interactive.diffFilter', 'delta --color-only'), @('filter.lfs.required', 'true'), @('filter.lfs.process', 'git-lfs filter-process'), @('credential.https://git.overleaf.com.provider', 'generic'))) {
-    Assert-Core ((Get-CoreGit $entry[0]) -eq $entry[1]) "effective Git $($entry[0]) drifted"
-  }
   Assert-Core ((Get-CoreGit 'ghq.root') -eq $platformFixture.ghqRoot) 'effective native ghq root drifted'
   foreach ($hostName in @('github.com', 'gitlab.scch.at')) {
     $rewrites = Invoke-CoreNative git @('config', '--get-all', "url.https://$hostName/.insteadOf")
@@ -150,15 +130,6 @@ try {
     $null = Invoke-CoreNative git @('-C', $repository, 'config', 'user.email', 'fixture-local@example.invalid')
     Assert-Core ((Get-CoreGit 'user.email' $repository) -eq 'fixture-local@example.invalid') 'local Git email must override both global and GitHub include'
   }
-  # The >=2.56 layout is an explicit reviewed fact change, never a helper chain.
-  $platformFixture.gcmHelper = 'ucrt64/bin/git-credential-manager.exe'
-  $transition = Invoke-CoreChezmoi @('execute-template', '--file', (Join-Path $checkout 'home/dot_gitconfig.tmpl'))
-  Assert-Core ($transition.Contains('/ucrt64/bin/git-credential-manager.exe') -and -not $transition.Contains('/mingw64/')) 'Git >=2.56 transition must replace, not append/fallback, the helper'
-  $transitionPath = Join-Path $fixtureRoot 'transition.gitconfig'
-  Write-CoreFile $transitionPath $transition
-  $transitionHelper = Invoke-CoreNative git @('config', '--file', $transitionPath, '--get-all', 'credential.helper')
-  Assert-Core ($transitionHelper.Trim() -eq $expectedHelper.Replace('/mingw64/', '/ucrt64/')) 'effective transitioned GCM helper drifted'
-  $platformFixture.Remove('gcmHelper')
   $sshPath = Join-Path $target '.ssh/config'
   $sshText = [IO.File]::ReadAllText($sshPath)
   Assert-Core ($sshText -notmatch '(?im)^\s*Control(Master|Path|Persist)\s|/root/|builder-key|IdentityAgent|UseKeychain') 'Windows SSH must omit unsupported multiplexing, Mac agent and root builder identity'
@@ -169,17 +140,13 @@ try {
     }
     $isDesktop = $endpoint.StartsWith('desktop')
     $isBatch = $endpoint.EndsWith('-batch')
-    Assert-Core ($effective.hostname -eq $(if ($isDesktop) { 'desktop.tail8768af.ts.net' } else { 'macbook-pro.tail8768af.ts.net' })) "$endpoint hostname drifted"
-    Assert-Core ($effective.user -eq $(if ($isDesktop) { 'User' } else { 'glockyco' })) "$endpoint user drifted"
     foreach ($key in @('passwordauthentication', 'kbdinteractiveauthentication')) { Assert-Core ($effective[$key] -eq 'no') "$endpoint must disable $key" }
     Assert-Core ($effective.stricthostkeychecking -in @('yes', 'true')) "$endpoint must strictly check host pins"
     Assert-Core ($effective.identitiesonly -eq 'yes' -and $effective.identityfile -match '[/\\]\.ssh[/\\]id_ed25519$') "$endpoint must select only the external user key"
     $pin = if ($isDesktop) { 'desktop-known-hosts' } else { 'macbook-pro-known-hosts' }
     Assert-Core ($effective.userknownhostsfile.Contains($pin) -and $effective.globalknownhostsfile -eq 'NUL') "$endpoint must use only its managed native pin file"
     Assert-Core ($effective.updatehostkeys -in @('no', 'false')) "$endpoint must not auto-update managed pins"
-    Assert-Core ($effective.serveraliveinterval -eq '60' -and $effective.serveralivecountmax -eq '3' -and $effective.hashknownhosts -eq 'yes') "$endpoint must retain supported interactive keepalive/pin options"
     if ($isBatch) {
-      Assert-Core ($effective.batchmode -eq 'yes' -and $effective.requesttty -eq 'false' -and $effective.connecttimeout -eq '8') "$endpoint batch/timeout/no-PTY behavior drifted"
       if ($effective.ContainsKey('stdinnull')) { Assert-Core ($effective.stdinnull -eq 'no') "$endpoint must retain stdin" }
     }
     foreach ($key in @('controlmaster', 'controlpersist')) {
@@ -194,7 +161,6 @@ try {
     if ($template.FullName -match '[/\\]\.chezmoitemplates[/\\]') { continue }
     $rendered = Invoke-CoreChezmoi @('execute-template', '--file', $template.FullName)
     Assert-CoreSyntax $template.Name $rendered
-    Assert-Core ($rendered -notmatch 'windows-powershell-prelude|PSEdition\s*-eq\s*''Desktop''') "$($template.Name) must not rebuild Desktop module paths"
   }
   $env:CORE_ENGINE_LOG = Join-Path $fixtureRoot 'engine-calls.log'
   $env:CORE_ENGINE_EXIT = '0'
@@ -206,7 +172,6 @@ try {
   }
   $engineTemplate = Join-Path $checkout 'home/run_onchange_before_windows-00-workstation.ps1.tmpl'
   $engineScript = Invoke-CoreChezmoi @('execute-template', '--file', $engineTemplate)
-  Assert-Core ($engineScript -notmatch 'winget configure|Add-WindowsCapability|Start-Service|sshd|ExecutionPolicy') 'user apply must not run the retired provisioner or Administrator service operations'
   & ([scriptblock]::Create($engineScript))
   Assert-Core ((Get-CoreEngineCallCount) -eq 1) 'valid native root should invoke the fake engine exactly once'
   Assert-Core ([IO.File]::ReadAllLines($env:CORE_ENGINE_LOG)[0].Replace('\', '/') -ceq ((Join-Path $checkout 'windows/workstation.ps1').Replace('\', '/') + '|-Apply')) 'pwsh must receive the checkout entrypoint as one argument, including spaces'

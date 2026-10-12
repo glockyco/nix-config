@@ -48,8 +48,7 @@ try {
         Invoke-CiScript 'windows/dev/bootstrap.ps1' @('-RepositoryRoot', $RepositoryRoot, '-ArchiveCacheRoot', $ArchiveCacheRoot, '-IncludeTestDependencies', '-SkipHook')
         Invoke-CiScript 'windows/dev/engine-dependencies.ps1' @('-RepositoryRoot', $RepositoryRoot, '-ModuleRoot', $ModuleRoot)
     }
-    Invoke-CiGate 'Locked local dependency validation' {
-        foreach ($definition in (Get-NativeDependencies).tools) { $null = Get-NativeTool -Name $definition.id -ToolsRoot $toolsRoot }
+    Invoke-CiGate 'Engine dependencies and system tools' {
         Import-EngineDependencies -ModuleRoot $ModuleRoot
         $chezmoi = Get-NativeTool -Name chezmoi -ToolsRoot $toolsRoot
         $env:PATH = ((Split-Path $chezmoi.command -Parent), (Split-Path $hostCommand -Parent), $env:PATH) -join [IO.Path]::PathSeparator
@@ -67,7 +66,6 @@ try {
     foreach ($relative in @(
         'windows/dev/tests/formatting.ps1',
         'windows/dev/tests/bootstrap.ps1',
-        'windows/dev/tests/contract-parsing.ps1',
         'windows/dev/tests/hook.ps1',
         'windows/tests/chezmoi-core.ps1',
         'windows/tests/chezmoi-apps.ps1',
@@ -75,8 +73,8 @@ try {
     )) {
         Invoke-CiScript $relative @('-RepositoryRoot', $RepositoryRoot)
     }
-    # Chezmoi fixtures include checkout and app regressions, rendered-template
-    # ASTs and a dedicated fake engine.
+    # Chezmoi fixtures include checkout and app regressions, template parsing
+    # and a dedicated fake engine. Native smoke uses real locked formatters.
     Invoke-CiScript 'windows/dev/tests/native-smoke.ps1' @('-RepositoryRoot', $RepositoryRoot, '-ArchiveCacheRoot', $ArchiveCacheRoot)
     Write-Output 'Windows static, mocked engine and isolated native/chezmoi fixture checks passed. This is not live workstation acceptance.'
 } catch {

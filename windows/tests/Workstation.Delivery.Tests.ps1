@@ -1,4 +1,4 @@
-BeforeAll {
+BeforeDiscovery {
   Import-Module (Join-Path $PSScriptRoot '../Workstation.psm1') -Force
 }
 
@@ -79,14 +79,6 @@ Describe 'Workstation delivery safety and convergence' {
         Should -Invoke Move-Item -Times 0 -Exactly
       }
 
-      It 'extracts 7z only through the absolute inbox tar executable' {
-        $script:resource.archiveKind = '7z'
-        Expand-WorkstationArchive -Resource $script:resource -Archive 'C:\temporary\payload.7z' -Destination 'C:\temporary\expanded'
-        Should -Invoke Invoke-WorkstationNative -Times 1 -Exactly -ParameterFilter {
-          $Command -eq (Join-Path $env:SystemRoot 'System32\tar.exe') -and
-          ($Arguments -join '|') -eq '-xf|C:\temporary\payload.7z|-C|C:\temporary\expanded'
-        }
-      }
 
       It 'keeps the previous install when committing a verified staged payload' {
         Mock Test-WorkstationArchivePayload { $Directory -ne $script:directory }

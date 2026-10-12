@@ -19,7 +19,7 @@ function Test-FormattingPattern {
 }
 
 function Get-FormattingPlan {
-    param($Policy, [string[]]$Paths, [switch]$IncludeNix)
+    param($Policy, [string[]]$Paths)
     foreach ($path in $Paths) {
         if ($path.StartsWith('/') -or $path -match '(^|/)\.\.(/|$)') { throw "Formatting path is outside checkout: $path" }
         $excluded = $false
@@ -28,7 +28,7 @@ function Get-FormattingPlan {
         }
         if ($excluded) { continue }
         foreach ($formatter in @($Policy.formatters | Sort-Object priority, name)) {
-            if (-not $formatter.native -and -not $IncludeNix) { continue }
+            if (-not $formatter.native) { continue }
             foreach ($pattern in $formatter.includes) {
                 if (Test-FormattingPattern $path $pattern) {
                     $configuration = $null

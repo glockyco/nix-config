@@ -54,47 +54,6 @@
     ],
     "dns/dnsconfig.js": [
       "prettier"
-    ],
-    "flake.nix": [
-      "nixfmt"
-    ],
-    "nested/module.nix": [
-      "nixfmt"
-    ]
-  },
-  "options": {
-    "nixfmt": [],
-    "ruff-check": [
-      "check",
-      "--fix"
-    ],
-    "ruff-format": [
-      "format"
-    ],
-    "mdformat": [],
-    "jsonfmt": [
-      "-w"
-    ],
-    "yamlfmt": [
-      "-conf",
-      "@configuration@"
-    ],
-    "prettier": [
-      "--write"
-    ]
-  },
-  "configuration": {
-    "yamlfmt": {
-      "line_ending": "lf",
-      "formatter": {
-        "retain_line_breaks": true
-      }
-    }
-  },
-  "plugins": {
-    "mdformat": [
-      "mdformat-gfm",
-      "mdformat-frontmatter"
     ]
   }
 }

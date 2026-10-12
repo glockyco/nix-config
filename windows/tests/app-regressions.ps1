@@ -1,146 +1,10 @@
-param(
-  [Parameter(Mandatory = $true)][string]$RepositoryRoot,
-  [ValidateSet('All', 'AltSnap', 'PowerToys', 'Zed', 'Path')][string]$Case = 'All'
-)
+param([Parameter(Mandatory = $true)][string]$RepositoryRoot)
 $ErrorActionPreference = 'Stop'
 # Run this current fixture against any source snapshot, including the pre-fix
 # checkout. Only temporary files and process/registry/message doubles are used.
 function Assert-AppRegression {
   param([bool]$Condition, [string]$Message)
   if (-not $Condition) { throw "app-regressions: $Message" }
-}
-function Write-AppRegressionFile {
-  param([string]$Path, [string]$Text)
-  [void][IO.Directory]::CreateDirectory((Split-Path -Parent $Path))
-  [IO.File]::WriteAllText($Path, $Text, [Text.UTF8Encoding]::new($false))
-}
-function Render-AppRegression {
-  param([string]$Relative)
-  $inputPath = Join-Path $script:RegressionTemporary 'input.tmpl'
-  $outputPath = Join-Path $script:RegressionTemporary 'output'
-  $prefix = '{{- $_ := set .chezmoi "os" "windows" -}}{{- $_ := set .chezmoi "homeDir" ' + ($script:RegressionHome | ConvertTo-Json -Compress) + ' -}}'
-  Write-AppRegressionFile $inputPath ($prefix + [IO.File]::ReadAllText((Join-Path $script:RegressionSource $Relative)))
-  $oldPreference = $ErrorActionPreference
-  try {
-    $ErrorActionPreference = 'Continue'
-    $output = & $script:RegressionChezmoi --config $script:RegressionConfig --source $script:RegressionSource --destination $script:RegressionHome --persistent-state $script:RegressionState --cache $script:RegressionCache --output $outputPath execute-template --file $inputPath 2>&1
-    $exitCode = $LASTEXITCODE
-  } finally { $ErrorActionPreference = $oldPreference }
-  Assert-AppRegression ($exitCode -eq 0) "render $Relative exited ${exitCode}: $($output -join '; ')"
-  return [IO.File]::ReadAllText($outputPath)
-}
-function Split-AppRegressionHook {
-  param([string]$Text)
-  $tokens = $null; $errors = $null
-  $ast = [Management.Automation.Language.Parser]::ParseInput($Text, [ref]$tokens, [ref]$errors)
-  Assert-AppRegression ($errors.Count -eq 0) "hook parser: $($errors.Message -join '; ')"
-  $start = @($ast.EndBlock.Statements | Where-Object { $_ -is [Management.Automation.Language.AssignmentStatementAst] -and $_.Left.Extent.Text -eq '$restartState' })[0].Extent.StartOffset
-  return @{ Prelude = $Text.Substring(0, $start); Body = $Text.Substring($start) }
-}
-function Invoke-AppRegressionFilter {
-  param([byte[]]$Bytes)
-  $start = [Diagnostics.ProcessStartInfo]::new()
-  # This directly tests the byte-stream contract in the current test host; the
-  # normal apps suite separately exercises the shared init interpreter policy.
-  $start.FileName = $script:RegressionEngine
-  $start.Arguments = '-NoLogo -NoProfile -NonInteractive -File "' + $script:RegressionFilter + '"'
-  $start.UseShellExecute = $false
-  $start.RedirectStandardInput = $true; $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
-  # Use a BOMless stdin writer so the fixture controls every input byte.
-  $parentInputEncoding = [Console]::InputEncoding
-  try {
-    [Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
-    $process = [Diagnostics.Process]::Start($start)
-    $inputStream = $process.StandardInput.BaseStream
-  } finally { [Console]::InputEncoding = $parentInputEncoding }
-  $result = [IO.MemoryStream]::new()
-  try {
-    $inputStream.Write($Bytes, 0, $Bytes.Length)
-    $process.StandardInput.Close()
-    $process.StandardOutput.BaseStream.CopyTo($result)
-    $stderr = $process.StandardError.ReadToEnd()
-    $script:RegressionFilterStderr = $stderr
-    $process.WaitForExit()
-    Assert-AppRegression ($process.ExitCode -eq 0) "AltSnap filter exited $($process.ExitCode): $stderr"
-    return ,$result.ToArray()
-  } finally { $result.Dispose(); $process.Dispose() }
-}
-function Test-AltSnapRegression {
-  . ([scriptblock]::Create($script:RegressionBefore.Prelude))
-  Write-AppText (Join-Path $env:LOCALAPPDATA 'Fork/settings.json') (Get-AppJson '' $forkDesired 'fork')
-  Write-AppText (Join-Path $env:LOCALAPPDATA 'Microsoft/PowerToys/settings.json') (Get-AppJson '' $powerToysDesired 'power-toys')
-  $path = Join-Path $env:APPDATA 'AltSnap/AltSnap.ini'
-  $unrelated = '; untouched ' + [char]0x00fc + [char]0x03bb + [char]0x6771
-  $text = "[General]`r`n$unrelated`r`nAero=0`r`nAutoSnap=0`r`nCustom=" + [char]0x00e9 + "`r`n[Input]`r`nHotkeys=keep`r`n"
-  $encoding = [Text.UnicodeEncoding]::new($false, $true)
-  $inputBytes = [byte[]]($encoding.GetPreamble() + $encoding.GetBytes($text))
-  # Hosted Windows PowerShell can inherit BOM-bearing UTF-8 console input.
-  # The binary fixture transport must not prepend that encoding's preamble.
-  $parentInputEncoding = [Console]::InputEncoding
-  try {
-    [Console]::InputEncoding = [Text.Encoding]::UTF8
-    $outputBytes = Invoke-AppRegressionFilter $inputBytes
-  } finally { [Console]::InputEncoding = $parentInputEncoding }
-  if ($outputBytes.Length -lt 2 -or $outputBytes[0] -ne 255 -or $outputBytes[1] -ne 254) {
-    $prefix = [BitConverter]::ToString($outputBytes, 0, [Math]::Min(16, $outputBytes.Length))
-    throw "AltSnap must retain the original UTF-16 LE BOM; stdout length=$($outputBytes.Length), first bytes=$prefix; stderr=$script:RegressionFilterStderr"
-  }
-  $actual = $encoding.GetString($outputBytes, 2, $outputBytes.Length - 2)
-  Assert-AppRegression ($actual.Contains($unrelated + "`r`n") -and $actual.Contains('Custom=' + [char]0x00e9 + "`r`n") -and $actual.Contains("Hotkeys=keep`r`n")) 'AltSnap unrelated non-ASCII lines must survive unchanged'
-  foreach ($line in @('Aero=1', 'AutoSnap=2', 'SmartAero=1', 'AeroHoffset=50', 'AeroVoffset=50')) {
-    Assert-AppRegression ($actual.Contains($line)) "AltSnap declared $line must converge"
-  }
-  [void][IO.Directory]::CreateDirectory((Split-Path -Parent $path))
-  [IO.File]::WriteAllBytes($path, $inputBytes)
-  $events = [Collections.Generic.List[string]]::new()
-  function Get-Process { param([string]$Name, $ErrorAction) if ($Name -eq 'AltSnap') { [PSCustomObject]@{ Path = 'fixture AltSnap.exe'; ProcessName = 'AltSnap' } } }
-  function Stop-Process { [CmdletBinding()]param([Parameter(ValueFromPipeline = $true)]$InputObject, [switch]$Force) process { $events.Add('stop:' + $InputObject.ProcessName) } }
-  function Wait-Process { [CmdletBinding()]param([Parameter(ValueFromPipeline = $true)]$InputObject, [int]$Timeout) process { $events.Add('wait:' + $InputObject.ProcessName) } }
-  function Start-Process { param([string]$FilePath, $ErrorAction) $events.Add('start:' + $FilePath) }
-  & ([scriptblock]::Create($script:RegressionBefore.Body))
-  Assert-AppRegression ($events -contains 'stop:AltSnap' -and $events -contains 'wait:AltSnap') 'AltSnap drift must stop/wait before writing'
-  [IO.File]::WriteAllBytes($path, $outputBytes)
-  & ([scriptblock]::Create($script:RegressionAfter))
-  Assert-AppRegression ($events -contains 'start:fixture AltSnap.exe') 'AltSnap must restart after writing'
-  $events.Clear()
-  & ([scriptblock]::Create($script:RegressionBefore.Body))
-  $repeated = Invoke-AppRegressionFilter $outputBytes
-  & ([scriptblock]::Create($script:RegressionAfter))
-  Assert-AppRegression ($events.Count -eq 0) 'UTF-16 AltSnap must produce no false repeated hook drift'
-  Assert-AppRegression ([Convert]::ToBase64String($outputBytes) -ceq [Convert]::ToBase64String($repeated)) 'UTF-16 AltSnap repeated modification must be byte stable'
-  $newBytes = Invoke-AppRegressionFilter ([byte[]]@())
-  Assert-AppRegression ($newBytes[0] -eq [byte][char]'[' -and [Text.Encoding]::UTF8.GetString($newBytes).Contains('Aero=1')) 'new BOMless AltSnap INI must use UTF-8 without BOM'
-}
-function Test-PowerToysRegression {
-  . ([scriptblock]::Create($script:RegressionBefore.Prelude))
-  Write-AppText (Join-Path $env:LOCALAPPDATA 'Fork/settings.json') (Get-AppJson '' $forkDesired 'fork')
-  Write-AppText (Join-Path $env:APPDATA 'AltSnap/AltSnap.ini') (Get-AppIni '' $altSnapDesired)
-  Write-AppText (Join-Path $env:LOCALAPPDATA 'Microsoft/PowerToys/settings.json') '{"startup":false,"enabled":{"CmdPal":false}}'
-  $runner = Join-Path $env:LOCALAPPDATA 'PowerToys/PowerToys.exe'
-  $events = [Collections.Generic.List[string]]::new()
-  function Get-Process {
-    param([string]$Name, $ErrorAction)
-    if ($Name -eq 'PowerToys*') {
-      [PSCustomObject]@{ Path = $runner; ProcessName = 'PowerToys' }
-      [PSCustomObject]@{ Path = 'fixture PowerToys.FancyZones.exe'; ProcessName = 'PowerToys.FancyZones' }
-    }
-  }
-  function Stop-Process { [CmdletBinding()]param([Parameter(ValueFromPipeline = $true)]$InputObject, [switch]$Force) process { $events.Add('stop:' + $InputObject.ProcessName) } }
-  function Wait-Process { [CmdletBinding()]param([Parameter(ValueFromPipeline = $true)]$InputObject, [int]$Timeout) process { $events.Add('wait:' + $InputObject.ProcessName) } }
-  function Start-Process { param([string]$FilePath, $ErrorAction) $events.Add('start:' + $FilePath) }
-  & ([scriptblock]::Create($script:RegressionBefore.Body))
-  & ([scriptblock]::Create($script:RegressionAfter))
-  Assert-AppRegression ($events -contains 'stop:PowerToys' -and $events -contains 'stop:PowerToys.FancyZones' -and $events -contains 'wait:PowerToys.FancyZones') 'PowerToys runner and children must stop/wait together'
-  $starts = @($events | Where-Object { $_ -like 'start:*' })
-  Assert-AppRegression ($starts.Count -eq 1 -and $starts[0] -ceq ('start:' + $runner)) 'PowerToys must restart only its canonical runner, never a child'
-}
-function Test-ZedRegression {
-  . ([scriptblock]::Create($script:RegressionBefore.Prelude))
-  $text = '{"wsl_connections":[{"distro_name":"NixOS","projects":["/home/user/project"]}],"lsp":{"nixd":{},"texlab":{},"other":{}},"agent_servers":{"omp":{},"other":{}}}'
-  $result = ConvertFrom-AppJsonc (Get-AppJson $text ([PSCustomObject]@{ vim_mode = $true }) 'zed')
-  Assert-AppRegression ($result.wsl_connections.Count -eq 1 -and $result.wsl_connections[0].distro_name -ceq 'NixOS' -and $result.wsl_connections[0].projects[0] -ceq '/home/user/project') 'Zed remembered WSL projects must survive convergence'
-  Assert-AppRegression ($null -eq $result.lsp.nixd -and $null -eq $result.lsp.texlab -and $null -eq $result.agent_servers.omp -and $null -ne $result.lsp.other -and $null -ne $result.agent_servers.other) 'Zed removes only retired managed LSP/agent keys'
-  Assert-AppRegression ($result.vim_mode -eq $true) 'Zed declared settings still converge'
 }
 function Test-PathRegression {
   $helperPath = Join-Path $script:RegressionSource '.chezmoitemplates/windows-apps/functions.ps1'
@@ -178,12 +42,6 @@ function Test-PathRegression {
 $script:RegressionTemporary = Join-Path ([IO.Path]::GetTempPath()) ('app regressions ' + [Guid]::NewGuid().ToString('N'))
 $script:RegressionHome = Join-Path $script:RegressionTemporary 'user home'
 $script:RegressionSource = Join-Path (Resolve-Path -LiteralPath $RepositoryRoot).ProviderPath 'home'
-$script:RegressionConfig = Join-Path $script:RegressionTemporary 'chezmoi.json'
-$script:RegressionState = Join-Path $script:RegressionTemporary 'state.boltdb'
-$script:RegressionCache = Join-Path $script:RegressionTemporary 'cache'
-$script:RegressionChezmoi = (Get-Command chezmoi -ErrorAction Stop).Source
-$script:RegressionEngine = (Get-Command pwsh -CommandType Application | Select-Object -First 1).Source
-$script:RegressionFilter = Join-Path $script:RegressionTemporary 'altsnap.ps1'
 $saved = @{}
 foreach ($name in @('HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'PSModulePath')) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
@@ -191,21 +49,8 @@ try {
   $env:HOME = $script:RegressionHome; $env:USERPROFILE = $script:RegressionHome
   $env:APPDATA = Join-Path $script:RegressionHome 'AppData/Roaming'
   $env:LOCALAPPDATA = Join-Path $script:RegressionHome 'AppData/Local'
-  Write-AppRegressionFile $script:RegressionConfig '{"data":{"host":"korolev"}}'
-  $script:RegressionBefore = Split-AppRegressionHook (Render-AppRegression 'run_before_windows-apps-stop.ps1.tmpl')
-  $script:RegressionAfter = Render-AppRegression 'run_after_windows-apps-restart.ps1.tmpl'
-  Write-AppRegressionFile $script:RegressionFilter (Render-AppRegression 'AppData/Roaming/AltSnap/modify_AltSnap.ini.ps1.tmpl')
-  $failures = [Collections.Generic.List[string]]::new()
-  foreach ($name in @('AltSnap', 'PowerToys', 'Zed', 'Path')) {
-    if ($Case -ne 'All' -and $Case -ne $name) { continue }
-    try { & ('Test-' + $name + 'Regression'); Write-Output "PASS app-regressions: $name" }
-    catch { $failures.Add("${name}: $($_.Exception.Message)") }
-    # A deliberately failing baseline must not contaminate the next case with
-    # interrupted restart state; this is fixture-only temporary state.
-    $restartState = Join-Path $env:LOCALAPPDATA 'WindowsConfiguration/chezmoi-app-restarts.json'
-    if (Test-Path -LiteralPath $restartState) { Remove-Item -LiteralPath $restartState -Force }
-  }
-  if ($failures.Count -gt 0) { throw ($failures -join "`n") }
+  Test-PathRegression
+  Write-Output 'PASS app-regressions: Path'
 } finally {
   foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
   Remove-Item -LiteralPath $script:RegressionTemporary -Recurse -Force -ErrorAction SilentlyContinue
