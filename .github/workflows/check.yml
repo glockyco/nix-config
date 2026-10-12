@@ -126,13 +126,16 @@ jobs:
             --extra-experimental-features 'nix-command flakes' \
             flake check --print-build-logs
 
-  windows-format:
+  windows-engine:
     needs: changes
     if: needs.changes.outputs.windows == 'true' || needs.changes.outputs.docs == 'true'
-    name: Windows formatting
+    name: Windows engine (PowerShell 7)
     runs-on: windows-latest
     permissions:
       contents: read
+    defaults:
+      run:
+        shell: pwsh
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -142,17 +145,37 @@ jobs:
           path: ${{ runner.temp }}/native-dev-archives
           key: windows-dev-archives-${{ hashFiles('windows/dev/dependencies.lock.json') }}
 
-      - name: Bootstrap locked native formatters
-        shell: powershell
-        run: .\windows\dev\bootstrap.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE -IncludeTestDependencies -SkipHook -ArchiveCacheRoot "$env:RUNNER_TEMP\native-dev-archives"
+      - name: Cache pinned engine modules
+        if: needs.changes.outputs.windows == 'true'
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ runner.temp }}/engine-modules
+          key: windows-engine-modules-pwsh7-${{ hashFiles('windows/dev/engine-dependencies.ps1') }}
 
-      # Formatting is host-independent; keep it off both fixture critical paths.
+      - name: Bootstrap locked native formatters
+        run: |
+          $timer = [Diagnostics.Stopwatch]::StartNew()
+          try { .\windows\dev\bootstrap.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE -SkipHook -ArchiveCacheRoot "$env:RUNNER_TEMP\native-dev-archives" }
+          finally { Write-Host ("timing: gate formatter bootstrap {0:F3}s" -f $timer.Elapsed.TotalSeconds) }
+
+      # Shared formatting runs once, never in either legacy fixture job.
       - name: Shared native formatting check
-        shell: powershell
         run: |
           $timer = [Diagnostics.Stopwatch]::StartNew()
           try { .\windows\dev\format.ps1 -RepositoryRoot $env:GITHUB_WORKSPACE -Check }
           finally { Write-Host ("timing: gate native formatting {0:F3}s" -f $timer.Elapsed.TotalSeconds) }
+
+      - name: Restore pinned local Pester and analyzer
+        if: needs.changes.outputs.windows == 'true'
+        run: |
+          $timer = [Diagnostics.Stopwatch]::StartNew()
+          try { .\windows\dev\engine-dependencies.ps1 -ModuleRoot "$env:RUNNER_TEMP\engine-modules" }
+          finally { Write-Host ("timing: gate engine dependency setup {0:F3}s" -f $timer.Elapsed.TotalSeconds) }
+
+      # No WinGet/DSC provisioners, alternate host ZIP or live engine invocation.
+      - name: Workstation static and mocked checks
+        if: needs.changes.outputs.windows == 'true'
+        run: .\windows\check-workstation.ps1 -ModuleRoot "$env:RUNNER_TEMP\engine-modules"
 
   windows-ps51:
     needs: changes
@@ -225,7 +248,7 @@ jobs:
 
   windows:
     name: check (windows-latest)
-    needs: [changes, windows-format, windows-ps51, windows-ps7]
+    needs: [changes, windows-engine, windows-ps51, windows-ps7]
     if: always()
     runs-on: windows-latest
     permissions:
@@ -236,16 +259,16 @@ jobs:
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
           WINDOWS_AFFECTED: ${{ needs.changes.outputs.windows }}
-          WINDOWS_FORMAT_RESULT: ${{ needs.windows-format.result }}
+          WINDOWS_ENGINE_RESULT: ${{ needs.windows-engine.result }}
           WINDOWS_PS51_RESULT: ${{ needs.windows-ps51.result }}
           WINDOWS_PS7_RESULT: ${{ needs.windows-ps7.result }}
         run: |
           if ($env:CHANGES_RESULT -cne 'success') {
             throw "Changed-file classification did not succeed: $env:CHANGES_RESULT"
           }
-          $results = @($env:WINDOWS_FORMAT_RESULT, $env:WINDOWS_PS51_RESULT, $env:WINDOWS_PS7_RESULT)
+          $results = @($env:WINDOWS_ENGINE_RESULT, $env:WINDOWS_PS51_RESULT, $env:WINDOWS_PS7_RESULT)
           foreach ($result in $results) {
             if ($result -ceq 'success') { continue }
             if ($result -ceq 'skipped' -and $env:WINDOWS_AFFECTED -ceq 'false') { continue }
-            throw "Windows gates did not all succeed: formatting=$env:WINDOWS_FORMAT_RESULT; PowerShell 5.1=$env:WINDOWS_PS51_RESULT; PowerShell 7=$env:WINDOWS_PS7_RESULT"
+            throw "Windows gates did not all succeed: engine/formatting=$env:WINDOWS_ENGINE_RESULT; PowerShell 5.1=$env:WINDOWS_PS51_RESULT; PowerShell 7=$env:WINDOWS_PS7_RESULT"
           }

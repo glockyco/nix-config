@@ -4,7 +4,7 @@
 
 Windows is the target primary workstation; NixOS-WSL remains a secondary CLI/build environment. Use a native checkout at `C:\Users\JGlock\src\github.com\glockyco\nix-config`, not the separate Linux checkout at `/home/user/src/github.com/glockyco/nix-config`. Windows is not a Nix flake system. This procedure requires no Nix-built Windows output.
 
-WinGet Configuration owns packages and Windows settings; chezmoi owns Windows user files and user setup from `home/`. Each destination has one owner. Source/fixture checks do not claim native provisioning, application/session or network acceptance. Implementation evidence belongs to the OpenSpec change, not this current-state manual.
+WinGet Configuration still owns live packages and Windows settings. The PowerShell 7 engine is a parallel replacement pending owner-confirmed parity, not the active chezmoi hook. Chezmoi owns Windows user files and user setup from `home/`. Each destination has one active owner. Static/mock checks do not claim live provisioning, application/session or network acceptance. Evidence belongs to the OpenSpec change.
 
 Existing live state supplied by the owner on 2026-10-07: per-user Git 2.55.0.5 is at `%LOCALAPPDATA%\Programs\Git` on user PATH; Tern 0.6.0 is at `%LOCALAPPDATA%\Programs\Tern` on user PATH with a Start-menu shortcut; official OMP 18.8.0 is at `%LOCALAPPDATA%\omp\omp.exe` on user PATH with personal plugin 0.2.0, per-user Git Bash selected and owner login complete. Zed's `agent_servers.omp` entry is removed. Do not redo those installations. These facts do not claim native LSP/annotation/network acceptance. The remaining catalog/release selections were verified read-only; further provisioning, UAC, restart and application acceptance are owner-attended. Superseded on 2026-10-09: Tern 0.7.0 runs from `%LOCALAPPDATA%\Programs\Tern`, and Tern-managed OMP at `%LOCALAPPDATA%\Tern\omp\bin` replaced the official-installer copy, which was removed with its PATH entry ([evidence](../../openspec/changes/make-korolev-windows-native/evidence.md#tern-launch-session-daemon-and-omp-ownership-2026-10-09)).
 
@@ -13,6 +13,10 @@ Existing live state supplied by the owner on 2026-10-07: per-user Git 2.55.0.5 i
 | Source or state                               | Owner and boundary                                                                                                                                                                                                            |
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `windows/configuration.winget`                | Hand-maintained JSON-compatible YAML (actual JSON). WinGet Configuration owns declared installs and Windows settings, never migrated user files. Application metadata beside each resource is the selector/version authority. |
+| `windows/workstation.json` and schema         | Parallel declarative inventory with present or named-consumer pinned policies. No live cutover until accepted parity.                                                                                                         |
+| `windows/Workstation.psm1` and helpers        | PowerShell 7 test/set engine. Standard user only, explicit dry-run/apply entrypoint, no automatic Administrator tools.                                                                                                        |
+| `windows/check-workstation.ps1`               | Built-in schema, parser, analyzer, ownership invariants and mocked Pester behaviors. Never invokes the real engine.                                                                                                           |
+| `windows/bootstrap.ps1`                       | Minimal Windows PowerShell 5.1 prerequisite installer and PowerShell 7 handoff. No apply or development-tool installation.                                                                                                    |
 | `windows/managed-applications.json`           | Dated Intune exclusion audit, not another application/pin list.                                                                                                                                                               |
 | `windows/apply-kbdneo.ps1`                    | Explicit 64-bit Administrator operation: checksum-pinned native Neo DLLs and keyboard registration `b0000407` only.                                                                                                           |
 | `windows/apply-zen-policies.ps1`              | Explicit Administrator operation: Zen policy file under Program Files only.                                                                                                                                                   |
@@ -49,9 +53,52 @@ Windows PowerShell 5.1 covers scripts executed by that host; PowerShell 7 covers
 
 The default checker also renders Windows chezmoi scripts, AST-parses their actual PowerShell output, and runs isolated init/apply/verify, Git/SSH and app-state fixtures with process/WinGet doubles. It requires chezmoi 2.73.0, Git and OpenSSH on PATH; it never applies workstation resources to the real profile. `-DocumentPath` selects a document and `-AdditionalScriptPath` accepts a PowerShell `string[]` of additional rendered scripts. Native precommit invokes `windows/check.ps1 -SkipFixtures`, retaining shipped document contracts, the pinned official schema and shipped script AST/Administrator-boundary checks while omitting only isolated fixtures. Staged formatting and staged-Nix same-checkout validation are unchanged. Full on-demand checks above, including rendered chezmoi coverage, remain required before live writes and release; the focused hook is not full acceptance. Complete repository release gates remain in [README](../../README.md#develop), run sequentially.
 
-Windows CI runs applicable formatting once and all existing non-format gates, including the full fixture suite and read-only WinGet parsing, in parallel Windows PowerShell 5.1 and locked PowerShell 7 jobs. Each job provisions fresh tool directories from pinned dependencies. Shared caches contain downloaded archives only, not extracted installations; every restored archive is verified against its lock hash on each use. The protected-main `check (windows-latest)` is the required aggregate and fails if any Windows child fails, is cancelled or is skipped. CI never applies workstation resources or uses production credentials.
+Windows CI retains both legacy Windows PowerShell 5.1 and locked PowerShell 7 document/fixture jobs until cutover. A parallel runner-pwsh engine job runs shared formatting once and static/mock checks without WinGet/DSC provisioning or live apply. It caches checksum-verified formatter archive inputs and pinned engine modules. Legacy caches still contain archives only and recheck hashes before extraction. `check (windows-latest)` remains the required aggregate, rejecting failed/cancelled affected children. Docs-only changes run formatting without engine or legacy fixtures. Gate durations are printed. Record actual Actions job/step timings in acceptance evidence.
 
 The Windows PowerShell invocation uses a process-only execution-policy setting for the reviewed repository fixtures; it changes no persistent policy and cannot override managed policy. Do not modify employer policy to make a check pass. If managed execution restrictions still reject the scripts, record that prerequisite rather than bypassing it.
+
+## Parallel engine acceptance and recovery
+
+Provision local development dependencies and run the engine's static/mock checks from standard-user PowerShell 7.4 or later:
+
+Before merge, a feature worktree and the old main checkout share the common Git hook directory but not the same interpreter declarations. Keep the shared PowerShell 5.1 launcher unchanged and isolate this worktree's pwsh launcher before bootstrapping:
+
+```powershell
+git config extensions.worktreeConfig true
+git config --worktree core.hooksPath "$PWD/.direnv/windows-hooks"
+```
+
+The setting lives in this worktree's `config.worktree` and disappears with the worktree. The launcher remains a real hook, not a bypass. After merging the tooling commit, rerun bootstrap in the updated main checkout to migrate its exact repository-owned shared launcher to pwsh. Any older worktrees must retain their own old launcher until their `native-windows` job is also pwsh. Mixing a pwsh launcher with the old nested powershell.exe job can inherit an incompatible module search path.
+
+```powershell
+pwsh -NoProfile -NonInteractive -File .\windows\dev\bootstrap.ps1 -IncludeTestDependencies
+pwsh -NoProfile -NonInteractive -File .\windows\dev\engine-dependencies.ps1
+pwsh -NoProfile -NonInteractive -File .\windows\dev\format.ps1 -Check
+pwsh -NoProfile -NonInteractive -File .\windows\check-workstation.ps1
+```
+
+The setup saves Pester 5.7.1 and PSScriptAnalyzer 1.24.0 with PSResourceGet to Git-local `engine-modules`, separate from replaceable formatter tools and never a global profile. `-ModuleRoot` selects an isolated CI/test path. Missing modules fail with an actionable setup command. The checker reads declarations through `Read-WorkstationData`, validates schema and privilege invariants, parses shipped sources, checks the two fixed Administrator scripts without running them, runs the analyzer and executes mocked behaviors. `-StaticOnly` omits only Pester. Native precommit runs that static gate alongside the retained legacy focused checker. Staged Nix validation still requires the same native checkout in the declared WSL environment.
+
+Only the integrator runs the exact live read-only acceptance command on Korolev, from the reviewed checkout as `scch\jglock`, never Administrator:
+
+```powershell
+pwsh -NoProfile -File .\windows\workstation.ps1 -DryRun
+```
+
+Require every application and setting to be desired and exit 0. Exit 1 means drift. Record each named difference and obtain explicit owner acceptance before proceeding. Exit 2 means validation/execution failure, not accepted drift. Agents never run the engine against the real workstation, apply resources or elevate. Static mocks do not prove real language/input APIs or localized WinGet snapshot parsing.
+
+Only after accepted parity and reviewed backups may the integrator run an explicit engine apply:
+
+```powershell
+pwsh -NoProfile -File .\windows\workstation.ps1 -Apply
+pwsh -NoProfile -File .\windows\workstation.ps1 -DryRun
+```
+
+Do not run both the old document and the new engine apply for the same revision. Apply rejects an elevated session, changes only drifted resources and checks its postconditions. Only Zen, Tailscale and Docker Desktop installer prompts may request the separate Administrator credential. Neo/Zen machine scripts, manual TeX Live, network enrollment, Tern/OMP/plugin setup and authentication remain owner operations. Bun 1.3.13 names omp-agent-setup's `.bun-version` consumer. OpenSpec 1.14.0 names its reusable workflow consumer. Other present applications do not trigger catalog upgrades. A newer consumer-pinned version is incompatible but never downgraded. Reviewed archive/npm integrity selections choose missing-install payloads, not permission to downgrade.
+
+Preserve permission-aware backups outside the checkout of changed registry values/types/absence, user PATH, owned files and chezmoi config/state. Archive delivery retains the previous install directory. If a new release fails, stop, inspect the recorded error and restore only the affected owned directory and PATH from the accepted backup or use the vendor's supported repair. Restore saved registry values with their original types and absent state. Do not delete unrelated fonts or overwrite conflicting font bytes. Do not copy credentials, sessions or whole app profiles into the repository. Native nonzero exits stop without automatic retries. stderr notices alone are not failures. Confirm recovery with an owner-run dry run and app smoke.
+
+Keep the old document, legacy tests, DSC provisioners, chezmoi hook and persisted PowerShell 5.1 interpreter until explicit parity confirmation. Then review a separate hash-protected hook/interpreter cutover and a separate obsolete-source deletion. Reinitialize chezmoi only against the accepted native source revision and inspect its persisted interpreter and diff before apply. Retain the last accepted source revision and backups. CI success alone never authorizes cutover. Record observed CI timings and owner parity evidence before deleting the legacy path.
 
 ## Tool ownership, update and recovery matrix
 
@@ -125,14 +172,13 @@ Before writes, retain permission-preserving local backups outside the checkout o
 
 ### Bootstrap the standard-user native checkout
 
-In a fresh standard-user PowerShell session, install only the bootstrap prerequisites from the approved source, then clone Windows-local storage. Do not reuse the Linux checkout through UNC or `/mnt/c` for user setup:
+Obtain and review `windows/bootstrap.ps1` from the selected repository revision before the first clone. In a fresh standard-user Windows PowerShell 5.1 session, run that script. If the source tree is already available:
 
 ```powershell
-winget install --id Git.Git --exact --source winget --scope user --accept-source-agreements --accept-package-agreements
-winget install --id twpayne.chezmoi --exact --source winget --scope user --version 2.73.0 --accept-source-agreements --accept-package-agreements
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\windows\bootstrap.ps1
 ```
 
-Open a fresh standard-user shell so PATH reflects those installs, then:
+For a separately saved reviewed copy, use its actual path instead. The script installs only PowerShell 7, Git and chezmoi through approved user-scope WinGet commands. It explicitly selects PowerShell's user MSIX instead of the machine MSI, resolves its registered package path and exact portable prerequisite roots, then opens PowerShell 7 with them on process PATH. The [reviewed WinGet installer manifest](https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/m/Microsoft/PowerShell/7.6.6.0/Microsoft.PowerShell.installer.yaml) distinguishes those scopes. Bootstrap still selects the current version when missing. It does not install formatters, run workstation apply, initialize chezmoi or apply user files. No machine-scope fallback or engine elevation is allowed. In the resulting PowerShell 7 shell, clone Windows-local storage. Never reuse the Linux checkout through UNC or `/mnt/c` for user setup:
 
 ```powershell
 $checkout = Join-Path $HOME 'src\github.com\glockyco\nix-config'
