@@ -27,5 +27,15 @@ user = "User"
 publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN/+XoGCH3MVvNQuvVfjmidMk5mEa+gqs84C00s6DiEt"
 fingerprint = "SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw"
 
+# Korolev's host key as printed at its console by windows/apply-openssh.ps1.
+[ssh.korolev]
+hostName = "korolev"
+user = 'scch\jglock'
+publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBAJLe8i/0kyLTYNA5s0k74kxZLH6JdFBHMCnpYIgEpP"
+fingerprint = "SHA256:ysbk01MVWS8ee/yB6scrochgc0CjjwU7pVknlRoUZg8"
+# In-box Windows OpenSSH 9.5 offers no post-quantum key exchange. Drop this once
+# Windows ships OpenSSH 10: https://github.com/PowerShell/Win32-OpenSSH/issues/2433
+warnWeakCrypto = "no-pq-kex"
+
 [ssh.hostKeys.macbook-pro]
 publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKVMJe00KQ0ozyXyJ+PB5BllhI5tckDKKCVpJnM2Kw+3"

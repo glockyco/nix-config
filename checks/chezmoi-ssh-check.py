@@ -19,12 +19,14 @@ def main():
     host = facts["hosts"][host_name]
     platform = host["platforms"]["darwin" if "darwin" in host["platforms"] else "linux"]
     darwin = "darwin" in host["platforms"]
-    if endpoint == "desktop":
+    windows = endpoint in ("desktop", "korolev")
+    if windows:
         require(
-            host["roles"]["desktop"] or host["roles"]["wslWorkstation"],
-            "desktop endpoint without client role",
+            host["roles"]["desktop"]
+            or (endpoint == "desktop" and host["roles"]["wslWorkstation"]),
+            f"{endpoint} endpoint without client role",
         )
-        destination = dict(facts["ssh"]["desktop"])
+        destination = dict(facts["ssh"][endpoint])
         if not darwin:
             destination["hostName"] += "." + facts["ssh"]["tailnetDnsDomain"]
     elif endpoint == "air":
@@ -72,8 +74,8 @@ def main():
                         effective.get(key) == expected, f"{alias}: {key} != {expected}"
                     )
                 pin = root / (
-                    "home/.ssh/desktop-known-hosts"
-                    if endpoint == "desktop"
+                    f"home/.ssh/{endpoint}-known-hosts"
+                    if windows
                     else "home/.ssh/builder-known-hosts"
                 )
                 require(
@@ -81,14 +83,13 @@ def main():
                     f"{alias}: alternate known-host source",
                 )
                 key = (
-                    facts["ssh"]["desktop"]
-                    if endpoint == "desktop"
+                    facts["ssh"][endpoint]
+                    if windows
                     else facts["ssh"]["hostKeys"][endpoint]
                 )["publicKey"]
-                if endpoint == "desktop":
-                    pins = {
-                        f"{facts['ssh']['desktop']['hostName']},{facts['ssh']['desktop']['hostName']}.{facts['ssh']['tailnetDnsDomain']} {key}"
-                    }
+                if windows:
+                    name = facts["ssh"][endpoint]["hostName"]
+                    pins = {f"{name},{name}.{facts['ssh']['tailnetDnsDomain']} {key}"}
                 else:
                     pins = {
                         f"{name},{name}.{facts['ssh']['tailnetDnsDomain']} {data['publicKey']}"
@@ -117,12 +118,12 @@ def main():
                     fingerprint == expected_fingerprint,
                     f"{alias}: pin fingerprint drift",
                 )
-                if endpoint == "desktop":
+                if windows:
                     require(
-                        fingerprint == facts["ssh"]["desktop"]["fingerprint"],
-                        "desktop pin fingerprint drift",
+                        fingerprint == facts["ssh"][endpoint]["fingerprint"],
+                        f"{endpoint} pin fingerprint drift",
                     )
-                if endpoint != "desktop":
+                if not windows:
                     require(
                         effective.get("identityfile")
                         == str(root / "home/.ssh/id_ed25519"),
@@ -131,11 +132,11 @@ def main():
                 elif darwin:
                     require(
                         "Secretive" in effective.get("identityagent", ""),
-                        "desktop Secretive agent drift",
+                        f"{endpoint} Secretive agent drift",
                     )
                     require(
                         effective.get("identitiesonly") == "no",
-                        "desktop excludes Secretive identities",
+                        f"{endpoint} excludes Secretive identities",
                     )
         interactive = options[endpoint]
         batch = options[endpoint + "-batch"]
