@@ -8,79 +8,109 @@ Define a reviewable Windows workstation configuration layer with explicit owners
 
 ### Requirement: Rendered Windows configuration artifacts
 
-The repository SHALL render one Windows configuration document, one Administrator Zen policy script, and one Administrator native Neo driver script from the same Nix expressions. Together they SHALL be the single source for the Windows application set, the declared Windows settings, and the declared application configuration files. Each application SHALL have one declaration that carries its identifier, version policy, policy-specific selector, scope, source, and release data, and every resource that installs or configures that application SHALL derive its metadata from that declaration. Evaluation of the output SHALL read no derivation output and SHALL need no network. Nix activation on any host SHALL NOT write to a Windows path and SHALL NOT apply any artifact.
+The repository SHALL maintain declarative JSON application/settings data, its schema, one PowerShell 7 convergence module and narrow standalone Zen-policy and Neo-driver Administrator scripts under `windows/`. The engine SHALL own installations and supported user settings. Chezmoi SHALL exclusively own user/app files. Nix activation SHALL neither write Windows paths nor apply Windows artifacts. No WinGet Configuration document or embedded DSC test/set scripts SHALL remain in the cutover PR.
+
+#### Scenario: Inspect source offline
+
+- **WHEN** the reviewed checkout is inspected without network or a Nix build
+- **THEN** all Windows declarations and execution sources are available
+- **AND** every destination has exactly one owner
 
 #### Scenario: Render the artifacts
 
-- **WHEN** the Windows configuration output is built from the locked repository
-- **THEN** the result contains one WinGet Configuration document, one Zen policy script, one native Neo driver script, and the review files that describe their settings
-- **AND** the build reads no mutable Windows state
+- **WHEN** the native checkout is reviewed
+- **THEN** JSON data, its schema, the module and two narrow Administrator scripts are available without Nix rendering
 
 #### Scenario: Evaluate without network
 
-- **WHEN** the flake outputs are evaluated on a machine with no network
-- **THEN** the Windows configuration output evaluates
-- **AND** the pinned upstream theme files are fetched only when the output is built
+- **WHEN** source is inspected offline
+- **THEN** declarations require no download or mutable Windows state
 
 #### Scenario: Keep the operating-system boundary
 
-- **WHEN** either host activates a Nix generation
-- **THEN** activation writes no file under the Windows user profile
-- **AND** activation does not start the Windows apply operation
+- **WHEN** a Nix generation activates
+- **THEN** it writes no Windows path and starts no Windows apply
 
 ### Requirement: User scope with explicit machine exceptions
 
-Every document resource SHALL apply in the interactive user's own scope except the Zen package. The official Zen installer SHALL be the only document resource that requests elevation. One Administrator script SHALL own only the Zen policy file under Program Files. The other SHALL own only the native Neo DLLs and keyboard-layout registration. Both scripts SHALL refuse a non-administrator token and SHALL read no Administrator-profile path.
+The engine SHALL run as the standard interactive account and reject elevated execution. Only Zen, Tailscale and Docker Desktop SHALL declare machine scope and installer elevation. Other installations SHALL explicitly request user scope and SHALL NOT install competing runtime dependencies. The two Administrator scripts SHALL retain only Zen Program Files policies and Neo DLL/registration ownership. TeX Live, OpenSSH and tailnet enrollment SHALL remain separate owner operations.
+
+#### Scenario: Install approved packages
+
+- **WHEN** a missing package is installed
+- **THEN** only an allowlisted machine installer may request Administrator credentials
+- **AND** the engine and HKCU writes remain in the standard user's session
+
+#### Scenario: Preserve Docker consent and least privilege
+
+- **WHEN** Docker Desktop is installed
+- **THEN** installer arguments are `install --quiet --backend=wsl-2 --no-windows-containers`
+- **AND** configuration does not accept the license, enable always-run service or alter docker-users membership
+
+#### Scenario: Reject an unsafe declaration
+
+- **WHEN** data declares an unapproved machine package, HKLM write or centrally managed application
+- **THEN** validation and execution fail before changes
 
 #### Scenario: Apply user-scope resources
 
-- **WHEN** the interactive user applies the document with standard user rights
-- **THEN** every resource except the Zen package completes without elevation
-- **AND** every other installed application and written file belongs to that user's profile
+- **WHEN** the standard user applies the data
+- **THEN** all resources except the three allowlisted installers complete without elevation
 
 #### Scenario: Apply the browser exception
 
-- **WHEN** the Zen installer requests the administrator credential and the operator later applies the policy script from an Administrator PowerShell session
-- **THEN** both operations write only to the machine-wide Zen installation under Program Files
+- **WHEN** Zen installation requests credentials and the owner separately applies policies
+- **THEN** machine writes are limited to Zen installation and its Program Files policies
 
 #### Scenario: Apply the keyboard driver exception
 
-- **WHEN** the operator applies the native Neo script from a 64-bit Administrator PowerShell session
-- **THEN** it writes only the checksum-pinned DLLs and `b0000407` machine registration
-- **AND** the operator restarts Windows before the document registers input tip `0407:b0000407`
+- **WHEN** the owner runs the Neo script as 64-bit Administrator
+- **THEN** it writes only declared DLLs and b0000407 registration before an owner restart
 
 #### Scenario: Reject another privileged declaration
 
-- **WHEN** the document declares another machine-scope package, elevated resource, machine-scope registry value, or Windows feature
-- **OR** either Administrator script refers to an interactive-user profile path or a machine path outside its declared ownership
-- **THEN** the repository validation fails
+- **WHEN** an undeclared privileged installer or machine-setting write is added
+- **THEN** validation rejects it before execution
 
 ### Requirement: Pinned application set
 
-The document SHALL declare one explicit version policy for every application it manages. An exact-pinned application SHALL declare one reviewed version and SHALL install only that version. A self-updating application SHALL omit an exact version and SHALL require the latest version available from its WinGet source. Zed, Brave, and Ferdium SHALL use the self-updating policy because their vendor channels own updates. The document SHALL accept an installed self-updating application when its version is equal to or newer than the latest version in the WinGet source, and SHALL NOT downgrade it. All other applications SHALL remain exact-pinned. The set SHALL cover the operator's confirmed roles: code editor, web browser, Git client, communication client, application launcher with window switching, mouse-driven window move and resize, Neo2 keyboard layout, terminal host, and the terminal font. The document SHALL NOT declare an application that the device management policy already manages.
+Each application SHALL declare present or consumer-pinned policy. Bun SHALL be pinned to 1.3.13 for omp-agent-setup's .bun-version and OpenSpec to 1.14.0 for its reusable workflow. Any other version pin SHALL name a concrete consumer. Present applications SHALL install the selected latest WinGet version when missing and SHALL NOT trigger automatic upgrades. Reviewed archive/npm/font integrity selections SHALL retain reproducible missing-install delivery without downgrading existing newer applications. No application SHALL be downgraded automatically.
+
+#### Scenario: Accept an existing present application
+
+- **WHEN** a present application is installed
+- **THEN** it is desired without querying the catalog or reinstalling it
+
+#### Scenario: Protect a newer consumer-pinned install
+
+- **WHEN** an installed pinned application is newer than its declared version
+- **THEN** dry run reports the incompatibility
+- **AND** apply refuses to downgrade it
+
+#### Scenario: Exclude managed applications
+
+- **WHEN** an application id appears in windows/managed-applications.json
+- **THEN** repository validation and execution reject the competing declaration
 
 #### Scenario: Install the declared set
 
-- **WHEN** the operator applies the document on a machine without the declared applications
-- **THEN** each exact-pinned application installs at its declared version
-- **AND** each self-updating application installs at the latest version available from WinGet
-- **AND** each required role has exactly one declared application
+- **WHEN** applications are missing
+- **THEN** present applications install selected release payloads and consumer-pinned applications install their required versions
 
 #### Scenario: Accept a newer vendor update
 
-- **WHEN** Zed, Brave, or Ferdium has a vendor-channel version newer than the latest version available from WinGet
-- **THEN** the document reports that application in the desired state
-- **AND** an apply operation does not downgrade or reinstall it
+- **WHEN** a present application has updated itself
+- **THEN** it is desired and no downgrade or reinstall occurs
 
 #### Scenario: Detect an unpinned application
 
-- **WHEN** an application declares no version policy, more than one version policy, a version under the self-updating policy, or no version under the exact policy
-- **THEN** repository validation fails
+- **WHEN** a declaration lacks a policy or a pinned policy lacks a version and named consumer
+- **THEN** schema or invariant validation fails
 
 #### Scenario: Detect a managed-application conflict
 
-- **WHEN** a declared application appears in the recorded set of centrally managed applications
-- **THEN** repository validation fails
+- **WHEN** a declared application appears in the managed exclusion audit
+- **THEN** validation fails and names its id
 
 ### Requirement: Native Ferdium communication client
 
@@ -123,51 +153,53 @@ Ferdium SHALL own its profile, configured services, credentials, sessions, cache
 
 ### Requirement: Declared Windows settings
 
-The document SHALL declare Windows settings by explicit named keys. It SHALL keep the centrally managed Firefox package's interactive-user startup value absent. It SHALL put `en-GB` first in the user's preferred language list and set it as the Windows UI override while the English entry has no input method. It SHALL preserve the existing `de-DE` and `de-AT` entries and their input methods. The `de-DE` entry SHALL list German (Germany) QWERTZ (`0407:00000407`) first and native Neo (`0407:b0000407`) second, before any other input method. German QWERTZ SHALL be the default input method. Native Neo SHALL NOT be the default input method, because Office applications derive character-based shortcuts from the first keyboard layout that Windows loads. The document SHALL disable Windows transparency and animation effects. It SHALL validate dark appearance from application mode, system mode, transparency, and wallpaper. It SHALL NOT depend on the active theme-file path because Windows can store the same declared appearance in `Custom.theme`. For a bundled utility that provides several modules, the document SHALL declare the enabled modules and SHALL also declare every other module as disabled.
+The engine SHALL converge the existing supported registry, keyboard, Explorer, region, snapping, screenshot, dark appearance and animation settings. It SHALL preserve German and Austrian input methods, place en-GB first with no English input method, use en-GB UI override, and place German QWERTZ first/default with native Neo second. Native Neo driver installation and restart SHALL remain an owner prerequisite. Dark appearance SHALL accept generated Custom.theme when flags, transparency and wallpaper match.
+
+#### Scenario: Preserve input and application state
+
+- **WHEN** settings are converged
+- **THEN** declared values match without deleting undeclared German/Austrian input methods or application-owned state
+- **AND** Neo is not made the default or first keyboard layout
+
+#### Scenario: Accept generated dark appearance
+
+- **WHEN** dark flags, transparency and wallpaper match but Windows selects Custom.theme
+- **THEN** the engine reports desired state without rewriting the theme path
 
 #### Scenario: Apply the declared settings
 
-- **WHEN** the operator applies the document
-- **THEN** the declared keyboard, file-manager, regional, window-snapping, screenshot-location, and dark-appearance settings match the declaration
-- **AND** transparency and animation effects are disabled
-- **AND** the short date uses ISO 8601 `yyyy-MM-dd`
+- **WHEN** supported settings are applied
+- **THEN** keyboard, Explorer, region, snapping, screenshot, dark appearance and disabled animation/transparency match
 
 #### Scenario: Retain a generated custom theme
 
-- **WHEN** the dark-mode flags, transparency, and wallpaper match the declaration and Windows records them in `Custom.theme`
-- **THEN** the dark-appearance resource reports the desired state
-- **AND** an apply operation does not rewrite the active theme-file path
+- **WHEN** dark appearance matches through Custom.theme
+- **THEN** no active theme-file path is rewritten
 
 #### Scenario: Prevent Firefox from starting at sign-in
 
-- **WHEN** the operator applies the document and signs in again
-- **THEN** Firefox does not start through its interactive-user launch-on-login entry
-- **AND** the centrally managed Firefox package remains installed
+- **WHEN** the engine converges startup settings
+- **THEN** the declared Firefox startup value is absent and its managed installation is untouched
 
 #### Scenario: Separate interface and input languages
 
-- **WHEN** the operator applies the document and signs in again
-- **THEN** Windows and PowerToys use English (United Kingdom)
-- **AND** the Austrian region and German keyboard layouts remain available
-- **AND** no English input method is added
-- **AND** German QWERTZ is the default input method and the first keyboard layout that Windows loads
-- **AND** native Neo remains available as the second German input method
+- **WHEN** the owner signs in after language convergence
+- **THEN** en-GB is the UI override without English input and Austrian/German inputs remain available
 
 #### Scenario: Keep standard Office shortcuts
 
-- **WHEN** the operator signs in after the apply and starts Word while German QWERTZ or native Neo is active
-- **THEN** `Ctrl+C`, `Ctrl+V`, `Ctrl+F`, `Ctrl+L`, `Ctrl+U`, `Ctrl+D`, `Ctrl+P`, `Ctrl+Q`, and `Ctrl+Y` invoke Word's standard commands
-- **AND** no native Neo third-layer character replaces a `Ctrl` letter shortcut
+- **WHEN** Word uses German QWERTZ or native Neo after owner sign-in
+- **THEN** QWERTZ remains first/default and standard Ctrl letter shortcuts retain their Windows meaning
 
 #### Scenario: Reject a native Neo default
 
-- **WHEN** the declaration makes native Neo the default input method or lists it before German QWERTZ
-- **THEN** repository validation fails
+- **WHEN** data places native Neo first or makes it default
+- **THEN** validation fails
 
 #### Scenario: Resist an upstream default change
 
-- **WHEN** a bundled utility update would enable a module that the document declares as disabled
-- **THEN** the next apply returns that module to the declared state
+- **WHEN** an app update changes a chezmoi-owned disabled module setting
+- **THEN** chezmoi restores its declared keys without assigning the file to the engine
 
 ### Requirement: Application configuration files
 
@@ -281,41 +313,74 @@ The rendered Windows Zed user settings SHALL enable TexLab builds when a LaTeX b
 
 ### Requirement: Excluded Windows surface
 
-The Windows layer SHALL declare nothing about the taskbar pinned-application list, per-extension default application associations, Night Light CloudStore payloads, or any application that the device management policy manages. The repository SHALL record the reason for each exclusion and the selected manual Night Light state.
+The engine SHALL NOT write taskbar pinned-application lists, default application associations, CloudStore or centrally managed application installation state. Approved taskbar visibility SHALL remain declared as a typed setting with StuckRects3 byte 8 equal to 2. Explorer SHALL restart only when that value actually changes, never on a no-op apply.
+
+#### Scenario: Keep unsupported surfaces user-owned
+
+- **WHEN** the engine runs dry run or apply
+- **THEN** no taskbar pinned-application list, default-association or CloudStore mutation is planned or executed
 
 #### Scenario: Inspect the excluded surface
 
-- **WHEN** a reader reviews the Windows layer
-- **THEN** each exclusion names its reason
-- **AND** no part of the layer attempts to set a taskbar pinned-application list, a per-extension association, or a Night Light CloudStore payload
-- **AND** the runbook records Night Light as enabled from sunset to sunrise at 50% strength
+- **WHEN** the layer and runbook are reviewed
+- **THEN** exclusions have reasons and no pinned-application list, association or CloudStore writes exist
+- **AND** manual Night Light remains sunset to sunrise at 50 percent strength
+
+#### Scenario: Preserve taskbar visibility idempotently
+
+- **WHEN** taskbar auto-hide is enabled and apply runs
+- **THEN** only the declared byte becomes 2 and Explorer restarts once
+- **AND** an already-desired taskbar triggers neither a registry write nor an Explorer restart
 
 ### Requirement: Validation before and after apply
 
-The repository SHALL validate the rendered document and privilege boundary without a Windows machine. The repository check SHALL validate the shipped document against the WinGet Configuration v3 document contract without rewriting it. The document SHALL carry the schema URL and bare-name dependency form that the WinGet parser recognizes. The operator SHALL test the document and both Administrator scripts before their first apply and SHALL confirm each applied state after the apply.
+Data SHALL be validated against its schema and privilege/ownership invariants before execution. Dry run SHALL report every declared resource as desired or drift, make no persistent or temporary writes, return zero only for full convergence, return nonzero for drift and distinguish execution errors. Apply SHALL test before setting, mutate only drifted resources, confirm each change and propagate native failures by exit code rather than stderr. Installed WinGet discovery SHALL use one initial batch without scope filtering and, only after installs or updates, one fresh batch to verify all changed packages together. Portable executables SHALL resolve from their selected package root or approved PATH resolution, never an assumed WinGet Links directory.
+
+#### Scenario: Preview a converged workstation
+
+- **WHEN** the integrator runs dry run on a desired workstation
+- **THEN** every resource is desired and exit status is zero
+- **AND** no installer, download, filesystem, registry or PATH write occurs
+
+#### Scenario: Detect drift without apply
+
+- **WHEN** any resource differs
+- **THEN** dry run names the resource and returns nonzero without changing it
+
+#### Scenario: Batch WinGet and preserve per-user MSI detection
+
+- **WHEN** a run checks all WinGet declarations including Pandoc
+- **THEN** one initial installed snapshot serves all tests without --scope filtering
+- **AND** only actual installations or updates trigger one fresh batch for all changed-package postconditions
+- **AND** any needed user installation still explicitly supplies --scope user
+
+#### Scenario: Treat native stderr correctly
+
+- **WHEN** npm writes a notice to stderr and exits zero
+- **THEN** the native operation succeeds
+- **AND** a nonzero native exit stops apply without automatic retry
 
 #### Scenario: Validate without Windows
 
-- **WHEN** the repository checks run on a supported build platform
-- **THEN** they validate the shipped document against the document contract, every script against the PowerShell parser, the narrow script boundary, each application's version policy and selector, and the absence of a centrally managed application
-- **AND** they require no Windows machine and no network service
+- **WHEN** a non-Windows platform reviews source
+- **THEN** declarations remain inspectable but native mocked/parser validation is not falsely reported as exercised
+- **AND** required Windows CI runs without workstation writes or production credentials
 
 #### Scenario: Preserve stable dark appearance acceptance
 
-- **WHEN** Windows records the declared dark modes, transparency, and wallpaper in `Custom.theme`
-- **THEN** the live test reports the dark-appearance resource in the desired state
-- **AND** the repository check requires no active theme-file path
+- **WHEN** Windows selects Custom.theme with matching declared appearance
+- **THEN** dry run accepts it without requiring a fixed theme path
 
 #### Scenario: Reject a dependency on an undeclared resource
 
-- **WHEN** a resource in the rendered document depends on a name that no resource in the document declares
-- **THEN** the repository check fails and names both resources
+- **WHEN** data adds an unsupported dependency field or names an undeclared prerequisite
+- **THEN** schema/invariant validation rejects it
+- **AND** ordered Node/npm prerequisites remain explicit and validated
 
 #### Scenario: Preview and confirm on the machine
 
-- **WHEN** the operator tests the document and both Administrator scripts on the Windows work machine
-- **THEN** each test reports drift without applying it
-- **AND** later test operations report that the applied state matches all three artifacts
+- **WHEN** the integrator tests the engine and both Administrator scripts before and after approved apply
+- **THEN** preview writes nothing and post-apply tests report matching state or named failures
 
 ### Requirement: Dedicated browser-relay application
 
@@ -346,74 +411,70 @@ The rendered Windows application set SHALL declare Brave as a self-updating, use
 
 ### Requirement: Check expectations derive from the declaration
 
-The Windows configuration output SHALL expose its declaration: the role set, the application list with each version policy and selector, the centrally managed application identifiers, and the review file names. The repository check SHALL read that declaration from the output. It SHALL derive version selectors, roles, elevation, and review-file names from it. The three primary artifact names SHALL come from the fixed Windows output contract. The check SHALL NOT copy mutable pins, palettes, module lists, theme hashes, or review file names. It SHALL keep only invariant rules as literals: schema, unique resource names, dependency existence, elevation and Administrator boundaries, and accepted role identity, policy scope, and ownership rules.
+Checks SHALL derive mutable application/version/release/settings facts from JSON and the managed exclusion audit, not duplicate them in checker code. Only stable privilege, role identity and ownership invariants SHALL be literals. The engine data SHALL be the application/settings authority rather than a declaration rendered into a second document.
 
 #### Scenario: Change one pin
 
-- **WHEN** a maintainer changes the version or checksum of one exact-pinned application in the declaration and renders the output
-- **THEN** the repository check passes with no edit to the check
-- **AND** the rendered document carries the new pin
+- **WHEN** a reviewed version/hash changes in data
+- **THEN** checks consume the new declaration without a matching checker edit
 
 #### Scenario: Declare a self-updating application
 
-- **WHEN** the declaration selects the self-updating policy without a version for Zed, Brave, or Ferdium
-- **THEN** the repository check expects `useLatest: true` and no rendered version
-- **AND** the check carries no application-specific exception
+- **WHEN** Zed, Brave or Ferdium declares present policy
+- **THEN** checks accept an existing installation without catalog queries or application-specific version exceptions
 
 #### Scenario: Declared application absent from the document
 
-- **WHEN** the declaration lists an application that the rendered document does not carry as exactly one resource with the same identifier, version policy, policy-specific selector, scope, and roles
-- **THEN** the repository check fails and names the application
+- **WHEN** a required role has no unique application in JSON
+- **THEN** invariants fail and name the role
 
 #### Scenario: Rendered version policy differs from the declaration
 
-- **WHEN** an exact resource carries a mismatched version or permits the latest version
-- **OR** a self-updating resource carries a version or does not require the latest version
-- **THEN** the repository check fails and names the resource
+- **WHEN** a pinned declaration lacks its version/consumer or a present declaration carries a consumer pin
+- **THEN** schema validation fails
 
 #### Scenario: Review file set differs from the declaration
 
-- **WHEN** the rendered output carries a file that the declaration does not name, or omits one that it names
-- **THEN** the repository check fails and names the file
+- **WHEN** a declared installation payload or prerequisite source file is missing
+- **THEN** validation names the missing source rather than silently skip it
 
 #### Scenario: Reject a different named application
 
-- **WHEN** the declaration replaces the required Zen, Zed, Brave, or Ferdium identity or assigns a policy outside the accepted contract
-- **THEN** the repository check fails and names the role
-- **AND** the check does not copy a mutable release version or the application's profile data
+- **WHEN** required Zen, Zed, Brave or Ferdium role identity changes outside the contract
+- **THEN** invariants reject that role without copying its mutable version or profile state
 
 ### Requirement: Every script parses
 
-The repository check SHALL parse every script that the Windows layer ships: each test and set script inside the document, both Administrator scripts, and the ReNeo launcher. The check SHALL use the PowerShell parser for that purpose and SHALL NOT match script source against substrings. The check SHALL assert the Administrator-script boundary on the parsed variable references and string values.
+The repository SHALL parse all shipped Windows scripts, the module, both Administrator scripts and rendered chezmoi hooks with the PowerShell 7 parser. The narrow Administrator boundary SHALL remain enforced from parsed references and values. Only the minimal fresh-machine prerequisite bootstrap MAY use Windows PowerShell 5.1.
+
+#### Scenario: Remove the second host
+
+- **WHEN** migrated chezmoi hooks and development tools run
+- **THEN** they run in PowerShell 7 without Desktop module-path repair or child Windows PowerShell processes
 
 #### Scenario: A script does not parse
 
-- **WHEN** a rendered script contains a syntax error
-- **THEN** the repository check fails and names the script and the parser message
+- **WHEN** a shipped or rendered script contains a syntax error
+- **THEN** checks fail with its path and parser message
 
 #### Scenario: A script refactor keeps the check green
 
-- **WHEN** a maintainer restructures a script without a change to the values it reads or writes
-- **THEN** the repository check passes with no edit to the check
+- **WHEN** a script is restructured without changing its allowed reads/writes
+- **THEN** parsed boundary checks remain green without source-substring exceptions
 
-### Requirement: Checker errors and self-tests have separate paths
+### Requirement: Owner-confirmed engine cutover
 
-The Windows checker SHALL expose an import-safe `main(argv: Sequence[str] | None = None) -> int` that owns `argparse`. When `argv` is `None`, it SHALL parse `sys.argv[1:]`. Its console script SHALL exit with the returned status. Its normal command SHALL NOT run self-tests. The package build SHALL run its tests from `tests/`. Expected invalid arguments, missing output files, and missing document resources SHALL produce one named finding on stderr and exit 1. These failures SHALL NOT print a traceback or `StopIteration`. Unexpected programming failures SHALL retain a traceback.
+The PR SHALL contain the engine cutover, hash-protected chezmoi invocation, persisted pwsh interpreter and complete obsolete DSC source deletion. Git history SHALL retain the legacy source for rollback. Only the integrator SHALL dry run or apply against Korolev. Before merge, the integrator SHALL run the dry run and then chezmoi apply from the PR branch, record zero drift or accept every named difference, and confirm post-apply convergence. Source rollback SHALL NOT be represented as restoration of mutated user state. Agents SHALL report only mocked local verification.
 
-#### Scenario: Reject a missing resource
+#### Scenario: Review before live acceptance
 
-- **WHEN** the document omits a resource that its declaration requires
-- **THEN** the command prints one finding that names the missing resource and exits 1
-- **AND** it prints no traceback
+- **WHEN** the complete cutover PR is ready but live parity is unconfirmed
+- **THEN** the PR remains unmerged
+- **AND** only mocked local verification is reported
+- **AND** the legacy source remains recoverable from Git history rather than an active second implementation
 
-#### Scenario: Reject bad input
+#### Scenario: Complete the approved cutover
 
-- **WHEN** a caller omits an argument or names a missing output file
-- **THEN** the command prints one finding on stderr and exits 1
-- **AND** it prints no traceback
-
-#### Scenario: Build and invoke the checker
-
-- **WHEN** the checker package builds
-- **THEN** its tests run from `tests/`
-- **AND** a later normal checker invocation validates only its supplied output, without running those tests
+- **WHEN** the integrator runs the PR branch dry run and chezmoi apply and accepts parity or every named difference
+- **THEN** post-apply convergence and application checks are recorded before merge
+- **AND** no separate post-parity source deletion phase is required

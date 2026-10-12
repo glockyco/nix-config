@@ -1,94 +1,5 @@
 ## MODIFIED Requirements
 
-### Requirement: Rendered Windows configuration artifacts
-
-The repository SHALL maintain the Windows document and two narrow Administrator scripts as source under `windows/`, independent of Nix rendering. WinGet Configuration SHALL own Windows apps/settings; chezmoi SHALL own user files from `home/`. No file SHALL have two owners. Nix activation SHALL neither write Windows paths nor apply Windows artifacts.
-
-#### Scenario: Render the artifacts
-
-- **WHEN** the reviewed native Windows checkout is inspected
-- **THEN** it contains one hand-maintained WinGet Configuration document, one Zen policy script, and one native Neo driver script
-- **AND** reading the declarations requires no mutable Windows state
-
-#### Scenario: Evaluate without network
-
-- **WHEN** the source artifacts are reviewed on a machine with no network
-- **THEN** the document and scripts are available without a Nix build
-- **AND** pinned theme files have one chezmoi owner and are not fetched merely to inspect the Windows source
-
-#### Scenario: Keep the operating-system boundary
-
-- **WHEN** either host activates a Nix generation
-- **THEN** activation writes no file under the Windows user profile
-- **AND** activation does not start the Windows apply operation
-
-### Requirement: User scope with explicit machine exceptions
-
-User resources SHALL run as the standard interactive account. Zen and Tailscale for Windows SHALL be the only machine-scope package exceptions. OpenSSH Server SHALL be a separate explicit Administrator capability/service operation, not a user apply resource. The two Administrator scripts SHALL retain only Zen Program Files policy and Neo DLL/registration ownership; they SHALL reject unelevated writes and Administrator-profile paths.
-
-#### Scenario: Apply user-scope resources
-
-- **WHEN** the interactive user applies the document with standard user rights
-- **THEN** every resource except the Zen and Tailscale packages completes without elevation
-- **AND** every other installed application and written file belongs to that user's profile
-
-#### Scenario: Apply the browser exception
-
-- **WHEN** the Zen installer requests the administrator credential and the operator later applies the policy script from an Administrator PowerShell session
-- **THEN** both operations write only to the machine-wide Zen installation under Program Files
-
-#### Scenario: Apply the keyboard driver exception
-
-- **WHEN** the operator applies the native Neo script from a 64-bit Administrator PowerShell session
-- **THEN** it writes only the checksum-pinned DLLs and `b0000407` machine registration
-- **AND** the operator restarts Windows before the document registers input tip `0407:b0000407`
-
-#### Scenario: Reject another privileged declaration
-
-- **WHEN** the document declares an unapproved machine-scope package, elevated resource, machine-scope registry value, or Windows feature
-- **OR** either Administrator script refers to an interactive-user profile path or a machine path outside its declared ownership
-- **THEN** the repository validation fails
-
-#### Scenario: Apply the network and SSH exceptions
-
-- **WHEN** the owner approves Tailscale installation and the separately documented OpenSSH Server operation
-- **THEN** the installer and capability operation use explicitly owner-assisted Administrator credentials
-- **AND** chezmoi user-file application remains in the standard account
-- **AND** neither existing Administrator script gains service, firewall, or user-profile ownership
-
-### Requirement: Pinned application set
-
-Every managed application SHALL carry one explicit version policy. Exact packages SHALL declare a reviewed version; self-updating packages SHALL omit it and require latest available without downgrading newer installed versions. Zed, Zen, Brave, Ferdium, Git and Tern SHALL be self-updating; other declared packages SHALL be exact. The set SHALL cover native workstation roles, with Tern installed manually. No Intune-managed installation SHALL have a competing declaration.
-
-#### Scenario: Install the declared set
-
-- **WHEN** the operator applies the document on a machine without the declared applications
-- **THEN** each exact-pinned application installs at its declared version
-- **AND** each document-managed self-updating application installs at the latest version available from WinGet
-- **AND** each required role has exactly one declared application or explicit Tern manual-install boundary
-
-#### Scenario: Accept a newer vendor update
-
-- **WHEN** Zed, Zen, Brave, Ferdium, or Git has a vendor-channel version newer than the latest version available from WinGet
-- **THEN** the document reports that application in the desired state
-- **AND** an apply operation does not downgrade or reinstall it
-
-#### Scenario: Detect an unpinned application
-
-- **WHEN** an application declares no version policy, more than one version policy, a version under the self-updating policy, or no version under the exact policy
-- **THEN** repository validation fails
-
-#### Scenario: Detect a managed-application conflict
-
-- **WHEN** a declared application appears in the recorded set of centrally managed applications
-- **THEN** repository validation fails
-
-#### Scenario: Distinguish per-user Git from centrally managed updates
-
-- **WHEN** the reviewed Intune evidence shows its Git update package detects only HKLM installations
-- **THEN** the layer declares `Git.Git` for the per-user installation and removes that identifier from the conflicting-app list
-- **AND** Docker Desktop and every other recorded centrally managed package remain excluded
-
 ### Requirement: Native Ferdium communication client
 
 The hand-maintained Windows application set SHALL declare `Ferdium.Ferdium` as the user-scoped `communication-client` package. The package SHALL run as a native Windows application and SHALL NOT be installed through NixOS, Home Manager, WSLg, or a machine-scoped installer.
@@ -217,51 +128,6 @@ The override SHALL NOT change unmodified Vim keys, `Escape`, terminal input, men
 - **THEN** the apply operation restores the complete declared keymap
 - **AND** the next chezmoi verification reports the declared keymap in the desired state
 
-### Requirement: Validation before and after apply
-
-Windows-native repository gates SHALL validate the shipped document against its vendored official DSC v3 configuration-document JSON Schema and discovered resource-type allowlist, parse it with read-only `winget configure show`, and test ownership, explicit application selectors, prerequisite order, machine exceptions and script ASTs without applying resources. Because `winget configure` apply cannot resolve the schema's `resourceId()` dependency form, the document SHALL declare no `dependsOn` and SHALL order each prerequisite before its consumers. Schema sources SHALL retain reviewed release URLs and SHA-256 values. Tests SHALL not read live enrollment or profile state. Before first live apply the operator SHALL preview drift; after applying in the proper account context the operator SHALL confirm all owned state.
-
-#### Scenario: Validate without applying Windows state
-
-- **WHEN** the Windows-native repository checks run in CI or the native development environment
-- **THEN** they validate the shipped document against the pinned official schema and resource-type allowlist, every script against the PowerShell parser, the narrow script boundary, each application's version policy and selector, and the absence of a centrally managed application
-- **AND** read-only WinGet show exits zero without applying a resource or requiring provider login/device enrollment; missing native parser/schema dependencies fail rather than skip
-
-#### Scenario: Focus native precommit without weakening shipped checks
-
-- **WHEN** native precommit invokes `windows/check.ps1 -SkipFixtures`
-- **THEN** shipped document contracts, pinned official schema validation and shipped script AST/Administrator-boundary checks still run and failures reject the commit
-- **AND** staged formatting and same-checkout staged-Nix validation remain unchanged
-- **AND** only isolated fixtures are omitted; full on-demand checks and both Windows PowerShell 5.1 and locked PowerShell 7 CI jobs retain every fixture, including rendered chezmoi coverage
-
-#### Scenario: Validate without Windows
-
-- **WHEN** a Nix-only environment inspects the Windows source or requests native WinGet parsing
-- **THEN** source review remains possible but native validation is not reported as exercised there
-- **AND** required Windows CI performs the native gate; a missing Windows runtime/tool does not silently pass
-
-#### Scenario: Preserve stable dark appearance acceptance
-
-- **WHEN** Windows records the declared dark modes, transparency, and wallpaper in `Custom.theme`
-- **THEN** the live test reports the dark-appearance resource in the desired state
-- **AND** the repository check requires no active theme-file path
-
-#### Scenario: Reject a dependency on an undeclared resource
-
-- **WHEN** a resource in the hand-maintained document declares any `dependsOn`, whether or not its target is declared
-- **THEN** the repository check fails and names the resource, because apply cannot resolve the dependency
-
-#### Scenario: Order prerequisites before their consumers
-
-- **WHEN** a native npm tool resource precedes the JavaScript runtime in the document
-- **THEN** the repository check fails and names the npm resource
-
-#### Scenario: Preview and confirm on the machine
-
-- **WHEN** the operator tests the document and both Administrator scripts on the Windows work machine
-- **THEN** each test reports drift without applying it
-- **AND** later test operations report that the applied state matches all three artifacts
-
 ### Requirement: Dedicated browser-relay application
 
 The hand-maintained Windows application set SHALL declare Brave as a self-updating, user-scope Chromium-based browser for native OMP browser relay use. The relay browser SHALL have a distinct application role, SHALL NOT replace Zen as the interactive browser, and SHALL NOT appear in the centrally managed application set. The Windows declaration SHALL configure no startup entry for the relay browser.
@@ -289,69 +155,12 @@ The hand-maintained Windows application set SHALL declare Brave as a self-updati
 - **THEN** no NixOS generation change is required
 - **AND** the operator can remove the browser-owned relay profile and extension independently
 
-### Requirement: Check expectations derive from the declaration
-
-Windows checks SHALL read app policy, selectors, scope, roles, managed exclusions and owned files from the native source declarations. They SHALL not duplicate mutable release pins, palettes or checksum values. Fixed literals SHALL express only invariant schema, identity, dependency, ownership and privilege rules. User-file checks SHALL consume the chezmoi-rendered Windows fixtures, not obsolete Nix review output.
-
-#### Scenario: Change one pin
-
-- **WHEN** a maintainer changes the version or checksum of one exact-pinned application in the declaration in the native source
-- **THEN** the repository check passes with no edit to the check
-- **AND** the hand-maintained document carries the new pin
-
-#### Scenario: Declare a self-updating application
-
-- **WHEN** the declaration selects the self-updating policy without a version for Zed, Zen, Brave, Ferdium, or Git
-- **THEN** the repository check expects catalog-latest test/install semantics with no exact selector (the native DSC package shape uses `useLatest: true`; scope-sensitive scripts enforce the equivalent query/install behavior)
-- **AND** the check carries no application-specific exception
-
-#### Scenario: Declared application absent from the document
-
-- **WHEN** the declaration lists an application that the hand-maintained document does not carry as exactly one resource with the same identifier, version policy, policy-specific selector, scope, and roles
-- **THEN** the repository check fails and names the application
-
-#### Scenario: Rendered version policy differs from the declaration
-
-- **WHEN** an exact resource carries a mismatched version or permits the latest version
-- **OR** a self-updating resource carries a version or does not require the latest version
-- **THEN** the repository check fails and names the resource
-
-#### Scenario: Review file set differs from the declaration
-
-- **WHEN** the source-owned file set carries a file that the declaration does not name, or omits one that it names
-- **THEN** the repository check fails and names the file
-
-#### Scenario: Reject a different named application
-
-- **WHEN** the declaration replaces the required Zen, Zed, Brave, Ferdium, or Git identity or assigns a policy outside the accepted contract
-- **THEN** the repository check fails and names the role
-- **AND** the check does not copy a mutable release version or the application's profile data
-
-### Requirement: Every script parses
-
-The repository check SHALL parse every script that the Windows layer ships: each test and set script inside the document, both Administrator scripts, the ReNeo launcher, native check/bootstrap programs, and rendered chezmoi PowerShell scripts. The check SHALL use the PowerShell parser for that purpose and SHALL NOT match script source against substrings. The check SHALL assert the Administrator-script boundary on the parsed variable references and string values.
-
-#### Scenario: A script does not parse
-
-- **WHEN** a shipped or rendered script contains a syntax error
-- **THEN** the repository check fails and names the script and the parser message
-
-#### Scenario: A script refactor keeps the check green
-
-- **WHEN** a maintainer restructures a script without a change to the values it reads or writes
-- **THEN** the repository check passes with no edit to the check
-
 ## REMOVED Requirements
 
 ### Requirement: Zed WSL LaTeX builds
 
 **Reason**: Windows is the native primary workstation; Windows Zed no longer transports LaTeX projects or TexLab through WSL.
 **Migration**: Compile LaTeX with native TeX Live and run TexLab natively, keeping project build commands and root markers in each project. Native Windows document work also uses Typst/tinymist; WSL TeX packages leave with the WSL host and are not a Windows editor dependency.
-
-### Requirement: Checker errors and self-tests have separate paths
-
-**Reason**: The Nix-built Python Windows checker and its import/console interface are removed.
-**Migration**: Native Windows checks report named failing resources/scripts and nonzero exit statuses; controlled negative fixtures replace the checker's package-build self-tests. No obsolete Python CLI shim remains.
 
 ## ADDED Requirements
 

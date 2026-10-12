@@ -8,7 +8,7 @@ Define reproducible and minimal dependency sources for Darwin-only workstation a
 
 ### Requirement: Fixed-output keyboard resources
 
-The workstation SHALL build the Neo keyboard bundle from official macOS release resources with fixed cryptographic hashes. It SHALL NOT require a full upstream repository clone to evaluate or build the bundle.
+The workstation SHALL build the Neo keyboard bundle from official macOS release resources with fixed cryptographic hashes. System-owned resource output SHALL provide the bundle to the user setup helper without another upstream fetch. It SHALL NOT require a full upstream repository clone to evaluate or build the bundle.
 
 #### Scenario: Build the keyboard bundle
 
@@ -23,7 +23,7 @@ The workstation SHALL build the Neo keyboard bundle from official macOS release 
 
 ### Requirement: Preserved layout validation
 
-The Neo package SHALL reject duplicate keyboard layout identifiers before producing an installable bundle.
+The Neo package SHALL reject duplicate keyboard layout identifiers before producing an installable bundle consumed by chezmoi user setup.
 
 #### Scenario: Duplicate identifier appears
 
@@ -32,7 +32,7 @@ The Neo package SHALL reject duplicate keyboard layout identifiers before produc
 
 ### Requirement: Source-free Darwin build plans
 
-Every output this repository asks Nix to build on Darwin SHALL have a build plan that contains no source-built .NET package, Swift compiler, Markdown Oxide application, or Roslyn language server. This covers each check, each package, and the development shell, not one selected package.
+Every output this repository asks Nix to build on Darwin SHALL have a build plan that contains no source-built .NET package, Swift compiler, Markdown Oxide application, or Roslyn language server. This covers each check, each package, system-owned user/setup/resource packages, and the development shell, not one selected package.
 
 Nixpkgs publishes no `aarch64-darwin` binary for these builds, so any build plan that reaches one compiles it in CI. A test-only dependency is enough to reach them.
 
@@ -53,19 +53,19 @@ Nixpkgs publishes no `aarch64-darwin` binary for these builds, so any build plan
 - **WHEN** the Darwin continuous integration job runs against a warm public cache
 - **THEN** it completes without compiling a .NET SDK, Swift toolchain, Markdown Oxide application, or Roslyn language server from source
 
-### Requirement: Minimal managed language-server toolchain
+### Requirement: Ordinary fixed-output language-server toolchain
 
-The wrapped OMP package SHALL provide Markdown Oxide and Roslyn from official, fixed-output platform artifacts on every supported system. Roslyn SHALL use a binary .NET runtime to launch its downloaded language-server payload. The wrapper SHALL provide `markdown-oxide` and `Microsoft.CodeAnalysis.LanguageServer` without compiling either application from source, and SHALL NOT provide Marksman as an alias or fallback.
+The Mac SHALL provide Markdown Oxide and Roslyn as ordinary host packages from official, fixed-output platform artifacts. WSL SHALL provide the fixed-output Markdown Oxide package and SHALL omit Roslyn. Roslyn on the Mac SHALL use a binary .NET runtime to launch its downloaded language-server payload. Host packages SHALL provide `markdown-oxide` and, on the Mac, `Microsoft.CodeAnalysis.LanguageServer` without compiling either application from source, and SHALL NOT provide Marksman as an alias or fallback.
 
 #### Scenario: Inspect the managed language-server build plan
 
-- **WHEN** the repository checks run against a clean Darwin build of the wrapped OMP package
+- **WHEN** the repository checks run against a clean Darwin build of the ordinary managed language-server packages
 - **THEN** the build plan contains the selected fixed-output Markdown Oxide and Roslyn artifacts
 - **AND** it does not contain a Swift compiler, source-built .NET package, source-built Markdown Oxide application, or source-built Roslyn language server
 - **AND** the result comes from an automated check, not from reading the plan by hand
 
-#### Scenario: Run the wrapped OMP command
+#### Scenario: Run the upstream OMP command
 
-- **WHEN** the wrapped OMP command starts with its managed language servers
-- **THEN** the `markdown-oxide` and `Microsoft.CodeAnalysis.LanguageServer` executables are available on `PATH`
+- **WHEN** upstream OMP starts on the Mac with its ordinary managed language servers
+- **THEN** the `markdown-oxide` and `Microsoft.CodeAnalysis.LanguageServer` executables are available on PATH
 - **AND** `marksman` is absent

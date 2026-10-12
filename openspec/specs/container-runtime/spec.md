@@ -36,7 +36,7 @@ Workstation activation SHALL NOT create, start, reset, or delete a Colima virtua
 
 ### Requirement: Declared Apple Silicon runtime profile
 
-The workstation SHALL provide reviewed Colima profile defaults that use Apple Virtualization.framework and Rosetta for `linux/amd64` execution. The Mac's standalone `hosts/macbook-pro/host.nix` declaration SHALL own the profile's positive CPU, memory, disk, and mount values. The `container-client` role SHALL derive profile architecture from `pkgs.stdenv.hostPlatform.qemuArch`. The role SHALL declare its runtime rather than rely on changing upstream defaults.
+The workstation SHALL provide reviewed Colima profile defaults that use Apple Virtualization.framework and Rosetta for `linux/amd64` execution. Shared host TOML facts validated through `hosts/macbook-pro/host.nix` SHALL own the profile's positive CPU, memory, disk and mount values; chezmoi SHALL render the user profile. The system-owned `container-client` resource manifest SHALL derive profile architecture from `pkgs.stdenv.hostPlatform.qemuArch`. The role SHALL declare its runtime rather than rely on changing upstream defaults.
 
 #### Scenario: Native container execution
 
@@ -57,7 +57,7 @@ The workstation SHALL provide reviewed Colima profile defaults that use Apple Vi
 #### Scenario: Evaluate for Apple Silicon
 
 - **WHEN** the Darwin host evaluates on `aarch64-darwin`
-- **THEN** the profile architecture derives from the package set's host platform
+- **THEN** the rendered chezmoi profile architecture derives from the package set's host platform through its resource manifest
 - **AND** no module repeats the architecture string
 
 ### Requirement: Docker Compose workload compatibility
@@ -95,7 +95,7 @@ Starting the declared profile SHALL expose a named Docker context that identifie
 
 ### Requirement: Mutable runtime state remains outside Nix activation
 
-Colima virtual machine disks, images, containers, volumes, credentials, and logs SHALL remain mutable runtime state outside the Nix store. Rebuilding or activating the same workstation declaration SHALL preserve that state.
+Colima virtual machine disks, images, containers, volumes, credentials, and logs SHALL remain mutable runtime state outside the Nix store. Rebuilding, system activation and chezmoi apply SHALL preserve that state; chezmoi SHALL own only the declared user profile and environment files.
 
 #### Scenario: Workstation generation changes
 

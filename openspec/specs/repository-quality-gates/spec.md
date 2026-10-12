@@ -8,38 +8,54 @@ Define how this repository enforces formatting before a commit and in continuous
 
 ### Requirement: One formatting configuration for both gates
 
-The commit gate and the continuous integration gate SHALL derive from the same formatting configuration. Neither gate SHALL carry its own list of formatters, file patterns, or exclusions.
+Local and CI formatting SHALL consume the existing single platform-neutral formatter declaration. The PowerShell 7 Windows adapter SHALL retain locked native tooling and same-checkout staged Nix validation. Native-only work SHALL not require Nix. Missing tools and unavailable staged Nix validation SHALL fail rather than silently skip. Windows engine checks SHALL use proportional mocked behavior coverage, not mutations of a bespoke checker.
+
+#### Scenario: Stage native-only work
+
+- **WHEN** native Windows precommit checks native-only staged files
+- **THEN** PowerShell 7 invokes declared formatters and the engine's static/schema boundary checks
+- **AND** it does not invoke DSC document validation or a second PowerShell host
+
+#### Scenario: Stage Nix without its environment
+
+- **WHEN** staged Nix cannot be checked in the same checkout's declared Nix environment
+- **THEN** the hook rejects the commit with an actionable diagnostic
 
 #### Scenario: Unformatted file reaches a commit
 
-- **WHEN** a maintainer commits a file that the formatting configuration would rewrite
-- **THEN** the commit is rejected
+- **WHEN** staged content differs from shared formatter output
+- **THEN** the commit gate rejects it
 
 #### Scenario: Unformatted file reaches continuous integration
 
-- **WHEN** the branch contains a file that the formatting configuration would rewrite
-- **THEN** the continuous integration job fails
+- **WHEN** committed content differs from shared formatter output
+- **THEN** CI fails
 
 #### Scenario: A formatter is added
 
-- **WHEN** a formatter is added to the formatting configuration
-- **THEN** both gates apply it without a second edit
+- **WHEN** the shared formatter declaration gains a formatter
+- **THEN** both gates consume it without a duplicate list edit
 
 ### Requirement: The commit hook is installed from the development shell
 
-Entering the development shell SHALL install the commit hook into the working tree. The hook SHALL run from the pinned tools of that shell and SHALL NOT depend on a tool that happens to be on `PATH`.
+Darwin/Linux SHALL retain pinned Nix-shell hook installation. Windows SHALL retain explicit repository-local native development bootstrap and lefthook installation, running all hooks and tooling under PowerShell 7. Only the separate minimal fresh-machine pwsh/Git/chezmoi prerequisite bootstrap MAY use Windows PowerShell 5.1. Re-entry SHALL not duplicate hooks or silently retire unrelated hooks. Git clients outside the declared environment SHALL resolve pinned tools or fail with an actionable diagnostic.
+
+#### Scenario: Bootstrap native development
+
+- **WHEN** a standard Windows user enters the native development environment
+- **THEN** pinned tools and local test dependencies resolve and lefthook is installed for that checkout
+- **AND** subsequent Git/Fork commits invoke the PowerShell 7 gate and propagate failures
 
 #### Scenario: First entry into the shell
 
-- **WHEN** a maintainer enters the development shell in a working tree with no installed hook
-- **THEN** the hook is installed
-- **AND** a following commit runs the formatting gate
+- **WHEN** the declared environment is entered without an installed hook
+- **THEN** the hook is installed and subsequent commits run the gate
 
 #### Scenario: Commit from an environment without the shell
 
-- **WHEN** a Git client outside the development shell triggers the hook
-- **THEN** the hook either runs with the pinned tools or fails with a message that names the missing environment
-- **AND** it does not silently skip the gate
+- **WHEN** Git invokes a hook outside the declared environment
+- **THEN** pinned tooling resolves or an actionable missing-environment error rejects the commit
+- **AND** staged Nix validation is never silently skipped
 
 ### Requirement: Retiring a hook runner removes its hook
 
@@ -73,17 +89,30 @@ The repository SHALL provide a development shell for every system it declares as
 
 ### Requirement: Each gate runs its host's Nix implementation
 
-The continuous-integration leg for a system SHALL run the Nix implementation that the host for that system runs. A leg SHALL NOT rely on a different implementation's tolerance of an output that the host's implementation rejects.
+Linux and Darwin SHALL retain each host's declared Nix implementation. Windows SHALL use one native PowerShell 7 CI job named `check (windows-latest)` with applicable shared formatting, built-in JSON-schema validation, PSScriptAnalyzer, parser checks, privilege invariants and mocked Pester behavior tests. CI SHALL neither provision WinGet/DSC providers nor apply workstation resources. Pester 5 and PSScriptAnalyzer SHALL be pinned development dependencies installed through PSResourceGet into repository-local or runner-local paths, never an owner's global profile. The job SHALL emit gate durations and aim for about two minutes. Failed or skipped required checks SHALL not count as successful Windows acceptance.
+
+#### Scenario: Run proportional Windows CI
+
+- **WHEN** a pull request changes the Windows layer
+- **THEN** one pwsh-only job runs the schema, analyzer, invariants and mocked behavior tests
+- **AND** applicable shared formatting runs once and timings are recorded
+- **AND** no Windows PowerShell 5.1 matrix, WinGet Configuration provider provisioning or live apply runs
+
+#### Scenario: Isolate test dependencies
+
+- **WHEN** local checks or CI provision Pester and PSScriptAnalyzer
+- **THEN** pinned modules are available only from the selected development dependency path
+- **AND** missing modules fail with an actionable setup command rather than skip tests
 
 #### Scenario: An output evaluates on one implementation only
 
-- **WHEN** a flake output evaluates under the runner's default Nix and fails under the Nix its host declares
-- **THEN** the continuous-integration leg for that system fails
+- **WHEN** a flake output fails under its host's declared Nix despite passing under the runner default
+- **THEN** that system's CI leg fails
 
 #### Scenario: Inspect gate equivalence
 
-- **WHEN** a maintainer compares the gate command of a system's continuous-integration leg with the gate command on that system's host
-- **THEN** both run the same Nix implementation and the same check set
+- **WHEN** local and CI gate commands are compared
+- **THEN** Nix hosts use the same declared Nix and Windows uses the same PowerShell 7 static/mock check set
 
 ### Requirement: One package-set instance per system
 
@@ -112,28 +141,6 @@ The repository SHALL instantiate one Nixpkgs package set per supported system. H
 - **THEN** its package output and program check are absent on that system
 - **AND** no output reads a host kind to make that package decision
 
-### Requirement: One declaration for each fact that both platforms share
-
-A fact that both platform scopes consume SHALL have one declaration. The Darwin scope, the NixOS scope, and every repository check that asserts the fact SHALL read that declaration. The binary cache substituter and its public key are such a fact. The Home Manager wiring that both platforms share is such a fact.
-
-#### Scenario: Rotate the binary cache key
-
-- **WHEN** a maintainer changes the binary cache public key in its declaration
-- **THEN** both host configurations carry the new key
-- **AND** the check that asserts the WSL host's Nix settings passes without a second edit
-
-#### Scenario: Compare the Home Manager wiring of both hosts
-
-- **WHEN** a maintainer compares how each host enables Home Manager, selects the package set, installs user packages, and handles conflicting files
-- **THEN** both hosts read those settings from one declaration
-- **AND** each platform module adds only the platform's Home Manager module and the module lists that differ
-
-#### Scenario: Check each host against the declaration
-
-- **WHEN** the repository checks for a system run
-- **THEN** a check asserts that the host on that system carries the declared substituter and the declared public key in its Nix settings
-- **AND** the check reads the expected values from the declaration rather than from a literal
-
 ### Requirement: Darwin gates run from the Linux host
 
 The Linux host SHALL be able to build every `aarch64-darwin` check of the repository through the declared Darwin remote builder. The result SHALL be the same derivation that the Darwin host builds locally. A gate that reads the Darwin store, such as the build-plan inspection, SHALL run on the Darwin host through the tailnet SSH endpoint.
@@ -161,7 +168,7 @@ The Linux host SHALL be able to build every `aarch64-darwin` check of the reposi
 
 ### Requirement: OpenSpec package consistency
 
-The workstation checks SHALL verify that the OpenSpec executable reports the version declared by its Nix package. They SHALL NOT require a hard-coded historical version after a reviewed update.
+The workstation checks SHALL verify that the ordinary host-installed OpenSpec executable reports the version declared by its Nix package and is the same derivation exposed by the shared package set. They SHALL NOT require a hard-coded historical version after a reviewed update or depend on an OMP wrapper/runtime plugin package.
 
 #### Scenario: Package and executable disagree
 
@@ -170,12 +177,12 @@ The workstation checks SHALL verify that the OpenSpec executable reports the ver
 
 ### Requirement: Generated OpenSpec adapter freshness
 
-The workstation checks SHALL verify that tracked OpenSpec commands and skills match the selected generator. An OpenSpec update SHALL require review of generated changes before merge.
+The workstation checks SHALL verify that the personal plugin's tracked OpenSpec commands and skills match the selected generator independently of its runtime installation. The independently pinned build-time `lib.openspecCheck` and required generator tooling SHALL remain available after removal of plugin runtime package exports. An OpenSpec update SHALL require review of generated changes in `omp-agent-setup` before publication and review of the check-tool pin here before merge. Published marketplace commands SHALL use `/personal:opsx-*` without compatibility aliases; this repository SHALL NOT run `openspec init` or duplicate generated adapters.
 
 #### Scenario: Generator output changes
 
 - **WHEN** the selected OpenSpec package would rewrite a tracked adapter
-- **THEN** the release gate fails until the generated difference is reviewed and committed
+- **THEN** the release gate fails until the generated difference is reviewed and committed in its owning plugin repository
 
 ### Requirement: Archived change completeness
 
@@ -188,7 +195,7 @@ The workstation checks SHALL reject an archived OpenSpec change that contains an
 
 ### Requirement: One typed host declaration per host
 
-Each host SHALL describe its identity through one standalone `hosts/<name>/host.nix` declaration validated by the module system. The directory name SHALL set the host name. The declaration SHALL set the interactive user name, system, kind, builder capacity, and tailnet facts. The flake SHALL evaluate that declaration alone and expose the result through the read-only `fleet.hosts` registry. Each configuration SHALL receive the same facts through a typed `fleet.hosts` option. A module that needs a fact about its own host SHALL read `config.host`; a module that needs a fact about a peer SHALL read `config.fleet.hosts`. No host fact SHALL travel to a module as an untyped argument.
+Each host SHALL describe its identity through one standalone `hosts/<name>/host.nix` declaration validated by the module system, importing facts shared with user templates from home/.chezmoidata/\*.toml rather than duplicating them. The directory name SHALL set the host name. The declaration SHALL set the interactive user name, system, kind, builder capacity, and tailnet facts. The flake SHALL evaluate that declaration alone and expose the result through the read-only `fleet.hosts` registry. Each configuration SHALL receive the same facts through a typed `fleet.hosts` option. A module that needs a fact about its own host SHALL read `config.host`; a module that needs a fact about a peer SHALL read `config.fleet.hosts`. No host fact SHALL travel to a Nix module as an untyped argument; chezmoi SHALL read the same shared TOML facts directly.
 
 #### Scenario: A host omits a required value
 
@@ -258,7 +265,7 @@ Every check that reads one host configuration SHALL be generated from `fleet.hos
 #### Scenario: Rename a user's account
 
 - **WHEN** a host changes the interactive username in its standalone declaration
-- **THEN** each gate that reads its Home Manager configuration reads the new user
+- **THEN** each gate that renders its chezmoi configuration or reads its system-declared user packages reads the new user
 - **AND** the gate definition needs no edit
 
 ### Requirement: Peer facts come from the registry
@@ -278,26 +285,6 @@ A module SHALL read other managed hosts' name, system, user, builder capacity, a
 - **THEN** the rendered policy denies port 22 to its tailnet tag from every reachable source
 - **AND** no renderer edit is required
 
-### Requirement: Program checks exercise the program
-
-A packaged program's check SHALL execute the packaged program against controlled fixtures and stub executables. It SHALL assert observable exit status, output, and calls rather than script source text. A host wrapper check SHALL assert that the wrapper, updater, and verifier derivations under test are the derivations installed by that host.
-
-#### Scenario: A selected OMP source generation exists
-
-- **WHEN** a check runs the installed wrapper with a selected executable source generation
-- **THEN** the executable receives the extension and plugin-directory flags before the caller's arguments
-- **AND** the check fails if either flag is absent or reordered
-
-#### Scenario: The selected generation is missing or unusable
-
-- **WHEN** the check runs the wrapper without a selected generation or with an unusable launcher
-- **THEN** the wrapper exits with a failure that identifies the source-generation path and `omp-dev-update`
-
-#### Scenario: Program source changes without behavior changing
-
-- **WHEN** a program's source text changes but its observable behavior remains the same
-- **THEN** its behavior check passes
-
 ### Requirement: Platform baselines contain no host role
 
 A platform baseline SHALL contain only configuration required by every host of that platform. A host SHALL select its optional machine roles explicitly. A role SHALL live under the platform that can run it, and shared modules SHALL contain no platform branch.
@@ -311,7 +298,7 @@ A platform baseline SHALL contain only configuration required by every host of t
 #### Scenario: Select a role
 
 - **WHEN** a host imports one role
-- **THEN** the role's system and user modules apply together
+- **THEN** the role's system settings and matching chezmoi user configuration apply together
 - **AND** no platform baseline imports that role implicitly
 
 #### Scenario: Inspect shared modules
@@ -323,16 +310,16 @@ A platform baseline SHALL contain only configuration required by every host of t
 
 - **WHEN** the Air role, its package directory, Air check and output wiring, and `macbook-air` peer entry are removed
 - **THEN** the host still evaluates with every durable role and release gate, including the desktop SSH configuration check
-- **AND** no generated package, check, launchd agent, SSH alias, Home Manager file, policy entry, or credential reference names the Air
+- **AND** no generated package, check, launchd agent, SSH alias, chezmoi file, policy entry, or credential reference names the Air
 
 ### Requirement: One declaration owns each host fact
 
-Each host-specific fact SHALL have one typed source: its name is the host directory key, and its other facts are in `hosts/<name>/host.nix`. Every module, generated file, and check that uses a fact SHALL derive it from `config.host` or the typed `config.fleet.hosts` registry. A check SHALL NOT repeat a machine name, user name, durable path, application, or resource value. The temporary Air integration SHALL remain role-owned until its removal under issue #17; it SHALL NOT gain a durable host endpoint declaration.
+Each host-specific fact SHALL have one declaration: name is the host directory key; facts shared with user configuration live in home/.chezmoidata/\*.toml and remaining system facts in hosts/<name>/host.nix. Nix SHALL validate them through config.host and config.fleet.hosts; chezmoi SHALL read the same shared TOML. Every generated file and check SHALL derive values from that owner. A check SHALL NOT repeat a machine name, user name, durable path, application, or resource value. The temporary Air integration SHALL remain role-owned until its removal under issue #17; it SHALL NOT gain a durable host endpoint declaration.
 
 #### Scenario: Change a screenshot directory
 
 - **WHEN** a host changes its declared screenshot directory
-- **THEN** the system default and Home Manager directory preparation use the new path
+- **THEN** the system default and chezmoi directory preparation use the new path
 - **AND** neither consumer needs an edit
 
 #### Scenario: Change an application record
@@ -365,43 +352,16 @@ The host configurations SHALL share one pinned registry, disabled legacy channel
 - **AND** Darwin retains its trusted SSH builder user and uses Determinate's automatic GC
 - **AND** Darwin does not enable automatic store optimisation
 
-### Requirement: Secret files contain only encrypted data scalars
-
-Every scalar value in the YAML data outside the top-level `sops` metadata mapping of a tracked file under `secrets/` SHALL be a SOPS encrypted value. Repository validation SHALL inspect parsed YAML data and reject any plaintext scalar, independent of its key name.
-
-#### Scenario: Add a secret with a new key name
-
-- **WHEN** a maintainer adds an `api_key` or nested scalar that the SOPS creation rule leaves in plaintext
-- **THEN** repository validation fails
-- **AND** the failure names the file and scalar path
-
-#### Scenario: Commit a plaintext scalar
-
-- **WHEN** a tracked secret file contains a data scalar that does not start with `ENC[`
-- **THEN** repository validation fails
-- **AND** the failure names the file and scalar path
-
-#### Scenario: Prove the detector
-
-- **WHEN** the secret-encryption check runs against fixtures with nested plaintext mappings and list entries
-- **THEN** each plaintext fixture is rejected with its scalar path
-- **AND** an equivalent fully encrypted fixture passes
-
-#### Scenario: Preserve SOPS metadata
-
-- **WHEN** the repository check examines a SOPS-encrypted YAML file
-- **THEN** it excludes only the top-level `sops` metadata mapping from the data-scalar rule
-- **AND** it checks every scalar in all other top-level keys
-
 ### Requirement: Installed and activation programs are packages with behavior checks
 
-Each repository-owned user or activation program introduced by this change SHALL be a package under `packages/<name>/package.nix`, with `meta.description`, `meta.mainProgram`, and `meta.platforms`. Each SHALL have `packages/<name>/tests.nix` that runs the built program against doubles or fixtures and asserts observable behavior. Python programs SHALL also run their stdlib unit tests during package builds. A module SHALL NOT interpolate a source script path into an activation command.
+Each reusable repository-owned user, setup or modify-filter program SHALL be a package under `packages/<name>/package.nix`, with `meta.description`, `meta.mainProgram`, and `meta.platforms`. Each SHALL have `packages/<name>/tests.nix` that runs the built program against doubles or fixtures and asserts observable behavior. Python programs SHALL also run their stdlib unit tests during package builds. A module SHALL NOT interpolate a source script path into activation. Thin chezmoi scripts SHALL invoke installed packaged helpers; a modify filter SHALL change only declared keys and preserve unrelated app state.
 
 #### Scenario: Inspect a program a host installs
 
-- **WHEN** a maintainer lists the repository-owned user and activation programs introduced by this change
+- **WHEN** a maintainer lists the repository-owned user and activation programs used by the configuration
 - **THEN** each resolves to `packages/<name>/package.nix`
 - **AND** each has a sibling `tests.nix` that exercises its behavior
+- **AND** the tested helper, modify-filter and switch-wrapper derivations match those installed in the host's system-declared user package set
 
 #### Scenario: A program regresses
 
@@ -413,3 +373,76 @@ Each repository-owned user or activation program introduced by this change SHALL
 - **WHEN** a test imports a packaged Python program
 - **THEN** the import performs no subprocess call, reads no command-line argument, and exits nothing
 - **AND** the program exposes `main(argv: Sequence[str] | None = None) -> int`, which owns `argparse`, parses `sys.argv[1:]` when `argv` is `None`, and returns the console script's exit status
+
+### Requirement: Packaged program behavior checks
+
+A packaged program's check SHALL execute the packaged program against controlled fixtures and stub executables. It SHALL assert observable exit status, output, and calls rather than script source text.
+
+#### Scenario: Program source changes without behavior changing
+
+- **WHEN** a program's source text changes but its observable behavior remains the same
+- **THEN** its behavior check passes
+
+### Requirement: One declaration for each cross-platform fact
+
+A fact that both platform scopes consume SHALL have one declaration. The Darwin scope, the NixOS scope, and every repository check that asserts the fact SHALL read that declaration. The binary cache substituter and its public key are such a fact. Shared chezmoi host data and portable user-package intent are such facts.
+
+#### Scenario: Rotate the binary cache key
+
+- **WHEN** a maintainer changes the binary cache public key in its declaration
+- **THEN** both host configurations carry the new key
+- **AND** the check that asserts the WSL host's Nix settings passes without a second edit
+
+#### Scenario: Compare user-package and chezmoi wiring of both hosts
+
+- **WHEN** a maintainer compares how each host selects the package set, installs user packages and renders user configuration
+- **THEN** both hosts read those settings from one declaration
+- **AND** platform modules add only platform package/program adapters and chezmoi templates add only necessary OS-specific behavior
+
+#### Scenario: Check each host against the declaration
+
+- **WHEN** the repository checks for a system run
+- **THEN** a check asserts that the host on that system carries the declared substituter and the declared public key in its Nix settings
+- **AND** the check reads the expected values from the declaration rather than from a literal
+
+### Requirement: Encrypted source validation covers every managed secret
+
+Repository checks SHALL require every declared managed secret to have a private encrypted chezmoi source with a valid age payload. Missing ciphertext, plaintext substitution or removal of its private/encrypted attributes SHALL fail without decrypting production data. Format validation SHALL not be reported as proof of recipient access.
+
+#### Scenario: Add a secret with a new name
+
+- **WHEN** a new managed credential is declared
+- **THEN** its source is checked independent of the credential name
+- **AND** missing, plaintext or nonprivate source state fails with the file path
+
+#### Scenario: Commit plaintext instead of ciphertext
+
+- **WHEN** a tracked managed secret contains plaintext or a malformed age payload
+- **THEN** repository validation fails and names the source path without printing its contents
+
+#### Scenario: Prove the detector
+
+- **WHEN** positive encrypted fixtures and plaintext, truncated, missing and incorrectly attributed fixtures run
+- **THEN** encrypted fixtures pass and every invalid fixture fails
+- **AND** an isolated synthetic age round trip verifies private file permissions without a production identity
+
+#### Scenario: Preserve encryption metadata
+
+- **WHEN** repository validation examines a supported age encoding
+- **THEN** it validates encryption framing rather than treating an age header alone as sufficient
+- **AND** live recipient access remains a separate Mac acceptance gate
+
+### Requirement: User configuration checks render the tracked source
+
+Each host's user-configuration check SHALL render its actual chezmoi source in an isolated home using the same shared facts as the host configuration. It SHALL retain effective shell, SSH, package and container assertions formerly derived from Home Manager. Checks SHALL not access production secrets, live applications or remote services.
+
+#### Scenario: A template regresses
+
+- **WHEN** an SSH endpoint, shell hook or Colima profile template changes incorrectly
+- **THEN** its host's rendered configuration check fails on the affected effective assertion
+
+#### Scenario: Validate without host credentials
+
+- **WHEN** checks run in CI without production keys or provider access
+- **THEN** ordinary user configuration and synthetic-secret fixtures are verified
+- **AND** no live user setup command, production decryption or remote connection runs

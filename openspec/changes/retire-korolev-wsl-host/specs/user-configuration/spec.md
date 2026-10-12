@@ -1,5 +1,23 @@
 # Spec Delta
 
+## ADDED Requirements
+
+### Requirement: Checkout and machine selection
+
+Each machine's chezmoi configuration SHALL record its own stable checkout as sourceDir and explicit data.host, using home as source root. Destinations SHALL stay outside sourceDir; apply SHALL require no second clone or hostname inference. Mac Darwin and Korolev Windows platform facts SHALL select distinct users/paths. Retired Korolev Linux facts SHALL be absent.
+
+#### Scenario: Initialize an existing checkout
+
+- **WHEN** chezmoi initializes from the local reviewed checkout
+- **THEN** subsequent apply uses that checkout and explicit machine data
+- **AND** initialization stays separate from apply for preview
+
+#### Scenario: Select the supported platform
+
+- **WHEN** Korolev initializes chezmoi from its native checkout
+- **THEN** Windows-qualified facts select its standard user/home/source paths
+- **AND** no Linux platform data or UNC NixOS source supplies user configuration
+
 ## MODIFIED Requirements
 
 ### Requirement: One owner for each user destination
@@ -23,22 +41,6 @@ Chezmoi SHALL own managed user files/setup from home; platform configuration SHA
 - **THEN** the Mac retains Herdr, Ghostty's host cask/Dock and chezmoi theme/settings
 - **AND** Herdr integration remains an explicit Mac owner operation, never an activation/chezmoi-owned OMP file
 - **AND** no retired WSL secondary tool package set remains
-
-### Requirement: Local source and machine selection
-
-Each machine's chezmoi configuration SHALL record its own stable checkout as sourceDir and explicit data.host, using home as source root. Destinations SHALL stay outside sourceDir; apply SHALL require no second clone or hostname inference. Mac Darwin and Korolev Windows platform facts SHALL select distinct users/paths. Retired Korolev Linux facts SHALL be absent.
-
-#### Scenario: Initialize an existing checkout
-
-- **WHEN** chezmoi initializes from the local reviewed checkout
-- **THEN** subsequent apply uses that checkout and explicit machine data
-- **AND** initialization stays separate from apply for preview
-
-#### Scenario: Select the supported platform
-
-- **WHEN** Korolev initializes chezmoi from its native checkout
-- **THEN** Windows-qualified facts select its standard user/home/source paths
-- **AND** no Linux platform data or UNC NixOS source supplies user configuration
 
 ### Requirement: Private age credentials remain host-local
 
@@ -91,3 +93,10 @@ User-configuration acceptance SHALL require applicable Mac/CI builds/checks, nat
 
 - **WHEN** only evaluation/build/sandbox checks have passed
 - **THEN** acceptance remains incomplete until owner-assisted live apply and consumer verification finish
+
+## REMOVED Requirements
+
+### Requirement: Local source and machine selection
+
+**Reason**: Its scenario about Windows and WSL sharing a machine name describes a retired host.
+**Migration**: Use `Checkout and machine selection`, which keeps sourceDir, explicit data.host and distinct Mac and Windows platform facts.
