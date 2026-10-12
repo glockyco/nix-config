@@ -1,11 +1,6 @@
-{
-  config,
-  inputs,
-  ...
-}:
+{ inputs, ... }:
 
 let
-  inherit (config.host) username;
   shared = import ../shared;
   inherit (shared) binaryCaches;
   nixPolicy = shared.nixPolicy { nixpkgs = inputs.nixpkgs; };
@@ -40,13 +35,6 @@ in
       # `cache.nixos.org`.
       extra-substituters = binaryCaches.substituters;
       extra-trusted-public-keys = binaryCaches.trustedPublicKeys;
-
-      # Trust the SSH login user so this remote builder can import unsigned
-      # store paths that korolev sends for a build.
-      trusted-users = [
-        "root"
-        username
-      ];
     };
   };
 }

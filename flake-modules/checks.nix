@@ -166,7 +166,8 @@
             assert hostConfig.services.tailscale.enable;
             assert hostConfig.services.tailscale.extraSetFlags == [ "--ssh=false" ];
             assert !hostConfig.services.openssh.enable;
-            assert lib.elem host.username hostConfig.determinateNix.customSettings.trusted-users;
+            # No WSL builder imports unsigned paths any more, so the login user is not a trusted Nix user.
+            assert !(lib.elem host.username (hostConfig.determinateNix.customSettings.trusted-users or [ ]));
             assert !(builtins.hasAttr "ssh/authorized_keys.d/${host.username}" hostConfig.environment.etc);
             assert lib.hasInfix "AuthorizedKeysFile ${authorizedKeysFile}" sshdConfig;
             assert lib.hasInfix "StrictModes yes" sshdConfig;
