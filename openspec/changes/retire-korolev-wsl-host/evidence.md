@@ -133,6 +133,10 @@ CI's Linux job runs `nix flake check` with the Determinate Nix that the action i
 
 #99 merged as `6f9b477` with every required check green. The `check` run on `main` passed, and `tailnet-policy` run `38313906851` applied the reordered policy (`apply: success`). Afterwards Korolev's `macbook-pro-batch` and the Mac's `korolev-batch` each returned 23. The Mac's checkout fast-forwarded to `6f9b477` with no pending chezmoi change. Its next system differs from the running one only in `nix.custom.conf`, where `trusted-users` disappears, and in the authorized-keys file. Task 6.6 waits for the owner's `darwin-switch`.
 
+## Task 6.6: Mac activation
+
+On 2026-10-13 `darwin-switch` ran from Korolev in a terminal where the owner typed the password. It switched to `0jq2qnf6fd9bdl2b4yb752wyfhs89w40-darwin-system-26.05.c3e90c8` with no version changes, and its chezmoi apply changed nothing. Afterwards the WSL root builder key and the WSL user key each got `Permission denied (publickey)` from the Mac, while Korolev's Windows key returned 23. The authorized-keys file holds one line and `nix.custom.conf` has no `trusted-users`.
+
 ## Task 7.3: branch protection
 
 On 2026-10-13 the owner authorized requiring the OpenSpec job but not up-to-date branches, so auto-merge does not need a rebase and a second CI run whenever pull requests overlap. Main now requires `check (macos-15)`, `check (ubuntu-latest)`, `check (windows-latest)`, `test` and `openspec / validate`, with `strict` false. Administrators are included, history must stay linear, and force pushes and deletions are refused. No required context belongs to the removed host, because the Linux job keeps its name and now runs only the generic checks. The spec delta for required merge checks states the up-to-date exception.
