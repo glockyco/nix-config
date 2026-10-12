@@ -40,7 +40,14 @@ try {
     foreach ($fixture in @('chezmoi-core.ps1', 'chezmoi-apps.ps1', 'archive-regressions.ps1', 'wsl-hook-regressions.ps1')) {
       $fixturePath = Join-Path $PSScriptRoot "tests/$fixture"
       Assert-Contract (Test-Path -LiteralPath $fixturePath -PathType Leaf) "fixture ${fixture}: required Windows fixture is missing"
-      & $fixturePath -RepositoryRoot $repositoryRoot
+      if ($fixture -eq 'archive-regressions.ps1') {
+        # Native development archive delivery now has one PowerShell 7 host.
+        $coreHost = Get-Command pwsh.exe -CommandType Application -ErrorAction Stop
+        & $coreHost.Source -NoProfile -NonInteractive -File $fixturePath -RepositoryRoot $repositoryRoot
+        Assert-Contract ($LASTEXITCODE -eq 0) "fixture ${fixture}: PowerShell 7 archive checks exited $LASTEXITCODE"
+      } else {
+        & $fixturePath -RepositoryRoot $repositoryRoot
+      }
     }
   }
   Write-Output 'windows/check.ps1: native document invariants and script parsing passed'
