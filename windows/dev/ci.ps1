@@ -26,7 +26,8 @@ $directories = @('git', 'ssh', 'chezmoi', 'powershell', 'dsc', 'winget') | ForEa
 $env:PATH = (($directories | Select-Object -Unique) -join [IO.Path]::PathSeparator) + [IO.Path]::PathSeparator + $env:PATH
 # DSC's default AppX discovery extension finds WinGet's registered native manifest.
 Remove-Item Env:DSC_RESOURCE_PATH -ErrorAction SilentlyContinue
-$hostCommand = (Get-Process -Id $PID).Path
+$legacyHostCommand = (Get-Process -Id $PID).Path
+$hostCommand = $commands['powershell']
 $required = @(
   'windows/dev/bootstrap.ps1',
   'windows/dev/format.ps1',
@@ -45,16 +46,17 @@ foreach ($relative in $required) {
 function Invoke-CiScript {
   param([string]$RelativePath, [string[]]$ScriptArguments = @())
   Invoke-CiGate $RelativePath {
+    $command = if ($RelativePath.StartsWith('windows/dev/', [StringComparison]::Ordinal)) { $hostCommand } else { $legacyHostCommand }
     $arguments = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $RepositoryRoot $RelativePath)) + $ScriptArguments
     $global:LASTEXITCODE = 0
-    & $hostCommand @arguments
+    & $command @arguments
     Assert-CiDependency ($LASTEXITCODE -eq 0) "gate $RelativePath exited $LASTEXITCODE"
   }
 }
 $bootstrapArguments = @('-RepositoryRoot', $RepositoryRoot, '-IncludeTestDependencies', '-SkipHook')
 if ($ArchiveCacheRoot) { $bootstrapArguments += @('-ArchiveCacheRoot', $ArchiveCacheRoot) }
 Invoke-CiScript 'windows/dev/bootstrap.ps1' $bootstrapArguments
-# The workflow checks formatting once; formatter fixtures still run on both hosts.
+# Native development fixtures run only in pwsh. The legacy document retains both hosts.
 foreach ($relative in @('windows/dev/tests/formatting.ps1', 'windows/dev/tests/bootstrap.ps1', 'windows/dev/tests/hook.ps1', 'windows/dev/tests/contract-parsing.ps1')) {
   Invoke-CiScript $relative @('-RepositoryRoot', $RepositoryRoot)
 }

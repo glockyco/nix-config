@@ -43,8 +43,7 @@ function Get-FormattingPlan {
 
 function ConvertTo-NativeArgument {
     param([string]$Value)
-    # CommandLineToArgvW quoting for Windows PowerShell's ProcessStartInfo.
-    # WSL parses option tokens before its Linux command line; quote only when needed.
+    # Retained for the legacy WSL quoting regression fixtures during parallel migration.
     if ($Value.Length -gt 0 -and $Value -notmatch '[\s"]') { return $Value }
     '"' + [regex]::Replace([regex]::Replace($Value, '(\\*)"', '$1$1\"'), '(\\+)$', '$1$1') + '"'
 }
@@ -53,7 +52,7 @@ function Invoke-CapturedProcess {
     param([string]$Command, [string[]]$Arguments, [string]$WorkingDirectory)
     $info = New-Object System.Diagnostics.ProcessStartInfo
     $info.FileName = $Command
-    $info.Arguments = (@($Arguments | ForEach-Object { ConvertTo-NativeArgument $_ }) -join ' ')
+    foreach ($argument in $Arguments) { $info.ArgumentList.Add($argument) }
     $info.WorkingDirectory = $WorkingDirectory
     $info.UseShellExecute = $false
     $info.RedirectStandardOutput = $true
@@ -98,18 +97,44 @@ function Invoke-NativeFormatting {
             $configurations[$entry.name] = $configurationPath
         }
     }
-    foreach ($entry in $plan) {
-        $file = Join-Path $RepositoryRoot $entry.path
-        if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Tracked formatter input is missing: $($entry.path)" }
-        $before = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash
+    # All declared native formatters accept multiple paths. Batch by priority so
+    # Ruff fixes still precede Ruff formatting, without one process per file.
+    foreach ($group in @($plan | Group-Object name | Sort-Object { $_.Group[0].priority }, Name)) {
+        $entry = $group.Group[0]
         $tool = $tools[$entry.name]
-        # Go glob-based tools treat backslashes as escapes, even on Windows.
-        $argumentPath = if ($env:OS -eq 'Windows_NT') { $file.Replace('\', '/') } else { $file }
         $options = @($entry.options | ForEach-Object { if ($_ -eq '@configuration@') { $configurations[$entry.name] } else { $_ } })
-        $arguments = @($tool.prefixArguments) + $options + @($argumentPath)
-        & $tool.command @arguments
-        if ($LASTEXITCODE -ne 0) { throw "$($entry.name) failed (exit $LASTEXITCODE): $($entry.path)" }
-        if ($Check -and (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $before) { $changed.Add($entry.path) }
+        $prefix = @($tool.prefixArguments) + $options
+        $before = @{}
+        $batches = New-Object 'System.Collections.Generic.List[object]'
+        $batch = New-Object 'System.Collections.Generic.List[string]'
+        $length = ($tool.command.Length + (($prefix -join ' ').Length) + 4)
+        foreach ($inputFile in $group.Group) {
+            $file = Join-Path $RepositoryRoot $inputFile.path
+            if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Tracked formatter input is missing: $($inputFile.path)" }
+            if ($Check) { $before[$inputFile.path] = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash }
+            # Go glob-based tools treat backslashes as escapes, even on Windows.
+            $argumentPath = if ($env:OS -eq 'Windows_NT') { $file.Replace('\', '/') } else { $file }
+            # Leave room below Windows' command-line limit for quoting and options.
+            if ($batch.Count -gt 0 -and $length + $argumentPath.Length + 3 -gt 16000) {
+                $batches.Add($batch.ToArray())
+                $batch.Clear()
+                $length = ($tool.command.Length + (($prefix -join ' ').Length) + 4)
+            }
+            $batch.Add($argumentPath)
+            $length += $argumentPath.Length + 3
+        }
+        if ($batch.Count -gt 0) { $batches.Add($batch.ToArray()) }
+        foreach ($pathsBatch in $batches) {
+            $arguments = $prefix + @($pathsBatch)
+            & $tool.command @arguments
+            if ($LASTEXITCODE -ne 0) { throw "$($entry.name) failed (exit $LASTEXITCODE): $($pathsBatch -join ', ')" }
+        }
+        if ($Check) {
+            foreach ($inputFile in $group.Group) {
+                $file = Join-Path $RepositoryRoot $inputFile.path
+                if ((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $before[$inputFile.path]) { $changed.Add($inputFile.path) }
+            }
+        }
     }
     if ($changed.Count -gt 0) { throw "Unformatted native files (formatter changes retained; review and stage): $($changed -join ', ')" }
 }

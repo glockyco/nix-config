@@ -42,7 +42,7 @@ function Invoke-NativeCommitGate {
             # The checker owns its host scope; tools.ps1's StrictMode and helper
             # functions must not leak into optional document-property checks.
             $hostCommand = (Get-Process -Id $PID).Path
-            & $hostCommand -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $root 'windows/check.ps1') -SkipFixtures
+            & $hostCommand -NoProfile -NonInteractive -File (Join-Path $root 'windows/check.ps1') -SkipFixtures
             if ($LASTEXITCODE -ne 0) { throw "Windows invariant gate failed (exit $LASTEXITCODE)" }
         }
     )
@@ -54,6 +54,9 @@ function Invoke-NativeCommitGate {
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
-    try { Invoke-NativeCommitGate -RepositoryRoot ([IO.Path]::GetFullPath($RepositoryRoot)) -ToolsRoot $ToolsRoot }
+    try {
+        if ($PSVersionTable.PSVersion -lt [version]'7.4') { throw 'Native hooks require PowerShell 7.4 or later. Run windows/bootstrap.ps1.' }
+        Invoke-NativeCommitGate -RepositoryRoot ([IO.Path]::GetFullPath($RepositoryRoot)) -ToolsRoot $ToolsRoot
+    }
     catch { Write-Error $_; exit 1 }
 }

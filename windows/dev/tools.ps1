@@ -11,13 +11,10 @@ $script:NativeLockPath = Join-Path $PSScriptRoot 'dependencies.lock.json'
 
 function Invoke-NativeProcess {
     param([string]$Command, [string[]]$Arguments)
-    # PowerShell 5.1 can treat native stderr as an error record; the exit code is authoritative.
-    $savedPreference = $ErrorActionPreference
-    try {
-        $ErrorActionPreference = 'Continue'
-        $output = @(& $Command @Arguments 2>&1)
-        $code = $LASTEXITCODE
-    } finally { $ErrorActionPreference = $savedPreference }
+    # Native stderr is diagnostic output. Only the exit code decides success.
+    $PSNativeCommandUseErrorActionPreference = $false
+    $output = @(& $Command @Arguments 2>&1)
+    $code = $LASTEXITCODE
     [PSCustomObject]@{ ExitCode = $code; Output = (($output | ForEach-Object { "$_" }) -join "`n").Trim() }
 }
 
@@ -50,7 +47,7 @@ function Resolve-NativeLockedPath {
 
 function Get-NativeTool {
     param([Parameter(Mandatory = $true)][string]$Name, [Parameter(Mandatory = $true)][string]$ToolsRoot)
-    $diagnostic = 'Run powershell.exe -NoProfile -ExecutionPolicy Bypass -File windows/dev/bootstrap.ps1 from this native checkout (add -IncludeTestDependencies for test dependencies).'
+    $diagnostic = 'Run pwsh -NoProfile -NonInteractive -File windows/dev/bootstrap.ps1 from this native checkout (add -IncludeTestDependencies for test dependencies).'
     try {
         $lock = Get-NativeDependencies
         $manifestPath = Join-Path $ToolsRoot 'tools.json'
@@ -98,6 +95,7 @@ function Get-NativeTool {
 
 if ($HookName) {
     try {
+        if ($PSVersionTable.PSVersion -lt [version]'7.4') { throw 'Native tooling requires PowerShell 7.4 or later. Run windows/bootstrap.ps1.' }
         if ($HookName -cne 'pre-commit') { throw "Unsupported native hook: $HookName" }
         $root = Get-NativeToolsRoot -RepositoryRoot $RepositoryRoot
         $tool = Get-NativeTool -Name lefthook -ToolsRoot $root

@@ -130,6 +130,15 @@ try {
     $hook = Get-NativeHookPath -RepositoryRoot $checkout
     $hookBytes = [IO.File]::ReadAllBytes($hook)
     Assert-BootstrapFixture -Condition ($hookBytes[0] -eq 35 -and [IO.File]::ReadAllText($hook) -ceq (Get-NativeHookContent)) -Message 'hook has a BOM or differs from the owned launcher'
+    $launcher = [IO.File]::ReadAllText($hook)
+    Assert-BootstrapFixture -Condition ($launcher.Contains('exec pwsh.exe -NoProfile -NonInteractive -File') -and -not $launcher.Contains('powershell.exe')) -Message 'hook did not dispatch exclusively to pwsh'
+    $previous = $launcher.Replace('native pre-commit v2', 'native pre-commit v1').
+        Replace('pwsh.exe', 'powershell.exe').
+        Replace('PowerShell 7 is required; run windows/bootstrap.ps1.', 'Windows PowerShell is required; run windows/dev/bootstrap.ps1.').
+        Replace('-NoProfile -NonInteractive -File', '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File')
+    [IO.File]::WriteAllText($hook, $previous)
+    Install-NativeHook -RepositoryRoot $checkout
+    Assert-BootstrapFixture -Condition ([IO.File]::ReadAllText($hook) -ceq $launcher) -Message 'exact prior owned hook was not migrated to pwsh'
     $downloads = $script:DownloadCount
     $processes = $script:ProcessCount
     Invoke-NativeBootstrap -RepositoryRoot $checkout | Out-Null
