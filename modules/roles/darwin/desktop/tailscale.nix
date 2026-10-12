@@ -8,14 +8,10 @@ let
   inherit (import ../../../shared) tailnetDnsDomain;
   cfg = config.services.tailscale;
   tailscaleSetAfterLogin = pkgs.tailscale-set-after-login.override { tailscale = cfg.package; };
-  # The builder key runs build commands only; `restrict` denies it a terminal.
-  # Korolev's user keys administer the Mac and need a terminal for sudo
-  # prompts: `korolev` is the WSL user and `korolev-windows` the native Windows
-  # user that replaces it. The daemon denies forwarding and tunnels to every
-  # key. Remove a line and reactivate to revoke that key alone.
+  # Korolev's native Windows user administers the Mac and needs a terminal for
+  # sudo prompts. The daemon denies forwarding and tunnels to every key.
+  # Remove a line and reactivate to revoke that key alone.
   authorizedKeys = pkgs.writeText "macbook-pro-tailnet-authorized-keys" ''
-    restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICv/rjs4XMaAm1F3k7J+SAmJ/Sf40O6ZLEh5sX/pTP8b korolev-builder
-    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINTT3Y5IkPl+gxlkheeP5SVFrcpHi3SGNpDgLbnW8qw8 korolev
     ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOdM+z+Cp2wKP0mXqJgBHQqaA/Qbf1x9w8/cDSWQNo9l korolev-windows
   '';
   authorizedKeysDirectory = "/var/lib/tailnet-sshd/authorized_keys";
