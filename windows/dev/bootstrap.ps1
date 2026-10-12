@@ -1,3 +1,4 @@
+#Requires -Version 7.4
 [CmdletBinding()]
 param(
     [string]$RepositoryRoot,
@@ -14,11 +15,11 @@ if (-not $RepositoryRoot) { $RepositoryRoot = Split-Path (Split-Path $PSScriptRo
 
 function Receive-NativeArtifact {
     param([string]$Uri, [string]$Destination)
-    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    # PowerShell 7 uses the operating system's HTTPS protocol defaults.
     $savedProgressPreference = $ProgressPreference
     try {
         $ProgressPreference = 'SilentlyContinue'
-        Invoke-WebRequest -UseBasicParsing -Uri $Uri -OutFile $Destination
+        Invoke-WebRequest -Uri $Uri -OutFile $Destination
     } finally { $ProgressPreference = $savedProgressPreference }
 }
 
@@ -70,17 +71,17 @@ function Get-NativeHookContent {
     # Git's sh quotes paths (including UNC roots and spaces); PowerShell never depends on a profile or PATH formatter.
     @'
 #!/bin/sh
-# nix-config managed native pre-commit v1
+# nix-config managed native pre-commit v2
 root=$(git rev-parse --show-toplevel) || exit $?
-if ! command -v powershell.exe >/dev/null 2>&1; then
-  echo 'Native development environment missing: Windows PowerShell is required; run windows/dev/bootstrap.ps1.' >&2
+if ! command -v pwsh.exe >/dev/null 2>&1; then
+  echo 'Native development environment missing: PowerShell 7 is required; run windows/bootstrap.ps1.' >&2
   exit 1
 fi
 if [ ! -f "$root/windows/dev/tools.ps1" ]; then
   echo 'Native development environment missing: restore windows/dev/tools.ps1 and run windows/dev/bootstrap.ps1.' >&2
   exit 1
 fi
-exec powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$root/windows/dev/tools.ps1" -HookName pre-commit -RepositoryRoot "$root"
+exec pwsh.exe -NoProfile -NonInteractive -File "$root/windows/dev/tools.ps1" -HookName pre-commit -RepositoryRoot "$root"
 '@ + "`n"
 }
 
@@ -95,7 +96,15 @@ function Get-NativeHookPath {
 
 function Assert-NativeHookOwnership {
     param([string]$HookPath)
-    if ((Test-Path -LiteralPath $HookPath) -and [IO.File]::ReadAllText($HookPath) -cne (Get-NativeHookContent)) {
+    if (-not (Test-Path -LiteralPath $HookPath)) { return }
+    $content = [IO.File]::ReadAllText($HookPath)
+    $expected = Get-NativeHookContent
+    # Only migrate the exact prior repository-owned launcher, never a modified hook.
+    $previous = $expected.Replace('native pre-commit v2', 'native pre-commit v1').
+        Replace('pwsh.exe', 'powershell.exe').
+        Replace('PowerShell 7 is required; run windows/bootstrap.ps1.', 'Windows PowerShell is required; run windows/dev/bootstrap.ps1.').
+        Replace('-NoProfile -NonInteractive -File', '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File')
+    if ($content -cne $expected -and $content -cne $previous) {
         throw "Refusing to replace unrelated or modified hook '$HookPath'; review it before native bootstrap."
     }
 }
@@ -104,7 +113,7 @@ function Install-NativeHook {
     param([string]$RepositoryRoot)
     $hookPath = Get-NativeHookPath -RepositoryRoot $RepositoryRoot
     Assert-NativeHookOwnership -HookPath $hookPath
-    if (-not (Test-Path -LiteralPath $hookPath)) {
+    if (-not (Test-Path -LiteralPath $hookPath) -or [IO.File]::ReadAllText($hookPath) -cne (Get-NativeHookContent)) {
         $null = New-Item -ItemType Directory -Path (Split-Path $hookPath -Parent) -Force
         [IO.File]::WriteAllText($hookPath, (Get-NativeHookContent), (New-Object Text.UTF8Encoding($false)))
     }
