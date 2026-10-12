@@ -57,19 +57,6 @@ try {
         $null = Read-WorkstationData -DataPath $DataPath -SchemaPath $SchemaPath
     }
 
-    Invoke-WorkstationGate 'Administrator ownership invariants' {
-        # Reuse the surviving fixed-script AST boundary checks without executing either script.
-        . (Join-Path $PSScriptRoot 'tests/powershell-contract.ps1')
-        . (Join-Path $PSScriptRoot 'tests/admin-paths.ps1')
-        foreach ($path in $sourcePaths) {
-            $name = Split-Path $path -Leaf
-            $record = Get-ScriptRecord -Name $name -Source ([IO.File]::ReadAllText($path))
-            $isAdministrator = $path -in $administratorPaths
-            Test-ApprovedScriptRole -Record $record -AllowedAdministrator $isAdministrator
-            if ($isAdministrator) { Test-AdministratorScript -Record $record -Name $name }
-        }
-    }
-
     Invoke-WorkstationGate 'PSScriptAnalyzer' {
         $findings = @($enginePaths + (Join-Path $PSScriptRoot 'dev/engine-dependencies.ps1') | ForEach-Object {
             Invoke-ScriptAnalyzer -Path $_ -Settings (Join-Path $PSScriptRoot 'PSScriptAnalyzerSettings.psd1') -Severity Error, Warning

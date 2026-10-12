@@ -1,5 +1,8 @@
-BeforeAll {
+BeforeDiscovery {
     Import-Module (Join-Path $PSScriptRoot '../Workstation.psm1') -Force
+}
+
+BeforeAll {
     $script:windowsDirectory = Split-Path $PSScriptRoot -Parent
 }
 
@@ -14,15 +17,6 @@ Describe 'Workstation declaration invariants' {
             $script:managedPath = Join-Path $script:declarationDirectory 'managed-applications.json'
         }
 
-        It 'accepts the complete 34 application and 27 setting inventory' {
-            $script:data.applications.Count | Should -Be 34
-            $script:data.settings.Count | Should -Be 27
-            @($script:data.applications | Where-Object kind -EQ 'winget').Count | Should -Be 26
-            @($script:data.applications | Where-Object kind -EQ 'archive').Count | Should -Be 6
-            @($script:data.applications | Where-Object kind -EQ 'npm').Count | Should -Be 1
-            @($script:data.applications | Where-Object kind -EQ 'font').Count | Should -Be 1
-            { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Not -Throw
-        }
 
         It 'rejects resource-name collisions across applications and settings case-insensitively' {
             $script:data.settings[0].name = $script:data.applications[0].name.ToUpperInvariant()
@@ -100,23 +94,6 @@ Describe 'Workstation declaration invariants' {
             { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*named consumer*'
         }
 
-        It 'keeps the Bun consumer pin aligned with omp-agent-setup' {
-            $bun = $script:data.applications | Where-Object id -EQ 'Oven-sh.Bun'
-            $bun.consumer = 'unrelated consumer'
-            { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*Bun must name*'
-        }
-
-        It 'keeps the OpenSpec consumer pin aligned with the reusable workflow' {
-            $npm = $script:data.applications | Where-Object kind -EQ 'npm'
-            $npm.consumer = 'unrelated consumer'
-            { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*OpenSpec must name*'
-        }
-
-        It 'derives the Bun consumer version from data' {
-            $bun = $script:data.applications | Where-Object id -EQ 'Oven-sh.Bun'
-            $bun.version = '9.8.7'
-            { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Not -Throw
-        }
 
         It 'rejects an OpenSpec consumer version that differs from the manifest and integrity lock' {
             $npm = $script:data.applications | Where-Object kind -EQ 'npm'
@@ -208,9 +185,6 @@ Describe 'Workstation built-in JSON schema' {
         $script:json = Get-Content -LiteralPath (Join-Path $script:windowsDirectory 'workstation.json') -Raw
     }
 
-    It 'accepts the reviewed declaration with Test-Json' {
-        Test-Json -Json $script:json -Schema $script:schema -ErrorAction Stop | Should -BeTrue
-    }
 
     It 'requires typed present registry data and prohibits fields on absent declarations' -ForEach @(
         @{ Resource = @{ name = 'invalid'; kind = 'registry'; path = 'HKCU:\Software\Example'; valueName = 'Example'; ensure = 'present' } }

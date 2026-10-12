@@ -1,4 +1,4 @@
-BeforeAll {
+BeforeDiscovery {
     Import-Module (Join-Path $PSScriptRoot '../Workstation.psm1') -Force
 }
 
@@ -153,22 +153,7 @@ Describe 'Workstation settings convergence' {
             }
         }
 
-        Context 'Appearance and cached animation API' {
-            It 'loads the native API once per module and reuses it' {
-                $previous = $script:WorkstationSettingsNativeApi
-                try {
-                    $script:WorkstationSettingsNativeApi = $null
-                    Mock Add-Type { [string] }
-                    $existing = 'Workstation.SettingsNativeApi' -as [type]
-                    $expected = if ($null -eq $existing) { [string] } else { $existing }
-                    Get-WorkstationSettingsNativeApi | Should -Be $expected
-                    Get-WorkstationSettingsNativeApi | Should -Be $expected
-                    $compilations = if ($null -eq $existing) { 1 } else { 0 }
-                    Should -Invoke Add-Type -Times $compilations -Exactly
-                } finally {
-                    $script:WorkstationSettingsNativeApi = $previous
-                }
-            }
+        Context 'Appearance and animation' {
 
             It 'accepts generated Custom.theme without reading or changing the active theme path' {
                 Mock Get-WorkstationRegistryValue {

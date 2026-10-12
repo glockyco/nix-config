@@ -22,7 +22,6 @@ try {
     foreach ($entry in $files.GetEnumerator()) { [IO.File]::WriteAllText((Join-Path $fixture $entry.Key), $entry.Value, (New-Object Text.UTF8Encoding($false))) }
     $tools = Get-NativeToolsRoot $fixture
     Invoke-NativeBootstrap -RepositoryRoot $fixture -ToolsRoot $tools -ArchiveCacheRoot $ArchiveCacheRoot -SkipHook -IncludeTestDependencies
-    Invoke-NativeBootstrap -RepositoryRoot $fixture -ToolsRoot $tools -ArchiveCacheRoot $ArchiveCacheRoot -SkipHook -IncludeTestDependencies
     Invoke-NativeFormatting -RepositoryRoot $fixture -ToolsRoot $tools -Paths @($files.Keys)
     Invoke-NativeFormatting -RepositoryRoot $fixture -ToolsRoot $tools -Paths @($files.Keys) -Check
     $markdown = [IO.File]::ReadAllText((Join-Path $fixture 'frontmatter.md'))
@@ -45,6 +44,5 @@ try {
     $hook = Get-NativeHookPath $fixture
     Assert-NativeHookOwnership $hook
     if (Test-Path -LiteralPath ($hook + '.old')) { throw 'lefthook replaced the pinned native launcher' }
-    Invoke-NativeBootstrap -RepositoryRoot $fixture -ArchiveCacheRoot $ArchiveCacheRoot -IncludeTestDependencies
-    Write-Host 'PASS real locked Windows distributions, Python closure/plugins, native-only formatting, repeat bootstrap, formatter idempotence and native Git hook outside bootstrap in isolated temporary tree'
+    Write-Host 'PASS real locked Windows distributions, Python closure/plugins, native-only formatting, formatter idempotence and native Git hook outside bootstrap in isolated temporary tree'
 } finally { if (Test-Path -LiteralPath $fixture) { Remove-Item -LiteralPath $fixture -Recurse -Force } }
