@@ -397,13 +397,6 @@
           peers = tailnetPeers;
           inherit tailnetPolicyRenderer;
         };
-        openspecContracts = inputs.personal-omp-plugin.lib.openspecCheck {
-          inherit pkgs;
-          src = ../.;
-          name = "check-openspec-contracts";
-        };
-        # The plugin's tracked adapters must match this repository's OpenSpec.
-        openspecAdapters = inputs.personal-omp-plugin.checks.${system}.openspec-adapters;
         fleetSurface =
           assert lib.assertMsg (
             missingFiles == [ ]

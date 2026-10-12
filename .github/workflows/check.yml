@@ -44,8 +44,8 @@ jobs:
               ]).decode("utf-8").split("\0")
               for path in filter(None, paths):
                   classified = False
-                  # These include content read by fleetSurface, OpenSpec and
-                  # chezmoi checks.
+                  # These include content read by fleetSurface, chezmoi and
+                  # formatting checks.
                   if (
                       path.endswith(".nix")
                       or path in ("flake.lock", "formatting.json", ".chezmoiroot")

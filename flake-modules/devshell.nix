@@ -27,6 +27,9 @@ in
           # `nix fmt` and `checks.treefmt` run the same one.
           config.treefmt.build.wrapper
 
+          # The commit hook validates staged OpenSpec artifacts with this CLI.
+          pkgs.openspec
+
           # The interpreter comes from the pinned nixpkgs, and every
           # consumer names it independently: this shell, the `fastmail`
           # wrapper and the apple-terminal activation script. The shell

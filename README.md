@@ -28,11 +28,12 @@ Host facts live in `hosts/<name>/host.nix`, typed by [modules/fleet/host.nix](mo
 
 ### macOS
 
-`nix develop` enters the pinned environment and installs the commit hook. `direnv allow` uses the same shell. Run the checks from the repository root, one Nix command at a time, because concurrent evaluations contend for the evaluation cache:
+`nix develop` enters the pinned environment and installs the commit hook. The hook formats staged files and validates OpenSpec when files below `openspec/` are staged. `direnv allow` uses the same shell. Run the checks from the repository root, one Nix command at a time, because concurrent evaluations contend for the evaluation cache:
 
 ```sh
 nix fmt -- --fail-on-change
 openspec validate --all --strict
+openspec validate --archived --strict
 nix flake check --print-build-logs
 nix run .#check-darwin-build-plans
 nix build .#darwinConfigurations.macbook-pro.system
@@ -51,7 +52,7 @@ pwsh -NoProfile -File .\windows\dev\format.ps1 -Check
 pwsh -NoProfile -File .\windows\dev\ci.ps1
 ```
 
-The tools live below the checkout's Git directory and are pinned in `windows/dev/dependencies.lock.json`. `ci.ps1` validates the declaration and runs the mocked engine tests and chezmoi fixtures. It never changes the real machine. The pre-commit hook runs the static checks. Windows has no Nix, so the hook only names staged `.nix` files, and CI's Nix formatting check is their gate.
+The tools live below the checkout's Git directory and are pinned in `windows/dev/dependencies.lock.json`. `ci.ps1` validates the declaration and runs the mocked engine tests and chezmoi fixtures. It never changes the real machine. The pre-commit hook runs the static checks, and both OpenSpec validations with the workstation's pinned CLI when files below `openspec/` are staged. Windows has no Nix, so the hook only names staged `.nix` files, and CI's Nix formatting check is their gate.
 
 Before merging a change to `windows/` or to Windows files in `home/`, run the engine's dry run and `chezmoi apply` on Korolev from the PR branch. See [Korolev Windows](docs/operations/korolev-windows.md).
 
@@ -147,14 +148,7 @@ Only the owner runs `push`, and only when the preview shows the intended changes
 
 ## Update
 
-[Dependency automation](https://github.com/glockyco/dependency-automation) opens Nix input PRs every Saturday and Renovate updates GitHub Actions. Neither merges nor activates anything. [Dependency operations](docs/operations/dependency-updates.md) covers Plannotator and other manual updates. For a manual Nix update, run one of these, review the diff and run the checks:
-
-```sh
-nix flake update                       # all inputs
-nix flake update personal-omp-plugin   # OpenSpec check tools only
-```
-
-The `personal-omp-plugin` input supplies only the OpenSpec checks. It does not change the plugin that hosts run.
+[Dependency automation](https://github.com/glockyco/dependency-automation) opens Nix input PRs every Saturday and Renovate updates GitHub Actions. Neither merges nor activates anything. [Dependency operations](docs/operations/dependency-updates.md) covers OpenSpec, Plannotator and other manual updates. For a manual Nix update, run `nix flake update`, or `nix flake update <input>` for one input, then review the diff and run the checks.
 
 ## Recover
 

@@ -6,6 +6,7 @@
 | GitHub Actions                    | Renovate PRs                                                                                         |
 | Markdown Oxide and Roslyn         | By hand in their package declarations, see [pinned artifacts](#pinned-artifacts)                     |
 | Plannotator                       | By hand, see [Plannotator](#plannotator)                                                             |
+| OpenSpec                          | By hand, see [OpenSpec](#openspec)                                                                   |
 | OMP and the personal plugin       | Their own commands, see the [README](../../README.md#omp)                                            |
 | Windows applications and TeX Live | See [Korolev Windows](korolev-windows.md#change-or-update-something)                                 |
 | The personal desktop's OpenSSH    | By hand, see [Personal desktop](desktop.md#openssh-server-updates)                                   |
@@ -18,7 +19,7 @@ No updater merges or activates anything. The dependency automation repository ow
 
 ## OpenSpec
 
-The `personal-omp-plugin` input supplies only the OpenSpec checks. After an OpenSpec update, regenerate the adapters and release the plugin in [omp-agent-setup](https://github.com/glockyco/omp-agent-setup#release-flow), then advance the input here.
+CI validates with the version that omp-agent-setup's [reusable workflow](https://github.com/glockyco/omp-agent-setup/blob/main/.github/workflows/openspec.yml) installs, called at a full commit in [check.yml](../../.github/workflows/check.yml). Windows pins the same version in [windows/npm](../../windows/npm/package.json) for its commit hook. The Mac's CLI comes from the `llm-agents` input and moves with the Nix inputs. After an OpenSpec update, regenerate the adapters and release the plugin in [omp-agent-setup](https://github.com/glockyco/omp-agent-setup#release-flow), then advance the workflow commit and the Windows pin together.
 
 ## Plannotator
 

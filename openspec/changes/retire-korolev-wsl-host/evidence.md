@@ -107,7 +107,15 @@ The reviewed v0.4.0 annotated tag resolves to commit `aa97a3febee50f00ee7e4e43a8
 
 Local fixtures executed the released workflow's exact gate script. A CLI double without `--archived` failed with the declared unsupported-archive diagnostic. Nonzero all-contract and archived validation each failed the gate. The successful fixture recorded exactly `validate --help`, `validate --all --strict --no-interactive` and `validate --archived --strict --no-interactive`. All fixture scratch directories were removed.
 
-Task 4.7 remains unchecked. `personal-omp-plugin`, `openspecContracts` and `openspecAdapters` remain in the flake and lock. This CI addition does not claim local-hook cutover or authorize their removal.
+## Tasks 4.1, 4.5, 4.6 and 4.7: local OpenSpec gates
+
+`lefthook.yml` gained two pre-commit jobs that run only when files below `openspec/` are staged. `openspec-unix` runs inside `nix develop`, whose shell now provides `pkgs.openspec`. `openspec-windows` runs `windows/dev/openspec.ps1`, which resolves the CLI from the application with the `openspec` role in `windows/workstation.json`, at `%LOCALAPPDATA%\Programs\npm\node_modules\.bin\openspec.cmd`. Both guard `validate --help` for `--archived`, then run the two strict noninteractive validations with telemetry disabled. Neither installs anything at hook time.
+
+On Korolev, a disposable CLI double made the Windows gate fail with a named diagnostic for a missing CLI, version `1.13.0` against the pinned `1.14.0`, help without `--archived`, a failing `--all` (exit 3, archived validation not started) and a failing `--archived` (exit 4). The passing double received the four calls in order from the repository root with `OPENSPEC_TELEMETRY=0`, and the variable was restored afterwards. The real npm shim propagated exit 1 from a change without deltas. The real gate validated this checkout, 22 active and 48 archived items, in 7.5 seconds.
+
+On the Mac, the dev shell's `openspec --version` printed `1.14.0`. The Unix snippet, run against a double on `PATH`, exited 127 for a missing CLI, 1 without `--archived`, 3 and 4 for the failing validations, and 0 with telemetry disabled. In a fresh clone, `lefthook run pre-commit --all-files --job openspec-unix` passed in 3.99 seconds and skipped the job when no OpenSpec file was staged. A Git worktree cannot host that run, because lefthook's `git rev-parse --git-path hooks` fails there.
+
+No bootstrap, tool or CI script changed, because the Windows gate uses the workstation's declared CLI rather than a bootstrap copy. `nix flake lock` on the Mac removed `personal-omp-plugin` and its `llm-agents` and `nixpkgs` follows. `checks.aarch64-darwin` has no OpenSpec contract or adapter check left, and the CI classifier still sends `openspec/` to the Nix jobs because `checks.treefmt` formats its Markdown. omp-agent-setup's `lib.openspecCheck` is untouched.
 
 ## Affected-job and Darwin evaluation acceptance
 
