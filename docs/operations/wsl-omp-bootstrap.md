@@ -173,7 +173,7 @@ NixOS supplies the [loader and libraries](../../modules/roles/nixos/wsl-workstat
 
 ## Windows tailnet transport and WSL builder
 
-Windows owns the single reachable `korolev` / `tag:korolev` identity on tailnet `glockyco.github`, ID `TEHFqtX6D121CNTRL`. Follow the [owner-attended node migration and native OpenSSH runbook](korolev-remote-access.md); do not enroll Linux Tailscale or expose a WSL listener. MagicDNS uses the [shared domain](../../modules/shared/default.nix).
+Windows owns the single reachable `korolev` / `tag:korolev` identity on tailnet `glockyco.github`, ID `TEHFqtX6D121CNTRL`. Do not enroll Linux Tailscale or expose a WSL listener. MagicDNS uses the [shared domain](../../modules/shared/default.nix).
 
 WSL retains NAT, systemd-resolved and Windows DNS tunneling at the [declared upstream](../../modules/roles/nixos/wsl-workstation/wsl.nix), `10.255.255.254`. After cutover and an **owner-coordinated** `wsl --terminate NixOS`, reopen NixOS and verify `resolvectl status`, public DNS, applicable employer DNS and `getent ahosts macbook-pro.tail8768af.ts.net` as both user and root. No duplicate daemon or guessed DNS fallback is allowed.
 
