@@ -124,6 +124,7 @@ exit $LASTEXITCODE
   Assert-Core (-not (@($managed | Where-Object { $_ -match 'credentials|hosts\.yml|\.omp|Library/' }).Count)) 'native source must not manage Mac secrets or authentication/runtime state'
   $ghConfig = [IO.File]::ReadAllText((Join-Path $target 'AppData/Roaming/GitHub CLI/config.yml'))
   Assert-Core ($ghConfig -match '(?m)^git_protocol: https\r?$' -and $ghConfig -notmatch 'oauth|token|user:') 'native gh config must select HTTPS without auth state'
+  Assert-Core ($ghConfig -ceq "version: `"1`"`ngit_protocol: https`neditor: `"`"`naliases: {}`n") 'native gh config must match gh serialization without an extra blank line'
   function Get-CoreGit([string]$Key, [string]$Directory = $target) { Invoke-CoreNative git @('-C', $Directory, 'config', '--get', $Key) }
   foreach ($entry in @(@('init.defaultBranch', 'main'), @('pull.rebase', 'true'), @('push.autoSetupRemote', 'true'), @('core.autocrlf', 'input'), @('core.pager', 'delta'), @('interactive.diffFilter', 'delta --color-only'), @('filter.lfs.required', 'true'), @('filter.lfs.process', 'git-lfs filter-process'), @('credential.https://git.overleaf.com.provider', 'generic'))) {
     Assert-Core ((Get-CoreGit $entry[0]) -eq $entry[1]) "effective Git $($entry[0]) drifted"
