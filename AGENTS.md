@@ -1,25 +1,25 @@
 # Repository guidance
 
-[README](README.md) owns host commands and release gates. [Dependency operations](docs/operations/dependency-updates.md) covers updates, external authorization, and release recovery. Read declarations for configuration facts, not historical plans.
+The [README](README.md) covers hosts, checks, activation, updates and recovery. The guides in [docs/operations](docs/operations/) cover each host and recurring procedure. Read declarations for configuration facts.
 
 ## Changes
 
-Use OpenSpec for permanent behavior changes. Read all artifacts of the selected change before editing implementation files. Validate with `openspec validate <change> --strict`; archive only after every acceptance gate passes. Accepted contracts live in `openspec/specs/`.
+Use OpenSpec for permanent behavior changes. Read all artifacts of the selected change before editing implementation files. Validate with `openspec validate <change> --strict` and archive only after every acceptance gate passes. Accepted contracts live in `openspec/specs/`. An unchecked task or an `in-progress` status does not authorize deferred work.
 
-Retained exploratory and legacy plans remain discoverable through [their index](docs/plans/INDEX.md). Preserve each original until a separately reviewed migration verifies its complete replacement.
+The personal plugin owns the OpenSpec adapters, and its workflow commands are `/personal:opsx-*`. Do not run `openspec init` here. The `personal-omp-plugin` input only supplies the OpenSpec checks.
 
-An unchecked task or CLI `in-progress` status does not authorize deferred work. Respect each change's scheduling notice. Keep verification evidence with its change, not in a current-state manual.
-
-The personal plugin owns the generated OpenSpec adapters. Do not run `openspec init` here; regenerate adapters in `glockyco/omp-agent-setup`. This repository pins that input only for the build-time OpenSpec contract and adapter-freshness checks; hosts install the runtime plugin with OMP's plugin manager, and its workflow commands are `/personal:opsx-*`.
+[docs/plans](docs/plans/INDEX.md) holds old plans. Keep them until a reviewed change replaces them.
 
 ## Boundaries
 
-- Nix owns ordinary packages and host configuration, never OMP. On Linux/macOS, upstream OMP comes from the official installer (`--binary`) and updates with `omp update`; on Windows, Tern installs and updates OMP. The personal plugin installs and upgrades with `omp plugin` (see the README). OMP owns its configuration, authentication, sessions, and plugin cache. Do not add a wrapper, launcher flags, patched sources, executable fallbacks, or activation steps that install, update, or reconfigure OMP.
-- Chezmoi owns user destinations and setup from `home/`; Nix owns system-declared user packages, native shell plugins, system preferences/services and immutable `/etc/chezmoi-resources/`. Read shared TOML facts through the typed host registry in Nix and directly in templates; never duplicate them. System switch precedes ordinary-user apply; never run chezmoi as root or manage app runtime data. Zed/Karabiner modify filters preserve undeclared UI state. Recorded previews exclude decrypted credentials; only local Mac acceptance proves production recipient access.
-- Keep project SDKs, builds, deployment, and domain skills in their owning repositories. Add workstation LSP overrides only after representative project verification proves them necessary.
-- Do not install Nix inside CrossOver bottles. Activation may install CrossOver and create an empty bottle, but must not authenticate Steam, update games, install loaders, deploy mods, launch games, or delete bottle data.
-- Preserve Korolev's native Windows tailnet-address-only, key-only SSH boundary and WSL's no-listener/no-daemon boundary, plus the Mac's tailnet-only SSH listener. The builder private key stays root-owned outside the repository and Nix store, separate from Windows user keys; enrollment and credential rotation are explicit owner-attended operations. Retain local Windows Administrator and Mac recovery access for networking changes.
-- Do not execute Windows resources from Nix activation. Keep Windows application policy and administrator operations within the documented manual boundaries.
-- The borrowed Air is temporary, not a durable builder, storage, authentication, or release dependency. [Issue #17](https://github.com/glockyco/nix-config/issues/17) owns result preservation, revocation before return, and complete removal.
+- Nix owns packages and host configuration on macOS and Linux, never OMP. OMP comes from its official installer on macOS and from Tern on Windows, and the plugin manager installs its plugins. Do not add wrappers, launcher flags, patched sources or activation steps that install, update or reconfigure OMP.
+- Chezmoi owns user files from `home/`. Read shared TOML facts through the typed host registry in Nix and directly in templates, and never duplicate them. The system switch precedes the user apply. Never run chezmoi as root or let it manage application runtime data.
+- Keep project SDKs, builds and domain skills in their own repositories. Add a workstation language-server override only after a representative project proves it necessary.
+- Do not run Windows resources from Nix activation. The owner runs the two Administrator scripts in `windows/`, which are the only elevated operations.
+- Korolev's OpenSSH server listens only on tailnet addresses and accepts only keys. Keep local Administrator and Mac recovery access while changing networking.
+- Do not install Nix inside CrossOver bottles. Activation may install CrossOver and create an empty bottle, but must not sign in to Steam, update games, install loaders, deploy mods, launch games or delete bottle data.
+- The borrowed Air is temporary and must not become a builder, storage, authentication or release dependency. [Issue #17](https://github.com/glockyco/nix-config/issues/17) tracks its removal.
 
-Use the README gates before release and inspect activation output after review and merge. OMP or plugin behavior changes also require a real session smoke in Tern. Keep previous generations until applicable checks pass. Do not add another updater or scheduler. Nix dependency updates remain review-only.
+## Before merging
+
+Run the README checks for every platform a change touches. A Windows change also needs the engine's dry run and `chezmoi apply` on Korolev from the PR branch. An OMP or plugin change needs a fresh session in Tern. Keep previous generations until the checks pass. Do not add another updater or scheduler, and keep Nix dependency updates review-only.

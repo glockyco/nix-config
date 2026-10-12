@@ -1,104 +1,48 @@
 # nix-config
 
-Personal workstation configuration for an Apple Silicon MacBook Pro and Korolev's Windows-first workstation with secondary NixOS under WSL 2. Hand-maintained [Windows source](windows/) is applied separately; the flake manages Linux/macOS and [DNS](dns/dnsconfig.js).
+Configuration for an Apple Silicon MacBook Pro and Korolev, a Windows 11 work laptop. Nix configures the Mac, chezmoi manages user files on both, and a PowerShell 7 engine installs applications and settings on Windows. The flake also declares the tailnet policy and the [DNS zone](dns/dnsconfig.js).
 
-## System overview
+## Hosts
 
-| Host              | Platform                          | Configuration                                                          |
-| ----------------- | --------------------------------- | ---------------------------------------------------------------------- |
-| `macbook-pro`     | `aarch64-darwin`                  | [nix-darwin](hosts/macbook-pro/default.nix)                            |
-| `korolev`         | `x86_64-linux`                    | [NixOS/WSL](hosts/korolev/default.nix)                                 |
-| `korolev` Windows | Native Windows (not a Nix system) | [PowerShell engine and operations](docs/operations/korolev-windows.md) |
+| Host                | Platform                | Configured by                                             | Guide                                                                    |
+| ------------------- | ----------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `macbook-pro`       | macOS, `aarch64-darwin` | [nix-darwin](hosts/macbook-pro/default.nix) and chezmoi   | This README                                                              |
+| `korolev`           | Windows 11              | [PowerShell engine](windows/workstation.json) and chezmoi | [Korolev Windows](docs/operations/korolev-windows.md)                    |
+| `korolev` NixOS-WSL | `x86_64-linux`          | [NixOS](hosts/korolev/default.nix)                        | Being retired. See the [WSL guide](docs/operations/wsl-omp-bootstrap.md) |
 
-Host facts live in [typed declarations](modules/fleet/host.nix) under `hosts/<name>/host.nix`. Each `hosts/<name>/default.nix` selects its roles: the Mac selects [desktop](modules/roles/darwin/desktop/default.nix), [PostgreSQL](modules/roles/darwin/postgresql/default.nix), [container client](modules/roles/darwin/container-client/default.nix), and the temporary [Air client](modules/roles/darwin/air-client/default.nix); Korolev selects [WSL workstation](modules/roles/nixos/wsl-workstation/default.nix). The Darwin and NixOS baselines do not enable these functions on their own. Change a machine value in its host declaration and role policy in its role module.
+Host facts live in `hosts/<name>/host.nix`, typed by [modules/fleet/host.nix](modules/fleet/host.nix). Each `hosts/<name>/default.nix` selects roles from `modules/roles/`. Change a machine value in its host declaration and role policy in its role module.
 
-Nix owns Linux/macOS host configuration and ordinary tools, including their language servers, OpenSpec and Plannotator. On Windows, a PowerShell 7 engine installs applications and applies user settings from [`windows/workstation.json`](windows/workstation.json). See [Korolev Windows](docs/operations/korolev-windows.md). OMP and its plugins are installed outside Nix and the engine (see [OMP](#omp)). OMP owns its authentication, configuration, sessions and plugin cache. Project repositories own SDKs, root markers and build configuration.
+## Who owns what
 
-Chezmoi owns user files and user setup from [home/](home/); Nix owns `users.users.<name>.packages`, shell plugins, system preferences, services and immutable `/etc/chezmoi-resources/`. [Shared TOML facts](home/.chezmoidata/) feed both the typed Nix host declarations and the real chezmoi templates. User files are regular writable files, not Nix-store symlinks; Zed and Karabiner merge declared settings while preserving undeclared UI state. Neither owner manages OMP state, private keys, shell history, browser profiles, project data or Colima runtime data.
+| State                                                    | Owner                                                   |
+| -------------------------------------------------------- | ------------------------------------------------------- |
+| macOS system, packages, language servers and services    | Nix (nix-darwin)                                        |
+| User files and app settings on every host                | chezmoi, from [home/](home/)                            |
+| Windows applications and user settings                   | The PowerShell engine, which chezmoi runs               |
+| OMP and its plugins                                      | Their own installer and plugin manager, see [OMP](#omp) |
+| Credentials, sessions, browser profiles and project data | The applications themselves                             |
 
-On Windows, chezmoi runs the engine before it writes user files. The only Administrator operations are `windows/apply-kbdneo.ps1` and `windows/apply-zen-policies.ps1`.
-
-| Platform / state                                           | Owner                                   | Apply / recovery boundary                                                                                        |
-| ---------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Linux/macOS system, ordinary packages, immutable resources | Nix                                     | Host activation; retained Nix generations                                                                        |
-| Linux/macOS/Windows user declarations                      | Chezmoi `home/` and shared TOML         | Ordinary-user diff/apply/verify; local owned-file/config/state backups                                           |
-| Windows installs and settings                              | PowerShell 7 `windows/workstation.json` | Content-hashed chezmoi before-script. Read-only drift test. Git history restores source, not mutated user state. |
-| Neo machine driver / Zen machine policy                    | Two fixed Administrator scripts         | Separate approved credentials and narrowly owned backups; Neo requires restart                                   |
-| Windows app profiles, credentials, OMP/Tern/plugin runtime | Application / user                      | Supported upstream flows; never whole-profile apply or credential import                                         |
-
-## Network
-
-Tailscale connects the MacBook Pro, native Windows Korolev, the personal Windows desktop, and the temporary MacBook Air. All declared reachable nodes receive all-port tailnet grants, including Korolev like the desktop; membership is not account authorization or an SSH-only service policy. Windows owns Korolev's one `tag:korolev` identity. Secondary NAT-networked WSL has no tailscaled, SSH listener, open service port or port proxy.
-
-### Desktop SSH and file access
-
-After Mac activation, `ssh desktop` opens the Windows account's PowerShell session. Use `ssh desktop-batch 'exit 23'` for unattended commands and `sftp desktop-batch` for transfers. The batch endpoint preserves stdin, disables terminal allocation and connection persistence, and uses an eight-second connection timeout.
-
-Both desktop endpoints require the declared host-key pin and reject password fallback. The selected Windows account has administrator privileges; privileged service changes still require explicit owner approval. Windows absolute SFTP paths use `/D:/Projects/ynab`, not `D:/Projects/ynab`. Keep working copies on local storage and preserve originals during transfers.
-
-Graphical access uses Windows App from this Mac against `desktop.tail8768af.ts.net`. The desktop allows one session per user and boots into a signed-in session, so a connection takes over that session rather than opening a private one, and disconnecting retains its work. The Air and Korolev have no RDP client by design; they use SSH and SFTP.
-
-The desktop access change records [acceptance evidence](openspec/changes/archive/2026-09-06-enable-native-windows-remote-work/evidence.md) and [completed deployment gates](openspec/changes/archive/2026-09-06-enable-native-windows-remote-work/tasks.md). The verified standalone Windows OpenSSH server supports hybrid post-quantum key exchange. Its [manual update and recovery procedure](docs/operations/dependency-updates.md#desktop-openssh-maintenance) preserves host keys and tailnet restrictions; client cryptography warnings remain enabled.
-
-### Native Korolev SSH and recovery
-
-The [owner-attended remote-access runbook](docs/operations/korolev-remote-access.md) transfers the old WSL node to Windows and explicitly installs/configures OpenSSH Server for the standard AD account `scch\jglock`. Separate labeled Mac and desktop public keys and console-verified host pins control access. Native PowerShell, SSH and SFTP are approved; Korolev gains no RDP/SMB service. The listener and effective firewall must permit only current Windows tailnet addresses, with no wildcard/LAN fallback or broad installer rule.
-
-Keep local Windows Administrator recovery and the previous accepted WSL generation. Stop/log out/revoke the old Linux node, activate daemon-free WSL, then enroll Windows once; never copy device state/private keys or run duplicate nodes. Owner-typed provider login, Administrator/UAC, Linux sudo, Mac sudo and publication approval remain separate. Reconcile changed tailnet addresses while sshd is stopped, then validate config/firewall and probe allowed and independently reachable denied paths. For rollback stop/revoke Windows first before restoring/re-enrolling one Linux node. The runbook covers reboot, DNS/root-builder acceptance and selective key revocation.
-
-### Mac SSH from Korolev
-
-After native user-key enrollment, `ssh macbook-pro` from Windows Korolev opens a shell on the Mac with its separate Windows-user key. WSL retains its own user key; neither uses the root builder key. The interactive session has a terminal, so `darwin-switch` can prompt for the owner-typed Mac password; run it without `sudo`, because it calls `sudo` itself and root evaluation cannot read the user-owned checkout. Use `ssh macbook-pro-batch 'exit 23'` for unattended commands with strict pins, preserved stdin, no PTY/persistence and bounded timeout. Root and the WSL Nix daemon resolve the same name to the root-only builder key, which cannot open a terminal. The Mac keeps its tailnet-only SSH listener and refuses forwarding/tunnels for these keys. Revoke an individual user authorization in [the Mac's SSH declaration](modules/roles/darwin/desktop/tailscale.nix), then activate the Mac with owner-typed sudo while retaining local recovery.
-
-### SCCH share on Korolev
-
-Korolev mounts the SCCH share `\\scch.at\SCCH`, which Windows maps as `S:`, read-only at `/mnt/s`; a path below `S:\` appears at the same relative path below `/mnt/s`. The first access mounts the share through WSL's Windows file bridge with the signed-in Windows session's credentials, so the configuration holds none. Files belong to Korolev's user, and Linux writes fail; change the share from Windows. Boot and activation never wait for the share. While it is unreachable, for example off the corporate network or VPN, every access fails with an error, after up to about 22 seconds, instead of showing an empty directory; the first access after reconnecting mounts it.
+[Shared TOML facts](home/.chezmoidata/) feed both the Nix host declarations and the chezmoi templates. Chezmoi writes regular files. The Zed and Karabiner filters keep settings they do not declare.
 
 ## Develop
 
-### Linux and macOS
+### macOS
 
-With Nix and flakes installed, enter the pinned environment. It installs the commit hook; `direnv allow` uses the same shell.
-
-```sh
-nix develop
-```
-
-Run release gates in order from the repository root, using each host's installed Nix. Finish each Nix command before starting the next; concurrent evaluations of this flake can contend on the shared SQLite evaluation cache.
+`nix develop` enters the pinned environment and installs the commit hook. `direnv allow` uses the same shell. Run the checks from the repository root, one Nix command at a time, because concurrent evaluations contend for the evaluation cache:
 
 ```sh
 nix fmt -- --fail-on-change
-openspec validate make-korolev-windows-native --strict
+openspec validate --all --strict
 nix flake check --print-build-logs
-nix flake check --all-systems --print-build-logs
-```
-
-On Korolev, also build the reviewed system without activating it:
-
-```sh
-nix build .#nixosConfigurations.korolev.config.system.build.toplevel
-```
-
-Run these additional gates on the Mac:
-
-```sh
 nix run .#check-darwin-build-plans
 nix build .#darwinConfigurations.macbook-pro.system
 ```
 
-The build-plan guard needs Darwin store access outside a check sandbox. It rejects uncached source-built toolchains and language servers. [CI](.github/workflows/check.yml) retains host-native Linux/macOS Nix checks and adds the required `check (windows-latest)` native check. A local flake check builds checks only for its own system. With the Mac connected to the tailnet, build its explicit check collection after the sequential gates:
+`check-darwin-build-plans` rejects toolchains and language servers that would build from source instead of coming from the cache. It needs store access outside the check sandbox, so it runs as an app.
 
-```sh
-nix build --no-link --print-build-logs --impure --expr \
-  "builtins.attrValues (builtins.getFlake \"git+file://$PWD\").checks.aarch64-darwin"
-nix build .#darwinConfigurations.macbook-pro.system
-```
+### Windows
 
-`--all-systems` evaluates the full matrix; installed Nix still builds checks for its local system. The explicit Darwin check collection above exercises the foreign-platform checks through the Mac builder.
-
-### Native Windows
-
-Use the checkout below `C:\Users\jglock\src`. [Korolev Windows](docs/operations/korolev-windows.md) covers machine setup and apply. To work on this repository, install the pinned formatters, hook and test modules once, then run the checks:
+Use the checkout below `C:\Users\jglock\src`. Install the pinned formatters, hook and test modules once, then run the checks:
 
 ```powershell
 pwsh -NoProfile -File .\windows\dev\bootstrap.ps1 -IncludeTestDependencies
@@ -109,93 +53,62 @@ pwsh -NoProfile -File .\windows\dev\ci.ps1
 
 The tools live below the checkout's Git directory and are pinned in `windows/dev/dependencies.lock.json`. `ci.ps1` validates the declaration and runs the mocked engine tests and chezmoi fixtures. It never changes the real machine. The pre-commit hook runs the static checks. A commit that stages `.nix` files formats them through the `NixOS` WSL distribution.
 
-CI runs only the jobs that a change affects. Windows changes run `check (windows-latest)`. Before merging a change to `windows/` or to Windows files in `home/`, run the dry run and `chezmoi apply` on Korolev from the PR branch.
+Before merging a change to `windows/` or to Windows files in `home/`, run the engine's dry run and `chezmoi apply` on Korolev from the PR branch. See [Korolev Windows](docs/operations/korolev-windows.md).
+
+### CI
+
+[CI](.github/workflows/check.yml) runs only the jobs a change affects: the Nix checks on Linux and macOS, `check (windows-latest)` and OpenSpec validation. Changes to `.github/` run every job.
 
 ## Activate
 
-For Linux/macOS system activation, review and merge first. Keep the previous generation and read activation output. For Mac networking changes, retain a local administrator terminal for recovery.
+### macOS
 
-On the Mac, keep this clone at `~/.config/nix-darwin`. First activation:
+Keep the clone at `~/.config/nix-darwin`. The first activation and chezmoi initialization:
 
 ```sh
 sudo nix run .#darwin-rebuild -- switch --flake .#macbook-pro
-```
-
-Later activations use `darwin-switch`, which also prints the closure diff. On Korolev, activate from the committed repository:
-
-```sh
-sudo nixos-rebuild switch --flake .#korolev
-```
-
-An agent can run these activation commands itself in a pseudo-terminal. When `sudo` prompts, the owner types the password into that terminal; agents never ask for or enter it. From Korolev, the agent activates the Mac with `ssh -t macbook-pro 'cd ~/.config/nix-darwin && darwin-switch'`.
-
-Mac system activation retains power settings, Rosetta, persistent GUI Nix lookup and service ownership. The subsequent ordinary-user chezmoi apply invokes packaged layout, application-handler, shortcut and Terminal-font helpers only when their rendered change scripts change. Helpers compare before writing and fail visibly on unexpected errors. An unchanged source is not an external-preference drift scheduler. Quit Terminal.app before font verification because it can save old preferences on exit. PostgreSQL keeps its cluster at `/var/lib/postgresql/17`; system activation prepares that directory without moving data.
-
-### Initialize and apply user files
-
-Before the first cutover, retain the previous system and Home Manager generations against garbage collection. Capture every managed destination's type, symlink target and permissions, including absent paths. Keep permission-preserving, resolved-content backups in a local 0700 directory outside the checkout; back up Zed/Karabiner UI settings, chezmoi local config/state, Mac user LaunchAgents and affected preferences. Preserve existing age/GPG/SSH identities locally without printing or exporting them. The [change's responsibility map](openspec/changes/replace-home-manager-with-chezmoi/design.md#responsibility-ownership-map) and retained previous revision define the full inventory.
-
-After the reviewed first system switch, initialize from the existing checkout, without `--apply` and without a second clone:
-
-```sh
-# Mac user, checkout at ~/.config/nix-darwin
 chezmoi init --source "$HOME/.config/nix-darwin" --promptString host=macbook-pro
-
-# Korolev user, checkout in the Linux filesystem
-chezmoi init --source "$HOME/src/github.com/glockyco/nix-config" --promptString host=korolev
-```
-
-Run only the command for the current host. Initialization records the checkout in `sourceDir` and the explicit machine in `data.host`; it does not infer WSL's hostname. Review any existing local config first. Unknown hosts and a target inside the source checkout are rejected. `home/` is selected through `.chezmoiroot`.
-
-Preview ordinary configuration without decrypting or showing credentials. The preview-only check-mode override excludes the private credential directory; never use it for the real apply:
-
-```sh
-chezmoi --override-data '{"checkMode":true}' diff
-chezmoi --override-data '{"checkMode":true}' apply --dry-run
-```
-
-Inspect credential source names and destination mode metadata locally, not decrypted diffs. Review every conflict against the backup manifest. For each **confirmed, backed-up Home Manager symlink only**, replace that individual destination with `chezmoi apply --exclude=scripts --force "$path"` (for example `.zshrc`, `.zshenv`, Starship/gh/bat/Ghostty configuration or `.ssh/config` when the manifest confirms it is a symlink). Do not blanket-force the home directory. Keep setup scripts excluded during these individual replacements; the subsequent full user apply runs them. App-owned Zed/Karabiner files use modify filters, not opaque snapshot replacement. Confirm Nix-store targets remain unchanged.
-
-Review [home/.chezmoiremove](home/.chezmoiremove) too: it retires the old XDG Git configuration now replaced by `.gitconfig`, the HM direnv hook, and Linux-only generated HM environment/fontconfig/tray configuration. Back up their resolved contents and symlink metadata before applying; removal unlinks a destination, never its store target. Inert HM cache/marker scaffolding remains for the integrator's final post-acceptance cleanup.
-
-On the Mac, after backups and **before the first system switch**, explicitly unload the captured old Home Manager mount agent so it cannot race the new native Air agent. Unload the captured SOPS agent before credential apply as well; use their actual recorded labels, not guesses. Retain their backed-up definitions for recovery and remove the obsolete live definitions under the reviewed cutover procedure. After switching, confirm only one mount agent remains. Then, as the ordinary user:
-
-```sh
 chezmoi apply
-chezmoi verify
 ```
 
-Later Mac updates use `darwin-switch`: it prints the closure diff, switches the system, then resolves the selected generation's user packages/resources and runs chezmoi. A failed switch prevents apply; a failed apply is a visible partial update. On Korolev keep the two explicit steps:
+Later activations use `darwin-switch`. It prints the closure diff, switches the system and then runs `chezmoi apply`. A failed switch skips the apply. Run it without `sudo`, because it calls `sudo` itself. Agents run it in a terminal and the owner types the password. From Korolev:
 
 ```sh
-sudo nixos-rebuild switch --flake .#korolev
-chezmoi apply
-chezmoi verify --exclude=scripts
+ssh -t macbook-pro 'cd ~/.config/nix-darwin && darwin-switch'
 ```
 
-On Windows, exclude scripts because the three always-run app stop/restart and Tern PATH scripts remain pending by design; regular managed files still verify.
+Check user files with `chezmoi verify`. Never run chezmoi with `sudo`.
 
-Never run chezmoi with sudo or against another user's HOME. Before accepting either host, verify fresh Tern tty and detached-stdin shells, tool discovery, Git/gh identity, effective/live SSH endpoints and private credential consumers where applicable. On the Mac also verify the actual keyboard/layout, Karabiner/Zed UI preservation, handlers, Terminal font, screenshot destination, GUI Git-hook Nix lookup, Air link/one agent and Colima configuration. Repeat switch/apply/verify at the same revision and compare layout/Karabiner/FileTypes content and mtimes plus power/Rosetta probes. These owner-assisted live checks are not replaced by sandbox checks.
+### Windows
 
-After OMP or plugin behavior changes, also complete the [release smoke](docs/operations/dependency-updates.md#release-smoke).
+See [Korolev Windows](docs/operations/korolev-windows.md).
 
-In a fresh local OMP session, use `/plannotator-annotate <path>` to annotate a document or `/plannotator-last` to annotate the last response. Submitted annotations return as feedback, without editing the source or approving implementation. Use `/plannotator-cancel` if a closed browser tab leaves a review pending.
+## Network
 
-For a new Windows machine, follow [Korolev Windows](docs/operations/korolev-windows.md) and the separate [OpenSSH setup](docs/operations/korolev-remote-access.md). Windows user apply never configures SSH services.
+Tailscale connects the Mac, Korolev, the personal Windows desktop and the borrowed MacBook Air. The policy is generated from [lib/tailnet-policy.nix](lib/tailnet-policy.nix). Pull requests test it, and the `tailnet-policy` workflow applies it after `check` passes on `main`. [Tailnet policy authorization](docs/operations/tailnet-policy.md) covers repairing the workflow's access to Tailscale.
 
-For local containers on the Mac, use the [container lifecycle and recovery procedure](docs/operations/container-runtime.md). Activation does not start or delete the VM.
+SSH endpoints come from [home/private_dot_ssh/config.tmpl](home/private_dot_ssh/config.tmpl). They pin host keys and never fall back to passwords.
+
+| Command                      | Result                                                                                                   |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `ssh desktop`                | PowerShell on the personal desktop                                                                       |
+| `ssh macbook-pro`            | A shell on the Mac, from Korolev                                                                         |
+| `ssh <host>-batch 'exit 23'` | The same host for unattended commands, with stdin preserved, no terminal and an 8-second connect timeout |
+| `sftp desktop-batch`         | File transfer. Windows paths take the form `/D:/Projects/ynab`                                           |
+
+Windows App on the Mac connects to the desktop at `desktop.tail8768af.ts.net`. The desktop has one session, so connecting takes it over. [Personal desktop](docs/operations/desktop.md) covers its keys and OpenSSH updates. Korolev's OpenSSH server follows the [remote-access runbook](docs/operations/korolev-remote-access.md).
+
+The Air is borrowed and temporary. [Issue #17](https://github.com/glockyco/nix-config/issues/17) tracks its removal.
 
 ## OMP
 
-On Linux/macOS, upstream OMP's official binary installer uses `~/.local/bin`, which the shell puts on `PATH`. On Windows, Tern installs and updates OMP (see [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator)). Ghostty on the Mac and Herdr on secondary WSL remain secondary terminals. For Linux/macOS, install OMP and the personal plugin from the [`glockyco` marketplace](https://github.com/glockyco/omp-agent-setup):
+On macOS, the official installer puts OMP in `~/.local/bin`. Install OMP and the [personal plugin](https://github.com/glockyco/omp-agent-setup):
 
 ```sh
 curl -fsSL https://omp.sh/install | sh -s -- --binary
 omp plugin marketplace add glockyco/omp-agent-setup
 omp plugin install --scope user personal@glockyco
 ```
-
-Start a new OMP session afterwards. The plugin supplies the personal policy, skills, `personal_commit`, the Plannotator commands, the language-server overrides, and the OpenSpec workflow as `/personal:opsx-apply`, `/personal:opsx-archive`, `/personal:opsx-explore`, `/personal:opsx-propose`, `/personal:opsx-sync`, and `/personal:opsx-update`.
 
 Update OMP and the plugin independently, then start a new session:
 
@@ -205,19 +118,23 @@ omp plugin marketplace update glockyco
 omp plugin upgrade --scope user personal@glockyco
 ```
 
-Check the result with `omp --version` and `omp plugin list`. To return to a known release of OMP, reinstall it with `curl -fsSL https://omp.sh/install | sh -s -- --binary --ref <tag>`; a bad plugin release is replaced by a newer corrective release, never by rewriting the installed cache.
+To return to an earlier OMP release, reinstall with `--binary --ref <tag>`. A bad plugin release is replaced by a newer one, never by editing the installed cache. On Windows, Tern installs and updates OMP, see [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator).
 
-## Nix maintenance and encrypted secrets
+## Containers
 
-Both hosts use the [shared Nix policy](modules/shared/nix-policy.nix) for pinned registries and disabled legacy channels. On the Mac, Determinate Nix owns automatic store garbage collection; this configuration does not schedule an optimiser. On Korolev, NixOS owns weekly garbage collection and store optimisation. Keep generations needed for recovery before collecting store paths.
+The Mac runs containers in Colima and Korolev in Docker Desktop. See [container runtime](docs/operations/container-runtime.md).
 
-Chezmoi's built-in age decrypts the Mac-only [private encrypted sources](home/dot_config/private_credentials/) with the existing `~/.config/sops/age/keys.txt` identity. The public recipient and credential inventory live in [shared metadata](home/.chezmoidata/credentials.toml). Destinations are `~/.config/credentials/{fastmail-token,cloudflare-dns-token,cloudflare-workers-token}`, mode 0600 under a 0700 directory. Unlike runtime SOPS secrets, plaintext persists across reboot: use encrypted host storage and encrypted local backups. Never commit, print or export the identity or decrypted values. Linux and Windows exclude these sources; no production decryption occurs in checks, which use synthetic identities for round trips and validate production ciphertext framing only. Framing does not prove recipient access. Offline recovery remains **unconfigured** until the owner supplies an authorized offline public recipient and locally proves access.
+## Secrets
+
+Chezmoi's built-in age decrypts the Mac-only [encrypted sources](home/dot_config/private_credentials/) with `~/.config/sops/age/keys.txt`. [credentials.toml](home/.chezmoidata/credentials.toml) lists the recipient and the credentials, which land in `~/.config/credentials/` with mode 0600. The plaintext persists across reboots, so keep the disk and local backups encrypted. Never commit, print or export the identity or the decrypted values. Linux and Windows skip these sources. There is no offline recovery recipient yet.
+
+To preview a change without decrypting credentials, run `chezmoi --override-data '{"checkMode":true}' diff`. Never use that override for a real apply.
 
 ## DNS
 
-[`dns/dnsconfig.js`](dns/dnsconfig.js) declares the `glockyco.com` zone. `nix flake check` validates it on both systems without a token or provider access, and any DNSControl warning fails the check. Checks and activation never publish the zone.
+[`dns/dnsconfig.js`](dns/dnsconfig.js) declares the `glockyco.com` zone. `nix flake check` validates it without a token, and any DNSControl warning fails the check. Checks and activation never publish the zone.
 
-Publish only from the Mac, after a review of the preview. Each command starts the development shell first and reads the decrypted DNS token inside it, so only DNSControl receives the token and nothing prints it:
+Publish only from the Mac, after reviewing the preview. Each command reads the token inside the development shell, so only DNSControl receives it:
 
 ```sh
 cd dns
@@ -225,37 +142,26 @@ nix develop .. --command bash -c 'CLOUDFLARE_API_TOKEN="$(< ~/.config/credential
 nix develop .. --command bash -c 'CLOUDFLARE_API_TOKEN="$(< ~/.config/credentials/cloudflare-dns-token)" exec dnscontrol push'
 ```
 
-Only the owner runs `push`, and only after the preview shows the intended record changes and nothing else. An agent may run `preview` but never `push`. A project that needs the token in its own shell calls the `use_cloudflare_dns` direnv function from its `.envrc`.
+Only the owner runs `push`, and only when the preview shows the intended changes and nothing else. A project that needs the token calls the `use_cloudflare_dns` direnv function from its `.envrc`.
 
 ## Update
 
-The central [dependency automation](https://github.com/glockyco/dependency-automation) opens review-only Nix-input PRs every Saturday. Renovate updates GitHub Actions. Neither merges or activates hosts. Plannotator stays at an explicitly selected vendor revision. [Dependency operations](docs/operations/dependency-updates.md) covers on-demand Plannotator updates, external authorization, and release recovery.
-
-For a manual Nix update, choose one command, review the diff, then run the gates above:
+[Dependency automation](https://github.com/glockyco/dependency-automation) opens Nix input PRs every Saturday and Renovate updates GitHub Actions. Neither merges nor activates anything. [Dependency operations](docs/operations/dependency-updates.md) covers Plannotator and other manual updates. For a manual Nix update, run one of these, review the diff and run the checks:
 
 ```sh
 nix flake update                       # all inputs
 nix flake update personal-omp-plugin   # OpenSpec check tools only
 ```
 
-The `personal-omp-plugin` input supplies only the fleet OpenSpec contract check and the adapter-freshness check; updating it does not change the plugin that hosts run. OMP and the plugin update with their own commands, described under [OMP](#omp).
+The `personal-omp-plugin` input supplies only the OpenSpec checks. It does not change the plugin that hosts run.
 
 ## Recover
 
-Keep the previous generation until all applicable gates and smoke checks pass. List and restore Nix generations on the affected host:
+Keep the previous generation until the checks and a smoke test pass. On the Mac:
 
 ```sh
-# macOS
 sudo darwin-rebuild --list-generations | cat
 sudo darwin-rebuild --rollback
-
-# Korolev
-sudo nixos-rebuild list-generations | cat
-sudo nixos-rebuild switch --rollback --no-reexec
 ```
 
-Then repeat verification. Nix rollback restores Nix-managed tools, not OMP or plugin versions, credentials, tailnet enrollment, or application data; use the [OMP](#omp) commands for those. Windows has no generations. See [When something goes wrong](docs/operations/korolev-windows.md#when-something-goes-wrong).
-
-System rollback does not restore chezmoi destinations. For a normal user-file rollback, select the previous reviewed source revision in the existing checkout, run `chezmoi diff` only for nonsecret paths (or the preview-only check-mode override above), then ordinary-user `chezmoi apply` and `chezmoi verify` with compatible system resources. Stop Colima first if profile revisions are incompatible; its data stays untouched.
-
-For rejection of the initial Home Manager cutover, stop applying the new source, preserve post-cutover UI edits locally, restore the retained previous system generation, and restore captured files/symlinks/permissions/agents/preferences and original chezmoi config/state from the local backup. Remove only paths recorded absent before cutover. Restore the previous user activation only after conflicting chezmoi replacements are removed. Retain old encrypted sources in the previous revision and local recovery state until all credential consumers pass. Neither system rollback nor chezmoi's script ledger is a backup of removed files or application preferences; recovery has two explicit owners, not transactional all-or-nothing behavior.
+A system rollback does not restore user files. To roll them back, check out the earlier revision, review `chezmoi diff` and run `chezmoi apply`. OMP and its plugins recover through their own commands, see [OMP](#omp). For Windows, see [When something goes wrong](docs/operations/korolev-windows.md#when-something-goes-wrong).
