@@ -260,6 +260,11 @@ def assert_portable(fixture, facts):
 
 def assert_git_worktrees(fixture, facts):
     host = facts["hosts"][fixture.host]
+    if fixture.target_os == "darwin":
+        require(
+            "insteadOf" not in (fixture.target / ".gitconfig").read_text(),
+            "Windows HTTPS rewrites must not change Mac Git transport",
+        )
     if not host["roles"].get("wslWorkstation"):
         return
     # The same conditional include is tested after substituting only its
