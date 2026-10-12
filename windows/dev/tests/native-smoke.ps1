@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([string]$RepositoryRoot)
+param([string]$RepositoryRoot, [string]$ArchiveCacheRoot)
 $ErrorActionPreference = 'Stop'
 if (-not $RepositoryRoot) { $RepositoryRoot = Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent }
 . (Join-Path $RepositoryRoot 'windows/dev/bootstrap.ps1') -RepositoryRoot $RepositoryRoot
@@ -15,14 +15,14 @@ try {
         'space name.py' = "value= 1`n"
         'frontmatter.md' = "---`nname: fixture`n---`n`n| A | B |`n| - | - |`n| x | y |`n"
         'data.json' = '{"key":1}'
-        'configuration.winget' = '{"resources":[]}'
+        'workstation.json' = '{"resources":[]}'
         'workflow.yml' = "name: fixture`n`njobs: {}`n"
         'dns/dnsconfig.js' = 'const value={key:1};'
     }
     foreach ($entry in $files.GetEnumerator()) { [IO.File]::WriteAllText((Join-Path $fixture $entry.Key), $entry.Value, (New-Object Text.UTF8Encoding($false))) }
     $tools = Get-NativeToolsRoot $fixture
-    Invoke-NativeBootstrap -RepositoryRoot $fixture -ToolsRoot $tools -SkipHook -IncludeTestDependencies
-    Invoke-NativeBootstrap -RepositoryRoot $fixture -ToolsRoot $tools -SkipHook -IncludeTestDependencies
+    Invoke-NativeBootstrap -RepositoryRoot $fixture -ToolsRoot $tools -ArchiveCacheRoot $ArchiveCacheRoot -SkipHook -IncludeTestDependencies
+    Invoke-NativeBootstrap -RepositoryRoot $fixture -ToolsRoot $tools -ArchiveCacheRoot $ArchiveCacheRoot -SkipHook -IncludeTestDependencies
     Invoke-NativeFormatting -RepositoryRoot $fixture -ToolsRoot $tools -Paths @($files.Keys)
     Invoke-NativeFormatting -RepositoryRoot $fixture -ToolsRoot $tools -Paths @($files.Keys) -Check
     $markdown = [IO.File]::ReadAllText((Join-Path $fixture 'frontmatter.md'))
@@ -33,10 +33,10 @@ try {
         Copy-Item -LiteralPath (Join-Path $RepositoryRoot ('windows/dev/' + $name)) -Destination $dev
     }
     Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'lefthook.yml') -Destination $fixture
-    # Only the invariant process is doubled in this isolated Git fixture. Its
-    # real document/AST fixtures are exercised separately by windows/check.ps1.
-    [IO.File]::WriteAllText((Join-Path $fixture 'windows/check.ps1'), '[IO.File]::WriteAllText((Join-Path $PSScriptRoot "invariant-called"), "fixture"); exit 0')
-    Invoke-NativeBootstrap -RepositoryRoot $fixture -IncludeTestDependencies
+    # Only the static checker is doubled in this isolated Git fixture.
+    # Real source and mocked engine gates run separately through dev/ci.ps1.
+    [IO.File]::WriteAllText((Join-Path $fixture 'windows/check-workstation.ps1'), 'param([switch]$StaticOnly); if (-not $StaticOnly) { exit 22 }; [IO.File]::WriteAllText((Join-Path $PSScriptRoot "invariant-called"), "fixture"); exit 0')
+    Invoke-NativeBootstrap -RepositoryRoot $fixture -ArchiveCacheRoot $ArchiveCacheRoot -IncludeTestDependencies
     & git -C $fixture add --all
     if ($LASTEXITCODE -ne 0) { throw 'Cannot stage native smoke fixture' }
     & git -C $fixture -c user.name=Fixture -c user.email=fixture@example.invalid commit --quiet -m fixture
@@ -45,6 +45,6 @@ try {
     $hook = Get-NativeHookPath $fixture
     Assert-NativeHookOwnership $hook
     if (Test-Path -LiteralPath ($hook + '.old')) { throw 'lefthook replaced the pinned native launcher' }
-    Invoke-NativeBootstrap -RepositoryRoot $fixture -IncludeTestDependencies
+    Invoke-NativeBootstrap -RepositoryRoot $fixture -ArchiveCacheRoot $ArchiveCacheRoot -IncludeTestDependencies
     Write-Host 'PASS real locked Windows distributions, Python closure/plugins, native-only formatting, repeat bootstrap, formatter idempotence and native Git hook outside bootstrap in isolated temporary tree'
 } finally { if (Test-Path -LiteralPath $fixture) { Remove-Item -LiteralPath $fixture -Recurse -Force } }

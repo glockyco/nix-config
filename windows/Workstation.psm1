@@ -88,18 +88,40 @@ function Resolve-WorkstationExecutable {
 }
 
 function Get-WorkstationUserPath {
-    return [Environment]::GetEnvironmentVariable('Path', 'User')
+    $state = Get-WorkstationRegistryValue -Path 'HKCU:\Environment' -ValueName 'Path'
+    if ($state.Exists) { return [string]$state.Value }
+    return ''
 }
 
 function Set-WorkstationPersistedUserPath {
     param([string] $Value)
-    [Environment]::SetEnvironmentVariable('Path', $Value, 'User')
+    $state = Get-WorkstationRegistryValue -Path 'HKCU:\Environment' -ValueName 'Path'
+    $type = if ($state.Exists) { $state.Type } else { 'ExpandString' }
+    if ($type -notin @('String', 'ExpandString')) { throw "User PATH has an unsupported registry type: $type" }
+    if (-not $state.KeyExists) { New-Item -Path 'HKCU:\Environment' -Force -ErrorAction Stop | Out-Null }
+    New-ItemProperty -LiteralPath 'HKCU:\Environment' -Name 'Path' -Value $Value -PropertyType $type -Force -ErrorAction Stop | Out-Null
+    Send-WorkstationEnvironmentNotification
+}
+
+function Send-WorkstationEnvironmentNotification {
+    # Match the chezmoi Tern PATH owner's process notification convention.
+    $native = Get-WorkstationSettingsNativeApi
+    $result = [UIntPtr]::Zero
+    $null = $native::SendMessageTimeout([IntPtr]0xffff, 0x001a, [UIntPtr]::Zero, 'Environment', 0x0002, 5000, [ref]$result)
+}
+
+function ConvertTo-WorkstationPathKey {
+    param([string] $Path)
+    # WinGet writes entries such as <package>\.\bin, so compare normalized absolute paths.
+    $expanded = [Environment]::ExpandEnvironmentVariables($Path)
+    try { return [IO.Path]::GetFullPath($expanded).TrimEnd('\') } catch { return $expanded.TrimEnd('\') }
 }
 
 function Test-WorkstationUserPath {
     param([string] $Directory)
+    $wanted = ConvertTo-WorkstationPathKey $Directory
     $paths = @((Get-WorkstationUserPath) -split ';' | Where-Object { $_ })
-    return @($paths | Where-Object { [Environment]::ExpandEnvironmentVariables($_).TrimEnd('\') -ieq $Directory.TrimEnd('\') }).Count -gt 0
+    return @($paths | Where-Object { (ConvertTo-WorkstationPathKey $_) -ieq $wanted }).Count -gt 0
 }
 
 function Set-WorkstationUserPath {

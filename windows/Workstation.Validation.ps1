@@ -124,18 +124,15 @@ function Assert-WorkstationData {
             if ($application.nodeId -ine 'OpenJS.NodeJS.LTS' -or $nodeIndex -lt 0 -or $nodeIndex -ge $applicationIndex) {
                 throw 'The declared Node runtime must precede its npm closure'
             }
+            Assert-WorkstationRelativePath -Path $application.source
+            $source = Join-Path $PSScriptRoot $application.source
+            $manifest = Read-WorkstationJsonFile -Path (Join-Path $source 'package.json')
+            $lock = Read-WorkstationJsonFile -Path (Join-Path $source 'package-lock.json')
             $id = $application.id
-            if ($application.manifest.dependencies[$id] -cne $application.version -or
-                $application.lock.packages[''].dependencies[$id] -cne $application.version -or
-                $application.lock.packages["node_modules/$id"].version -cne $application.version -or
-                $application.packages[$id].version -cne $application.version) {
+            if ($manifest.dependencies[$id] -cne $application.version -or
+                $lock.packages[''].dependencies[$id] -cne $application.version -or
+                $lock.packages["node_modules/$id"].version -cne $application.version) {
                 throw 'OpenSpec manifest and integrity lock must match its declared consumer version'
-            }
-            foreach ($package in $application.packages.Values) {
-                foreach ($wrapper in $package.bin.Keys) {
-                    Assert-WorkstationRelativePath -Path $wrapper -FileNameOnly
-                    Assert-WorkstationRelativePath -Path $package.bin[$wrapper]
-                }
             }
         }
     }

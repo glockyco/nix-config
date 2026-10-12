@@ -41,8 +41,7 @@ function Get-AppJsoncCleanText {
 function ConvertFrom-AppJsonc {
   param([string]$Text)
   $clean = (Get-AppJsoncCleanText $Text).Trim()
-  # PS5.1's PSCustomObject check also accepts wrapped arrays; require an object
-  # in the JSON source before invoking that host's permissive converter.
+  # Require an object in the JSON source before parsing application settings.
   if (-not $clean.StartsWith('{') -or -not $clean.EndsWith('}')) { throw 'App settings must be a complete JSON object; existing file was not overwritten' }
   try { $value = $clean | ConvertFrom-Json -ErrorAction Stop }
   catch { throw "Malformed JSONC; existing file was not overwritten: $($_.Exception.Message)" }

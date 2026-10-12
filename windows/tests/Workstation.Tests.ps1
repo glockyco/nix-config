@@ -121,6 +121,33 @@ Describe 'Portable resolution and user PATH' {
             Should -Invoke Set-WorkstationPersistedUserPath -Times 1 -Exactly -ParameterFilter { $Value -eq 'C:\existing;C:\TOOLS\;C:\new' }
         }
 
+        It 'matches a PATH entry that WinGet wrote with a dot segment' {
+            Mock Get-WorkstationUserPath { 'C:\pkg\.\bin-x64;%SystemRoot%\system32' }
+            Mock Set-WorkstationPersistedUserPath {}
+            Mock Update-WorkstationProcessPath {}
+            Test-WorkstationUserPath -Directory 'C:\pkg\bin-x64' | Should -BeTrue
+            Set-WorkstationUserPath -Directory 'C:\pkg\bin-x64'
+            Should -Invoke Set-WorkstationPersistedUserPath -Times 0 -Exactly
+        }
+
+        It 'preserves unexpanded PATH entries and their registry type' -ForEach @(
+            @{ RegistryType = 'String' }
+            @{ RegistryType = 'ExpandString' }
+        ) {
+            $script:pathType = $RegistryType
+            Mock Get-WorkstationRegistryValue { @{ KeyExists = $true; Exists = $true; Type = $script:pathType; Value = '%LOCALAPPDATA%\existing' } }
+            Mock New-ItemProperty {}
+            Mock Send-WorkstationEnvironmentNotification {}
+            Mock Update-WorkstationProcessPath {}
+            Get-WorkstationUserPath | Should -Be '%LOCALAPPDATA%\existing'
+            Set-WorkstationUserPath -Directory 'C:\new'
+            Should -Invoke New-ItemProperty -Times 1 -Exactly -ParameterFilter {
+                $LiteralPath -eq 'HKCU:\Environment' -and $Name -eq 'Path' -and
+                $Value -eq '%LOCALAPPDATA%\existing;C:\new' -and $PropertyType -eq $script:pathType
+            }
+            Should -Invoke Send-WorkstationEnvironmentNotification -Times 1 -Exactly
+        }
+
         It 'compares ImageMagick fourth release components' {
             Compare-WorkstationVersion -Actual '7.1.2-7' -Desired '7.1.2-6' | Should -BeGreaterThan 0
             Compare-WorkstationVersion -Actual '7.1.2.6' -Desired '7.1.2-6' | Should -Be 0

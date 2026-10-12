@@ -3,9 +3,6 @@ param([string]$RepositoryRoot)
 $ErrorActionPreference = 'Stop'
 if (-not $RepositoryRoot) { $RepositoryRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent }
 . (Join-Path $RepositoryRoot 'windows/dev/hook.ps1') -RepositoryRoot $RepositoryRoot
-if ((ConvertTo-NativeArgument '--distribution') -cne '--distribution') { throw 'WSL options must not be quoted into Linux command tokens' }
-if ((ConvertTo-NativeArgument 'checkout with spaces') -cne '"checkout with spaces"') { throw 'Native argument quoting must preserve checkout spaces' }
-if ((ConvertTo-NativeArgument '') -cne '""') { throw 'Native argument quoting must preserve empty values' }
 function Assert-WslFixture {
     param([bool]$Condition, [string]$Message)
     if (-not $Condition) { throw $Message }

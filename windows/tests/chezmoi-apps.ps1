@@ -26,7 +26,6 @@ function Invoke-AppsChezmoi {
   param([string[]]$Arguments)
   $previousPreference = $ErrorActionPreference
   try {
-    # PS5.1 wraps native stderr in ErrorRecord even when it is redirected.
     $ErrorActionPreference = 'Continue'
     $output = & $script:AppsChezmoi @Arguments 2>&1
     $nativeExit = $LASTEXITCODE
@@ -78,17 +77,9 @@ try {
   Write-AppsFixture (Join-Path $initCheckout 'home/.chezmoi.toml.tmpl') $initTemplate
   $null = Invoke-AppsChezmoi -Arguments @('--config', $script:AppsConfig, '--source', $initCheckout, '--destination', $script:AppsHome, '--persistent-state', $script:AppsState, '--cache', $script:AppsCache, '--no-tty', 'init', '--promptString', 'host=korolev')
   $configured = (Invoke-AppsChezmoi -Arguments @('--config', $script:AppsConfig, 'dump-config', '--format=json')) | ConvertFrom-Json
-  Assert-Apps ($configured.interpreters.ps1.command -ceq 'powershell.exe') 'shared Windows init uses the in-box Windows PowerShell interpreter'
-  Assert-Apps (($configured.interpreters.ps1.args -join '|') -ceq '-NoLogo|-NoProfile|-NonInteractive|-ExecutionPolicy|Bypass|-File') 'shared Windows init supplies the noninteractive script interpreter arguments'
-  if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) {
-    $engine = (Get-Command $configured.interpreters.ps1.command -ErrorAction Stop).Source
-  } else {
-    # Linux can render Windows source but cannot execute powershell.exe.
-    # Adapt execution only after asserting the actual shared-init contract.
-    $configured.interpreters.ps1.command = $engine
-    $script:AppsConfig = Join-Path $script:AppsTemporary 'linux-execution.json'
-    Write-AppsFixture $script:AppsConfig (ConvertTo-Json -InputObject $configured -Depth 30)
-  }
+  Assert-Apps ($configured.interpreters.ps1.command -ceq 'pwsh') 'shared Windows init uses the PowerShell 7 interpreter'
+  Assert-Apps (($configured.interpreters.ps1.args -join '|') -ceq '-NoLogo|-NoProfile|-NonInteractive|-File') 'shared Windows init supplies the noninteractive script interpreter arguments'
+  $engine = (Get-Command $configured.interpreters.ps1.command -CommandType Application | Select-Object -First 1).Source
   $assetRoot = Join-Path $script:AppsSource '.chezmoitemplates/windows-apps'
   $metadata = ([IO.File]::ReadAllText((Join-Path $script:AppsSource '.chezmoidata/windows-apps.json')) | ConvertFrom-Json).windowsApps
   Assert-Apps ((Get-FileHash (Join-Path $assetRoot $metadata.zed.path) -Algorithm SHA256).Hash -ieq $metadata.zed.sha256) 'pinned Zed asset hash'
@@ -147,7 +138,7 @@ try {
   # Exercise the rendered filter's actual stdin/stdout contract in this engine.
   $filterStart = [Diagnostics.ProcessStartInfo]::new()
   $filterStart.FileName = $engine
-  $filterStart.Arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + (Join-Path $script:AppsRenderedSource 'AppData/Roaming/Zed/modify_settings.json.ps1') + '"'
+  $filterStart.Arguments = '-NoLogo -NoProfile -NonInteractive -File "' + (Join-Path $script:AppsRenderedSource 'AppData/Roaming/Zed/modify_settings.json.ps1') + '"'
   $filterStart.UseShellExecute = $false
   $filterStart.RedirectStandardInput = $true; $filterStart.RedirectStandardOutput = $true; $filterStart.RedirectStandardError = $true
   $filterStart.StandardOutputEncoding = [Text.UTF8Encoding]::new($false)

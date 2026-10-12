@@ -136,26 +136,6 @@ function Set-WorkstationArchive {
   }
 }
 
-function Test-WorkstationJsonValue {
-  param($Actual, $Desired)
-  if ($null -eq $Desired) { return ($null -eq $Actual) }
-  if ($Desired -is [System.Collections.IDictionary]) {
-    if ($Actual -isnot [System.Collections.IDictionary] -or $Actual.Count -ne $Desired.Count) { return $false }
-    foreach ($key in $Desired.Keys) {
-      if (-not $Actual.Contains($key) -or -not (Test-WorkstationJsonValue -Actual $Actual[$key] -Desired $Desired[$key])) { return $false }
-    }
-    return $true
-  }
-  if ($Desired -is [array]) {
-    if ($Actual -isnot [array] -or $Actual.Count -ne $Desired.Count) { return $false }
-    for ($index = 0; $index -lt $Desired.Count; $index++) {
-      if (-not (Test-WorkstationJsonValue -Actual $Actual[$index] -Desired $Desired[$index])) { return $false }
-    }
-    return $true
-  }
-  return ($Actual -ceq $Desired)
-}
-
 function Read-WorkstationJsonFile {
   param([string]$Path)
   return (Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -AsHashtable)
@@ -168,51 +148,20 @@ function Get-WorkstationNpmNodeResource {
   return $nodes[0]
 }
 
-function Test-WorkstationNpmPayload {
-  param([hashtable]$Resource, [string]$Directory, [string]$Node)
-  foreach ($file in @('package.json', 'package-lock.json')) {
-    if (-not (Test-Path -LiteralPath (Join-Path $Directory $file) -PathType Leaf)) { return $false }
-  }
-  $manifest = Read-WorkstationJsonFile -Path (Join-Path $Directory 'package.json')
-  $lock = Read-WorkstationJsonFile -Path (Join-Path $Directory 'package-lock.json')
-  if (-not (Test-WorkstationJsonValue -Actual $manifest -Desired $Resource.manifest) -or
-    -not (Test-WorkstationJsonValue -Actual $lock -Desired $Resource.lock)) { return $false }
-  foreach ($entry in $Resource.lock.packages.Keys) {
-    if (-not $entry) { continue }
-    $selected = $Resource.lock.packages[$entry]
-    # npm omits platform-specific optional dependencies on Windows.
-    if ($selected.optional -and (($selected.os -and 'win32' -notin $selected.os) -or
-      ($selected.cpu -and 'x64' -notin $selected.cpu))) { continue }
-    $path = Join-Path $Directory "$entry/package.json"
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $false }
-    $installed = Read-WorkstationJsonFile -Path $path
-    if ($installed.version -cne $selected.version) { return $false }
-  }
-  $binDirectory = Join-Path $Directory 'node_modules\.bin'
-  foreach ($package in $Resource.packages.Keys) {
-    $selected = $Resource.packages[$package]
-    $packageDirectory = Join-Path $Directory "node_modules/$package"
-    $installed = Read-WorkstationJsonFile -Path (Join-Path $packageDirectory 'package.json')
-    if (-not (Test-WorkstationJsonValue -Actual $installed.bin -Desired $selected.bin)) { return $false }
-    foreach ($command in $selected.bin.Keys) {
-      $target = Join-Path $packageDirectory $selected.bin[$command]
-      if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { return $false }
-      foreach ($suffix in @('', '.cmd', '.ps1')) {
-        $wrapper = Join-Path $binDirectory "$command$suffix"
-        if (-not (Test-Path -LiteralPath $wrapper -PathType Leaf)) { return $false }
-        $text = (Get-Content -LiteralPath $wrapper -Raw).Replace('\', '/')
-        $expectedTarget = "../$package/$($selected.bin[$command])"
-        if (-not $text.Contains($expectedTarget)) { return $false }
-      }
-      # svelteserver, tsserver and pyright-langserver have no version-only mode.
-      if ($command -in @('pyright', 'tsc', 'typescript-language-server', 'openspec')) {
-        $output = Invoke-WorkstationNative -Command $Node -Arguments @($target, '--version')
-        $match = [regex]::Match($output, '\d+\.\d+\.\d+(?:[.\-]\d+)?')
-        if (-not $match.Success -or $match.Value -ne $selected.version) { return $false }
-      }
-    }
-  }
-  return $true
+function Get-WorkstationNpmLockHash {
+  param([hashtable]$Resource)
+  $lock = Join-Path (Join-Path $PSScriptRoot $Resource.source) 'package-lock.json'
+  return (Get-FileHash -LiteralPath $lock -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+
+# npm ci guarantees the closure that the repository lock describes. A marker holding the lock's
+# hash records which lock this engine last installed, so packages are never re-verified one by one.
+function Test-WorkstationNpmInstalled {
+  param([hashtable]$Resource, [string]$Directory)
+  $marker = Join-Path $Directory '.workstation-lock.sha256'
+  return ((Test-Path -LiteralPath $marker -PathType Leaf) -and
+    ((Get-Content -LiteralPath $marker -Raw).Trim() -ceq (Get-WorkstationNpmLockHash -Resource $Resource)) -and
+    (Test-Path -LiteralPath (Join-Path $Directory 'node_modules\.bin') -PathType Container))
 }
 
 function Test-WorkstationNpm {
@@ -221,8 +170,8 @@ function Test-WorkstationNpm {
   if (-not $node) { return $false }
   if (-not (Test-Path -LiteralPath (Join-Path (Split-Path -Parent $node) 'npm.cmd') -PathType Leaf)) { return $false }
   $directory = Get-WorkstationApplicationDirectory -Resource $Resource
-  if (-not (Test-WorkstationNpmPayload -Resource $Resource -Directory $directory -Node $node)) { return $false }
-  return (Test-WorkstationUserPath -Directory (Join-Path $directory 'node_modules\.bin'))
+  return ((Test-WorkstationNpmInstalled -Resource $Resource -Directory $directory) -and
+    (Test-WorkstationUserPath -Directory (Join-Path $directory 'node_modules\.bin')))
 }
 
 function Set-WorkstationNpm {
@@ -233,32 +182,22 @@ function Set-WorkstationNpm {
   $npm = Join-Path (Split-Path -Parent $node) 'npm.cmd'
   if (-not (Test-Path -LiteralPath $npm -PathType Leaf)) { throw 'npm.cmd is absent beside the selected node.exe' }
   $binDirectory = Join-Path $directory 'node_modules\.bin'
-  if (Test-WorkstationNpmPayload -Resource $Resource -Directory $directory -Node $node) {
-    if (-not (Test-WorkstationUserPath -Directory $binDirectory)) { Set-WorkstationUserPath -Directory $binDirectory }
+  if (Test-WorkstationNpmInstalled -Resource $Resource -Directory $directory) {
+    Set-WorkstationUserPath -Directory $binDirectory
     return
   }
-  foreach ($package in $Resource.packages.Keys) {
-    $path = Join-Path $directory "node_modules/$package/package.json"
-    if (Test-Path -LiteralPath $path -PathType Leaf) {
-      $installed = Read-WorkstationJsonFile -Path $path
-      if ((Compare-WorkstationVersion -Actual $installed.version -Desired $Resource.packages[$package].version) -gt 0) {
-        throw "$package`: refusing downgrade of installed version $($installed.version)"
-      }
-    }
-  }
+  # Install into a staging directory so a failed npm run never damages a working closure.
   $token = [guid]::NewGuid().ToString('N')
   $staged = "$directory.installing-$token"
   $backup = "$directory.previous-$token"
   $movedPrevious = $false
   try {
     New-Item -ItemType Directory -Path $staged -Force | Out-Null
-    $encoding = [Text.UTF8Encoding]::new($false)
-    [IO.File]::WriteAllText((Join-Path $staged 'package.json'), ($Resource.manifest | ConvertTo-Json -Depth 100), $encoding)
-    [IO.File]::WriteAllText((Join-Path $staged 'package-lock.json'), ($Resource.lock | ConvertTo-Json -Depth 100), $encoding)
-    $null = Invoke-WorkstationNative -Command $npm -Arguments @('ci', '--prefix', $staged, '--ignore-scripts', '--no-audit', '--no-fund')
-    if (-not (Test-WorkstationNpmPayload -Resource $Resource -Directory $staged -Node $node)) {
-      throw 'npm closure failed manifest, lock, binary or wrapper verification'
+    foreach ($file in @('package.json', 'package-lock.json')) {
+      Copy-Item -LiteralPath (Join-Path (Join-Path $PSScriptRoot $Resource.source) $file) -Destination $staged
     }
+    $null = Invoke-WorkstationNative -Command $npm -Arguments @('ci', '--prefix', $staged, '--ignore-scripts', '--no-audit', '--no-fund')
+    [IO.File]::WriteAllText((Join-Path $staged '.workstation-lock.sha256'), (Get-WorkstationNpmLockHash -Resource $Resource), [Text.UTF8Encoding]::new($false))
     if (Test-Path -LiteralPath $directory) {
       Move-Item -LiteralPath $directory -Destination $backup
       $movedPrevious = $true
@@ -266,13 +205,12 @@ function Set-WorkstationNpm {
     Move-Item -LiteralPath $staged -Destination $directory
     Set-WorkstationUserPath -Directory $binDirectory
   } catch {
-    if ($movedPrevious -and -not (Test-Path -LiteralPath $directory)) {
-      Copy-Item -LiteralPath $backup -Destination $directory -Recurse
-    }
+    if ($movedPrevious -and -not (Test-Path -LiteralPath $directory)) { Move-Item -LiteralPath $backup -Destination $directory }
     throw
   } finally {
     if (Test-Path -LiteralPath $staged) { Remove-Item -LiteralPath $staged -Recurse -Force }
   }
+  if ($movedPrevious -and (Test-Path -LiteralPath $backup)) { Remove-Item -LiteralPath $backup -Recurse -Force }
 }
 
 function Get-WorkstationFontFamilies {

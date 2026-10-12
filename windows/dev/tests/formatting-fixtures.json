@@ -6,7 +6,7 @@
     "README.md",
     "nested/skill.md",
     "data.json",
-    "windows/configuration.winget",
+    "windows/workstation.json",
     ".github/workflows/check.yml",
     "nested/config.yaml",
     "dns/dnsconfig.js",
@@ -43,7 +43,7 @@
     "data.json": [
       "jsonfmt"
     ],
-    "windows/configuration.winget": [
+    "windows/workstation.json": [
       "jsonfmt"
     ],
     ".github/workflows/check.yml": [

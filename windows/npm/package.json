@@ -1,0 +1,12 @@
+{
+  "name": "korolev-native-tools",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "pyright": "1.1.411",
+    "typescript": "5.9.3",
+    "typescript-language-server": "5.3.0",
+    "svelte-language-server": "0.17.31",
+    "@fission-ai/openspec": "1.14.0"
+  }
+}

@@ -92,9 +92,9 @@ try {
   }
   $null = Invoke-CheckoutNative chezmoi ($chezmoiArguments + @('init', '--promptString', 'host=korolev'))
   $persisted = Invoke-CheckoutNative chezmoi ($chezmoiArguments + @('dump-config', '--format=json')) | ConvertFrom-Json
-  Assert-Checkout ($persisted.interpreters.ps1.command -ceq 'powershell.exe') 'rendered Windows init must select in-box powershell.exe without a pwsh bootstrap dependency'
-  Assert-Checkout (($persisted.interpreters.ps1.args -join '|') -ceq '-NoLogo|-NoProfile|-NonInteractive|-ExecutionPolicy|Bypass|-File') 'rendered Windows init interpreter arguments drifted'
-  Write-Output 'checkout-regressions: real autocrlf=true clone preserves all included bytes and pinned Zed/Zen hashes; rendered init selects Windows PowerShell'
+  Assert-Checkout ($persisted.interpreters.ps1.command -ceq 'pwsh') 'rendered Windows init must select PowerShell 7'
+  Assert-Checkout (($persisted.interpreters.ps1.args -join '|') -ceq '-NoLogo|-NoProfile|-NonInteractive|-File') 'rendered Windows init interpreter arguments drifted'
+  Write-Output 'checkout-regressions: real autocrlf=true clone preserves included bytes and pinned Zed/Zen hashes. Rendered init selects PowerShell 7'
 } finally {
   foreach ($name in $variables) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
   if (Test-Path -LiteralPath $fixtureRoot) { Remove-Item -LiteralPath $fixtureRoot -Recurse -Force }

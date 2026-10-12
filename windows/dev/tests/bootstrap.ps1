@@ -47,6 +47,7 @@ function Expand-NativeArtifact {
         'jsonfmt' { 'jsonfmt.exe' }
         'yamlfmt' { 'yamlfmt.exe' }
         'lefthook' { 'lefthook.exe' }
+        'chezmoi' { 'chezmoi.exe' }
         default { $Artifact.name + '.dist-info/METADATA' }
     }
     $file = Join-Path $Destination $relative
@@ -70,8 +71,7 @@ function Invoke-NativeProcess {
     if ($script:ProcessFault -eq 'exit') { return [PSCustomObject]@{ ExitCode = 23; Output = 'fixture native failure' } }
     if ($script:ProcessFault -eq 'version') { return [PSCustomObject]@{ ExitCode = 0; Output = '0.0.0' } }
     if ($Arguments[0] -eq '-c') {
-        $includeTests = $Arguments[1].Contains("'jsonschema'")
-        $wheels = @($script:FixtureLock.artifacts | Where-Object { $_.kind -eq 'wheel' -and (-not $_.testOnly -or $includeTests) })
+        $wheels = @($script:FixtureLock.artifacts | Where-Object { $_.kind -eq 'wheel' })
         $output = ($wheels | ForEach-Object { "$($_.name)=$($_.version)" }) -join ';'
         if ($script:ProcessFault -eq 'closure') { $output = 'invalid fixture closure' }
     } elseif ($Arguments -contains 'mdformat') { $output = 'mdformat ' + (Get-BootstrapFixtureVersion mdformat) }
@@ -84,6 +84,7 @@ function Invoke-NativeProcess {
             'jsonfmt.exe' { 'jsonfmt version ' + (Get-BootstrapFixtureVersion jsonfmt) }
             'yamlfmt.exe' { 'yamlfmt ' + (Get-BootstrapFixtureVersion yamlfmt) + ' (fixture)' }
             'lefthook.exe' { Get-BootstrapFixtureVersion lefthook }
+            'chezmoi.exe' { 'chezmoi version v' + (Get-BootstrapFixtureVersion chezmoi) + ', fixture' }
             default { throw "Unexpected fixture command $Command" }
         }
     }
@@ -153,6 +154,7 @@ try {
     $manifest = Get-Content -LiteralPath (Join-Path $root 'tools.json') -Raw | ConvertFrom-Json
     Assert-BootstrapFixture -Condition $manifest.includeTestDependencies -Message 'test dependency upgrade was not recorded'
     $null = Get-NativeTool -Name mdformat -ToolsRoot $root
+    $null = Get-NativeTool -Name chezmoi -ToolsRoot $root
     Write-Output 'PASS bootstrap isolated test dependency closure upgrade'
 
     $cache = Join-Path $temp 'archive cache with spaces'

@@ -112,15 +112,9 @@ Describe 'Workstation declaration invariants' {
             { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*OpenSpec must name*'
         }
 
-        It 'derives mutable consumer versions from data and accepts synchronized manifest and lock updates' {
+        It 'derives the Bun consumer version from data' {
             $bun = $script:data.applications | Where-Object id -EQ 'Oven-sh.Bun'
             $bun.version = '9.8.7'
-            $npm = $script:data.applications | Where-Object kind -EQ 'npm'
-            $npm.version = '9.8.7'
-            $npm.manifest.dependencies[$npm.id] = $npm.version
-            $npm.lock.packages[''].dependencies[$npm.id] = $npm.version
-            $npm.lock.packages["node_modules/$($npm.id)"].version = $npm.version
-            $npm.packages[$npm.id].version = $npm.version
             { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Not -Throw
         }
 
@@ -178,14 +172,14 @@ Describe 'Workstation declaration invariants' {
             { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*safe relative path*'
         }
 
-        It 'keeps font names in the user font directory and npm wrappers in their closure' {
+        It 'keeps font names in the user font directory and the npm lock in the repository' {
             $font = $script:data.applications | Where-Object kind -EQ 'font'
             $faces = $font.fonts
             $font.fonts = @{ '..\outside.ttf' = @{} }
             { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*safe relative path*'
             $font.fonts = $faces
             $npm = $script:data.applications | Where-Object kind -EQ 'npm'
-            $npm.packages[$npm.id].bin['openspec'] = '..\outside.js'
+            $npm.source = '..\outside'
             { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*safe relative path*'
         }
 

@@ -142,8 +142,9 @@ function Invoke-NativeBootstrap {
     $alreadyInstalled = Test-Path -LiteralPath $ToolsRoot
     if ($alreadyInstalled) {
         # Existing managed tools must be healthy; never hide missing files, version drift or lock changes by reinstalling.
-        foreach ($definition in $tools) { $null = Get-NativeTool -Name $definition.id -ToolsRoot $ToolsRoot }
         $manifest = Get-Content -LiteralPath (Join-Path $ToolsRoot 'tools.json') -Raw | ConvertFrom-Json
+        $installedTools = @($lock.tools | Where-Object { -not $_.testOnly -or $manifest.includeTestDependencies })
+        foreach ($definition in $installedTools) { $null = Get-NativeTool -Name $definition.id -ToolsRoot $ToolsRoot }
         if (-not $IncludeTestDependencies -or $manifest.includeTestDependencies) {
             if ($ArchiveCacheRoot) {
                 # Even an already-installed tool tree must not hide corruption in restored archives.

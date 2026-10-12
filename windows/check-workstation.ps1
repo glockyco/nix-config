@@ -27,13 +27,21 @@ try {
         'Workstation.psm1', 'Workstation.Settings.ps1', 'Workstation.Delivery.ps1', 'Workstation.Validation.ps1',
         'workstation.ps1', 'bootstrap.ps1', 'check-workstation.ps1', 'PSScriptAnalyzerSettings.psd1'
     ) | ForEach-Object { Join-Path $PSScriptRoot $_ }
-    $developmentPaths = @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'dev') -File -Filter '*.ps1' | Select-Object -ExpandProperty FullName)
-    $testPaths = @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'tests') -File -Filter '*.Tests.ps1' | Select-Object -ExpandProperty FullName)
+    . (Join-Path $PSScriptRoot 'dev/formatting.ps1')
+    $sources = Invoke-CapturedProcess -Command 'git' -Arguments @('-C', $repositoryRoot, 'ls-files', '--cached', '--others', '--exclude-standard', '-z') -WorkingDirectory $repositoryRoot
+    if ($sources.code -ne 0) { throw "Cannot enumerate shipped PowerShell sources: $($sources.error)" }
+    $sourcePaths = @($sources.output.Split([char]0) | Where-Object { $_ -match '\.(ps1|psm1|psd1)$' } | ForEach-Object {
+        $path = Join-Path $repositoryRoot $_
+        if (Test-Path -LiteralPath $path -PathType Leaf) { $path }
+    } | Sort-Object -Unique)
+    $testPaths = @($sourcePaths | Where-Object { $_ -like (Join-Path $PSScriptRoot 'tests/*.Tests.ps1') })
     $administratorPaths = @('apply-kbdneo.ps1', 'apply-zen-policies.ps1') | ForEach-Object { Join-Path $PSScriptRoot $_ }
 
     Invoke-WorkstationGate 'PowerShell parser' {
-        foreach ($path in $enginePaths + $developmentPaths + $testPaths + $administratorPaths) {
+        foreach ($path in $enginePaths + $administratorPaths) {
             if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Missing required PowerShell source '$path'." }
+        }
+        foreach ($path in $sourcePaths) {
             $tokens = $null
             $parseErrors = $null
             $null = [Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$parseErrors)
@@ -51,12 +59,14 @@ try {
 
     Invoke-WorkstationGate 'Administrator ownership invariants' {
         # Reuse the surviving fixed-script AST boundary checks without executing either script.
-        . (Join-Path $PSScriptRoot 'tests/native-contract.ps1')
+        . (Join-Path $PSScriptRoot 'tests/powershell-contract.ps1')
         . (Join-Path $PSScriptRoot 'tests/admin-paths.ps1')
-        foreach ($path in $administratorPaths) {
+        foreach ($path in $sourcePaths) {
             $name = Split-Path $path -Leaf
             $record = Get-ScriptRecord -Name $name -Source ([IO.File]::ReadAllText($path))
-            Test-AdministratorScript -Record $record -Name $name
+            $isAdministrator = $path -in $administratorPaths
+            Test-ApprovedScriptRole -Record $record -AllowedAdministrator $isAdministrator
+            if ($isAdministrator) { Test-AdministratorScript -Record $record -Name $name }
         }
     }
 

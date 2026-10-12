@@ -39,11 +39,8 @@ function Invoke-NativeCommitGate {
         [scriptblock]$FormatGate = { param($root, $tools, $paths) $null = Get-NativeTool -Name lefthook -ToolsRoot $tools; Invoke-NativeFormatting -RepositoryRoot $root -ToolsRoot $tools -Paths $paths -Check },
         [scriptblock]$WindowsGate = {
             param($root)
-            # The checker owns its host scope; tools.ps1's StrictMode and helper
-            # functions must not leak into optional document-property checks.
-            $hostCommand = (Get-Process -Id $PID).Path
-            & $hostCommand -NoProfile -NonInteractive -File (Join-Path $root 'windows/check.ps1') -SkipFixtures
-            if ($LASTEXITCODE -ne 0) { throw "Windows invariant gate failed (exit $LASTEXITCODE)" }
+            # The checker runs in a fresh PowerShell 7 host. No helper scope leaks.
+            $hostCommand = (Get-Command pwsh -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
             & $hostCommand -NoProfile -NonInteractive -File (Join-Path $root 'windows/check-workstation.ps1') -StaticOnly
             if ($LASTEXITCODE -ne 0) { throw "Workstation static gate failed (exit $LASTEXITCODE)" }
         }

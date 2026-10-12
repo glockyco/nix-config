@@ -43,12 +43,10 @@ function Invoke-AppRegressionFilter {
   # This directly tests the byte-stream contract in the current test host; the
   # normal apps suite separately exercises the shared init interpreter policy.
   $start.FileName = $script:RegressionEngine
-  $start.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script:RegressionFilter + '"'
+  $start.Arguments = '-NoLogo -NoProfile -NonInteractive -File "' + $script:RegressionFilter + '"'
   $start.UseShellExecute = $false
   $start.RedirectStandardInput = $true; $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
-  # .NET Framework builds an AutoFlush StreamWriter for redirected stdin.
-  # Its inherited console encoding can emit a BOM before any BaseStream write.
-  # Construct that pipe with a BOMless writer, then restore the caller's encoding.
+  # Use a BOMless stdin writer so the fixture controls every input byte.
   $parentInputEncoding = [Console]::InputEncoding
   try {
     [Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
@@ -184,7 +182,7 @@ $script:RegressionConfig = Join-Path $script:RegressionTemporary 'chezmoi.json'
 $script:RegressionState = Join-Path $script:RegressionTemporary 'state.boltdb'
 $script:RegressionCache = Join-Path $script:RegressionTemporary 'cache'
 $script:RegressionChezmoi = (Get-Command chezmoi -ErrorAction Stop).Source
-$script:RegressionEngine = [Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+$script:RegressionEngine = (Get-Command pwsh -CommandType Application | Select-Object -First 1).Source
 $script:RegressionFilter = Join-Path $script:RegressionTemporary 'altsnap.ps1'
 $saved = @{}
 foreach ($name in @('HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'PSModulePath')) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }

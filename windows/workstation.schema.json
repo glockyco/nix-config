@@ -337,61 +337,9 @@
                 "type": "string",
                 "minLength": 1
               },
-              "manifest": {
-                "type": "object",
-                "required": [
-                  "dependencies"
-                ],
-                "properties": {
-                  "dependencies": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string",
-                      "minLength": 1
-                    }
-                  }
-                }
-              },
-              "lock": {
-                "type": "object",
-                "required": [
-                  "lockfileVersion",
-                  "packages"
-                ]
-              },
-              "packages": {
-                "type": "object",
-                "additionalProperties": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "version": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "integrity": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "tarball": {
-                      "type": "string",
-                      "pattern": "^https://"
-                    },
-                    "bin": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "string",
-                        "minLength": 1
-                      }
-                    }
-                  },
-                  "required": [
-                    "version",
-                    "integrity",
-                    "tarball",
-                    "bin"
-                  ]
-                }
+              "source": {
+                "type": "string",
+                "minLength": 1
               }
             },
             "required": [
@@ -403,9 +351,7 @@
               "versionPolicy",
               "directory",
               "nodeId",
-              "manifest",
-              "lock",
-              "packages"
+              "source"
             ],
             "allOf": [
               {

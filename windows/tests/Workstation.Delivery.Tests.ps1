@@ -165,119 +165,69 @@ Describe 'Workstation delivery safety and convergence' {
     Context 'Integrity-locked npm closure' {
       BeforeEach {
         $script:node = Join-Path $TestDrive 'node\node.exe'
-        $script:resource = @{
-          id = '@fission-ai/openspec'; kind = 'npm'; versionPolicy = 'pinned'; version = '1.14.0'; nodeId = 'OpenJS.NodeJS.LTS'
-          manifest = @{ name = 'tools'; private = $true; dependencies = @{ '@fission-ai/openspec' = '1.14.0' } }
-          lock = @{ lockfileVersion = 3; packages = @{ '' = @{ name = 'tools' }; 'node_modules/@fission-ai/openspec' = @{ version = '1.14.0'; integrity = 'sha512-reviewed' }; 'node_modules/dependency' = @{ version = '2.0.0'; integrity = 'sha512-transitive' } } }
-          packages = @{ '@fission-ai/openspec' = @{ version = '1.14.0'; integrity = 'sha512-reviewed'; bin = @{ openspec = 'bin/openspec.js' } } }
-        }
+        $script:resource = @{ id = '@fission-ai/openspec'; kind = 'npm'; versionPolicy = 'pinned'; version = '1.14.0'; nodeId = 'OpenJS.NodeJS.LTS'; source = 'npm' }
         Mock Resolve-WorkstationExecutable { $script:node }
+        Mock Get-WorkstationNpmLockHash { 'reviewed-lock' }
         Mock Test-Path { $true }
-        Mock Read-WorkstationJsonFile {
-          if ($Path -eq (Join-Path $script:directory 'package.json')) { return $script:resource.manifest }
-          if ($Path -eq (Join-Path $script:directory 'package-lock.json')) { return $script:resource.lock }
-          if ($Path.Replace('\', '/') -like '*dependency/package.json') { return @{ version = '2.0.0' } }
-          return @{ version = '1.14.0'; bin = @{ openspec = 'bin/openspec.js' } }
-        }
-        Mock Get-Content { '../@fission-ai/openspec/bin/openspec.js' }
-        Mock Invoke-WorkstationNative { '1.14.0' }
+        Mock Get-Content { 'reviewed-lock' }
+        Mock Invoke-WorkstationNative {}
       }
 
-      It 'checks the complete lock, all installed closure manifests, bin targets and Windows wrappers' {
+      It 'accepts the closure installed from the current lock without running npm' {
         Test-WorkstationNpm -Resource $script:resource -Context $script:context | Should -BeTrue
-        Should -Invoke Read-WorkstationJsonFile -Times 1 -Exactly -ParameterFilter { $Path.Replace('\', '/') -like '*dependency/package.json' }
-        Should -Invoke Get-Content -Times 3 -Exactly
-        Should -Invoke Invoke-WorkstationNative -Times 1 -Exactly -ParameterFilter { $Command -eq $script:node -and $Arguments[0].Replace('\', '/') -like '*bin/openspec.js' -and $Arguments[1] -eq '--version' }
-        Should -Invoke Invoke-WebRequest -Times 0 -Exactly
-        Should -Invoke New-Item -Times 0 -Exactly
-        Should -Invoke Set-WorkstationUserPath -Times 0 -Exactly
-      }
-
-      It 'reports a changed transitive integrity lock as drift' {
-        Mock Read-WorkstationJsonFile {
-          if ($Path -like '*package-lock.json') { return @{ lockfileVersion = 3; packages = @{} } }
-          return $script:resource.manifest
-        }
-        Test-WorkstationNpm -Resource $script:resource -Context $script:context | Should -BeFalse
+        Set-WorkstationNpm -Resource $script:resource -Context $script:context
         Should -Invoke Invoke-WorkstationNative -Times 0 -Exactly
         Should -Invoke New-Item -Times 0 -Exactly
       }
 
-      It 'reports a missing PowerShell wrapper and a misdirected wrapper as drift' {
-        Mock Test-Path { $LiteralPath -notlike '*openspec.ps1' }
+      It 'reports drift when the installed closure came from another lock or has no marker' {
+        Mock Get-Content { 'previous-lock' }
         Test-WorkstationNpm -Resource $script:resource -Context $script:context | Should -BeFalse
-        Mock Test-Path { $true }
-        Mock Get-Content { '../wrong-package/bin/tool.js' }
+        Mock Test-Path { $LiteralPath -notlike '*.workstation-lock.sha256' }
         Test-WorkstationNpm -Resource $script:resource -Context $script:context | Should -BeFalse
       }
 
-      It 'reports missing Node or adjacent npm as drift without writes' {
+      It 'reports missing Node or adjacent npm as drift' {
         Mock Resolve-WorkstationExecutable { $null }
         Test-WorkstationNpm -Resource $script:resource -Context $script:context | Should -BeFalse
         Mock Resolve-WorkstationExecutable { $script:node }
         Mock Test-Path { $LiteralPath -notlike '*npm.cmd' }
         Test-WorkstationNpm -Resource $script:resource -Context $script:context | Should -BeFalse
-        Should -Invoke New-Item -Times 0 -Exactly
-        Should -Invoke Set-WorkstationUserPath -Times 0 -Exactly
       }
 
-      It 'refuses a newer pinned OpenSpec before creating staging files or invoking npm ci' {
-        Mock Test-WorkstationNpmPayload { $false }
-        Mock Read-WorkstationJsonFile { @{ version = '1.15.0' } }
-        { Set-WorkstationNpm -Resource $script:resource -Context $script:context } | Should -Throw '*refusing downgrade*1.15.0*'
-        Should -Invoke New-Item -Times 0 -Exactly
-        Should -Invoke Invoke-WorkstationNative -Times 0 -Exactly
-        Should -Invoke Move-Item -Times 0 -Exactly
-      }
-
-      It 'does not reinstall a valid closure when only the user PATH entry is absent' {
+      It 'repairs only PATH when the closure matches the lock' {
         Mock Test-WorkstationUserPath { $false }
         Test-WorkstationNpm -Resource $script:resource -Context $script:context | Should -BeFalse
         Set-WorkstationNpm -Resource $script:resource -Context $script:context
         Should -Invoke Set-WorkstationUserPath -Times 1 -Exactly
-        Should -Invoke Invoke-WorkstationNative -Times 0 -Exactly -ParameterFilter { $Arguments[0] -eq 'ci' }
-        Should -Invoke New-Item -Times 0 -Exactly
+        Should -Invoke Invoke-WorkstationNative -Times 0 -Exactly
       }
 
-      It 'installs into staging with adjacent npm ci and promotes only a verified closure' {
-        Mock Test-Path { $LiteralPath -like '*npm.cmd' -or $LiteralPath -eq $script:directory }
-        Mock Test-WorkstationNpmPayload { $Directory -ne $script:directory }
+      It 'installs the repository lock with npm ci in staging and promotes it with a marker' {
+        Mock Get-Content { 'previous-lock' }
         Mock New-Item { [void][IO.Directory]::CreateDirectory($Path) }
-        Mock Invoke-WorkstationNative {
-          $prefix = $Arguments[2]
-          (Read-WorkstationJsonFile -Path (Join-Path $prefix 'package.json')).name | Should -Be 'tools'
-          (Get-Content -LiteralPath (Join-Path $prefix 'package-lock.json') -Raw | ConvertFrom-Json -AsHashtable).lockfileVersion | Should -Be 3
-        }
-        # Only staging files inside TestDrive use the actual filesystem.
-        Mock Read-WorkstationJsonFile { Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -AsHashtable }
-        Mock Get-Content { [IO.File]::ReadAllText($LiteralPath) }
         Set-WorkstationNpm -Resource $script:resource -Context $script:context
+        Should -Invoke Copy-Item -Times 2 -Exactly -ParameterFilter { $Destination -like "$script:directory.installing-*" }
         Should -Invoke Invoke-WorkstationNative -Times 1 -Exactly -ParameterFilter {
           $Command -eq (Join-Path (Split-Path -Parent $script:node) 'npm.cmd') -and
-          $Arguments[0] -eq 'ci' -and $Arguments[1] -eq '--prefix' -and
-          $Arguments[2] -like "$script:directory.installing-*" -and
+          $Arguments[0] -eq 'ci' -and $Arguments[2] -like "$script:directory.installing-*" -and
           ($Arguments[3..5] -join '|') -eq '--ignore-scripts|--no-audit|--no-fund'
         }
         Should -Invoke Move-Item -Times 1 -Exactly -ParameterFilter { $LiteralPath -eq $script:directory -and $Destination -like '*.previous-*' }
         Should -Invoke Move-Item -Times 1 -Exactly -ParameterFilter { $Destination -eq $script:directory }
-        Should -Invoke Remove-Item -Times 0 -Exactly -ParameterFilter { $LiteralPath -like '*.previous-*' }
+        Should -Invoke Set-WorkstationUserPath -Times 1 -Exactly
+        $marker = @(Get-ChildItem -LiteralPath $TestDrive -Recurse -Filter '.workstation-lock.sha256')
+        $marker.Count | Should -Be 1
+        [IO.File]::ReadAllText($marker[0].FullName) | Should -Be 'reviewed-lock'
       }
 
       It 'propagates npm failure without touching the existing closure or PATH' {
-        Mock Test-Path { $LiteralPath -like '*npm.cmd' -or $LiteralPath -eq $script:directory }
-        Mock Test-WorkstationNpmPayload { $false }
+        Mock Get-Content { 'previous-lock' }
         Mock New-Item { [void][IO.Directory]::CreateDirectory($Path) }
         Mock Invoke-WorkstationNative { throw 'npm exited 1' }
         { Set-WorkstationNpm -Resource $script:resource -Context $script:context } | Should -Throw '*npm exited 1*'
         Should -Invoke Move-Item -Times 0 -Exactly
         Should -Invoke Set-WorkstationUserPath -Times 0 -Exactly
-      }
-
-      It 'omits only explicitly incompatible optional dependencies from manifest checks' {
-        $script:resource.lock.packages['node_modules/platform-darwin'] = @{ version = '1.0.0'; optional = $true; os = @('darwin') }
-        Mock Test-Path { $LiteralPath -notlike '*platform-darwin*' }
-        Test-WorkstationNpm -Resource $script:resource -Context $script:context | Should -BeTrue
-        Should -Invoke Read-WorkstationJsonFile -Times 0 -Exactly -ParameterFilter { $Path -like '*platform-darwin*' }
       }
     }
 
