@@ -1,3 +1,4 @@
+# Disposable Nix-only CI selection probe.
 {
   description = "Fleet workstations: native Nix systems and portable chezmoi user configuration";
 
