@@ -81,8 +81,8 @@ function Resolve-WorkstationExecutable {
     }
     # Nonportable installers may register their executable on PATH. Never assume Links exists.
     if (-not $Resource.installerType -or $Resource.installerType -notin @('zip', 'portable')) {
-        $command = Get-Command -Name $Resource.executable -CommandType Application -ErrorAction SilentlyContinue
-        if ($command) { return $command.Source }
+        $commands = @(Get-Command -Name $Resource.executable -CommandType Application -ErrorAction SilentlyContinue)
+        if ($commands.Count -gt 0) { return $commands[0].Source }
     }
     return $null
 }

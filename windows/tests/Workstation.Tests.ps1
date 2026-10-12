@@ -105,6 +105,12 @@ Describe 'Portable resolution and user PATH' {
             { Resolve-WorkstationExecutable -Resource @{ id = 'Vendor.Tool'; executable = 'tool.exe'; installerType = 'zip' } } | Should -Throw '*Ambiguous*'
         }
 
+        It 'resolves one PATH-preferred application when multiple installations are discoverable' {
+            Mock Test-Path { $false }
+            Mock Get-Command { @([pscustomobject]@{ Source = 'C:\first\tool.exe' }, [pscustomobject]@{ Source = 'C:\second\tool.exe' }) }
+            Resolve-WorkstationExecutable -Resource @{ id = 'Vendor.Tool'; executable = 'tool.exe' } | Should -Be 'C:\first\tool.exe'
+        }
+
         It 'preserves PATH on a no-op and appends a missing directory once' {
             Mock Get-WorkstationUserPath { 'C:\existing;C:\TOOLS\' }
             Mock Set-WorkstationPersistedUserPath {}
