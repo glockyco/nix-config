@@ -184,8 +184,8 @@ Korolev SHALL use a native Windows checkout below the ghq root `~/src` as chezmo
 
 #### Scenario: Apply package configuration after a source change
 
-- **WHEN** the Windows document content changes and the standard user runs `chezmoi apply`
-- **THEN** a content-hashed onchange operation invokes `winget configure` on the checkout's document and propagates failure
+- **WHEN** the workstation declaration or engine changes and the standard user runs `chezmoi apply`
+- **THEN** a content-hashed onchange operation runs the PowerShell 7 workstation engine from the checkout and propagates failure
 - **AND** an unchanged apply does not rerun that operation
 - **AND** both Administrator scripts remain explicit elevated runs
 
