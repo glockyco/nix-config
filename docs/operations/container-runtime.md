@@ -113,34 +113,54 @@ If this procedure started Colima only for acceptance, finish with `colima stop`.
 
 ## Korolev
 
-Korolev runs rootless Podman inside WSL; `docker` is Podman.
-`docker compose` runs the official Docker Compose that the [declaration](../../modules/roles/nixos/wsl-workstation/containers.nix) pins, against the user's socket-activated Podman API socket.
-Container root is the WSL user, so files a container writes into a bind mount belong to that user.
+Korolev uses native Docker Desktop and its bundled Docker CLI/Compose with the WSL 2 Linux backend. The [native document](../../windows/configuration.winget) owns one self-updating machine-scope `Docker.DockerDesktop` installer. There is no version pin or downgrade of a newer installed release. Intune owns updates, not initial installation, according to the owner-confirmed 2026-10-11 `AppWorkload-20261011-084710.log` evidence. The owner confirmed licensing/entitlement and approved installation on 2026-10-12.
 
-After activation, check the provider, a failing dependency, and bind-mount ownership in a disposable project:
+Follow the [standard-user installation and first-launch procedure](korolev-windows.md#docker-desktop-permissions-and-first-launch). The owner supplies UAC credentials only for the approved machine installer, accepts the subscription agreement in Docker Desktop and signs in with the approved entitled account. WSL 2 does not require `docker-users` membership or `--always-run-service`. The resource does not enable privileged Hyper-V/Windows-container features or modify local groups. A separately reviewed group change, if live evidence requires one, needs sign-out/sign-in. Docker Desktop's engine-owned WSL distributions are not the retiring project distro `NixOS`.
 
-```sh
-docker compose version
-dir=$(mktemp -d) && cd "$dir"
-cat > compose.yaml <<'EOF'
+In a fresh standard-user PowerShell, confirm the executable belongs to the native installation, inspect the context and engine, and run a disposable Compose workload. The helper bounds each Docker process to 120 seconds and reports output without falling back to WSL:
+
+```powershell
+$docker = (Get-Command docker.exe -CommandType Application).Source
+if ($docker -notlike 'C:\Program Files\Docker\Docker\resources\bin\docker.exe') {
+  throw "Unexpected Docker executable: $docker"
+}
+$smoke = Join-Path $env:TEMP ('docker-native-' + [guid]::NewGuid().ToString('N'))
+$null = New-Item -ItemType Directory -Path $smoke
+$project = 'native-' + [guid]::NewGuid().ToString('N')
+function Invoke-SmokeDocker([string[]]$Arguments) {
+  $stdout = Join-Path $smoke 'stdout.log'
+  $stderr = Join-Path $smoke 'stderr.log'
+  $process = Start-Process -FilePath $docker -ArgumentList $Arguments -PassThru `
+    -RedirectStandardOutput $stdout -RedirectStandardError $stderr -NoNewWindow
+  if (-not $process.WaitForExit(120000)) {
+    $process.Kill()
+    throw 'Docker smoke timed out after 120 seconds'
+  }
+  Get-Content $stdout, $stderr
+  if ($process.ExitCode -ne 0) { throw "Docker exited $($process.ExitCode)" }
+}
+@'
 services:
-  dependency:
-    image: docker.io/library/busybox
-    command: ["sh", "-c", "exit ${DEPENDENCY_EXIT:-0}"]
   job:
-    image: docker.io/library/busybox
-    volumes: [".:/work"]
-    command: ["touch", "/work/written"]
-    depends_on:
-      dependency:
-        condition: service_completed_successfully
-EOF
-DEPENDENCY_EXIT=1 docker compose run --rm job; echo "exit $?"
-docker compose run --rm job && stat -c %U written
-docker compose down
-cd - && rm -rf "$dir"
-test ! -e /run/docker.sock
+    image: docker.io/library/busybox:latest
+    command: ["sh", "-c", "uname -m; touch /work/written"]
+    volumes: ["./:/work"]
+'@ | Set-Content -LiteralPath (Join-Path $smoke 'compose.yaml') -Encoding ascii
+Push-Location $smoke
+try {
+  Invoke-SmokeDocker @('version')
+  Invoke-SmokeDocker @('context', 'show')
+  Invoke-SmokeDocker @('info', '--format', '{{.OSType}}/{{.Architecture}}')
+  Invoke-SmokeDocker @('compose', 'version')
+  Invoke-SmokeDocker @('compose', '-p', $project, 'up', '--abort-on-container-exit', '--exit-code-from', 'job')
+  if (-not (Test-Path -LiteralPath 'written')) { throw 'Native bind mount failed' }
+} finally {
+  try { Invoke-SmokeDocker @('compose', '-p', $project, 'down', '--volumes', '--remove-orphans') }
+  finally { Pop-Location }
+}
+Remove-Item -LiteralPath $smoke -Recurse
 ```
 
-`docker compose version` must print the pinned version without a provider banner.
-The failing dependency must stop the job with a nonzero exit, and `written` must belong to the WSL user.
+Require context `desktop-linux`, engine `linux/x86_64`, successful Compose and the bind-mount file. Record actual versions and output. On failure, retain the temporary diagnostic directory, inspect Docker Desktop and clean up only this unique Compose project. If verification alone started Docker Desktop, quit it after cleanup. Do not run `docker system prune`, delete volumes outside this project, or use a WSL-host fallback.
+
+Projects own their container images, build commands and share roots. Use employer-managed `S:\` or `\\scch.at\SCCH` where required, not `/mnt/s`. The workstation does not own project toolchain images or migrate container databases automatically. Mac Colima remains unchanged.

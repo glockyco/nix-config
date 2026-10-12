@@ -1,11 +1,11 @@
 {
   "auditedOn": "2026-09-02",
-  "revisedOn": "2026-10-07",
+  "revisedOn": "2026-10-12",
   "gitScopeEvidence": "Git.Git removed only for the HKCU per-user installation: Intune Patch My PC update-only Git detection and requirements inspect HKLM (AppWorkload.log owner audit 2026-10-07). No Intune policy changed.",
+  "dockerScopeEvidence": "Docker.DockerDesktop removed for repository initial machine installation: owner-confirmed AppWorkload-20261011-084710.log audit on 2026-10-11 shows only Update fuer Docker Desktop 4.47.0. Owner confirmed licensing and approved installation on 2026-10-12. Intune retains update ownership. No Intune policy changed.",
   "identifiers": [
     "7zip.7zip",
     "Adobe.Acrobat.Reader.32-bit",
-    "Docker.DockerDesktop",
     "Google.Chrome",
     "IrfanSkiljan.IrfanView",
     "JGraph.Draw",

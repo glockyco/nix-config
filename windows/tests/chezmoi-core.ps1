@@ -229,6 +229,9 @@ exit $LASTEXITCODE
   $platformFixture.checkout = $checkout
   $documentPath = Join-Path $checkout 'windows/configuration.winget'
   $originalDocument = [IO.File]::ReadAllText($documentPath)
+  $dockerResources = @((($originalDocument | ConvertFrom-Json).resources) | Where-Object { $_.metadata.PSObject.Properties['application'] -and $_.metadata.application.id -eq 'Docker.DockerDesktop' })
+  Assert-Core ($dockerResources.Count -eq 1 -and $dockerResources[0].metadata.application.scope -eq 'machine' -and $dockerResources[0].metadata.winget.securityContext -eq 'elevated') 'hashed chezmoi document must contain exactly one approved machine Docker installer'
+  Assert-Core ($dockerResources[0].metadata.application.versionPolicy -eq 'self-updating' -and -not $dockerResources[0].metadata.application.PSObject.Properties['version']) 'chezmoi must not pin or downgrade Docker Desktop'
   Write-CoreFile $documentPath ($originalDocument + "`n")
   $caught = $false
   try { & ([scriptblock]::Create($wingetScript)) } catch { $caught = $_.Exception.Message -match 'changed after rendering' }

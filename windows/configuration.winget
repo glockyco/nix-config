@@ -62,6 +62,33 @@
     {
       "metadata": {
         "application": {
+          "id": "Docker.DockerDesktop",
+          "roles": [
+            "container-runtime"
+          ],
+          "scope": "machine",
+          "source": "winget",
+          "versionPolicy": "self-updating"
+        },
+        "description": "Install Docker Desktop for machine scope with the default WSL 2 backend",
+        "winget": {
+          "securityContext": "elevated"
+        },
+        "distribution": {
+          "registrationOnly": true,
+          "installerType": "catalog-machine"
+        }
+      },
+      "name": "package container runtime",
+      "properties": {
+        "testScript": "$specification = '{\"id\":\"Docker.DockerDesktop\",\"policy\":\"self-updating\",\"scope\":\"machine\",\"source\":\"winget\",\"registrationOnly\":true}' | ConvertFrom-Json\n$ErrorActionPreference = 'Stop'\nfunction Get-InstalledVersion {\n  $preference = $ErrorActionPreference\n  try {\n    $ErrorActionPreference = 'Continue'\n    $output = & winget list --id $specification.id --exact --source winget --scope machine --accept-source-agreements --disable-interactivity 2>&1\n    $code = $LASTEXITCODE\n  } finally { $ErrorActionPreference = $preference }\n  if ($code -eq -1978335212 -or $code -eq -1978335189) { return $null }\n  if ($code -ne 0) { throw \"winget failed with exit code $code\" }\n  $pattern = '(?m)' + [regex]::Escape($specification.id) + '\\s+(\\S+)'\n  $match = [regex]::Match(($output -join \"`n\"), $pattern)\n  if (-not $match.Success) { return $null }\n  return $match.Groups[1].Value\n}\nfunction Test-UserUpgradeAvailable {\n  $preference = $ErrorActionPreference\n  try {\n    $ErrorActionPreference = 'Continue'\n    $output = & winget list --id $specification.id --exact --source winget --scope machine --upgrade-available --accept-source-agreements --disable-interactivity 2>&1\n    $code = $LASTEXITCODE\n  } finally { $ErrorActionPreference = $preference }\n  if ($code -eq -1978335212 -or $code -eq -1978335189) { return $false }\n  if ($code -ne 0) { throw \"winget failed with exit code $code\" }\n  return (($output -join \"`n\") -match [regex]::Escape($specification.id))\n}\n$installed = Get-InstalledVersion\nif (-not $installed) { return $false }\nreturn (-not (Test-UserUpgradeAvailable))\n",
+        "setScript": "$specification = '{\"id\":\"Docker.DockerDesktop\",\"policy\":\"self-updating\",\"scope\":\"machine\",\"source\":\"winget\",\"registrationOnly\":true}' | ConvertFrom-Json\n$ErrorActionPreference = 'Stop'\nfunction Get-InstalledVersion {\n  $preference = $ErrorActionPreference\n  try {\n    $ErrorActionPreference = 'Continue'\n    $output = & winget list --id $specification.id --exact --source winget --scope machine --accept-source-agreements --disable-interactivity 2>&1\n    $code = $LASTEXITCODE\n  } finally { $ErrorActionPreference = $preference }\n  if ($code -eq -1978335212 -or $code -eq -1978335189) { return $null }\n  if ($code -ne 0) { throw \"winget failed with exit code $code\" }\n  $pattern = '(?m)' + [regex]::Escape($specification.id) + '\\s+(\\S+)'\n  $match = [regex]::Match(($output -join \"`n\"), $pattern)\n  if (-not $match.Success) { return $null }\n  return $match.Groups[1].Value\n}\nfunction Test-UserUpgradeAvailable {\n  $preference = $ErrorActionPreference\n  try {\n    $ErrorActionPreference = 'Continue'\n    $output = & winget list --id $specification.id --exact --source winget --scope machine --upgrade-available --accept-source-agreements --disable-interactivity 2>&1\n    $code = $LASTEXITCODE\n  } finally { $ErrorActionPreference = $preference }\n  if ($code -eq -1978335212 -or $code -eq -1978335189) { return $false }\n  if ($code -ne 0) { throw \"winget failed with exit code $code\" }\n  return (($output -join \"`n\") -match [regex]::Escape($specification.id))\n}\n$installed = Get-InstalledVersion\nif ($installed -and -not (Test-UserUpgradeAvailable)) { return }\n$preference = $ErrorActionPreference\ntry {\n  $ErrorActionPreference = 'Continue'\n  & winget install --scope machine --id $specification.id --exact --source winget --architecture x64 --skip-dependencies --silent --override 'install --quiet --backend=wsl-2 --no-windows-containers' --accept-package-agreements --accept-source-agreements --disable-interactivity 2>&1\n  $code = $LASTEXITCODE\n} finally { $ErrorActionPreference = $preference }\nif ($code -ne 0) { throw \"winget failed with exit code $code\" }\n"
+      },
+      "type": "Microsoft.DSC.Transitional/WindowsPowerShellScript"
+    },
+    {
+      "metadata": {
+        "application": {
           "id": "Brave.Brave",
           "roles": [
             "browser-relay"

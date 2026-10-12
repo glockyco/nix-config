@@ -38,7 +38,7 @@ function Invoke-NativeFixtures {
     Test-WindowsDocument (Copy-FixtureObject $Document) $Managed
     . (Join-Path $WindowsRoot 'tests/schema-fixtures.ps1')
     Invoke-SchemaFixtures $Document $WindowsRoot $root
-    Write-Output 'fixture passed: unchanged declaration including per-user Git and approved Zen/Tailscale exceptions'
+    Write-Output 'fixture passed: unchanged declaration including per-user Git and approved Zen/Tailscale/Docker exceptions'
     $profile = [IO.File]::ReadAllText((Join-Path $WindowsRoot 'texlive.profile'))
     Test-TeXLiveProfile $profile
     foreach ($line in @($profile -split '\r?\n' | Where-Object { $_ -notmatch '^\s*(#|$)' })) {
@@ -99,7 +99,13 @@ function Invoke-NativeFixtures {
       @{ Name = 'package selector mismatch'; Finding = 'resource .+: package identity/source selector differs'; Edit = { param($d) $d.resources[0].type = 'Microsoft.WinGet/Package'; $d.resources[0].properties = [PSCustomObject]@{ id = 'Wrong.ID'; source = 'winget'; useLatest = $true } } },
       @{ Name = 'self-update without latest'; Finding = 'resource .+: self-updating/latest selector differs'; Edit = { param($d) $d.resources[0].type = 'Microsoft.WinGet/Package'; $d.resources[0].properties = [PSCustomObject]@{ id = $d.resources[0].metadata.application.id; source = 'winget'; useLatest = $false } } },
       @{ Name = 'exact selector mismatch'; Finding = 'resource .+: exact version selector differs'; Edit = { param($d) $d.resources += [PSCustomObject]@{ name = 'fixture exact package'; type = 'Microsoft.WinGet/Package'; metadata = [PSCustomObject]@{ application = [PSCustomObject]@{ id = 'Fixture.Exact'; source = 'winget'; scope = 'user'; roles = @('fixture-exact'); versionPolicy = 'exact'; version = '1.0.0' } }; properties = [PSCustomObject]@{ id = 'Fixture.Exact'; source = 'winget'; version = '0.0.1'; useLatest = $false } } } },
-      @{ Name = 'Docker exclusion'; Finding = 'resource .+: centrally managed identifier Docker.DockerDesktop'; Edit = { param($d) $d.resources[0].metadata.application.id = 'Docker.DockerDesktop' } },
+      @{ Name = 'Docker wrong scope'; Finding = 'resource .+: unapproved application scope'; Edit = { param($d) ($d.resources | Where-Object name -eq 'package container runtime').metadata.application.scope = 'user' } },
+      @{ Name = 'Docker missing elevation'; Finding = 'resource .+: unapproved elevated resource'; Edit = { param($d) ($d.resources | Where-Object name -eq 'package container runtime').metadata.winget.securityContext = 'current' } },
+      @{ Name = 'Docker version pin'; Finding = 'resource .+: invalid version selector'; Edit = { param($d) ($d.resources | Where-Object name -eq 'package container runtime').metadata.application | Add-Member version '4.47.0' } },
+      @{ Name = 'Docker group expansion'; Finding = 'script .+: unapproved Docker privilege'; Edit = { param($d) ($d.resources | Where-Object name -eq 'package container runtime').properties.setScript += "`nAdd-LocalGroupMember -Group 'docker-users' -Member 'unreviewed'" } },
+      @{ Name = 'Docker automatic service'; Finding = 'script .+: unapproved Docker privilege'; Edit = { param($d) ($d.resources | Where-Object name -eq 'package container runtime').properties.setScript += "`n`$flag = '--always-run-service'" } },
+      @{ Name = 'Docker automatic license acceptance'; Finding = 'script .+: unapproved Docker privilege'; Edit = { param($d) ($d.resources | Where-Object name -eq 'package container runtime').properties.setScript += "`n`$flag = '--accept-license'" } },
+      @{ Name = 'Docker missing installer override'; Finding = 'resource .+: Docker must override catalog license'; Edit = { param($d) $r = $d.resources | Where-Object name -eq 'package container runtime'; $r.properties.setScript = $r.properties.setScript.Replace("--override 'install --quiet --backend=wsl-2 --no-windows-containers' ", '') } },
       @{ Name = 'another audited exclusion'; Finding = 'resource .+: centrally managed identifier Google.Chrome'; Edit = { param($d) $d.resources[0].metadata.application.id = 'Google.Chrome' } },
       @{ Name = 'machine scope expansion'; Finding = 'resource .+: unapproved application scope'; Edit = { param($d) $d.resources[0].metadata.application.scope = 'machine' } },
       @{ Name = 'Zen wrong scope'; Finding = 'resource .+: unapproved application scope'; Edit = { param($d) ($d.resources | Where-Object name -eq 'package browser').metadata.application.scope = 'user' } },
