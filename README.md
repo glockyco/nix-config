@@ -4,27 +4,27 @@ Personal workstation configuration for an Apple Silicon MacBook Pro and Korolev'
 
 ## System overview
 
-| Host              | Platform                          | Configuration                                                      |
-| ----------------- | --------------------------------- | ------------------------------------------------------------------ |
-| `macbook-pro`     | `aarch64-darwin`                  | [nix-darwin](hosts/macbook-pro/default.nix)                        |
-| `korolev`         | `x86_64-linux`                    | [NixOS/WSL](hosts/korolev/default.nix)                             |
-| `korolev` Windows | Native Windows (not a Nix system) | [WinGet source and operations](docs/operations/korolev-windows.md) |
+| Host              | Platform                          | Configuration                                                          |
+| ----------------- | --------------------------------- | ---------------------------------------------------------------------- |
+| `macbook-pro`     | `aarch64-darwin`                  | [nix-darwin](hosts/macbook-pro/default.nix)                            |
+| `korolev`         | `x86_64-linux`                    | [NixOS/WSL](hosts/korolev/default.nix)                                 |
+| `korolev` Windows | Native Windows (not a Nix system) | [PowerShell engine and operations](docs/operations/korolev-windows.md) |
 
 Host facts live in [typed declarations](modules/fleet/host.nix) under `hosts/<name>/host.nix`. Each `hosts/<name>/default.nix` selects its roles: the Mac selects [desktop](modules/roles/darwin/desktop/default.nix), [PostgreSQL](modules/roles/darwin/postgresql/default.nix), [container client](modules/roles/darwin/container-client/default.nix), and the temporary [Air client](modules/roles/darwin/air-client/default.nix); Korolev selects [WSL workstation](modules/roles/nixos/wsl-workstation/default.nix). The Darwin and NixOS baselines do not enable these functions on their own. Change a machine value in its host declaration and role policy in its role module.
 
-Nix owns Linux/macOS host configuration and ordinary tools, including their language servers, OpenSpec, and Plannotator. Native Windows uses the [tool owner/version/update/recovery matrix](docs/operations/korolev-windows.md#tool-ownership-update-and-recovery-matrix): WinGet owns declared packages/settings, official user archives provide PowerShell/GitHub CLI/TexLab/QPDF/ImageMagick, exact npm packages provide native LSPs/OpenSpec, and the official owner-run per-user installer provides TeX Live. OMP uses the official upstream binary installer and its personal plugin uses OMP's plugin manager (see [OMP](#omp)); neither is installed by Nix activation. OMP owns writable authentication, configuration, sessions, plugin cache, and databases. Project repositories own SDKs, root markers and build configuration.
+Nix owns Linux/macOS host configuration and ordinary tools, including their language servers, OpenSpec and Plannotator. On Windows, a PowerShell 7 engine installs applications and applies user settings from [`windows/workstation.json`](windows/workstation.json). See [Korolev Windows](docs/operations/korolev-windows.md). OMP and its plugins are installed outside Nix and the engine (see [OMP](#omp)). OMP owns its authentication, configuration, sessions and plugin cache. Project repositories own SDKs, root markers and build configuration.
 
 Chezmoi owns user files and user setup from [home/](home/); Nix owns `users.users.<name>.packages`, shell plugins, system preferences, services and immutable `/etc/chezmoi-resources/`. [Shared TOML facts](home/.chezmoidata/) feed both the typed Nix host declarations and the real chezmoi templates. User files are regular writable files, not Nix-store symlinks; Zed and Karabiner merge declared settings while preserving undeclared UI state. Neither owner manages OMP state, private keys, shell history, browser profiles, project data or Colima runtime data.
 
-Windows source is `windows/configuration.winget` (JSON-compatible YAML), `windows/apply-kbdneo.ps1` and `windows/apply-zen-policies.ps1`. WinGet owns packages/settings; chezmoi owns Git/gh/SSH, native Zed/Fork/PowerToys/ReNeo/AltSnap and existing Zen profile declarations, with no parallel document user-file writer. Use standard `scch\jglock` and the native checkout below `C:\Users\jglock\src`, distinct from the Linux checkout. Tern/OMP/plugin/Plannotator installation stays explicit. [Native bootstrap/apply/recovery](docs/operations/korolev-windows.md#preview-neo-prerequisite-apply-and-zen-policies) includes local backups, Neo/restart and narrow Administrator boundaries.
+On Windows, chezmoi runs the engine before it writes user files. The only Administrator operations are `windows/apply-kbdneo.ps1` and `windows/apply-zen-policies.ps1`.
 
-| Platform / state                                           | Owner                                 | Apply / recovery boundary                                                                                |
-| ---------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Linux/macOS system, ordinary packages, immutable resources | Nix                                   | Host activation; retained Nix generations                                                                |
-| Linux/macOS/Windows user declarations                      | Chezmoi `home/` and shared TOML       | Ordinary-user diff/apply/verify; local owned-file/config/state backups                                   |
-| Windows installs and settings                              | WinGet `windows/configuration.winget` | Content-hashed chezmoi before-script; independent drift test and explicit repair, no generation rollback |
-| Neo machine driver / Zen machine policy                    | Two fixed Administrator scripts       | Separate approved credentials and narrowly owned backups; Neo requires restart                           |
-| Windows app profiles, credentials, OMP/Tern/plugin runtime | Application / user                    | Supported upstream flows; never whole-profile apply or credential import                                 |
+| Platform / state                                           | Owner                                   | Apply / recovery boundary                                                                                        |
+| ---------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Linux/macOS system, ordinary packages, immutable resources | Nix                                     | Host activation; retained Nix generations                                                                        |
+| Linux/macOS/Windows user declarations                      | Chezmoi `home/` and shared TOML         | Ordinary-user diff/apply/verify; local owned-file/config/state backups                                           |
+| Windows installs and settings                              | PowerShell 7 `windows/workstation.json` | Content-hashed chezmoi before-script. Read-only drift test. Git history restores source, not mutated user state. |
+| Neo machine driver / Zen machine policy                    | Two fixed Administrator scripts         | Separate approved credentials and narrowly owned backups; Neo requires restart                                   |
+| Windows app profiles, credentials, OMP/Tern/plugin runtime | Application / user                      | Supported upstream flows; never whole-profile apply or credential import                                         |
 
 ## Network
 
@@ -98,62 +98,22 @@ nix build .#darwinConfigurations.macbook-pro.system
 
 ### Native Windows
 
-Use the native checkout below `C:\Users\jglock\src`, not the separate Linux clone. Native development requires Windows x64, PowerShell 7.4 or later, Git, inbox `tar.exe` and HTTPS access. No global Python/npm formatter environment is required.
-
-On a fresh machine, run the reviewed prerequisite bootstrap from standard-user Windows PowerShell 5.1:
+Use the checkout below `C:\Users\jglock\src`. [Korolev Windows](docs/operations/korolev-windows.md) covers machine setup and apply. To work on this repository, install the pinned formatters, hook and test modules once, then run the checks:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\windows\bootstrap.ps1
+pwsh -NoProfile -File .\windows\dev\bootstrap.ps1 -IncludeTestDependencies
+pwsh -NoProfile -File .\windows\dev\engine-dependencies.ps1
+pwsh -NoProfile -File .\windows\dev\format.ps1 -Check
+pwsh -NoProfile -File .\windows\dev\ci.ps1
 ```
 
-It installs only user-scope PowerShell 7, Git and chezmoi through WinGet. PowerShell uses the user MSIX installer, not its machine MSI, and resolves the registered package's executable. Portable prerequisites resolve actual WinGet package roots. It opens PowerShell 7 with those executables on its process PATH. It never applies workstation resources or chezmoi and never installs development dependencies. If corporate policy blocks execution or a user installer is unavailable, stop rather than elevate or bypass policy.
+The tools live below the checkout's Git directory and are pinned in `windows/dev/dependencies.lock.json`. `ci.ps1` validates the declaration and runs the mocked engine tests and chezmoi fixtures. It never changes the real machine. The pre-commit hook runs the static checks. A commit that stages `.nix` files formats them through the `NixOS` WSL distribution.
 
-From PowerShell 7, provision the checkout-local formatters/hook and pinned test modules, then run the static and mocked gates:
-
-```powershell
-pwsh -NoProfile -NonInteractive -File .\windows\dev\bootstrap.ps1 -IncludeTestDependencies
-pwsh -NoProfile -NonInteractive -File .\windows\dev\engine-dependencies.ps1
-pwsh -NoProfile -NonInteractive -File .\windows\dev\format.ps1 -Check
-pwsh -NoProfile -NonInteractive -File .\windows\dev\tests\formatting.ps1
-pwsh -NoProfile -NonInteractive -File .\windows\dev\tests\bootstrap.ps1
-pwsh -NoProfile -NonInteractive -File .\windows\dev\tests\hook.ps1
-pwsh -NoProfile -NonInteractive -File .\windows\dev\tests\native-smoke.ps1
-pwsh -NoProfile -NonInteractive -File .\windows\check-workstation.ps1
-```
-
-`engine-dependencies.ps1` saves Pester 5.7.1 and PSScriptAnalyzer 1.24.0 through PSResourceGet below the checkout's Git-local `engine-modules` directory, separate from replaceable formatter tools. `-ModuleRoot` selects an isolated runner/test directory. Nothing is installed into the owner's global module directories. Missing pinned modules fail with the setup command. `check-workstation.ps1` runs built-in schema validation, data invariants, parser checks, fixed Administrator ownership checks, analyzer rules and Pester mocks. It never invokes the engine against the real machine. `-StaticOnly` omits Pester, not schema, analyzer or invariants.
-
-Development tools are checksum-verified below this checkout's private Git directory. Re-entry is idempotent and refuses unrelated or modified hooks. After the tooling commit is merged, rerun bootstrap in the updated checkout to migrate its exact repository-owned PowerShell 5.1 launcher to pwsh. Before merge, isolate mixed-version worktrees with the [runbook's worktree-local hooksPath](docs/operations/korolev-windows.md#parallel-engine-acceptance-and-recovery), leaving the old main checkout's shared launcher unchanged. Git/Fork commits outside bootstrap resolve the same pinned tools or fail. `formatting.json` alone declares formatter identities, patterns, exclusions, options, configuration and order. YAML uses LF on both platforms.
-
-Native-only work needs no Nix. A Windows commit staging `.nix` must validate the same native checkout through the declared Korolev NixOS-WSL environment or fail. The trusted installed host Nix resolves and builds the checkout's declared Nix package before running its pinned formatter. It never validates the separate Linux clone or enters the Unix development shell. Select the declared distribution with `NIX_CONFIG_WSL_DISTRIBUTION` when needed. The bridge invokes `/bin/wslpath` and `/run/current-system/sw/bin/bash` explicitly. Missing host tools fail.
-
-Native precommit runs the engine static gate and retains `windows/check.ps1 -SkipFixtures` during parallel migration. Full behavior checks remain required before release. The old document, legacy tests, chezmoi hook and persisted PowerShell 5.1 interpreter stay active until owner-confirmed live parity.
-
-The runtime/formatter/Python plugin closure is pinned in `windows/dev/dependencies.lock.json`. Python and Node are private embedded/portable distributions. Changed locks, missing artifacts and version drift fail rather than reinstall silently. After a reviewed dependency update, remove only the disposable `native-dev` tools directory reported by bootstrap and reprovision tools. Engine modules remain in their separate directory. Never remove Git metadata or an unrelated hook. `-ToolsRoot` isolates formatter installs and `-SkipHook` is for fixture/CI runs. Archive extraction uses `%SystemRoot%\System32\tar.exe`, not Git's GNU tar.
-
-Retain the separate legacy acceptance commands until cutover:
-
-```powershell
-powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\windows\check.ps1
-pwsh -NoProfile -NonInteractive -File .\windows\check.ps1
-winget configure show --file .\windows\configuration.winget
-```
-
-Windows CI adds a pwsh-only engine job alongside both retained legacy host jobs. The engine job runs shared formatting once, restores pinned local modules, and runs static/mock checks without DSC/WinGet provisioning, an alternate host ZIP or live apply. Docs-only changes run its formatting steps without engine or legacy fixtures. The legacy jobs still provision their locked DSC/WinGet test dependencies. Formatter archive caches recheck hashes. The engine cache contains only pinned module inputs. Every gate emits duration output. Record observed job/step timings from Actions rather than assume the roughly two-minute target was met. The required `check (windows-latest)` aggregate retains its name and rejects failed/cancelled affected children.
-
-PR CI classifies the complete base-to-head merge-base diff. Nix sources, host/module/package/check inputs, `home/`, `openspec/`, shared formatting policy and the remote-access runbook run both Nix jobs. `windows/`, `home/`, `formatting.json` and `lefthook.yml` run native Windows gates. Markdown outside `home/` and `openspec/` runs native formatting without Windows fixtures. The portable OpenSpec job always validates artifacts with its pinned CLI. Unclassified paths, `.github/` changes, main pushes and manual dispatch run every job.
-
-Only the integrator runs the live read-only acceptance command on Korolev, as the standard interactive user:
-
-```powershell
-pwsh -NoProfile -File .\windows\workstation.ps1 -DryRun
-```
-
-Require every declared application and setting to be desired with exit 0, or explicitly record and accept each named difference. Exit 1 reports drift. Exit 2 reports validation/execution failure, not accepted drift. Agents never run this command or apply. Only accepted parity authorizes a separate hook/interpreter cutover and removal of the old document, checker-only fixtures and DSC CI provisioning. The [Windows runbook](docs/operations/korolev-windows.md#parallel-engine-acceptance-and-recovery) owns owner apply, backups, retained archive directories and recovery. [Legacy evidence](openspec/changes/make-korolev-windows-native/evidence.md) explains why read-only `winget configure show`, not upstream `validate` warnings, remains the old parse gate.
+CI runs only the jobs that a change affects. Windows changes run `check (windows-latest)`. Before merging a change to `windows/` or to Windows files in `home/`, run the dry run and `chezmoi apply` on Korolev from the PR branch.
 
 ## Activate
 
-Review and merge first. Keep the previous generation and read activation output. For Mac networking changes, retain a local administrator terminal for recovery.
+For Linux/macOS system activation, review and merge first. Keep the previous generation and read activation output. For Mac networking changes, retain a local administrator terminal for recovery.
 
 On the Mac, keep this clone at `~/.config/nix-darwin`. First activation:
 
@@ -221,13 +181,13 @@ After OMP or plugin behavior changes, also complete the [release smoke](docs/ope
 
 In a fresh local OMP session, use `/plannotator-annotate <path>` to annotate a document or `/plannotator-last` to annotate the last response. Submitted annotations return as feedback, without editing the source or approving implementation. Use `/plannotator-cancel` if a closed browser tab leaves a review pending.
 
-For a new Windows machine, follow [Windows and WSL provisioning](docs/operations/wsl-omp-bootstrap.md) and the separate [native node/SSH cutover and recovery](docs/operations/korolev-remote-access.md). Windows user apply never configures SSH services; those need explicit local Administrator approval. Run one WSL distribution at a time; confirm `systemctl is-active user@1000.service` reports `active` before Linux activation.
+For a new Windows machine, follow [Korolev Windows](docs/operations/korolev-windows.md) and the separate [OpenSSH setup](docs/operations/korolev-remote-access.md). Windows user apply never configures SSH services.
 
 For local containers on the Mac, use the [container lifecycle and recovery procedure](docs/operations/container-runtime.md). Activation does not start or delete the VM.
 
 ## OMP
 
-On Linux/macOS, upstream OMP's official binary installer uses `~/.local/bin`, which the shell puts on `PATH`. On Windows, Tern installs and updates OMP at `%LOCALAPPDATA%\Tern\omp\bin`, which it puts first on user PATH; there is no second official-installer copy, WSL executable or Bun-global shim. Follow the [explicit native install/session procedure](docs/operations/korolev-windows.md#explicit-tern-omp-plugin-and-annotation-flows). Tern is the primary interactive terminal; install its Windows beta manually from the signed-in Stencil service at `%LOCALAPPDATA%\Programs\Tern`, preserving `%LOCALAPPDATA%\Tern` state, and launch and pin only that executable. Ghostty on the Mac and Herdr on secondary WSL remain secondary tools. Herdr integration is optional and not managed by activation. For Linux/macOS, install OMP and the personal plugin from the [`glockyco` marketplace](https://github.com/glockyco/omp-agent-setup):
+On Linux/macOS, upstream OMP's official binary installer uses `~/.local/bin`, which the shell puts on `PATH`. On Windows, Tern installs and updates OMP (see [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator)). Ghostty on the Mac and Herdr on secondary WSL remain secondary terminals. For Linux/macOS, install OMP and the personal plugin from the [`glockyco` marketplace](https://github.com/glockyco/omp-agent-setup):
 
 ```sh
 curl -fsSL https://omp.sh/install | sh -s -- --binary
@@ -246,16 +206,6 @@ omp plugin upgrade --scope user personal@glockyco
 ```
 
 Check the result with `omp --version` and `omp plugin list`. To return to a known release of OMP, reinstall it with `curl -fsSL https://omp.sh/install | sh -s -- --binary --ref <tag>`; a bad plugin release is replaced by a newer corrective release, never by rewriting the installed cache.
-
-On Windows, accept Tern's offer to install OMP (or **Install omp** in Tern's palette) and update it with **Check for omp updates**; then run the same plugin-manager install commands above. Plannotator remains an explicit official binary-only install: `pwsh -NoProfile -Command { $env:PLANNOTATOR_MINIMAL = '1'; & ([scriptblock]::Create((Invoke-RestMethod https://plannotator.ai/install.ps1))) -Version v0.28.7 -VerifyAttestation }`. The environment variable selects minimal mode because the installer discards its `-Minimal` switch ([runbook](docs/operations/korolev-windows.md)). Inspect OMP's selected shell: native PowerShell or actual Git-for-Windows Bash, never System32 WSL `bash.exe`. Provider/GitHub/browser logins remain Windows-local owner operations. Recheck the actual Tern session and native annotation/cancel/listener cleanup after updates; failure blocks acceptance, not permission to host secretly in WSL.
-
-### Native Windows tools and document work
-
-The [complete per-tool matrix](docs/operations/korolev-windows.md#tool-ownership-update-and-recovery-matrix) records every install owner, policy, update and recovery path. Git, Zed, Zen, Brave, Ferdium and manual Tern are self-updating; installed versions newer than catalog are desired and never downgraded. Other managed tools are exact reviewed selections, including retained Fork/PowerToys/AltSnap/ReNeo/fonts, chezmoi 2.73.0, Tailscale 1.102.4, PowerShell 7.6.6, gh 2.102.0, Node 24.19.0, Bun 1.3.13, Python 3.13.15, uv 0.12.23, ghq 1.10.1, rg 15.2.0, fd 10.5.0, fzf 0.74.4, delta 0.20.1 and lefthook 2.1.17. Bun matches the Mac nixpkgs/plugin-development pin of 1.3.13 because the plugin requires that exact native local version; no installed Bun needs downgrading. Exact-pin drift never authorizes silently downgrading newer tools: use explicit reviewed repair or an approved pin update with local backups.
-
-Native Markdown/Python/TypeScript/Svelte/Typst use markdown-oxide 0.25.12, pyright 1.1.411, TypeScript 5.9.3, typescript-language-server 5.3.0, svelte-language-server 0.17.31, Typst 0.15.1 and tinymist 0.15.8; OpenSpec is npm 1.14.0. npm's user prefix is `%LOCALAPPDATA%\Programs\npm`. Native `.cmd` discovery and representative projects require real runtime checks, including TS/server compatibility. User-scope installers enforce user selection; missing prerequisites do not fall back to machine scope or add Intune-owned runtimes.
-
-Native LaTeX uses owner-installed TeX Live 2026 (`scheme-full`, no documentation/source files) and exact official-user-archive TexLab 5.26.0 (`TexLab.TexLab`, `latex-lsp`). Native document tools are user WinGet Poppler 25.07.0-0 (`oschwartz10612.Poppler`, `pdf-text`) and Pandoc 3.12.1 (`JohnMacFarlane.Pandoc`, `document-converter`), plus official user archives QPDF 12.4.2 (`QPDF.QPDF`, `pdf-transform`) and ImageMagick 7.1.2-33 (`ImageMagick.ImageMagick`, `image-converter`). Follow the [reviewed profile and explicit owner-run installer/update workflow](docs/operations/korolev-windows.md#native-projects-and-tex-live); Overleaf projects still compile on Overleaf. Windows Zed and OMP use native local worktrees and TexLab, without MiKTeX, WSL/Mac LaTeX transport, nixd, Roslyn or an OMP agent server. Fork selects native per-user Git/GCM; Git's work identity, conditional GitHub identity and repository-local overrides share chezmoi templates. Secondary WSL CLI/TeX tools stay available in their own environment; project SDK/build/root settings and documented build commands remain project-owned.
 
 ## Nix maintenance and encrypted secrets
 
@@ -304,7 +254,7 @@ sudo nixos-rebuild list-generations | cat
 sudo nixos-rebuild switch --rollback --no-reexec
 ```
 
-Then repeat verification. Nix rollback restores Nix-managed tools, not OMP or plugin versions, credentials, tailnet enrollment, or application data; use the [OMP](#omp) commands for those. Windows configuration has no generation or transactional rollback: earlier resources can remain changed after a failure. Follow [Windows recovery](docs/operations/korolev-windows.md#manual-preferences-and-nontransactional-recovery) to inspect partial state and restore only backed-up owned files/PATH/settings with compatible reviewed source, preserving profiles, credentials, repositories and OMP history. Package repair is explicit and reviewed, never a silent downgrade or Administrator-profile user apply.
+Then repeat verification. Nix rollback restores Nix-managed tools, not OMP or plugin versions, credentials, tailnet enrollment, or application data; use the [OMP](#omp) commands for those. Windows has no generations. See [When something goes wrong](docs/operations/korolev-windows.md#when-something-goes-wrong).
 
 System rollback does not restore chezmoi destinations. For a normal user-file rollback, select the previous reviewed source revision in the existing checkout, run `chezmoi diff` only for nonsecret paths (or the preview-only check-mode override above), then ordinary-user `chezmoi apply` and `chezmoi verify` with compatible system resources. Stop Colima first if profile revisions are incompatible; its data stays untouched.
 

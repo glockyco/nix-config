@@ -1,7 +1,7 @@
 # TeX Live 2026, standard Windows account jglock; run install-tl with --non-admin.
 # Profile keys: https://tug.org/texlive/doc/install-tl.html#PROFILES
 # Paths are literal: --profile ignores environment variables. For another account,
-# review a temporary copy as described in docs/operations/korolev-windows.md.
+# install from a copy with C:/Users/jglock replaced in every path.
 selected_scheme scheme-full
 TEXDIR C:/Users/jglock/texlive/2026
 TEXMFLOCAL C:/Users/jglock/texlive/texmf-local

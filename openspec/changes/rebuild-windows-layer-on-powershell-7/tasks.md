@@ -8,18 +8,21 @@
 - [x] 1.4 Implement checksum-verified official ZIP/7z/AltSnap delivery with retained prior directories, npm ci closure and non-destructive user-font installation.
 - [x] 1.5 Implement typed/absent HKCU registry values, preserved language/input ordering, Neo prerequisite, stable dark appearance, animation and taskbar visibility with Explorer restart only after actual changes. Keep Administrator tools and manual TeX Live separate.
 
-## 2. Mocked verification and parallel CI
+## 2. Mocked verification and native tooling
 
 - [x] 2.1 Add pinned repo-local PSResourceGet Pester 5/PSScriptAnalyzer setup and analyzer settings. Add and document the minimal PowerShell 5.1 pwsh/Git/chezmoi prerequisite bootstrap without live apply.
 - [x] 2.2 Add behavior-level Pester mocks for the snapshot, idempotence, dry-run exits/no writes, native stderr/failure, scope/Pandoc, no downgrade, package roots, archive/npm/font safety, PATH and setting convergence.
-- [x] 2.3 Add schema/parser and privilege invariants for Intune exclusions, machine allowlist, HKCU/prohibited surfaces, Docker arguments and narrow Administrator scripts. Retain distinct surviving chezmoi/lifecycle/hook coverage.
-- [x] 2.4 Coordinate workflow changes with FastCI, rebase after its merged PR and add a pwsh-only engine CI job alongside the untouched legacy document/tests. Run local PowerShell 7 verification against mocks only.
-- [x] 2.5 Port Windows dev bootstrap/format/hook/tools/ci and native-windows lefthook dispatch to pwsh in their own pre-parity commit without changing staged Nix validation.
-- [ ] 2.6 Open a PR with exact Korolev dry-run command, observed local results and CI job/step timings. Obtain integrator-confirmed live parity or explicit acceptance of named differences. Do not run live dry run or apply as an agent.
-- [ ] 2.7 After merging the tooling commit, rerun the native development bootstrap to migrate the shared repository-owned Git launcher to pwsh. Until then, mixed-version worktrees use worktree-local hooksPath and the shared main checkout retains the PowerShell 5.1 launcher.
+- [x] 2.3 Retain schema/parser and privilege invariants for Intune exclusions, machine allowlist, HKCU/prohibited surfaces, Docker arguments and narrow Administrator scripts. Extract surviving checks from the deleted legacy contract checker and migrate distinct chezmoi/lifecycle/hook coverage to pwsh.
+- [x] 2.4 Rebase onto the merged affected-job CI selection and use one pwsh-only Windows job for formatting, static checks, Pester mocks and surviving fixtures. Remove all legacy host/provisioning jobs and run local verification against mocks only.
+- [x] 2.5 Port Windows dev bootstrap/format/hook/tools/ci and native-windows lefthook dispatch to pwsh in their own commit without changing staged Nix validation.
 
-## 3. Owner-approved cutover
+## 3. Complete cutover PR and pre-merge acceptance
 
-- [ ] 3.1 After parity confirmation only, prepare a separate final commit switching hash-protected chezmoi invocation and persisted interpreter to pwsh.
-- [ ] 3.2 Remove the old document, vendored DSC schemas, bespoke checker and checker-only mutation/installer fixtures, obsolete Desktop prelude and WinGet/DSC CI provisioners. Consolidate required Windows CI into one pwsh job with shared formatting once.
-- [ ] 3.3 Update the operations runbook and affected callers/tests to the engine commands, local dependency setup, intentional exclusions and recovery policy. Run complete mocked PowerShell 7/static/format verification and strict OpenSpec validation, publish the separate cutover commit for review and report final CI timings.
+- [x] 3.1 Switch hash-protected chezmoi invocation and persisted interpreter to pwsh in the PR. Hash all engine execution/data/schema/managed-audit inputs and the npm lock before invoking the thin entrypoint.
+- [x] 3.2 Delete the WinGet document, vendored DSC schemas, bespoke contract checker, checker-only mutation/installer fixtures, Desktop preludes and WinGet/DSC CI provisioners. Retain distinct surviving source/parser/Administrator/lifecycle tests.
+- [ ] 3.3 Rewrite the Windows runbook as a short current-state guide and point README and other callers at it. Run complete mocked PowerShell 7/static/format checks and strict OpenSpec validation, then update PR #90.
+- [ ] 3.4 Before merge, the integrator runs the engine dry run and then chezmoi apply on Korolev from the PR branch, accepts zero drift or every named difference, and records post-apply convergence/application checks. Agents never run live engine dry run, apply or elevation.
+
+## 4. Shared development hook deployment
+
+- [ ] 4.1 After merge, rerun native development bootstrap in updated main to migrate the exact shared repository-owned Git launcher to pwsh. Until then, mixed-version worktrees use worktree-local hooksPath and shared main retains its PowerShell 5.1 launcher.
