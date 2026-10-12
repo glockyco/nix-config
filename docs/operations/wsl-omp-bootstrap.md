@@ -154,7 +154,7 @@ GIT_TERMINAL_PROMPT=0 git -C /path/to/overleaf-checkout ls-remote origin HEAD
 
 After a WSL restart or GPG agent cache expiry, open a WSL terminal and run `gpg-connect-agent updatestartuptty /bye` before the lookup. Unlock the key at the terminal prompt, then use Fork. The token remains encrypted on disk and does not need to be entered again until it expires or is revoked. Do not use Git's plaintext `store` helper.
 
-Run the [release smoke](dependency-updates.md#release-smoke) in a disposable WSL repository in a Tern session that runs NixOS.
+Run the [checks after an update](dependency-updates.md#after-an-update) in a disposable WSL repository in a Tern session that runs NixOS.
 Record the tested Terminal, Windows, WSL, and NixOS versions, host architecture, and locked repository revision.
 Then run the browser smoke below.
 Do not force terminal image, keyboard, width, or redraw environment variables to make acceptance pass.
@@ -278,5 +278,5 @@ wsl --distribution '<previous-distribution>'
 
 After its removal, use retained NixOS generations.
 Nix rollback restores system configuration and the system-declared user packages, not chezmoi destinations, OMP or writable runtime state. Select the previous reviewed chezmoi source revision and apply/verify it separately as the ordinary user; initial-cutover rejection additionally restores the captured Home Manager files/symlinks/permissions and original chezmoi state from local backups.
-Use [OMP recovery](dependency-updates.md#omp-recovery) for OMP and the plugin.
+Use the [OMP](../../README.md#omp) commands for OMP and the plugin.
 Do not delete `~/.omp`, edit `/etc/nixos`, or run `nix flake update` as recovery.
