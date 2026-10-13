@@ -288,6 +288,78 @@
       "requiresVCRuntime": true
     },
     {
+      "name": "package prompt",
+      "kind": "archive",
+      "id": "Starship.Starship",
+      "roles": [
+        "prompt"
+      ],
+      "scope": "user",
+      "versionPolicy": "present",
+      "root": "LOCALAPPDATA",
+      "directory": "Programs\\starship",
+      "releaseVersion": "1.26.0",
+      "url": "https://github.com/starship/starship/releases/download/v1.26.0/starship-x86_64-pc-windows-msvc.zip",
+      "sha256": "690021e22f2bf2c57d5867dc0fababe5e55e714c26942bd909ffddb6c5df42f2",
+      "archiveKind": "zip",
+      "payload": ".",
+      "executable": "starship.exe",
+      "versionArgs": [
+        "--version"
+      ],
+      "versionSource": "command"
+    },
+    {
+      "name": "package directory jumper",
+      "kind": "winget",
+      "id": "ajeetdsouza.zoxide",
+      "roles": [
+        "directory-jumper"
+      ],
+      "scope": "user",
+      "versionPolicy": "present",
+      "executable": "zoxide.exe",
+      "installerType": "zip"
+    },
+    {
+      "name": "package file lister",
+      "kind": "winget",
+      "id": "eza-community.eza",
+      "roles": [
+        "file-lister"
+      ],
+      "scope": "user",
+      "versionPolicy": "present",
+      "executable": "eza.exe",
+      "installerType": "zip"
+    },
+    {
+      "name": "package picker bindings",
+      "kind": "psmodule",
+      "id": "PSFzf",
+      "roles": [
+        "picker-bindings"
+      ],
+      "scope": "user",
+      "versionPolicy": "present",
+      "releaseVersion": "2.7.12",
+      "url": "https://www.powershellgallery.com/api/v2/package/PSFzf/2.7.12",
+      "sha256": "5d5c55df79d24b5efbb6c6715c12ec12cb34f32dca57f5c90868de7f47a9b1ad"
+    },
+    {
+      "name": "package git completion",
+      "kind": "psmodule",
+      "id": "git-completion",
+      "roles": [
+        "git-completion"
+      ],
+      "scope": "user",
+      "versionPolicy": "present",
+      "releaseVersion": "2.0.0",
+      "url": "https://www.powershellgallery.com/api/v2/package/git-completion/2.0.0",
+      "sha256": "e55696e34aa4340077ddd9057f8276a58b88b1607aa994a1d3f8fedfbd25407b"
+    },
+    {
       "name": "package hook runner",
       "kind": "winget",
       "id": "evilmartians.lefthook",
