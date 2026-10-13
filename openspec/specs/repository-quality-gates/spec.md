@@ -8,7 +8,7 @@ Define how this repository enforces formatting before a commit and in continuous
 
 ### Requirement: One formatting configuration for both gates
 
-Local and CI formatting SHALL consume the existing single platform-neutral formatter declaration. The PowerShell 7 Windows adapter SHALL retain locked native tooling and same-checkout staged Nix validation. Native-only work SHALL not require Nix. Missing tools and unavailable staged Nix validation SHALL fail rather than silently skip. Windows engine checks SHALL use proportional mocked behavior coverage, not mutations of a bespoke checker.
+Local and CI formatting SHALL consume the existing single platform-neutral formatter declaration. The PowerShell 7 Windows adapter SHALL use locked native tooling. It SHALL NOT format staged Nix files or invoke WSL, and it SHALL name staged Nix files as left to the Nix formatting checks in CI and on the Mac. Native-only work SHALL not require Nix. Missing tools SHALL fail rather than silently skip. Windows engine checks SHALL use proportional mocked behavior coverage, not mutations of a bespoke checker.
 
 #### Scenario: Stage native-only work
 
@@ -18,12 +18,13 @@ Local and CI formatting SHALL consume the existing single platform-neutral forma
 
 #### Scenario: Stage Nix without its environment
 
-- **WHEN** staged Nix cannot be checked in the same checkout's declared Nix environment
-- **THEN** the hook rejects the commit with an actionable diagnostic
+- **WHEN** a native Windows commit stages Nix files
+- **THEN** the hook checks the other staged files and names the Nix files as checked by CI
+- **AND** CI's Nix formatting check rejects a pull request with unformatted Nix
 
 #### Scenario: Unformatted file reaches a commit
 
-- **WHEN** staged content differs from shared formatter output
+- **WHEN** staged content that the platform's hook formats differs from shared formatter output
 - **THEN** the commit gate rejects it
 
 #### Scenario: Unformatted file reaches continuous integration
@@ -38,7 +39,7 @@ Local and CI formatting SHALL consume the existing single platform-neutral forma
 
 ### Requirement: The commit hook is installed from the development shell
 
-Darwin/Linux SHALL retain pinned Nix-shell hook installation. Windows SHALL retain explicit repository-local native development bootstrap and lefthook installation, running all hooks and tooling under PowerShell 7. Only the separate minimal fresh-machine pwsh/Git/chezmoi prerequisite bootstrap MAY use Windows PowerShell 5.1. Re-entry SHALL not duplicate hooks or silently retire unrelated hooks. Git clients outside the declared environment SHALL resolve pinned tools or fail with an actionable diagnostic.
+Darwin SHALL retain pinned Nix-shell hook installation. Windows SHALL retain explicit repository-local native development bootstrap and lefthook installation, running all hooks and tooling under PowerShell 7. Only the separate minimal fresh-machine pwsh/Git/chezmoi prerequisite bootstrap MAY use Windows PowerShell 5.1. Re-entry SHALL not duplicate hooks or silently retire unrelated hooks. Git clients outside the declared environment SHALL resolve pinned tools or fail with an actionable diagnostic. No hook SHALL invoke WSL.
 
 #### Scenario: Bootstrap native development
 
@@ -55,7 +56,7 @@ Darwin/Linux SHALL retain pinned Nix-shell hook installation. Windows SHALL reta
 
 - **WHEN** Git invokes a hook outside the declared environment
 - **THEN** pinned tooling resolves or an actionable missing-environment error rejects the commit
-- **AND** staged Nix validation is never silently skipped
+- **AND** staged Nix files are either validated or named as left to CI, never skipped silently
 
 ### Requirement: Retiring a hook runner removes its hook
 
@@ -69,27 +70,26 @@ Replacing the hook runner SHALL leave no hook file from the previous runner in t
 
 ### Requirement: A development shell on every supported system
 
-Every declared Nix system SHALL retain a pinned development shell. Native Windows SHALL have a documented pinned native development environment rather than a fictitious Windows Nix flake system. Every supported host SHALL install its commit hook through its own environment. Shared repository tools SHALL be usable there; platform-only tools SHALL stay on the hosts that can execute their workflows.
+Every declared Nix system SHALL retain a pinned shell; native Windows SHALL use its documented pinned bootstrap, not a Windows flake system. macbook-pro SHALL be the only managed Nix workstation; x86_64-linux SHALL remain CI-only for applicable generic checks. Every actual supported workstation SHALL install hooks through its own environment. Host-only tools SHALL remain only where their workflow can execute.
 
 #### Scenario: Clone on a supported host
 
-- **WHEN** a maintainer enters the repository on any supported host
-- **THEN** the declared development environment for that platform resolves
-- **AND** the commit hook is installed in that working tree
+- **WHEN** a maintainer enters the repository on Mac or native Windows
+- **THEN** that platform's declared environment resolves and installs the hook
 
 #### Scenario: A supported system gains no shell
 
-- **WHEN** the repository declares a supported Nix system without a development shell, or native Windows support without its bootstrap
-- **THEN** a repository check fails
+- **WHEN** a declared Nix system lacks its shell or Windows lacks its bootstrap
+- **THEN** the repository check fails
 
 #### Scenario: Host-specific tool outside its host
 
-- **WHEN** a maintainer enters the development shell on a host that cannot complete a host-specific tool's workflow
-- **THEN** that tool is absent from that environment rather than present and unusable
+- **WHEN** an environment cannot execute a host-specific workflow
+- **THEN** the tool is absent rather than present and unusable
 
 ### Requirement: Each gate runs its host's Nix implementation
 
-Linux and Darwin SHALL retain each host's declared Nix implementation. Windows SHALL use one native PowerShell 7 CI job named `check (windows-latest)` with applicable shared formatting, built-in JSON-schema validation, PSScriptAnalyzer, parser checks, privilege invariants and mocked Pester behavior tests. CI SHALL neither provision WinGet/DSC providers nor apply workstation resources. Pester 5 and PSScriptAnalyzer SHALL be pinned development dependencies installed through PSResourceGet into repository-local or runner-local paths, never an owner's global profile. The job SHALL emit gate durations and aim for about two minutes. Failed or skipped required checks SHALL not count as successful Windows acceptance.
+Darwin gates SHALL use the Mac's declared Nix implementation, and generic Linux CI SHALL use its explicitly declared CI implementation without resolving a retired host. Windows SHALL use one native PowerShell 7 CI job named `check (windows-latest)` with applicable shared formatting, built-in JSON-schema validation, PSScriptAnalyzer, parser checks, privilege invariants and mocked Pester behavior tests. CI SHALL neither provision WinGet/DSC providers nor apply workstation resources. Pester 5 and PSScriptAnalyzer SHALL be pinned development dependencies installed through PSResourceGet into repository-local or runner-local paths, never an owner's global profile. Failed or skipped required checks SHALL not count as successful Windows acceptance.
 
 #### Scenario: Run proportional Windows CI
 
@@ -141,31 +141,6 @@ The repository SHALL instantiate one Nixpkgs package set per supported system. H
 - **THEN** its package output and program check are absent on that system
 - **AND** no output reads a host kind to make that package decision
 
-### Requirement: Darwin gates run from the Linux host
-
-The Linux host SHALL be able to build every `aarch64-darwin` check of the repository through the declared Darwin remote builder. The result SHALL be the same derivation that the Darwin host builds locally. A gate that reads the Darwin store, such as the build-plan inspection, SHALL run on the Darwin host through the tailnet SSH endpoint.
-
-#### Scenario: Run all checks from one host
-
-- **WHEN** the operator runs `nix flake check --all-systems` on the Linux host while the Darwin host is connected
-- **THEN** every `x86_64-linux` check builds locally, every `aarch64-darwin` check builds on the Darwin host, and the command exits 0
-
-#### Scenario: Compare with the Darwin host's own gate
-
-- **WHEN** the same revision is checked on the Darwin host with `nix flake check`
-- **THEN** each `aarch64-darwin` check resolves to the same derivation path as the one built from the Linux host
-
-#### Scenario: Inspect build plans from the Linux host
-
-- **WHEN** the operator runs the documented build-plan inspection command from the Linux host
-- **THEN** the inspection executes on the Darwin host over the tailnet SSH endpoint and reports its result to the Linux host
-- **AND** the SSH client's exit status equals the remote command's exit status
-
-#### Scenario: A remote gate fails
-
-- **WHEN** a gate on the Darwin host exits nonzero
-- **THEN** the Linux caller receives that nonzero status without a parsing wrapper or success fallback
-
 ### Requirement: OpenSpec package consistency
 
 The workstation checks SHALL verify that the ordinary host-installed OpenSpec executable reports the version declared by its Nix package and is the same derivation exposed by the shared package set. They SHALL NOT require a hard-coded historical version after a reviewed update or depend on an OMP wrapper/runtime plugin package.
@@ -175,23 +150,19 @@ The workstation checks SHALL verify that the ordinary host-installed OpenSpec ex
 - **WHEN** the packaged executable reports a version different from its Nix package metadata
 - **THEN** the workstation release gate fails
 
-### Requirement: Generated OpenSpec adapter freshness
-
-The workstation checks SHALL verify that the personal plugin's tracked OpenSpec commands and skills match the selected generator independently of its runtime installation. The independently pinned build-time `lib.openspecCheck` and required generator tooling SHALL remain available after removal of plugin runtime package exports. An OpenSpec update SHALL require review of generated changes in `omp-agent-setup` before publication and review of the check-tool pin here before merge. Published marketplace commands SHALL use `/personal:opsx-*` without compatibility aliases; this repository SHALL NOT run `openspec init` or duplicate generated adapters.
-
-#### Scenario: Generator output changes
-
-- **WHEN** the selected OpenSpec package would rewrite a tracked adapter
-- **THEN** the release gate fails until the generated difference is reviewed and committed in its owning plugin repository
-
 ### Requirement: Archived change completeness
 
-The workstation checks SHALL reject an archived OpenSpec change that contains an incomplete task. Strict validation SHALL also retain scenario and task-numbering checks for active contracts.
+The portable local/CI OpenSpec gate SHALL reject archived changes with incomplete tasks and retain strict scenario/task-numbering validation for active contracts. It SHALL execute both all-contract and archived-contract validation and fail if the host CLI lacks archived support; retiring the Nix gate SHALL not weaken completeness.
 
 #### Scenario: An incomplete change is archived
 
 - **WHEN** an archived change contains an unchecked task
-- **THEN** the workstation release gate fails
+- **THEN** the portable local/CI OpenSpec gate fails
+
+#### Scenario: Archived validation is unsupported
+
+- **WHEN** the selected host or CI CLI lacks --archived
+- **THEN** the gate fails clearly rather than omitting archived validation
 
 ### Requirement: One typed host declaration per host
 
@@ -222,68 +193,27 @@ Each host SHALL describe its identity through one standalone `hosts/<name>/host.
 
 ### Requirement: Hosts declared by directory
 
-The repository SHALL have one directory per managed host under `hosts/`. Each directory SHALL contain `host.nix` and `default.nix`. The flake SHALL evaluate each standalone `host.nix` against the shared host option definitions, with the directory name as `host.name`. The resulting read-only `fleet.hosts` registry SHALL key hosts by name. Supported systems and host configurations SHALL derive from that registry. Adding a host on an existing system SHALL require no new flake output branch.
+Each managed Nix host SHALL have hosts/<name>/{host,default}.nix with standalone typed facts keyed by its directory. Only Darwin host configurations SHALL remain; Windows SHALL keep platform-qualified chezmoi facts and durable peer policy data, not a Nix configuration. Host systems SHALL derive from the registry, with Linux CI-only support explicitly declared separately. Adding a same-system Darwin host SHALL need no new output branch.
 
 #### Scenario: Add a second host on an existing system
 
-- **WHEN** a maintainer adds a complete host directory for a second host on an existing system
-- **THEN** the flake exposes a configuration under the new host name
-- **AND** the supported systems remain unchanged
-- **AND** every generic host gate exists for the new host
+- **WHEN** a complete second Darwin host directory is added on an existing system
+- **THEN** its configuration and generic host gates appear without changing supported host systems
 
 #### Scenario: A host directory is incomplete
 
-- **WHEN** a host directory lacks `host.nix` or `default.nix`
-- **THEN** `fleetSurface` fails and names that directory and its missing file
+- **WHEN** a host directory lacks host.nix or default.nix
+- **THEN** fleetSurface fails and names the missing file
 
 #### Scenario: A host declares an unknown kind
 
-- **WHEN** a host's standalone declaration sets a kind other than `darwin` or `nixos`
-- **THEN** evaluation fails with a type error that names `host.kind` and the permitted kinds
+- **WHEN** a Nix host declares any kind other than darwin
+- **THEN** typed evaluation fails naming host.kind and its permitted kind
 
 #### Scenario: A host declares a mismatched system
 
-- **WHEN** a generated host configuration evaluates with a system different from its registry declaration
-- **THEN** `fleetSurface` fails for that host
-
-### Requirement: Host gates generated per host
-
-Every check that reads one host configuration SHALL be generated from `fleet.hosts` for each host on the system. Its name SHALL start with the host name. Such a check SHALL read host and user values from that host's typed declaration, not from literals. A kind-specific check SHALL exist for every host of that kind. Every system gate SHALL read `config.system.build.toplevel`.
-
-#### Scenario: Rename a host
-
-- **WHEN** a maintainer renames a host directory
-- **THEN** every gate for that host exists under its new name
-- **AND** no gate under its old name remains
-- **AND** no host-specific lookup outside that directory needs an edit
-
-#### Scenario: Compare Darwin and NixOS system gates
-
-- **WHEN** a maintainer compares the system gates for a Darwin host and a NixOS host
-- **THEN** both read the generated host's `config.system.build.toplevel`
-
-#### Scenario: Rename a user's account
-
-- **WHEN** a host changes the interactive username in its standalone declaration
-- **THEN** each gate that renders its chezmoi configuration or reads its system-declared user packages reads the new user
-- **AND** the gate definition needs no edit
-
-### Requirement: Peer facts come from the registry
-
-A module SHALL read other managed hosts' name, system, user, builder capacity, and tailnet facts from its typed `config.fleet.hosts` registry. It SHALL NOT evaluate another host's Darwin or NixOS configuration to obtain those facts. Remote builders SHALL derive from other registry hosts with non-null `build.logicalCores`. The tailnet renderer SHALL derive its port-22 deny targets from registry hosts with `tailnet.reachable = false`.
-
-#### Scenario: A builder host changes its system or name
-
-- **WHEN** a remote builder's standalone declaration changes its system or directory name
-- **THEN** a consuming host's builder settings use the new registry facts
-- **AND** its root SSH builder key path derives from the new builder name
-- **AND** no consuming module evaluates the builder's system configuration
-
-#### Scenario: An unreachable host is added
-
-- **WHEN** a new managed host declares `tailnet.reachable = false`
-- **THEN** the rendered policy denies port 22 to its tailnet tag from every reachable source
-- **AND** no renderer edit is required
+- **WHEN** a generated host configuration disagrees with its registry system
+- **THEN** fleetSurface fails for that host
 
 ### Requirement: Platform baselines contain no host role
 
@@ -342,15 +272,14 @@ Each host-specific fact SHALL have one declaration: name is the host directory k
 
 ### Requirement: Nix policy uses supported platform interfaces
 
-The host configurations SHALL share one pinned registry, disabled legacy channel policy, and maintenance intent. NixOS SHALL schedule native weekly garbage collection and store optimisation. Darwin SHALL use Determinate Nix's automatic garbage collection without setting `auto-optimise-store` or adding an independent maintenance job; its pinned Determinate module has no scheduled store optimiser.
+The Mac SHALL retain its pinned registry and disabled legacy channels, using Determinate automatic garbage collection without auto-optimise-store or another maintenance job. No native Windows Nix daemon, Linux weekly GC/optimisation timers or retired remote-builder trust SHALL be declared. Generic Nix CI SHALL retain its explicitly selected implementation/cache behavior.
 
 #### Scenario: Evaluate each native adapter
 
-- **WHEN** the Darwin and NixOS hosts evaluate their Nix settings
-- **THEN** both use the pinned registry and disable legacy channel lookup
-- **AND** Korolev has weekly native GC and optimisation timers
-- **AND** Darwin retains its trusted SSH builder user and uses Determinate's automatic GC
-- **AND** Darwin does not enable automatic store optimisation
+- **WHEN** the Mac evaluates Nix settings and native Windows setup is inspected
+- **THEN** the Mac retains its registry/channel policy and Determinate automatic GC without automatic store optimisation
+- **AND** Windows declares no Nix/WSL maintenance service
+- **AND** the Mac no longer trusts a non-root SSH user solely for importing retired Korolev builder paths
 
 ### Requirement: Installed and activation programs are packages with behavior checks
 
@@ -385,25 +314,25 @@ A packaged program's check SHALL execute the packaged program against controlled
 
 ### Requirement: One declaration for each cross-platform fact
 
-A fact that both platform scopes consume SHALL have one declaration. The Darwin scope, the NixOS scope, and every repository check that asserts the fact SHALL read that declaration. The binary cache substituter and its public key are such a fact. Shared chezmoi host data and portable user-package intent are such facts.
+A shared user/platform fact SHALL have one declaration consumed by applicable Mac Nix, native Windows chezmoi and checks. Portable user intent SHALL not imply identical platform package ownership. The Nix binary-cache declaration SHALL remain shared between Mac and applicable CI; Windows SHALL not consume Linux Nix settings. Retired host data SHALL not remain a second owner.
 
 #### Scenario: Rotate the binary cache key
 
-- **WHEN** a maintainer changes the binary cache public key in its declaration
-- **THEN** both host configurations carry the new key
-- **AND** the check that asserts the WSL host's Nix settings passes without a second edit
+- **WHEN** the declared cache public key changes
+- **THEN** Mac and applicable Nix CI consume that declaration without a second edit
+- **AND** no Korolev/Linux Nix-settings check remains
 
 #### Scenario: Compare user-package and chezmoi wiring of both hosts
 
-- **WHEN** a maintainer compares how each host selects the package set, installs user packages and renders user configuration
-- **THEN** both hosts read those settings from one declaration
-- **AND** platform modules add only platform package/program adapters and chezmoi templates add only necessary OS-specific behavior
+- **WHEN** Mac and native Windows setup are compared
+- **THEN** shared user facts come from one declaration
+- **AND** Mac Nix and Windows native owners apply only their platform-specific package/program behavior
 
 #### Scenario: Check each host against the declaration
 
-- **WHEN** the repository checks for a system run
-- **THEN** a check asserts that the host on that system carries the declared substituter and the declared public key in its Nix settings
-- **AND** the check reads the expected values from the declaration rather than from a literal
+- **WHEN** applicable host checks run
+- **THEN** they assert their host's declared facts instead of literal copies
+- **AND** Mac cache assertions read the shared cache declaration while native Windows checks retain their actual native tool ownership
 
 ### Requirement: Encrypted source validation covers every managed secret
 
@@ -446,3 +375,62 @@ Each host's user-configuration check SHALL render its actual chezmoi source in a
 - **WHEN** checks run in CI without production keys or provider access
 - **THEN** ordinary user configuration and synthetic-secret fixtures are verified
 - **AND** no live user setup command, production decryption or remote connection runs
+
+### Requirement: Managed Nix host gates
+
+Checks reading managed Nix configuration SHALL be generated per registry host, named with its host prefix, and consume typed facts. Every system gate SHALL read config.system.build.toplevel. Native Windows checks SHALL use Windows fixtures, not a phantom Linux registry host. No Korolev/Linux host closure, builder, credential, container, browser ABI, font, automount or Mac-batch gate SHALL remain.
+
+#### Scenario: Rename a host
+
+- **WHEN** a managed Nix host directory is renamed
+- **THEN** all its gates use the new prefix and none use the old prefix
+- **AND** no host-specific lookup outside that directory needs editing
+
+#### Scenario: Inspect the remaining system gates
+
+- **WHEN** remaining Nix system gates are inspected
+- **THEN** each reads its Darwin configuration's system.build.toplevel
+- **AND** no gate reads nixosConfigurations.korolev
+
+#### Scenario: Rename a user's account
+
+- **WHEN** a host changes its declared username
+- **THEN** its rendered chezmoi/system-user-package gates use that user without a second edit
+
+### Requirement: Declared managed-host and native-peer facts
+
+Modules SHALL read managed Nix peer facts from the typed registry and non-Nix peer policy facts from their single declared peer source, without evaluating another host configuration. Native Windows Korolev SHALL remain a durable reachable peer after its Nix host is removed. Policy SHALL derive synthetic/unreachable deny targets from declared reachability, not a hard-coded Linux host. No root daemon-builder client SHALL remain.
+
+#### Scenario: A declared peer changes its name or tag
+
+- **WHEN** a peer's source declaration changes
+- **THEN** consuming endpoints/policy use the new declared facts
+- **AND** no consumer evaluates another host's system configuration or generates a root builder key path
+
+#### Scenario: An unreachable host is added
+
+- **WHEN** a synthetic managed-host fixture declares tailnet.reachable = false
+- **THEN** rendered policy denies port 22 to its tag from every reachable source without a renderer edit
+
+### Requirement: Portable strict OpenSpec consumer gate
+
+Local lefthook SHALL use host OpenSpec (Mac Nix package, Windows exact npm pin), require --archived support and run both openspec validate --all --strict --no-interactive and openspec validate --archived --strict --no-interactive. CI SHALL call the released omp-agent-setup reusable workflow at a reviewed full commit SHA. Neither path SHALL delegate to WSL, silently skip or retain personal-omp-plugin as a Nix check dependency.
+
+#### Scenario: Validate from an actual local host
+
+- **WHEN** a Mac or native Windows commit triggers OpenSpec validation
+- **THEN** the host's declared CLI runs both strict noninteractive validations in that checkout
+- **AND** missing tools, unsupported archived validation or either nonzero status fail the hook
+
+#### Scenario: Validate the caller revision in CI
+
+- **WHEN** nix-config CI calls glockyco/omp-agent-setup/.github/workflows/openspec.yml at its reviewed released SHA with openspec-root '.'
+- **THEN** the reusable workflow pins its own OpenSpec and validates the caller's checkout with both commands
+- **AND** no caller-selected version, weakened flag set or archived opt-out is passed
+
+#### Scenario: Complete the consumer cutover
+
+- **WHEN** portable local and CI validation are accepted
+- **THEN** personal-omp-plugin and its OpenSpec/adapter-freshness wiring are removed from the flake and lock
+- **AND** personal runtime plugins remain OMP-manager-owned
+- **AND** omp-agent-setup's own CI owns adapter freshness while its lib.openspecCheck remains available to unmigrated consumers

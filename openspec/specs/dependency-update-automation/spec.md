@@ -8,14 +8,16 @@ Define a reviewable and enforced path from weekly dependency discovery through c
 
 ### Requirement: Explicit update ownership
 
-The central dependency automation control plane SHALL own Nix inputs. Renovate SHALL own GitHub Actions and supported ecosystem dependencies outside Nix. Nix SHALL supply ordinary OpenSpec, Plannotator, Herdr, and host-appropriate language tools, not OMP, its runtime personal plugin, or a source updater. The official installer SHALL own initial standalone OMP delivery; `omp update` SHALL own executable updates; OMP's plugin manager SHALL own personal-plugin installation/upgrades using the commands defined by `publish-plugin-through-omp-plugin-manager`. Plannotator source advancement SHALL remain explicitly requested and commit-pinned. Renovate's beta Nix manager SHALL remain disabled. The target repository SHALL NOT store the updater App private key or run a competing Nix scheduler.
+Central automation SHALL own Nix inputs; Renovate SHALL own Actions/non-Nix dependencies with its beta Nix manager disabled. Mac Nix SHALL supply ordinary host tools, never OMP/plugin runtime. Mac OMP SHALL use official installer/update; Korolev OMP SHALL be Tern-managed and its native tools retain C3's owners. Plugin managers SHALL own runtime upgrades. Plannotator advancement SHALL remain explicit. No target App private key or competing Nix scheduler SHALL exist.
 
 #### Scenario: Inspect updater configuration
 
-- **WHEN** a maintainer reads the dependency operations document, target automation files, and central registry
-- **THEN** every dependency class has exactly one declared update owner and one source of version truth
-- **AND** official OMP and plugin-manager operations remain outside Nix activation
-- **AND** the target repository contains no App credential or scheduled Nix update workflow
+- **WHEN** dependency operations, automation and central registry are inspected
+- **THEN** each dependency class has one update owner/version authority
+- **AND** platform OMP/plugin operations remain outside Nix activation
+- **AND** nix-config declares Docker Desktop's self-updating machine-scope initial install without a version pin or downgrade, while Intune's update-only package keeps it current after owner/employer licensing confirmation
+- **AND** Mac Colima remains Nix/user-owned and Windows TeX Live/tlmgr yearly lifecycle remains C3-owned
+- **AND** no App credential or scheduled Nix-update workflow exists in this repository
 
 ### Requirement: Authenticated weekly pull request
 
@@ -33,56 +35,57 @@ A weekly and manually dispatchable central workflow SHALL run a complete flake l
 
 ### Requirement: Required merge checks
 
-The main branch SHALL require current Darwin and Linux CI jobs for human and automated actors, including administrators. It SHALL require an up-to-date pull-request branch and linear history, and SHALL reject force-push and branch deletion.
+Main SHALL require current Darwin Nix, Linux-generic CI, native Windows, portable OpenSpec and applicable live policy jobs for humans/automation including administrators. It SHALL require linear history, rejecting force-push/deletion, but SHALL NOT require a PR branch to be up to date with main before merging. Checks SHALL not build the removed Korolev host or depend on its builder.
 
 #### Scenario: A required check fails
 
-- **WHEN** either platform job fails or has not completed
-- **THEN** GitHub prevents the pull request from merging
+- **WHEN** any required platform/OpenSpec/policy check fails
+- **THEN** main rejects the merge for human and automated actors, including administrators
+- **AND** no removed-host check or Linux-only success satisfies protection
 
 ### Requirement: Manual activation boundary
 
-Merging an update pull request SHALL NOT activate a host or mutate OMP-owned state. The operator SHALL authorize each Nix activation and inspect local verification; an agent MAY run the authorized command in a terminal while the owner enters required credentials. Official OMP installation/updates and personal-plugin manager operations SHALL remain explicit operations outside Nix activation.
+Merges SHALL not activate workstations or mutate OMP state. Nix build/activation SHALL run only on Mac and applicable CI; Windows user apply and platform runtime/plugin updates SHALL remain explicit authorized operations. Agents MAY run authorized commands in an actual terminal while owners type sudo/UAC credentials. Neither publication nor a plan SHALL imply activation authorization.
 
 #### Scenario: Merge a dependency update
 
-- **WHEN** all required checks pass and a maintainer merges the pull request
-- **THEN** each active host remains unchanged until deliberate activation
-- **AND** each installed OMP/plugin version remains unchanged until its explicit upstream operation
+- **WHEN** required checks pass and an authorized maintainer merges the PR
+- **THEN** active workstations and OMP/plugin selections remain unchanged until explicit platform operations
 
 #### Scenario: Update OMP
 
-- **WHEN** the operator runs `omp update` on a supported host
-- **THEN** upstream OMP manages its official executable installation
-- **AND** the operation does not change the repository or a Nix generation
-- **AND** the operator verifies the observed installation and a fresh Tern session
+- **WHEN** the owner updates the Mac via omp update or Windows via Tern's Check for omp updates
+- **THEN** only that platform-owned upstream installation changes
+- **AND** no repository/Nix generation changes implicitly
+- **AND** evidence records observed installation and a fresh Tern session
 
 ### Requirement: Retained rollback
 
-The update procedure SHALL retain the previous Nix generation until activation verification and required real-session smoke pass. Migration SHALL also retain old source generations while running sessions use them and until the replacement gates pass. The procedure SHALL state that the official OMP executable and plugin-manager runtime selection are outside Nix-generation rollback. Recorded accepted official releases MAY be restored explicitly with the supported binary installer; the procedure SHALL not promise an upstream rollback subcommand or retain `omp-dev-update --rollback` as a supported path.
+Mac updates SHALL retain the previous Nix generation through activation/session acceptance; Nix rollback SHALL not claim OMP/plugin recovery. Native Windows recovery SHALL use accepted tool/source backups, Tern OMP recovery and supported corrective plugin releases. WSL retirement SHALL require a private retained export; its recovery SHALL be an explicitly authorized import, not a continuing supported environment or state conversion.
 
 #### Scenario: New generation fails acceptance
 
-- **WHEN** activation verification or the release smoke fails after a Nix change
-- **THEN** the maintainer can restore the previous Nix generation without replacing mutable OMP state
-- **AND** the rollback does not claim to change the official OMP/plugin version
+- **WHEN** Mac activation or release smoke fails
+- **THEN** the owner can restore the retained Nix generation without replacing mutable OMP state
+- **AND** rollback claims no OMP/plugin-version change
 
 #### Scenario: OMP update fails acceptance
 
-- **WHEN** the installed OMP release fails direct verification or the real-session smoke
-- **THEN** the operator reports the failure and follows an authorized supported official-installer recovery to a recorded accepted release when available
-- **AND** it does not direct the operator to roll back a Nix generation as an OMP version rollback
-- **AND** unavailable recovery prerequisites are reported rather than fabricated
+- **WHEN** installed OMP fails direct verification or session smoke
+- **THEN** the owner follows supported Mac official-installer or Windows Tern recovery with recorded accepted releases where available
+- **AND** no Nix rollback is represented as executable recovery
+- **AND** missing recovery prerequisites are reported, not fabricated
 
 ### Requirement: Discoverable operations
 
-The repository SHALL contain one concise agent entry point and one canonical dependency-update runbook for remaining package maintenance and release smoke. AGENTS.md and README SHALL identify official OMP installer/update commands, plugin-manager install/upgrade commands, update ownership, schedule, required checks, activation, smoke, and recovery boundaries. The obsolete OMP source-update/patch-repair/recovery runbook and repository OMP update skill SHALL be removed. No new updater or scheduler SHALL replace them.
+AGENTS.md, README and the dependency runbook SHALL identify Nix maintenance on Mac/CI, native Windows hooks/apply, portable OpenSpec commands/workflow, platform OMP/plugin ownership and explicit activation/recovery boundaries. Retained-WSL, GPG/pass and daemon-builder instructions SHALL be removed. No substitute scheduler, updater shim or Linux delegation SHALL be introduced.
 
 #### Scenario: Resume in a new session
 
-- **WHEN** an agent receives an update question in the repository
-- **THEN** repository guidance points directly to the declared Nix, `omp update`, and published plugin-manager commands
-- **AND** it does not refer the agent to a removed wrapper, verifier, source updater, or Herdr integration
+- **WHEN** an agent receives a maintenance question
+- **THEN** guidance points to applicable Mac Nix, Windows native/Tern and plugin-manager operations
+- **AND** it references no deleted WSL wrapper/builder/update workflow
+- **AND** the Korolev migration/export runbook is discoverable without copying historical WSL instructions into active procedures
 
 ### Requirement: CI-reachable dependency sources
 

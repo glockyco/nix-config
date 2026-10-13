@@ -2,79 +2,92 @@
 
 ## Purpose
 
-This specification defines how the workstation wraps and verifies a host-local OMP source generation with an immutable personal plugin while preserving mutable runtime state.
+This specification defines how each workstation runs the official upstream OMP with the manager-installed personal plugin, delivers its tools, and preserves mutable runtime state.
 
 ## Requirements
 
 ### Requirement: Mutable runtime state boundary
 
-Workstation configuration and activation SHALL leave OMP authentication, provider preferences, sessions, history, caches, blobs, logs, model configuration, and user-managed runtime configuration writable and in place. They SHALL NOT replace `~/.omp/agent` or `~/.omp/agent/config.yml` with a store symlink. The plugin manager SHALL own its mutable registry and installed plugin state; Nix SHALL NOT render or reconcile those files.
+Configuration/activation SHALL preserve writable OMP and plugin-manager state and SHALL not replace it with store symlinks or reconcile its registry. Cross-platform transfer SHALL be limited to architecture.md, product.md and style.md after source sessions finish, with owner reconciliation into exact-path native sharpshooter banks, plus the nonsecret litellm model definition. Authentication/session databases, browser profiles, queue and state.json SHALL never be imported.
 
 #### Scenario: Activate over an existing OMP profile
 
 - **WHEN** workstation configuration activates on a host with existing OMP runtime state
-- **THEN** authentication, configuration, sessions, history, and caches remain at their existing mutable paths
+- **THEN** authentication, configuration, sessions, history and caches remain at their mutable paths
 - **AND** activation does not overwrite or delete those files
+
+#### Scenario: Port project decisions after sessions finish
+
+- **WHEN** a project's WSL sessions have ended and the owner approves its decision migration
+- **THEN** only architecture.md, product.md and style.md are copied or reconciled into the bank computed from the exact resolved native checkout path
+- **AND** a fresh native session discovers those decisions
+- **AND** queue, state.json, transcripts and authentication/session databases are not imported
+
+#### Scenario: Reproduce nonsecret provider configuration
+
+- **WHEN** the owner prepares Windows models.yml for the migrated SCCH provider
+- **THEN** it defines litellm with baseUrl https://vllm-api.scch.at/v1 while preserving other native definitions
+- **AND** the owner establishes authentication natively, without copying secrets or authentication files
 
 ### Requirement: Representative language-server matrix
 
-The Mac SHALL provide one primary server for C#, Python, TypeScript and JavaScript, Svelte, Nix, Markdown, and LaTeX and BibTeX. WSL SHALL provide the same matrix except C#/Roslyn, which is Mac-only. The packages SHALL be `markdown-oxide`, `nixd`, `pyright`, `svelte-language-server`, `texlab`, and `typescript-language-server`, with `roslyn-language-server` added on the Mac. The personal plugin SHALL override OMP defaults only where required to select that primary server or correct root detection; a disabled Mac-only server SHALL not start on WSL. Project SDKs SHALL remain project-owned.
+The Mac SHALL retain its declared C#, Python, TypeScript/JavaScript, Svelte, Nix, Markdown and LaTeX/BibTeX servers. Native Korolev SHALL use C3's Windows language/document tools, including native TexLab, with no nixd or C#/Unity server for this role. Project SDKs SHALL remain project-owned. Plugin overrides SHALL select only the intended primary server/root behavior; no server SHALL resolve through the retired Linux environment.
 
 #### Scenario: Exercise the matrix
 
-- **WHEN** the language smoke check runs against fixed representative projects on each supported host
-- **THEN** each server in that host's matrix starts through the ordinary host package environment
-- **AND** diagnostics are requested for every supported language
-- **AND** definition, references, and rename are exercised for each language where the server supports the operation
-- **AND** a failed or missing supported server fails the check instead of being reported as a warning
-- **AND** WSL neither installs nor attempts to launch Roslyn
+- **WHEN** language smoke checks run against representative projects on each supported host
+- **THEN** each server in that host's matrix starts natively
+- **AND** diagnostics are requested for each supported language
+- **AND** definition, references and rename are exercised where supported
+- **AND** a missing or failed supported server fails rather than being reported as a warning
+- **AND** Korolev installs/launches no Mac-only Nix or C#/Unity server
 
 ### Requirement: Activation proof through a real session
 
-The cutover SHALL be accepted only after a real upstream OMP session is launched through the default official command in Tern in a disposable repository on each supported host. Upstream OMP and the published plugin SHALL pass an independent pre-cutover launch before the wrapper is removed.
+Workstation support SHALL require a real upstream OMP session in Tern in a disposable local repository on Mac and native Windows Korolev. Evidence SHALL identify each platform-owned executable and plugin installation. A former Linux session or static package check SHALL not satisfy native Windows acceptance.
 
 #### Scenario: Verify personal behavior after activation
 
-- **WHEN** the activation smoke session inspects its loaded plugin and performs a harmless preview operation
-- **THEN** the session reports the plugin-manager installation path and released version
-- **AND** the personal policy is active
-- **AND** the `personal_commit` tool is registered
-- **AND** the preview does not mutate repository state
+- **WHEN** the real host-local smoke session inspects its plugin and performs a harmless preview
+- **THEN** it reports the plugin-manager path and released version
+- **AND** personal policy is active and personal_commit is registered
+- **AND** preview does not mutate repository state
+- **AND** native Windows annotation acceptance uses the released support-native-windows plugin
 
 ### Requirement: Platform-owned OMP rollback
 
-A Nix generation rollback SHALL restore the prior Nix-managed package/configuration paths without changing the independently installed OMP executable, plugin-manager selection, or application state. Migration SHALL retain the previous Nix generation and source generations until both replacement installations and real-session gates pass, and SHALL never delete a generation used by a running session. OMP version recovery SHALL be an explicit supported official-installer operation for a recorded accepted release, not a claimed Nix or source-updater rollback. User-owned OMP state SHALL not be deleted or copied between hosts.
+Mac Nix rollback SHALL restore Nix-managed paths without changing OMP, plugin selection or mutable state; Windows recovery SHALL use Tern and supported plugin releases, not Nix. Recovery SHALL retain accepted revisions/backups and never delete state used by running sessions. State SHALL not be copied across hosts except the explicitly bounded decision/model migration. A private WSL export SHALL be retained before unregister and restored only with owner approval.
 
 #### Scenario: Roll back a Nix generation
 
-- **WHEN** the operator restores a prior Nix generation on either supported host
-- **THEN** its prior Nix package and configuration paths become active
-- **AND** the official OMP installation, plugin-manager state, and OMP-owned mutable state remain unchanged
-- **AND** restoring an old wrapper generation is identified as migration recovery, not an OMP version rollback
+- **WHEN** the owner restores a retained Mac Nix generation
+- **THEN** its prior Nix package/configuration paths become active
+- **AND** official OMP/plugin/state remain unchanged
+- **AND** Windows recovery is not represented as a Nix rollback
 
 #### Scenario: Recover an OMP release
 
-- **WHEN** an authorized operator restores a recorded accepted release through the official installer in binary mode
-- **THEN** a fresh session reports that restored executable version
+- **WHEN** an authorized operator recovers an accepted OMP release through the Mac installer or Windows Tern flow
+- **THEN** a fresh session reports the recovered executable version
 - **AND** application state remains in place
-- **AND** recovery requires repeated personal-plugin and applicable host smoke checks
+- **AND** personal-plugin and applicable host smokes are repeated
 
 #### Scenario: No previous generation exists
 
-- **WHEN** recovery is requested without a retained Nix generation or recorded accepted OMP release
-- **THEN** the procedure identifies the missing recovery prerequisite
-- **AND** it does not invent a rollback result or delete user state
+- **WHEN** recovery lacks a retained Mac generation or accepted platform runtime/backup
+- **THEN** the procedure names the missing prerequisite
+- **AND** it invents no rollback result and deletes no user state
 
 ### Requirement: Bootstrap-era deployment removal
 
-After migration acceptance, the workstation SHALL contain no OMP wrapper, patched-source updater, patch pins, verifier, activation-managed Herdr integration, repository OMP update skill, obsolete command shim, global package link, executable fallback, or superseded `restart-sessions-and-prune-omp-generations` change. Official OMP and plugin installation/update SHALL remain explicit operations outside activation.
+Accepted workstations SHALL contain no OMP wrapper, patched updater, patch pin, obsolete verifier/skill/shim, global package link or executable fallback. Nix/chezmoi SHALL not invoke OMP or manage Herdr integration. Mac official installation and native Korolev Tern delivery plus plugin-manager operations SHALL remain explicit. Removing Linux host tooling SHALL not remove Mac-required ordinary packages.
 
 #### Scenario: Inspect the final workstation closure
 
-- **WHEN** the final workstation configuration is evaluated
-- **THEN** both hosts expose ordinary OpenSpec, Plannotator, and platform language-server packages
-- **AND** activation contains no mutable checkout preparation, OMP build, global link installation, or OMP invocation
-- **AND** the default command uses the official standalone installation
+- **WHEN** the final Mac closure and native Windows setup are inspected
+- **THEN** both provide ordinary platform-native OpenSpec, Plannotator and supported language tools
+- **AND** activation contains no OMP build/invocation, mutable checkout preparation or global link installation
+- **AND** each default omp uses only its declared platform owner
 
 ### Requirement: Preserved runtime acceptance
 
@@ -87,71 +100,78 @@ Dependency automation SHALL retain deterministic ordinary-package/OpenSpec check
 
 ### Requirement: Shared user-scope module set
 
-Both supported hosts SHALL consume one portable chezmoi source for shell behavior, Git, the GitHub CLI and repository-root configuration, with ordinary user packages declared by their system configuration. Platform program modules SHALL own shell plugins. Mac-only user setup SHALL apply only to Darwin. Home Manager SHALL own no packages, files or activation steps.
+Mac and native Windows Korolev SHALL consume one portable chezmoi source for applicable Git, GitHub CLI and repository-root facts with OS-specific behavior owned once. Mac Nix SHALL own ordinary user packages and shell plugins; native Windows tools SHALL keep C3's ownership. Mac-only setup SHALL apply only to Darwin. Home Manager and Korolev/Linux user configuration SHALL own no scope.
 
 #### Scenario: Build the shared set on both hosts
 
-- **WHEN** each host configuration is built
-- **THEN** both install the shared ordinary user packages and render the portable chezmoi source
-- **AND** the WSL host applies no Darwin user setup
+- **WHEN** the Mac configuration is built and native Windows fixtures render the shared source
+- **THEN** each consumes the intended shared facts and platform-owned tools
+- **AND** Windows applies no Darwin user setup or Linux package list
 
 #### Scenario: Add a portable module
 
 - **WHEN** portable user configuration changes
-- **THEN** the change applies to both hosts without a second declaration
+- **THEN** both actual hosts consume the change without duplicating its declaration
 
 ### Requirement: Official standalone OMP distribution
 
-Each supported workstation SHALL install upstream OMP through the official platform installer in standalone-binary mode, outside Nix activation. Nix SHALL NOT provide an OMP wrapper, source-generation updater, runtime plugin package, executable fallback, or patched OMP release. The personal plugin SHALL be installed in user scope with the install command defined by `publish-plugin-through-omp-plugin-manager`: `omp plugin marketplace add glockyco/omp-agent-setup`, then `omp plugin install --scope user personal@glockyco`. Upgrades SHALL use `omp plugin marketplace update glockyco`, then `omp plugin upgrade --scope user personal@glockyco`, followed by a fresh OMP session. OpenSpec commands SHALL appear as `/personal:opsx-*`, without aliases for the former bare commands.
+Supported workstations SHALL use standalone upstream OMP outside Nix activation. The Mac SHALL retain the official platform installer; native Korolev SHALL use Tern-managed OMP as its sole installation. Nix SHALL provide no OMP wrapper, source updater, runtime plugin package or executable fallback. Both hosts SHALL install/upgrade the published personal plugin through OMP's user plugin manager and retain namespaced /personal:opsx-\* commands without legacy aliases.
 
 #### Scenario: Install on either supported host
 
-- **WHEN** the operator installs OMP on macbook-pro or in Korolev's WSL environment
-- **THEN** the installer selects the host-native standalone upstream release
+- **WHEN** the operator prepares OMP on macbook-pro or native Windows Korolev
+- **THEN** the Mac uses its official native standalone installation and Korolev uses Tern's managed omp.exe
 - **AND** the plugin manager records the independently released personal plugin in writable user state
 - **AND** no developer checkout or Nix runtime plugin path is required
+- **AND** Korolev adds no competing official-installer or Bun-global copy
 
 ### Requirement: Default upstream command
 
-The default `omp` command SHALL resolve to the official standalone executable from a fresh login shell and retain normal upstream argument and working-directory behavior. Personal extensions, skills, rules, commands, and LSP overrides SHALL load through the plugin manager, without wrapper-supplied `--extension` or `--plugin-dir` flags. OpenSpec, Plannotator, and language servers SHALL be ordinary host packages on the user's PATH, not wrapper runtime inputs. Zed SHALL NOT declare an OMP agent-server integration on either managed platform.
+The default omp SHALL resolve to its platform-owned upstream executable in a fresh shell and preserve arguments/working directory. Personal behavior SHALL load once through the plugin manager without wrapper flags. Required ordinary tools SHALL resolve from Mac Nix packages or C3's native Windows tools, not a Linux launcher. Neither host SHALL declare a Zed OMP agent server.
 
 #### Scenario: Resolve the installed command
 
-- **WHEN** the operator starts `omp` in a fresh login shell after activation
-- **THEN** the executable is the official installation rather than a Nix store wrapper or Bun-global shim
-- **AND** the published personal plugin loads once through the plugin manager
-- **AND** OpenSpec, Plannotator, and the platform's language servers resolve from the declared host packages
+- **WHEN** the user starts omp in a fresh shell after the platform setup
+- **THEN** the Mac resolves its official installation and Korolev resolves Tern's copy at %LOCALAPPDATA%\\Tern\\omp\\bin\\omp.exe
+- **AND** personal@glockyco loads once through OMP's user plugin manager
+- **AND** OpenSpec, Plannotator and applicable language servers resolve natively
 
 #### Scenario: Inspect editor configuration
 
-- **WHEN** Mac or rendered Windows Zed settings are inspected after the cutover
-- **THEN** they contain no repository-declared OMP agent-server setting
-- **AND** unrelated themes, keymaps, and language-server settings remain unchanged
+- **WHEN** Mac or Windows Zed settings are inspected after cutover
+- **THEN** no repository-declared OMP agent server exists
+- **AND** unrelated themes, keymaps and language-server settings remain unchanged
 
 ### Requirement: Explicit upstream executable updates
 
-OMP executable updates SHALL use `omp update` as an explicit operation on the requested host outside Nix activation. Personal plugin upgrades SHALL use the plugin-manager upgrade command defined by `publish-plugin-through-omp-plugin-manager`. Neither operation SHALL require workstation patch pins or publish repository changes. Existing sessions SHALL not be interrupted automatically; acceptance SHALL use a fresh session on the observed installed version.
+OMP updates SHALL remain explicit host operations outside activation: omp update for the Mac's official installation and Tern's managed update flow on Korolev. Plugin upgrades SHALL use OMP's published marketplace/user-plugin commands. Neither operation SHALL require workstation patch pins or publication. Existing sessions SHALL not be interrupted automatically; acceptance SHALL use a fresh session on the observed installed version.
 
 #### Scenario: Update the executable
 
-- **WHEN** an authorized operator runs `omp update`
-- **THEN** the upstream command manages the official installation without a wrapper rejection
-- **AND** verification records the executable path and observed version in a newly launched session
-- **AND** Nix generations and OMP authentication and session state remain outside that update's ownership
+- **WHEN** an authorized owner updates OMP through the platform's declared update flow
+- **THEN** only that platform-owned executable installation is updated
+- **AND** verification records its path and observed version in a new session
+- **AND** Nix generations, authentication and session state remain outside update ownership
 
 #### Scenario: Upgrade personal behavior
 
-- **WHEN** the operator runs the defined plugin upgrade command
-- **THEN** the plugin manager upgrades the published plugin in user scope
-- **AND** a fresh session verifies its released version and complete loaded capabilities
+- **WHEN** the operator updates the marketplace and upgrades personal@glockyco in user scope
+- **THEN** OMP's plugin manager upgrades the released plugin
+- **AND** a fresh session verifies its released version and loaded capabilities
 
 ### Requirement: Tern terminal delivery
 
-Tern SHALL be the primary terminal for interactive OMP sessions on the Mac. The Mac SHALL retain Tern's manually installed, self-updating bundle, its CLI PATH entry, and its Dock pin. Ghostty and Herdr SHALL remain available as secondary tools: the Mac keeps Ghostty's application, theme, configuration, and Dock pin, and both hosts keep the Herdr package. Activation SHALL NOT create, reconcile, or restart through Herdr's OMP integration; the owner installs it on demand with Herdr's supported integration command. Korolev's WSL OMP release proof SHALL also run in Tern for Windows.
+Tern SHALL remain the primary interactive OMP terminal on Mac and native Windows Korolev. The Mac SHALL retain its manual self-updating bundle, CLI PATH and Dock pin plus secondary Ghostty and Herdr. Korolev SHALL retain C3's native Tern/OMP ownership without a Linux session dependency. Activation SHALL not manage Herdr's OMP integration; owner installation remains explicit on the Mac.
 
 #### Scenario: Activate the Mac terminal cutover
 
-- **WHEN** the reviewed Mac configuration activates after upstream OMP and the plugin pass pre-cutover verification
-- **THEN** Tern is the primary terminal and keeps its Dock entry
-- **AND** `tern` resolves to the installed bundle's CLI without an obsolete Homebrew link
-- **AND** Ghostty and Herdr remain installed, and activation does not touch Herdr's OMP integration
+- **WHEN** reviewed Mac configuration activates after upstream OMP/plugin verification
+- **THEN** Tern remains primary with its Dock entry and declared CLI path
+- **AND** Ghostty and Herdr remain installed
+- **AND** activation does not touch Herdr's OMP integration
+
+#### Scenario: Start native Korolev work
+
+- **WHEN** the owner starts a new interactive project session in Tern on Korolev
+- **THEN** it runs native Windows OMP against the stable native checkout
+- **AND** it requires no NixOS distribution or Linux terminal pane

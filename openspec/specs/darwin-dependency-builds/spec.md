@@ -55,7 +55,7 @@ Nixpkgs publishes no `aarch64-darwin` binary for these builds, so any build plan
 
 ### Requirement: Ordinary fixed-output language-server toolchain
 
-The Mac SHALL provide Markdown Oxide and Roslyn as ordinary host packages from official, fixed-output platform artifacts. WSL SHALL provide the fixed-output Markdown Oxide package and SHALL omit Roslyn. Roslyn on the Mac SHALL use a binary .NET runtime to launch its downloaded language-server payload. Host packages SHALL provide `markdown-oxide` and, on the Mac, `Microsoft.CodeAnalysis.LanguageServer` without compiling either application from source, and SHALL NOT provide Marksman as an alias or fallback.
+The Mac SHALL provide Markdown Oxide and Roslyn as ordinary host packages from official, fixed-output platform artifacts. Roslyn SHALL use a binary .NET runtime to launch its downloaded language-server payload. Host packages SHALL provide `markdown-oxide` and `Microsoft.CodeAnalysis.LanguageServer` without compiling either application from source, and SHALL NOT provide Marksman as an alias or fallback. No Linux workstation package set SHALL remain a consumer.
 
 #### Scenario: Inspect the managed language-server build plan
 
