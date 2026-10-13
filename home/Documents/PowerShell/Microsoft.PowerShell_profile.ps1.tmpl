@@ -1,0 +1,56 @@
+# Managed by chezmoi from nix-config: home/Documents/PowerShell/Microsoft.PowerShell_profile.ps1.tmpl
+# PowerShell loads PSReadLine before this profile only for an interactive console.
+# Everything else, such as pwsh -Command, skips the profile like the zsh tty guard.
+if (-not (Get-Module PSReadLine)) { return }
+
+$env:FZF_DEFAULT_COMMAND = '{{ .portable.fzf.defaultCommand | replace "'" "''" }}'
+$env:FZF_CTRL_T_COMMAND = '{{ .portable.fzf.fileWidgetCommand | replace "'" "''" }}'
+$env:FZF_ALT_C_COMMAND = '{{ .portable.fzf.changeDirWidgetCommand | replace "'" "''" }}'
+$env:FZF_DEFAULT_OPTS_FILE = Join-Path $HOME '.config\fzf\catppuccin-mocha.rc'
+$env:EZA_CONFIG_DIR = Join-Path $HOME '.config\eza'
+
+Set-PSReadLineOption -MaximumHistoryCount {{ .portable.history.size }} -HistoryNoDuplicates -AddToHistoryHandler {
+    param([string]$line)
+    # A leading space keeps a command out of history, as in zsh.
+    if ($line -match '^\s') { return [Microsoft.PowerShell.AddToHistoryOption]::SkipAdding }
+    # Other lines keep PSReadLine's sensitive-command filter.
+    [Microsoft.PowerShell.PSConsoleReadLine]::GetDefaultAddToHistoryOption($line)
+}
+Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
+
+# PSFzf loads on the first fzf key and then replaces these handlers with its own.
+foreach ($binding in @(
+        @('Ctrl+t', 'Invoke-FzfPsReadlineHandlerProvider'),
+        @('Ctrl+r', 'Invoke-FzfPsReadlineHandlerHistory'),
+        @('Alt+c', 'Invoke-FzfPsReadlineHandlerSetLocation'))) {
+    Set-PSReadLineKeyHandler -Chord $binding[0] -Description 'fzf (loads PSFzf on first use)' -ScriptBlock ([scriptblock]::Create(
+            "Import-Module PSFzf -Global; Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'; $($binding[1])"))
+}
+
+# git-completion loads on the first Git completion.
+Register-ArgumentCompleter -CommandName git -Native -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+    if (-not (Get-Module git-completion)) { Import-Module git-completion -Global }
+    Complete-Git -CommandAst $commandAst -CursorPosition $cursorPosition
+}
+
+# The zsh eza aliases. ls stays Get-ChildItem because pipelines need its objects.
+function eza { eza.exe --icons auto --git @args }
+function ll { eza -l @args }
+function la { eza -a @args }
+function lla { eza -la @args }
+function lt { eza --tree @args }
+
+# Windows Terminal opens duplicated tabs and panes in the reported folder.
+# Other terminals may read OSC 9 as a notification, so only Windows Terminal gets it.
+function Invoke-Starship-PreCommand {
+    $location = $executionContext.SessionState.Path.CurrentLocation
+    if ($env:WT_SESSION -and $location.Provider.Name -eq 'FileSystem') {
+        $host.UI.Write("$([char]27)]9;9;`"$($location.ProviderPath)`"$([char]27)\")
+    }
+}
+
+# Dot-sourcing runs the generated init code in this scope, as Invoke-Expression would.
+. ([scriptblock]::Create((& starship init powershell | Out-String)))
+# zoxide initializes last, as its documentation requires.
+. ([scriptblock]::Create((zoxide init powershell | Out-String)))

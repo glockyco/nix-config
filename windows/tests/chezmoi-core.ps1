@@ -108,6 +108,53 @@ try {
   $ghConfig = [IO.File]::ReadAllText((Join-Path $target 'AppData/Roaming/GitHub CLI/config.yml'))
   Assert-Core ($ghConfig -match '(?m)^git_protocol: https\r?$' -and $ghConfig -notmatch 'oauth|token|user:') 'native gh config must select HTTPS without auth state'
   Assert-Core ($ghConfig -ceq "version: `"1`"`ngit_protocol: https`neditor: `"`"`naliases: {}`n") 'native gh config must match gh serialization without an extra blank line'
+  foreach ($relative in @('Documents/PowerShell/Microsoft.PowerShell_profile.ps1', '.config/starship.toml', '.config/fzf/catppuccin-mocha.rc', '.config/eza/theme.yml')) {
+    Assert-Core ($relative -in $managed) "Windows must manage $relative"
+  }
+  # Distinct facts, one with a quote, prove the profile reads portable data and escapes it.
+  $profileOverride = $override.Clone()
+  $profileOverride.portable = @{ history = @{ size = 4242 }; fzf = @{ defaultCommand = "fd --type f --exclude 'vendor'"; fileWidgetCommand = 'fd --type f --fixture'; changeDirWidgetCommand = 'fd --type d --fixture' } }
+  $profileText = Invoke-CoreChezmoi @('cat', (Join-Path $target 'Documents/PowerShell/Microsoft.PowerShell_profile.ps1')) -OverrideData $profileOverride
+  Assert-CoreSyntax 'PowerShell profile' $profileText
+  $profilePath = Join-Path $fixtureRoot 'profile.ps1'
+  Write-CoreFile $profilePath $profileText
+  $stubs = Join-Path $fixtureRoot 'profile stubs'
+  Write-CoreFile (Join-Path $stubs 'starship.ps1') "if ((`$args -join ' ') -cne 'init powershell') { throw 'unexpected starship arguments' }`n`"function global:prompt { 'stub> ' }`"`n"
+  Write-CoreFile (Join-Path $stubs 'zoxide.ps1') "if ((`$args -join ' ') -cne 'init powershell') { throw 'unexpected zoxide arguments' }`n'function global:z {}'`n"
+  $profileProbe = @'
+param([string]$ProfilePath, [string]$Stubs, [switch]$Interactive)
+$ErrorActionPreference = 'Stop'
+$env:PATH = $Stubs + [IO.Path]::PathSeparator + $env:PATH
+if ($Interactive) { Import-Module PSReadLine }
+$before = @{ prompt = (Get-Command prompt).ScriptBlock.ToString(); env = $env:FZF_DEFAULT_COMMAND; eza = [bool](Get-Command ll -ErrorAction SilentlyContinue) }
+. $ProfilePath
+$bound = @{}
+if ($Interactive) { foreach ($handler in Get-PSReadLineKeyHandler -Bound) { $bound[$handler.Key] = "$($handler.Function)|$($handler.Description)" } }
+$history = if ($Interactive) { (Get-PSReadLineOption).AddToHistoryHandler } else { $null }
+[ordered]@{
+  promptChanged = (Get-Command prompt).ScriptBlock.ToString() -cne $before.prompt
+  fzfCommand = $env:FZF_DEFAULT_COMMAND
+  fzfChanged = $env:FZF_DEFAULT_COMMAND -cne $before.env
+  listing = [bool](Get-Command ll -ErrorAction SilentlyContinue) -and -not $before.eza
+  jump = [bool](Get-Command z -ErrorAction SilentlyContinue)
+  modules = @(Get-Module PSFzf, git-completion).Count
+  bound = $bound
+  historySize = if ($Interactive) { (Get-PSReadLineOption).MaximumHistoryCount } else { 0 }
+  space = if ($history) { [string]$history.Invoke(' secret') } else { '' }
+  sensitive = if ($history) { [string]$history.Invoke('Set-Secret -Password hunter2') } else { '' }
+} | ConvertTo-Json -Compress
+'@
+  $probePath = Join-Path $fixtureRoot 'profile-probe.ps1'
+  Write-CoreFile $probePath $profileProbe
+  $quiet = Invoke-CoreNative pwsh @('-NoProfile', '-NonInteractive', '-File', $probePath, '-ProfilePath', $profilePath, '-Stubs', $stubs) | ConvertFrom-Json
+  Assert-Core (-not $quiet.promptChanged -and -not $quiet.fzfChanged -and -not $quiet.listing -and -not $quiet.jump -and $quiet.modules -eq 0) 'a session without PSReadLine must leave prompt, environment, commands and modules unchanged'
+  $interactive = Invoke-CoreNative pwsh @('-NoProfile', '-NonInteractive', '-File', $probePath, '-ProfilePath', $profilePath, '-Stubs', $stubs, '-Interactive') | ConvertFrom-Json
+  Assert-Core ($interactive.promptChanged -and $interactive.listing -and $interactive.jump) 'an interactive session must load the prompt, listing commands and zoxide'
+  Assert-Core ($interactive.fzfCommand -ceq "fd --type f --exclude 'vendor'" -and $interactive.historySize -eq 4242) 'the profile must take fzf commands and history size from portable facts'
+  Assert-Core ($interactive.bound.Tab -like 'MenuComplete|*') 'Tab must open the completion menu'
+  foreach ($chord in @('Ctrl+t', 'Ctrl+r', 'Alt+c')) { Assert-Core ($interactive.bound.$chord -ceq 'CustomAction|fzf (loads PSFzf on first use)') "$chord must defer PSFzf until first use" }
+  Assert-Core ($interactive.modules -eq 0) 'PSFzf and git-completion must not load at startup'
+  Assert-Core ($interactive.space -ceq 'SkipAdding' -and $interactive.sensitive -ceq 'MemoryOnly') 'history must drop leading-space lines and keep the sensitive-command filter'
   function Get-CoreGit([string]$Key, [string]$Directory = $target) { Invoke-CoreNative git @('-C', $Directory, 'config', '--get', $Key) }
   Assert-Core ((Get-CoreGit 'ghq.root') -eq $platformFixture.ghqRoot) 'effective native ghq root drifted'
   foreach ($hostName in @('github.com', 'gitlab.scch.at')) {
@@ -253,7 +300,7 @@ try {
   Assert-Core ((Get-CoreEngineCallCount) -eq 3) 'failed onchange state must not be recorded as successful'
   $null = Invoke-CoreChezmoi @('apply')
   Assert-Core ((Get-CoreEngineCallCount) -eq 3) 'unchanged successful engine inputs must not rerun after recovery'
-  Write-Output 'chezmoi-core: native init, effective Git/GCM, SSH pins/options, script AST and hashed engine/order/failure fixtures passed'
+  Write-Output 'chezmoi-core: native init, effective Git/GCM, SSH pins/options, PowerShell profile, script AST and hashed engine/order/failure fixtures passed'
 } finally {
   foreach ($name in $variables) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
   if (Test-Path -LiteralPath $fixtureRoot) { Remove-Item -LiteralPath $fixtureRoot -Recurse -Force }
