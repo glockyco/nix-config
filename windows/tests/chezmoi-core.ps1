@@ -124,7 +124,11 @@ try {
   $profileProbe = @'
 param([string]$ProfilePath, [string]$Stubs, [switch]$Interactive)
 $ErrorActionPreference = 'Stop'
-$env:PATH = $Stubs + [IO.Path]::PathSeparator + $env:PATH
+# Drop one saved entry to imitate a terminal daemon that started before an install.
+$saved = @(@(foreach ($scope in 'Machine', 'User') { [Environment]::GetEnvironmentVariable('Path', $scope) -split ';' }) | Where-Object { $_ } | ForEach-Object { [Environment]::ExpandEnvironmentVariables($_).TrimEnd('\') })
+$dropped = $saved[0]
+$env:PATH = (@($Stubs) + @($env:PATH -split ';' | Where-Object { $_ -and $_.TrimEnd('\') -ine $dropped })) -join ';'
+$inheritedCount = @($env:PATH -split ';').Count
 if ($Interactive) { Import-Module PSReadLine }
 $before = @{ prompt = (Get-Command prompt).ScriptBlock.ToString(); env = $env:FZF_DEFAULT_COMMAND; eza = [bool](Get-Command ll -ErrorAction SilentlyContinue) }
 . $ProfilePath
@@ -142,12 +146,15 @@ $history = if ($Interactive) { (Get-PSReadLineOption).AddToHistoryHandler } else
   historySize = if ($Interactive) { (Get-PSReadLineOption).MaximumHistoryCount } else { 0 }
   space = if ($history) { [string]$history.Invoke(' secret') } else { '' }
   sensitive = if ($history) { [string]$history.Invoke('Set-Secret -Password hunter2') } else { '' }
+  stubsFirst = ($env:PATH -split ';')[0] -ceq $Stubs
+  restored = @($env:PATH -split ';' | Select-Object -Skip $inheritedCount | ForEach-Object { $_.TrimEnd('\') }) -icontains $dropped
+  droppedCount = @($env:PATH -split ';' | Where-Object { $_.TrimEnd('\') -ieq $dropped }).Count
 } | ConvertTo-Json -Compress
 '@
   $probePath = Join-Path $fixtureRoot 'profile-probe.ps1'
   Write-CoreFile $probePath $profileProbe
   $quiet = Invoke-CoreNative pwsh @('-NoProfile', '-NonInteractive', '-File', $probePath, '-ProfilePath', $profilePath, '-Stubs', $stubs) | ConvertFrom-Json
-  Assert-Core (-not $quiet.promptChanged -and -not $quiet.fzfChanged -and -not $quiet.listing -and -not $quiet.jump -and $quiet.modules -eq 0) 'a session without PSReadLine must leave prompt, environment, commands and modules unchanged'
+  Assert-Core (-not $quiet.promptChanged -and -not $quiet.fzfChanged -and -not $quiet.listing -and -not $quiet.jump -and $quiet.modules -eq 0 -and $quiet.droppedCount -eq 0) 'a session without PSReadLine must leave prompt, PATH, environment, commands and modules unchanged'
   $interactive = Invoke-CoreNative pwsh @('-NoProfile', '-NonInteractive', '-File', $probePath, '-ProfilePath', $profilePath, '-Stubs', $stubs, '-Interactive') | ConvertFrom-Json
   Assert-Core ($interactive.promptChanged -and $interactive.listing -and $interactive.jump) 'an interactive session must load the prompt, listing commands and zoxide'
   Assert-Core ($interactive.fzfCommand -ceq "fd --type f --exclude 'vendor'" -and $interactive.historySize -eq 4242) 'the profile must take fzf commands and history size from portable facts'
@@ -155,6 +162,7 @@ $history = if ($Interactive) { (Get-PSReadLineOption).AddToHistoryHandler } else
   foreach ($chord in @('Ctrl+t', 'Ctrl+r', 'Alt+c')) { Assert-Core ($interactive.bound.$chord -ceq 'CustomAction|fzf (loads PSFzf on first use)') "$chord must defer PSFzf until first use" }
   Assert-Core ($interactive.modules -eq 0) 'PSFzf and git-completion must not load at startup'
   Assert-Core ($interactive.space -ceq 'SkipAdding' -and $interactive.sensitive -ceq 'MemoryOnly') 'history must drop leading-space lines and keep the sensitive-command filter'
+  Assert-Core ($interactive.stubsFirst -and $interactive.restored -and $interactive.droppedCount -eq 1) 'an interactive session must append a missing saved PATH entry once, after the inherited entries'
   function Get-CoreGit([string]$Key, [string]$Directory = $target) { Invoke-CoreNative git @('-C', $Directory, 'config', '--get', $Key) }
   Assert-Core ((Get-CoreGit 'ghq.root') -eq $platformFixture.ghqRoot) 'effective native ghq root drifted'
   foreach ($hostName in @('github.com', 'gitlab.scch.at')) {

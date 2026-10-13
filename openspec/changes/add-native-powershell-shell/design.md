@@ -54,6 +54,12 @@ Alternatives considered:
 
 The profile starts with `if (-not (Get-Module PSReadLine)) { return }`. PowerShell imports PSReadLine before `$PROFILE` only for an interactive console. The spike's temporary `$PROFILE` confirmed this for `pwsh -NoExit`, where PSReadLine was loaded, and for `pwsh -Command`, where it was not. The guard plays the role of the zsh `[[ -t 0 ]]` check and keeps engine, hook and agent runs of `pwsh -Command` free of prompt and module setup.
 
+### Saved PATH entries
+
+Right after the guard, the profile appends every saved machine and user PATH entry that the inherited PATH lacks. Tern's session daemon outlives window restarts and starts each shell with the environment from its own start, so tools from a later apply were missing until a reboot or a daemon restart. Restarting the daemon ends every running session. Windows Terminal reloads the environment for new tabs, which the merge leaves unchanged. Appending keeps the inherited entries first, and the merge runs in its own scope so it leaves no variables behind.
+
+Alternatives considered: a runbook step to restart Tern only helps after a daemon restart that ends live sessions. Replacing PATH with the saved value would drop entries a parent added on purpose.
+
 ### Deferred loading
 
 Ctrl+T, Ctrl+R and Alt+C start as small PSReadLine handlers. Each imports PSFzf globally, applies its chord options and calls the matching PSFzf handler, and PSFzf then replaces the placeholders with its own bindings. Git completion is a native argument completer for `git` that imports git-completion on first use. git-completion 2.0 needs this explicit registration anyway. Eager loading cost 0.40 s for PSFzf and 0.26 s for git-completion on every start.
@@ -82,6 +88,7 @@ The new required roles are `prompt` for `Starship.Starship`, `directory-jumper` 
 - Risk: a redirected Documents folder, for example through OneDrive, would separate chezmoi's `Documents/PowerShell` target from `$PROFILE` and the module root. Mitigation: Korolev's Documents folder is local. Acceptance compares `$PROFILE` with the managed path, and the engine resolves the module root through the shell folder API.
 - Risk: PowerShell Gallery package URLs redirect to a CDN. Mitigation: the SHA-256 check guards the content wherever it comes from.
 - Risk: a 100 000-entry history file slows PSReadLine's startup read as it grows. Mitigation: the size is a shared fact, so one edit lowers it for both shells.
+- Risk: the merge re-adds a saved entry that a parent removed on purpose, such as a deactivated virtual environment. Mitigation: it only runs in interactive sessions and appends after the inherited entries, so the parent's choices keep precedence.
 - Risk: a module installed earlier by hand at the same path counts as present. Mitigation: only the reviewed or a newer version is desired, so an older copy is drift.
 
 ## Migration Plan

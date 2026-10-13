@@ -3,6 +3,21 @@
 # Everything else, such as pwsh -Command, skips the profile like the zsh tty guard.
 if (-not (Get-Module PSReadLine)) { return }
 
+# Tern's session daemon starts shells with the PATH from its own start, so tools from a
+# later apply would be missing. Append saved entries the inherited PATH lacks, after it.
+& {
+    # Windows paths compare case-insensitively. The set also drops repeated saved entries.
+    $known = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($entry in $env:PATH -split ';') { if ($entry) { $null = $known.Add($entry.TrimEnd('\')) } }
+    $missing = foreach ($scope in 'Machine', 'User') {
+        foreach ($entry in [Environment]::GetEnvironmentVariable('Path', $scope) -split ';') {
+            $expanded = [Environment]::ExpandEnvironmentVariables($entry).TrimEnd('\')
+            if ($expanded -and $known.Add($expanded)) { $expanded }
+        }
+    }
+    if ($missing) { $env:PATH = (@($env:PATH.TrimEnd(';')) + @($missing)) -join ';' }
+}
+
 $env:FZF_DEFAULT_COMMAND = '{{ .portable.fzf.defaultCommand | replace "'" "''" }}'
 $env:FZF_CTRL_T_COMMAND = '{{ .portable.fzf.fileWidgetCommand | replace "'" "''" }}'
 $env:FZF_ALT_C_COMMAND = '{{ .portable.fzf.changeDirWidgetCommand | replace "'" "''" }}'

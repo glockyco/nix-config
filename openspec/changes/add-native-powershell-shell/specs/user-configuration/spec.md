@@ -112,3 +112,18 @@ Interactive PowerShell sessions in Windows Terminal SHALL report the current fil
 
 - **WHEN** a session runs in Tern
 - **THEN** the prompt emits no Windows Terminal folder sequence
+
+### Requirement: Saved PATH in long-lived terminals
+
+Interactive PowerShell sessions SHALL append saved machine and user PATH entries that the inherited PATH lacks, so tools installed after a terminal daemon started resolve in its new sessions. Inherited entries SHALL keep their order and precedence. Sessions without the interactive line editor SHALL keep the inherited PATH unchanged.
+
+#### Scenario: Open a tab from a terminal daemon started before an apply
+
+- **WHEN** a Tern daemon that started before an apply opens a new PowerShell 7 session
+- **THEN** the tools the apply installed resolve in that session
+- **AND** the prompt renders without restarting the daemon
+
+#### Scenario: Keep inherited precedence
+
+- **WHEN** the inherited PATH already lists a directory ahead of the saved entries
+- **THEN** that directory stays first and each saved entry appears once
