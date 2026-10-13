@@ -24,10 +24,10 @@
 
 ## 4. Live acceptance
 
-- [ ] 4.1 Run the README's Windows checks and `openspec validate add-native-powershell-shell --strict` from the PR branch, and record that they pass.
-- [ ] 4.2 Run the workstation dry run and `chezmoi diff` on Korolev from the PR branch, and record that drift covers only the five new applications and the diff only the profile and the three configuration files.
-- [ ] 4.3 Run `chezmoi apply` on Korolev, then record a zero-exit dry run, a passing `chezmoi verify --exclude=scripts` and that PowerShell 7's `$PROFILE` is the managed file.
+- [x] 4.1 Run the README's Windows checks and `openspec validate add-native-powershell-shell --strict` from the PR branch, and record that they pass.
+- [x] 4.2 Run the workstation dry run and `chezmoi diff` on Korolev from the PR branch, and record that drift covers only the five new applications and the diff only the profile and the three configuration files.
+- [x] 4.3 Run `chezmoi apply` on Korolev, then record a zero-exit dry run, a passing `chezmoi verify --exclude=scripts` and that PowerShell 7's `$PROFILE` is the managed file.
 - [ ] 4.4 In a fresh Tern session, verify the Mac Starship layout, `z` and `zi`, `ll`, menu Tab completion, `git switch` branch completion, Ctrl+T, Ctrl+R and Alt+C, no loaded PSFzf or git-completion at the first prompt, a leading-space command absent from history, and no folder sequence.
-- [ ] 4.5 In Windows Terminal, verify the same prompt and that Ctrl+Shift+D opens the duplicated tab in the current folder.
-- [ ] 4.6 Run `pwsh -Command '(Get-Module PSFzf, git-completion).Count; $env:FZF_DEFAULT_OPTS_FILE'` without `-NoProfile` and verify it prints `0` and an empty line.
+- [x] 4.5 In Windows Terminal, verify the same prompt and that Ctrl+Shift+D opens the duplicated tab in the current folder.
+- [x] 4.6 Run `pwsh -Command '(Get-Module PSFzf, git-completion).Count; $env:FZF_DEFAULT_OPTS_FILE'` without `-NoProfile` and verify it prints `0` and an empty line.
 - [ ] 4.7 Record the owner's confirmation that the Mac's Nix checks pass and that `chezmoi diff` on the Mac shows no PowerShell profile or zsh change.
