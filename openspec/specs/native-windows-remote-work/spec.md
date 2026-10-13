@@ -25,7 +25,7 @@ The selected desktop account is the owner's existing local administrator account
 
 ### Requirement: Authenticated terminal access from each source
 
-The Pro, Air, and Korolev SHALL connect to `desktop` through native OpenSSH using their own approved credentials and verified server identity. The shell SHALL support native PowerShell commands and preserve remote exit status. Network membership alone SHALL NOT grant account access. Revoking one source key SHALL NOT revoke the others.
+The Pro, Air and native Windows Korolev SHALL reach `desktop` with native OpenSSH, independently approved credentials and a pinned server identity. The Pro SHALL likewise reach Windows Korolev with its own source key. Commands run without a terminal SHALL preserve native Windows shell behavior and exit status. Network membership SHALL not grant account access; revoking one source key SHALL not revoke others.
 
 #### Scenario: Use the desktop from each source
 
@@ -43,6 +43,13 @@ The Pro, Air, and Korolev SHALL connect to `desktop` through native OpenSSH usin
 - **WHEN** the Air's desktop authorization is revoked before its return
 - **THEN** the Air can no longer authenticate to the desktop
 - **AND** the Pro and Korolev retain their own access
+
+#### Scenario: Reach the standard work account
+
+- **WHEN** the Pro authenticates to Windows Korolev
+- **THEN** it reaches the approved standard account without password or keyboard-interactive fallback
+- **AND** a command exiting 23 returns status 23
+- **AND** a privileged service operation still requires separate owner-assisted local Administrator approval
 
 ### Requirement: Native agent environment
 
@@ -121,9 +128,7 @@ Because the selected account is a local administrator, whole-volume access over 
 
 ### Requirement: Tailnet-only access and existing fleet isolation
 
-Desktop SSH, RDP, and SMB access SHALL be restricted to approved tailnet paths through effective host service and firewall settings. Existing broader rules SHALL NOT defeat that boundary. The implementation SHALL preserve Korolev's no-inbound policy and the Pro's existing builder access. Loss of Tailscale SHALL NOT create a permissive listener or firewall fallback.
-
-This restriction covers the services this change configures. Independent remote-access products already installed on the desktop reach it through their own authenticated relays rather than through an inbound tailnet path, so they are outside the boundary this requirement asserts. The implementation SHALL enumerate them with their effective firewall scope rather than claim the desktop is reachable only through the tailnet.
+Desktop SSH, RDP and SMB SHALL retain effective approved-tailnet restrictions. Native Korolev SSH SHALL be bound/restricted to its tailnet addresses with independently approved keys. WSL SHALL retain its no-listener boundary. Loss of Tailscale SHALL not create a permissive fallback. Independent authenticated desktop relay products remain outside this service boundary and SHALL be enumerated with effective firewall scope.
 
 #### Scenario: Compare allowed and denied paths
 
@@ -139,8 +144,8 @@ This restriction covers the services this change configures. Independent remote-
 #### Scenario: Preserve the installed fleet
 
 - **WHEN** desktop setup completes
-- **THEN** attempts to initiate inbound connections to Korolev remain blocked
-- **AND** the existing Korolev-to-Pro remote build and command-status checks still pass
+- **THEN** the approved Mac key reaches Windows Korolev over Tailscale, while non-tailnet SSH and WSL inbound services remain blocked
+- **AND** Korolev's native command-status check against the Pro still passes
 
 ### Requirement: Explicit operational recovery
 

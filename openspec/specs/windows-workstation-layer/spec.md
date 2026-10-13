@@ -8,7 +8,7 @@ Define a reviewable Windows workstation configuration layer with explicit owners
 
 ### Requirement: Rendered Windows configuration artifacts
 
-The repository SHALL maintain declarative JSON application/settings data, its schema, one PowerShell 7 convergence module and narrow standalone Zen-policy and Neo-driver Administrator scripts under `windows/`. The engine SHALL own installations and supported user settings. Chezmoi SHALL exclusively own user/app files. Nix activation SHALL neither write Windows paths nor apply Windows artifacts. No WinGet Configuration document or embedded DSC test/set scripts SHALL remain in the cutover PR.
+The repository SHALL maintain declarative JSON application/settings data, its schema, one PowerShell 7 convergence module and narrow standalone Zen-policy, Neo-driver and OpenSSH-server Administrator scripts under `windows/`. The engine SHALL own installations and supported user settings. Chezmoi SHALL exclusively own user/app files. Nix activation SHALL neither write Windows paths nor apply Windows artifacts. No WinGet Configuration document or embedded DSC test/set scripts SHALL remain in the cutover PR.
 
 #### Scenario: Inspect source offline
 
@@ -19,7 +19,7 @@ The repository SHALL maintain declarative JSON application/settings data, its sc
 #### Scenario: Render the artifacts
 
 - **WHEN** the native checkout is reviewed
-- **THEN** JSON data, its schema, the module and two narrow Administrator scripts are available without Nix rendering
+- **THEN** JSON data, its schema, the module and the three narrow Administrator scripts are available without Nix rendering
 
 #### Scenario: Evaluate without network
 
@@ -33,7 +33,7 @@ The repository SHALL maintain declarative JSON application/settings data, its sc
 
 ### Requirement: User scope with explicit machine exceptions
 
-The engine SHALL run as the standard interactive account and reject elevated execution. Only Zen, Tailscale and Docker Desktop SHALL declare machine scope and installer elevation. Other installations SHALL explicitly request user scope and SHALL NOT install competing runtime dependencies. The two Administrator scripts SHALL retain only Zen Program Files policies and Neo DLL/registration ownership. TeX Live, OpenSSH and tailnet enrollment SHALL remain separate owner operations.
+The engine SHALL run as the standard interactive account and reject elevated execution. Only Zen, Tailscale and Docker Desktop SHALL declare machine scope and installer elevation. Other installations SHALL explicitly request user scope and SHALL NOT install competing runtime dependencies. The Administrator scripts SHALL retain only Zen Program Files policies, Neo DLL/registration and Korolev OpenSSH server ownership. TeX Live and tailnet enrollment SHALL remain separate owner operations.
 
 #### Scenario: Install approved packages
 
@@ -66,6 +66,12 @@ The engine SHALL run as the standard interactive account and reject elevated exe
 
 - **WHEN** the owner runs the Neo script as 64-bit Administrator
 - **THEN** it writes only declared DLLs and b0000407 registration before an owner restart
+
+#### Scenario: Apply the OpenSSH server exception
+
+- **WHEN** the owner runs the OpenSSH script as Administrator
+- **THEN** it writes only the OpenSSH capability, default shell, host-key and authorized-key ACLs, `sshd_config`, its named firewall rule and the sshd service settings
+- **AND** sshd stays stopped while another enabled inbound rule could admit TCP 22
 
 #### Scenario: Reject another privileged declaration
 
@@ -114,11 +120,11 @@ Each application SHALL declare present or consumer-pinned policy. Bun SHALL be p
 
 ### Requirement: Native Ferdium communication client
 
-The rendered Windows application set SHALL declare `Ferdium.Ferdium` as the user-scoped `communication-client` package. The package SHALL run as a native Windows application and SHALL NOT be installed through NixOS, Home Manager, WSLg, or a machine-scoped installer.
+The hand-maintained Windows application set SHALL declare `Ferdium.Ferdium` as the user-scoped `communication-client` package. The package SHALL run as a native Windows application and SHALL NOT be installed through NixOS, Home Manager, WSLg, or a machine-scoped installer.
 
 #### Scenario: Install Ferdium
 
-- **WHEN** the interactive user applies the rendered Windows configuration without Ferdium installed
+- **WHEN** the interactive user applies the Windows configuration without Ferdium installed
 - **THEN** WinGet installs the latest available Ferdium version in that user's scope without elevation
 - **AND** the user can launch Ferdium as a native Windows application
 
@@ -203,7 +209,13 @@ The engine SHALL converge the existing supported registry, keyboard, Explorer, r
 
 ### Requirement: Application configuration files
 
-The document and companion scripts SHALL declare application configuration in two classes. For an application that does not rewrite its own configuration, the owning artifact SHALL enforce the complete file content. For an application that rewrites its own configuration, the owning artifact SHALL converge only the declared values and SHALL preserve the application's own writes. Zed, Windows Terminal, and Zen SHALL select Catppuccin Mocha from pinned upstream theme data. Zed SHALL select `nixd` from the WSL environment for Nix files and SHALL disable its `nil` fallback. Fork SHALL execute Git inside the NixOS distribution through a checksum-pinned `wslgit` bridge. AltSnap SHALL own modifier-drag movement and 50/50 edge or corner snapping; overlapping PowerToys window-movement modules SHALL remain disabled. ReNeo SHALL run with standalone mode enabled through a reviewed `RunAs` launcher. While German QWERTZ is active, ReNeo SHALL supply every Neo layer in ordinary and elevated applications. While native Neo is active, ReNeo SHALL operate in extension mode, and the native Neo driver SHALL provide the base layout in elevated surfaces.
+Chezmoi SHALL own Windows application files, enforcing stable content and converging only declared keys in app-rewritten files. Zed and Zen SHALL retain pinned Catppuccin Mocha/Mauve themes. Zed SHALL open native checkouts without WSL transport or an OMP agent server; Fork SHALL use native per-user Git. AltSnap SHALL own modifier movement/snapping without overlapping PowerToys modules. ReNeo and native Neo SHALL retain their declared ordinary/elevated/UAC boundaries.
+
+#### Scenario: Preserve remembered Zed WSL projects
+
+- **WHEN** chezmoi converges existing Zed settings containing `wsl_connections`
+- **THEN** remembered WSL projects remain unchanged as app-owned UI state
+- **AND** retired declaration-owned nixd/TexLab WSL wiring and the OMP agent server are removed
 
 #### Scenario: Enforce a stable configuration file
 
@@ -212,22 +224,34 @@ The document and companion scripts SHALL declare application configuration in tw
 
 #### Scenario: Apply the application themes
 
-- **WHEN** the operator applies the document
-- **THEN** Zed, Windows Terminal, and Zen select Catppuccin Mocha with Mauve accents
-- **AND** each rendered theme matches its pinned upstream source
+- **WHEN** the operator applies the Windows chezmoi source
+- **THEN** Zed and Zen select Catppuccin Mocha with Mauve accents
+- **AND** each managed theme matches its pinned upstream source
+
+#### Scenario: Open native editor work
+
+- **WHEN** the operator opens a local Windows checkout in Zed
+- **THEN** supported language tools start as Windows processes
+- **AND** no WSL transport, nixd selection, or OMP agent-server entry is configured
+- **AND** Nix work remains in the secondary WSL environment
+
+#### Scenario: Run Fork Git operations natively
+
+- **WHEN** Fork operates on a repository below the Windows `~/src` root
+- **THEN** it uses the declared per-user Git for Windows executable without wslgit
+- **AND** Fork preserves its other application-owned settings
 
 #### Scenario: Start the Nix language server
 
-- **WHEN** the operator opens a Nix file in a Zed WSL workspace
-- **THEN** Zed propagates the locally installed Nix extension through its native WSL transport
-- **AND** Zed starts `nixd` from the Linux environment
-- **AND** the workflow requires no SSH server
+- **WHEN** the operator requests Nix language-server work from a native Windows Zed checkout
+- **THEN** the managed Windows settings do not start nixd or redirect the editor through WSL
+- **AND** Nix editing/build workflows use the secondary Nix environment directly
 
 #### Scenario: Run Fork Git operations in WSL
 
-- **WHEN** Fork operates on a repository under `\\wsl.localhost\NixOS`
-- **THEN** its pinned Git bridge runs the repository command inside NixOS
-- **AND** Fork preserves its other application-owned settings
+- **WHEN** the operator selects a repository under the secondary WSL filesystem
+- **THEN** the managed native Fork configuration supplies no wslgit bridge or Linux Git transport
+- **AND** the operator uses the secondary environment's own Git workflow or a separate native checkout
 
 #### Scenario: Snap a modifier-dragged window
 
@@ -256,9 +280,9 @@ The document and companion scripts SHALL declare application configuration in tw
 
 ### Requirement: Windows-first Zed control shortcuts
 
-The rendered Windows configuration SHALL keep Zed Vim mode enabled and SHALL declare a user keymap for full editors. In every Vim mode, standard Windows and VS Code `Ctrl` shortcuts SHALL take precedence over Vim's `Ctrl` commands. The standard shortcuts SHALL include copy, cut, paste, select all, undo, redo, save, find, replace, quick open, command palette, new file, open file, recent projects, symbol search, go to line, select next occurrence, dock toggles, and close editor. `Ctrl+K` SHALL remain available as the base keymap's chord prefix. Vim-only single-key `Ctrl` commands that have no selected Windows action SHALL do nothing in a full editor.
+The Windows chezmoi source SHALL keep Zed Vim mode enabled and SHALL declare a user keymap for full editors. In every Vim mode, standard Windows and VS Code `Ctrl` shortcuts SHALL take precedence over Vim's `Ctrl` commands. The standard shortcuts SHALL include copy, cut, paste, select all, undo, redo, save, find, replace, quick open, command palette, new file, open file, recent projects, symbol search, go to line, select next occurrence, dock toggles, and close editor. `Ctrl+K` SHALL remain available as the base keymap's chord prefix. Vim-only single-key `Ctrl` commands that have no selected Windows action SHALL do nothing in a full editor.
 
-The override SHALL NOT change unmodified Vim keys, `Escape`, terminal input, menus, panels, or other non-editor surfaces. The Windows apply operation SHALL converge the declared keymap as complete configuration rather than preserve undeclared keymap entries.
+The override SHALL NOT change unmodified Vim keys, `Escape`, terminal input, menus, panels, or other non-editor surfaces. The chezmoi apply operation SHALL converge the declared keymap as complete configuration rather than preserve undeclared keymap entries.
 
 #### Scenario: Copy from normal mode
 
@@ -291,25 +315,9 @@ The override SHALL NOT change unmodified Vim keys, `Escape`, terminal input, men
 
 #### Scenario: Converge a changed keymap
 
-- **WHEN** the Windows Zed keymap contains an undeclared binding or differs from the rendered declaration
+- **WHEN** the Windows Zed keymap contains an undeclared binding or differs from the chezmoi declaration
 - **THEN** the apply operation restores the complete declared keymap
-- **AND** the next test operation reports the resource in the desired state
-
-### Requirement: Zed WSL LaTeX builds
-
-The rendered Windows Zed user settings SHALL enable TexLab builds when a LaTeX buffer is saved. The setting SHALL apply to LaTeX projects opened through Zed's native WSL workspace transport. Project repositories SHALL retain ownership of their build commands, root-document markers, and LaTeX tool configuration.
-
-#### Scenario: Build a WSL LaTeX project after save
-
-- **WHEN** the operator saves a LaTeX source file in a Zed WSL workspace
-- **THEN** Zed sends TexLab a workspace configuration with build-on-save enabled
-- **AND** TexLab invokes the WSL project's declared LaTeX build
-
-#### Scenario: Preserve project build ownership
-
-- **WHEN** two LaTeX repositories use different build commands or output directories
-- **THEN** each repository supplies those details through its own LaTeX configuration
-- **AND** the Windows Zed setting does not embed either repository's paths
+- **AND** the next chezmoi verification reports the declared keymap in the desired state
 
 ### Requirement: Excluded Windows surface
 
@@ -379,16 +387,16 @@ Data SHALL be validated against its schema and privilege/ownership invariants be
 
 #### Scenario: Preview and confirm on the machine
 
-- **WHEN** the integrator tests the engine and both Administrator scripts before and after approved apply
+- **WHEN** the integrator tests the engine and each Administrator script before and after approved apply
 - **THEN** preview writes nothing and post-apply tests report matching state or named failures
 
 ### Requirement: Dedicated browser-relay application
 
-The rendered Windows application set SHALL declare Brave as a self-updating, user-scope Chromium-based browser for OMP browser relay use. The relay browser SHALL have a distinct application role, SHALL NOT replace Zen as the interactive browser, and SHALL NOT appear in the centrally managed application set. The Windows declaration SHALL configure no startup entry for the relay browser.
+The hand-maintained Windows application set SHALL declare Brave as a self-updating, user-scope Chromium-based browser for native OMP browser relay use. The relay browser SHALL have a distinct application role, SHALL NOT replace Zen as the interactive browser, and SHALL NOT appear in the centrally managed application set. The Windows declaration SHALL configure no startup entry for the relay browser.
 
 #### Scenario: Apply the Windows application declaration
 
-- **WHEN** the interactive user applies the rendered Windows configuration without Brave installed
+- **WHEN** the interactive user applies the Windows configuration without Brave installed
 - **THEN** WinGet installs the latest available Brave version in that user's scope without elevation
 - **AND** Zen remains the declared interactive browser
 
@@ -406,7 +414,7 @@ The rendered Windows application set SHALL declare Brave as a self-updating, use
 #### Scenario: Remove the relay browser capability
 
 - **WHEN** the relay browser declaration is removed and the Windows configuration is applied
-- **THEN** no NixOS generation or OMP wrapper change is required
+- **THEN** no NixOS generation change is required
 - **AND** the operator can remove the browser-owned relay profile and extension independently
 
 ### Requirement: Check expectations derive from the declaration
@@ -445,7 +453,7 @@ Checks SHALL derive mutable application/version/release/settings facts from JSON
 
 ### Requirement: Every script parses
 
-The repository SHALL parse all shipped Windows scripts, the module, both Administrator scripts and rendered chezmoi hooks with the PowerShell 7 parser. The narrow Administrator boundary SHALL remain enforced from parsed references and values. Only the minimal fresh-machine prerequisite bootstrap MAY use Windows PowerShell 5.1.
+The repository SHALL parse all shipped Windows scripts, the module, every Administrator script and rendered chezmoi hooks with the PowerShell 7 parser. The narrow Administrator boundary SHALL remain enforced from parsed references and values. Only the minimal fresh-machine prerequisite bootstrap MAY use Windows PowerShell 5.1.
 
 #### Scenario: Remove the second host
 
@@ -522,3 +530,74 @@ A PowerShell Gallery module declaration SHALL name the module, its reviewed rele
 
 - **WHEN** dry run runs while a declared module is absent
 - **THEN** it reports the module as drift without downloading or writing files
+
+### Requirement: Native checkout and user ownership
+
+Korolev SHALL use a native Windows checkout below the ghq root `~/src` as chezmoi `sourceDir`, selecting host `korolev` and Windows-specific shared facts. Git and SSH files SHALL reuse the shared templates; Zed SHALL preserve app-owned state. User apply SHALL not configure OpenSSH services or copy credentials from another platform; privileged package exceptions SHALL remain explicitly approved.
+
+#### Scenario: Apply from the native checkout
+
+- **WHEN** the standard Windows account initializes chezmoi from its local checkout
+- **THEN** `.chezmoiroot` selects `home/` and the recorded `sourceDir` remains that checkout
+- **AND** Windows username/home paths do not resolve to the WSL user's paths
+- **AND** repeating apply preserves undeclared application state and writes no Administrator-profile file
+
+#### Scenario: Select Git identity
+
+- **WHEN** Git runs below `~/src/github.com/` or below a work/outside directory
+- **THEN** the GitHub tree uses `11704293+glockyco@users.noreply.github.com` and other locations use global `johann.glock@scch.at`
+- **AND** a repository-local email overrides either selection
+- **AND** Git uses Windows GCM and preserves the Overleaf generic-provider declaration
+
+#### Scenario: Apply package configuration after a source change
+
+- **WHEN** the workstation declaration or engine changes and the standard user runs `chezmoi apply`
+- **THEN** a content-hashed onchange operation runs the PowerShell 7 workstation engine from the checkout and propagates failure
+- **AND** an unchanged apply does not rerun that operation
+- **AND** the Administrator scripts remain explicit elevated runs
+
+### Requirement: Native Korolev agent session
+
+Korolev SHALL run standalone upstream OMP in Tern against a local Windows checkout, installed and updated by Tern as the single OMP installation, with the personal plugin installed/upgraded by OMP's plugin manager. Required shell, Git, OpenSpec, research and annotation tools SHALL resolve natively. Credentials and session state SHALL stay Windows-local; saved history SHALL not be represented as a surviving process.
+
+#### Scenario: Complete a real native session
+
+- **WHEN** the owner starts a fresh OMP session in Tern on native Windows
+- **THEN** personal policy, skills, namespaced OpenSpec commands, personal commit preview, LSP and Plannotator integration load
+- **AND** native PowerShell/Git commands work in paths containing spaces
+- **AND** preview creates no commit and annotation returns feedback without changing the source
+- **AND** the session records Windows, Tern, OMP, plugin and tool versions plus the reviewed repository revision
+
+#### Scenario: Establish provider access
+
+- **WHEN** provider authentication is needed
+- **THEN** the owner completes Windows-local interactive login and a real response verifies each selected provider
+- **AND** neither chezmoi nor an installer imports another machine's tokens or authentication database
+
+### Requirement: Native language and document tools
+
+Native Korolev SHALL provide Windows Markdown, Python, TypeScript/Svelte, Typst and LaTeX tools/servers used by its agent/editor, plus the Poppler, QPDF, ImageMagick and Pandoc command-line tools for document work. LaTeX SHALL use TeX Live installed per user from its official installer, including latexmk and biber, with TexLab from its official release. Project SDKs and build settings SHALL remain project-owned. Windows SHALL not satisfy native tools through WSL; nixd and C#/Unity servers SHALL not be installed for this role.
+
+#### Scenario: Diagnose representative work
+
+- **WHEN** OMP opens representative native Markdown, Python, TypeScript and Svelte projects and a Typst document
+- **THEN** each declared server initializes, returns applicable diagnostics/navigation, and a native Typst build succeeds
+- **AND** no server executable or interpreter resolves through `wsl.exe`, a Linux path or a Nix store
+
+#### Scenario: Build a LaTeX document natively
+
+- **WHEN** the owner builds a representative LaTeX project with latexmk on native Korolev
+- **THEN** TeX Live's latexmk and biber produce the PDF and TexLab returns diagnostics/navigation for its sources
+- **AND** `pdftotext`, `pdfinfo`, `qpdf`, `magick` and `pandoc` resolve to native Windows executables
+- **AND** no build step uses the Mac, WSL or MiKTeX
+
+### Requirement: Stable manually installed terminal
+
+Tern SHALL be installed from the owner's signed-in closed-beta build service into a stable per-user location on PATH and own its updates. Repository configuration SHALL no longer install Windows Terminal or manage its WSL profile. Removing declarations SHALL preserve unrelated terminal profile/session state.
+
+#### Scenario: Launch the primary terminal
+
+- **WHEN** a fresh Windows session resolves and launches Tern
+- **THEN** its executable is under the declared stable per-user directory, not a temporary spike folder
+- **AND** native PowerShell is usable and WSL is an explicitly selected secondary session
+- **AND** clickable links, Unicode/glyphs, paste, resizing and terminal interrupt work without forced environment workarounds
