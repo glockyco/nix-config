@@ -20,7 +20,7 @@
 - [x] 3.2 Create `home/Documents/PowerShell/Microsoft.PowerShell_profile.ps1.tmpl` with the interactive guard, shared fzf commands and options file, eza theme directory, history size and leading-space handler, menu completion, deferred PSFzf bindings and Git completer, eza commands, Windows Terminal folder reporting, Starship initialization and zoxide initialization last, and verify the rendered profile passes the PowerShell 7 parser and PSScriptAnalyzer checks.
 - [x] 3.3 Extend `windows/tests/chezmoi-core.ps1` so the Windows fixture manages the profile, renders the shared history size and fzf commands from fixture data, and leaves prompt, key bindings, modules and environment unchanged when a non-interactive session runs the profile, and verify `ci.ps1` passes.
 - [x] 3.4 Cover the interactive path with a behavior test that loads PSReadLine and stubs `starship` and `zoxide`. Verify that it binds Tab, Ctrl+T, Ctrl+R and Alt+C, leaves PSFzf and git-completion unloaded, and returns `SkipAdding` for a leading-space line and `MemoryOnly` for a sensitive one.
-- [ ] 3.5 Extend `checks/chezmoi-render-check.py` so the Mac fixture renders no `Documents/PowerShell` target and the Windows render manages the profile and the shared configuration files, and verify the check passes in the Nix checks.
+- [x] 3.5 Extend `checks/chezmoi-render-check.py` so the Mac fixture renders no `Documents/PowerShell` target and the Windows render manages the profile and the shared configuration files, and verify the check passes in the Nix checks.
 - [x] 3.6 Append saved machine and user PATH entries missing from the inherited PATH in the profile's interactive path, and verify the chezmoi fixture shows a removed saved entry restored after the inherited entries in an interactive session and left out in a non-interactive one.
 
 ## 4. Live acceptance
@@ -31,4 +31,4 @@
 - [x] 4.4 In a fresh Tern session, verify the Mac Starship layout, `z` and `zi`, `ll`, menu Tab completion, `git switch` branch completion, Ctrl+T, Ctrl+R and Alt+C, no loaded PSFzf or git-completion at the first prompt, a leading-space command absent from history, and no folder sequence.
 - [x] 4.5 In Windows Terminal, verify the same prompt and that Ctrl+Shift+D opens the duplicated tab in the current folder.
 - [x] 4.6 Run `pwsh -Command '(Get-Module PSFzf, git-completion).Count; $env:FZF_DEFAULT_OPTS_FILE'` without `-NoProfile` and verify it prints `0` and an empty line.
-- [ ] 4.7 Record the owner's confirmation that the Mac's Nix checks pass and that `chezmoi diff` on the Mac shows no PowerShell profile or zsh change.
+- [x] 4.7 Record the owner's confirmation that the Mac's Nix checks pass and that `chezmoi diff` on the Mac shows no PowerShell profile or zsh change.
