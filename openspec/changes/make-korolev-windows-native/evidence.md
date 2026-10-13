@@ -350,3 +350,11 @@ The owner exercised the interactive checks and reported that all of them work:
 - Tern: a pane survives closing the window, and glyphs, paste and resizing work (task 6.5).
 
 These are owner observations, not agent-run probes.
+
+## Native setup and session checks (2026-10-13)
+
+Setup state (tasks 6.4 to 6.8): `apply-kbdneo.ps1 -Test` reports desired. `apply-zen-policies.ps1 -Test` reported drift because `C:\Program Files\Zen Browser\distribution\policies.json` was missing. The owner typed the Administrator credential for one elevated run, which reported `changed`, and the test then reported desired. The engine dry run lists no drift and `chezmoi verify --exclude=scripts` exits 0. `tern` resolves only to `%LOCALAPPDATA%\Programs\Tern`. `omp` resolves only to the Tern-managed `%LOCALAPPDATA%\Tern\omp\bin\omp.exe` 18.10.3. `plannotator` resolves to its binary-only install. `tlmgr`, `latexmk` and `biber` resolve to per-user TeX Live 2026, `texlab`, `qpdf`, `magick` and `pandoc` to their user archives, and Poppler, Typst, tinymist, markdown-oxide, pyright and OpenSpec to their declared locations. No MiKTeX exists. `gh auth status` shows `glockyco` logged in. With `GIT_TERMINAL_PROMPT=0` and `GCM_INTERACTIVE=never`, HTTPS `git ls-remote` succeeded against GitHub and `gitlab.scch.at` through Git Credential Manager.
+
+Fresh session (task 8.1): in `%TEMP%\omp accept kP5otZ`, a disposable Git checkout with a space in its path, `omp -p --no-session` on omp 18.10.3 with `personal@glockyco` 0.5.0 and `booking@glockyco-booking` 0.1.0 listed all ten skills, the eight personal ones plus `book-project-hours` and `commit-policy`. It confirmed the `Documentation` and `Plain prose` rules, ran `git status --short` (`M  notes.md`) and PowerShell 7.6.6, and produced a `personal_commit` preview while HEAD stayed unchanged. The six `/personal:opsx-*` command files are installed in the 0.5.0 plugin cache, and `/personal:opsx-explore` expanded into OpenSpec explore mode with the `openspec` CLI. Print mode does not show slash commands to the model, so their registration was proven from the cache and the expansion.
+
+Updates (task 8.5, Korolev half): `omp plugin marketplace update glockyco` and `omp plugin upgrade --scope user personal@glockyco` exited 0 and kept 0.5.0. Tern owns omp updates on Korolev. The Mac half waits until the Mac is reachable again.
