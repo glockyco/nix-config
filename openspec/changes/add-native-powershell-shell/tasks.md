@@ -2,9 +2,9 @@
 
 ## 1. PowerShell Gallery module delivery
 
-- [ ] 1.1 Add a `psmodule` application variant to `windows/workstation.schema.json` with `name`, `kind`, `id`, `roles`, user-only `scope`, `versionPolicy`, `releaseVersion`, an `https://` `url` and `sha256`, following the archive variant's pinned-policy rules, and verify schema tests reject a module without `sha256` or with machine scope.
-- [ ] 1.2 Implement module test and set functions in `windows/Workstation.Delivery.ps1` and dispatch them from `windows/Workstation.psm1` as design.md describes, and verify Pester tests in `windows/tests/Workstation.Delivery.Tests.ps1` cover a missing module, a hash mismatch, a manifest version mismatch, a newer installed version and a dry run without download or write.
-- [ ] 1.3 Update the ownership table and the update section of `docs/operations/korolev-windows.md` for PowerShell modules and their release, URL and SHA-256 update path, and verify `pwsh -NoProfile -File .\windows\dev\format.ps1 -Check` passes.
+- [x] 1.1 Add a `psmodule` application variant to `windows/workstation.schema.json` with `name`, `kind`, `id`, `roles`, user-only `scope`, `versionPolicy`, `releaseVersion`, an `https://` `url` and `sha256`, following the archive variant's pinned-policy rules, and verify schema tests reject a module without `sha256` or with machine scope.
+- [x] 1.2 Implement module test and set functions in `windows/Workstation.Delivery.ps1` and dispatch them from `windows/Workstation.psm1` as design.md describes, and verify Pester tests in `windows/tests/Workstation.Delivery.Tests.ps1` cover a missing module, a hash mismatch, a manifest version mismatch, a newer installed version and a dry run without download or write.
+- [x] 1.3 Update the ownership table and the update section of `docs/operations/korolev-windows.md` for PowerShell modules and their release, URL and SHA-256 update path, and verify `pwsh -NoProfile -File .\windows\dev\format.ps1 -Check` passes.
 
 ## 2. Shell tool declarations
 

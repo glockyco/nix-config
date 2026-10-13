@@ -203,4 +203,20 @@ Describe 'Workstation built-in JSON schema' {
         $data.settings[0] = @{ name = 'invalid'; kind = 'script'; script = 'anything' }
         Test-Json -Json (ConvertTo-Json -InputObject $data -Depth 100) -Schema $script:schema -ErrorAction SilentlyContinue | Should -BeFalse
     }
+
+    It 'accepts a reviewed gallery module and rejects one without a hash, in machine scope or from another host' {
+        $module = @{ name = 'package example module'; kind = 'psmodule'; id = 'Example.Module'; roles = @('example'); scope = 'user'; versionPolicy = 'present'; releaseVersion = '1.2.3'; url = 'https://www.powershellgallery.com/api/v2/package/Example.Module/1.2.3'; sha256 = ('a' * 64) }
+        $data = ConvertFrom-Json -InputObject $script:json -AsHashtable
+        $data.applications[0] = $module.Clone()
+        Test-Json -Json (ConvertTo-Json -InputObject $data -Depth 100) -Schema $script:schema -ErrorAction SilentlyContinue | Should -BeTrue
+        $invalid = $module.Clone(); $invalid.Remove('sha256')
+        $data.applications[0] = $invalid
+        Test-Json -Json (ConvertTo-Json -InputObject $data -Depth 100) -Schema $script:schema -ErrorAction SilentlyContinue | Should -BeFalse
+        $invalid = $module.Clone(); $invalid.scope = 'machine'
+        $data.applications[0] = $invalid
+        Test-Json -Json (ConvertTo-Json -InputObject $data -Depth 100) -Schema $script:schema -ErrorAction SilentlyContinue | Should -BeFalse
+        $invalid = $module.Clone(); $invalid.url = 'https://example.test/Example.Module.1.2.3.nupkg'
+        $data.applications[0] = $invalid
+        Test-Json -Json (ConvertTo-Json -InputObject $data -Depth 100) -Schema $script:schema -ErrorAction SilentlyContinue | Should -BeFalse
+    }
 }

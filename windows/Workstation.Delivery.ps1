@@ -136,6 +136,69 @@ function Set-WorkstationArchive {
   }
 }
 
+function Get-WorkstationModuleRoot {
+  # PowerShell 7 searches this current-user path. Resolve it like PowerShell does, not from HOME.
+  $documents = [Environment]::GetFolderPath('MyDocuments')
+  if (-not $documents) { throw 'The Documents folder is unavailable' }
+  return Join-Path $documents 'PowerShell\Modules'
+}
+
+function Get-WorkstationModuleVersion {
+  param([hashtable]$Resource)
+  $directory = Join-Path (Get-WorkstationModuleRoot) $Resource.id
+  if (-not (Test-Path -LiteralPath $directory -PathType Container)) { return $null }
+  $highest = $null
+  foreach ($child in @(Get-ChildItem -LiteralPath $directory -Directory -ErrorAction Stop)) {
+    $manifest = Join-Path $child.FullName "$($Resource.id).psd1"
+    if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) { continue }
+    $version = [string](Import-PowerShellDataFile -LiteralPath $manifest).ModuleVersion
+    # A version folder counts only when its manifest agrees with it.
+    if ($version -cne $child.Name) { continue }
+    if (-not $highest -or (Compare-WorkstationVersion -Actual $version -Desired $highest) -gt 0) { $highest = $version }
+  }
+  return $highest
+}
+
+function Test-WorkstationPsModule {
+  param([hashtable]$Resource, [hashtable]$Context)
+  $installed = Get-WorkstationModuleVersion -Resource $Resource
+  if (-not $installed) { return $false }
+  return ((Compare-WorkstationVersion -Actual $installed -Desired $Resource.releaseVersion) -ge 0)
+}
+
+function Set-WorkstationPsModule {
+  param([hashtable]$Resource, [hashtable]$Context)
+  if (Test-WorkstationPsModule -Resource $Resource -Context $Context) { return }
+  $root = Get-WorkstationModuleRoot
+  $destination = Join-Path (Join-Path $root $Resource.id) $Resource.releaseVersion
+  if (Test-Path -LiteralPath $destination) {
+    throw "$($Resource.id): $destination exists without a matching manifest. Owner review is required"
+  }
+  $work = Join-Path $root ('.workstation-' + [guid]::NewGuid().ToString('N'))
+  $archive = Join-Path $work 'download.zip'
+  $staged = Join-Path $work 'module'
+  try {
+    New-Item -ItemType Directory -Path $staged -Force | Out-Null
+    Save-WorkstationDownload -Resource $Resource -Path $archive
+    Expand-Archive -LiteralPath $archive -DestinationPath $staged -Force
+    # NuGet packaging entries are not module files. Install-PSResource drops them too.
+    foreach ($entry in @('_rels', 'package', '[Content_Types].xml', "$($Resource.id).nuspec")) {
+      $path = Join-Path $staged $entry
+      if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Recurse -Force }
+    }
+    $manifest = Join-Path $staged "$($Resource.id).psd1"
+    if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) { throw "$($Resource.id): package has no module manifest" }
+    $version = [string](Import-PowerShellDataFile -LiteralPath $manifest).ModuleVersion
+    if ($version -cne $Resource.releaseVersion) {
+      throw "$($Resource.id): package manifest version $version differs from $($Resource.releaseVersion)"
+    }
+    New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+    Move-Item -LiteralPath $staged -Destination $destination
+  } finally {
+    if (Test-Path -LiteralPath $work) { Remove-Item -LiteralPath $work -Recurse -Force }
+  }
+}
+
 function Read-WorkstationJsonFile {
   param([string]$Path)
   return (Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -AsHashtable)

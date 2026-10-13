@@ -4,14 +4,14 @@ Korolev is a Windows 11 laptop managed by the employer through Intune. Work as t
 
 ## What owns what
 
-| Source                     | Owns                                                           |
-| -------------------------- | -------------------------------------------------------------- |
-| `windows/workstation.json` | Applications, their versions and user settings                 |
-| `windows/npm/`             | Native language servers and OpenSpec, locked by npm            |
-| `windows/Workstation.psm1` | The engine that tests and applies `workstation.json`           |
-| `home/`                    | User files and app settings, applied by chezmoi                |
-| `windows/apply-*.ps1`      | The only Administrator operations: Neo, Zen policies and SSH   |
-| Applications themselves    | Profiles, credentials, sessions and anything not declared here |
+| Source                     | Owns                                                                    |
+| -------------------------- | ----------------------------------------------------------------------- |
+| `windows/workstation.json` | Applications, PowerShell modules, their versions and user settings      |
+| `windows/npm/`             | Native language servers and OpenSpec, locked by npm                     |
+| `windows/Workstation.psm1` | The engine that tests and applies `workstation.json`                    |
+| `home/`                    | User files, app settings and the PowerShell profile, applied by chezmoi |
+| `windows/apply-*.ps1`      | The only Administrator operations: Neo, Zen policies and SSH            |
+| Applications themselves    | App profiles, credentials, sessions and anything not declared here      |
 
 `chezmoi apply` runs the engine first and then writes user files. Run the engine directly to see what differs without changing anything:
 
@@ -99,7 +99,7 @@ The profile contains literal paths for `jglock`. Update packages within a releas
 
 Applications without a version in `workstation.json` stay current through their own updater or `winget upgrade`. The engine installs them when missing and never downgrades them.
 
-To change a pinned version, an archive or a setting, edit `workstation.json` and run the dry run, then `chezmoi apply`. Pins exist only where a named consumer needs a version. Bun follows `omp-agent-setup/.bun-version` and OpenSpec follows the omp-agent-setup workflow.
+To change a pinned version, an archive, a PowerShell module or a setting, edit `workstation.json` and run the dry run, then `chezmoi apply`. Archives and modules move to a new release when its version, URL and SHA-256 change together. The engine installs a module release beside older ones and never removes them. Pins exist only where a named consumer needs a version. Bun follows `omp-agent-setup/.bun-version` and OpenSpec follows the omp-agent-setup workflow.
 
 To update the npm tools, edit `windows/npm/package.json`, then run `npm install --package-lock-only --ignore-scripts` in `windows/npm`. The next apply reinstalls the closure with `npm ci` when the lock changes.
 

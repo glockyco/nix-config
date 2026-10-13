@@ -219,6 +219,7 @@ function Test-WorkstationApplication {
         'archive' { return Test-WorkstationArchive -Resource $Resource -Context $Context }
         'npm' { return Test-WorkstationNpm -Resource $Resource -Context $Context }
         'font' { return Test-WorkstationFont -Resource $Resource -Context $Context }
+        'psmodule' { return Test-WorkstationPsModule -Resource $Resource -Context $Context }
         default { throw "Unsupported application kind $($Resource.kind)" }
     }
 }
@@ -230,6 +231,7 @@ function Set-WorkstationApplication {
         'archive' { Set-WorkstationArchive -Resource $Resource -Context $Context }
         'npm' { Set-WorkstationNpm -Resource $Resource -Context $Context }
         'font' { Set-WorkstationFont -Resource $Resource -Context $Context }
+        'psmodule' { Set-WorkstationPsModule -Resource $Resource -Context $Context }
         default { throw "Unsupported application kind $($Resource.kind)" }
     }
 }
