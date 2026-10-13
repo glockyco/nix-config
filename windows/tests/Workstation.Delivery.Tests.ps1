@@ -154,6 +154,84 @@ Describe 'Workstation delivery safety and convergence' {
       }
     }
 
+    Context 'Reviewed gallery modules' {
+      BeforeEach {
+        # TestDrive persists across tests in a context, so each test gets its own module root.
+        $script:moduleRoot = Join-Path $TestDrive ('Modules-' + [guid]::NewGuid().ToString('N'))
+        $script:resource = @{ id = 'Example.Module'; kind = 'psmodule'; releaseVersion = '2.7.12'; url = 'https://www.powershellgallery.com/api/v2/package/Example.Module/2.7.12'; sha256 = 'reviewed' }
+        $script:destination = Join-Path $script:moduleRoot 'Example.Module\2.7.12'
+        Mock Get-WorkstationModuleRoot { $script:moduleRoot }
+        Mock Expand-Archive { throw 'Unexpected extraction' }
+        function script:Write-ExampleModule([string]$Directory, [string]$Version) {
+          [void][IO.Directory]::CreateDirectory($Directory)
+          [IO.File]::WriteAllText((Join-Path $Directory 'Example.Module.psd1'), "@{ ModuleVersion = '$Version' }")
+        }
+      }
+
+      It 'reports a missing module as drift without downloading or writing' {
+        Test-WorkstationPsModule -Resource $script:resource -Context $script:context | Should -BeFalse
+        Should -Invoke Invoke-WebRequest -Times 0 -Exactly
+        Should -Invoke New-Item -Times 0 -Exactly
+      }
+
+      It 'reports an older module as drift' {
+        Write-ExampleModule (Join-Path $script:moduleRoot 'Example.Module\2.7.0') '2.7.0'
+        Test-WorkstationPsModule -Resource $script:resource -Context $script:context | Should -BeFalse
+      }
+
+      It 'ignores a version folder whose manifest disagrees with it' {
+        Write-ExampleModule (Join-Path $script:moduleRoot 'Example.Module\2.8.0') '2.6.0'
+        Test-WorkstationPsModule -Resource $script:resource -Context $script:context | Should -BeFalse
+      }
+
+      It 'accepts a newer module without downloads, writes or PATH changes' {
+        Write-ExampleModule (Join-Path $script:moduleRoot 'Example.Module\2.7.0') '2.7.0'
+        Write-ExampleModule (Join-Path $script:moduleRoot 'Example.Module\2.8.0') '2.8.0'
+        Test-WorkstationPsModule -Resource $script:resource -Context $script:context | Should -BeTrue
+        Set-WorkstationPsModule -Resource $script:resource -Context $script:context
+        Should -Invoke Invoke-WebRequest -Times 0 -Exactly
+        Should -Invoke Move-Item -Times 0 -Exactly
+        Should -Invoke Set-WorkstationUserPath -Times 0 -Exactly
+      }
+
+      It 'refuses an existing destination without a matching manifest before downloading' {
+        [void][IO.Directory]::CreateDirectory($script:destination)
+        { Set-WorkstationPsModule -Resource $script:resource -Context $script:context } | Should -Throw '*Owner review is required*'
+        Should -Invoke Invoke-WebRequest -Times 0 -Exactly
+      }
+
+      It 'verifies the package hash before extraction' {
+        Mock Invoke-WebRequest {}
+        Mock Test-WorkstationFileHash { $false }
+        { Set-WorkstationPsModule -Resource $script:resource -Context $script:context } | Should -Throw '*archive checksum mismatch*'
+        Should -Invoke Invoke-WebRequest -Times 1 -Exactly
+        Should -Invoke Expand-Archive -Times 0 -Exactly
+        Should -Invoke Move-Item -Times 0 -Exactly
+      }
+
+      It 'rejects a package whose manifest version differs from the declaration' {
+        Mock Save-WorkstationDownload {}
+        Mock Expand-Archive { Write-ExampleModule $DestinationPath '2.7.11' }
+        { Set-WorkstationPsModule -Resource $script:resource -Context $script:context } | Should -Throw '*manifest version 2.7.11 differs*'
+        Should -Invoke Move-Item -Times 0 -Exactly
+      }
+
+      It 'strips NuGet packaging entries and promotes the verified module beside older versions' {
+        Write-ExampleModule (Join-Path $script:moduleRoot 'Example.Module\2.7.0') '2.7.0'
+        Mock Save-WorkstationDownload {}
+        Mock Expand-Archive {
+          Write-ExampleModule $DestinationPath '2.7.12'
+          foreach ($directory in @('_rels', 'package')) { [void][IO.Directory]::CreateDirectory((Join-Path $DestinationPath $directory)) }
+          foreach ($file in @('[Content_Types].xml', 'Example.Module.nuspec')) { [IO.File]::WriteAllText((Join-Path $DestinationPath $file), '') }
+        }
+        Set-WorkstationPsModule -Resource $script:resource -Context $script:context
+        Should -Invoke Remove-Item -Times 4 -Exactly -ParameterFilter { (Split-Path -Leaf $LiteralPath) -in @('_rels', 'package', '[Content_Types].xml', 'Example.Module.nuspec') }
+        Should -Invoke Move-Item -Times 1 -Exactly -ParameterFilter { $Destination -eq $script:destination }
+        Should -Invoke Remove-Item -Times 0 -Exactly -ParameterFilter { $LiteralPath -like '*2.7.0*' }
+        Should -Invoke Set-WorkstationUserPath -Times 0 -Exactly
+      }
+    }
+
     Context 'Integrity-locked npm closure' {
       BeforeEach {
         $script:node = Join-Path $TestDrive 'node\node.exe'
