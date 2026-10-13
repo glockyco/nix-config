@@ -66,11 +66,6 @@ Air
 .config/gh/**
 .config/direnv
 .config/direnv/**
-.config/starship.toml
-.config/eza
-.config/eza/**
-.config/fzf
-.config/fzf/**
 .config/bat
 .config/bat/**
 bat-cache*
@@ -80,4 +75,6 @@ AppData
 AppData/**
 .ssh/macbook-pro-known-hosts
 windows-*
+Documents
+Documents/**
 {{ end }}

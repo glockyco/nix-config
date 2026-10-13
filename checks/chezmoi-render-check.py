@@ -688,6 +688,23 @@ def main():
             ),
             "Windows manages production credential sources",
         )
+        # Only Windows receives the PowerShell profile and the shell files it reads.
+        for path in (
+            "Documents/PowerShell/Microsoft.PowerShell_profile.ps1",
+            ".config/starship.toml",
+            ".config/fzf/catppuccin-mocha.rc",
+            ".config/eza/theme.yml",
+        ):
+            require(path in managed, f"Windows does not manage {path}")
+        if fixture.target_os != "windows":
+            # Managing the Documents directory itself would reset the Mac's private mode.
+            require(
+                not any(
+                    path == "Documents" or path.startswith("Documents/")
+                    for path in fixture.run("managed").splitlines()
+                ),
+                f"{fixture.target_os} manages a Documents path",
+            )
         assert_init(fixture)
         if "karabiner" in manifest:
             zed = fixture.target / ".config/zed/settings.json"

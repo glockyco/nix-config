@@ -48,7 +48,7 @@ Alternatives considered:
 
 ### Profile as a chezmoi template
 
-`home/Documents/PowerShell/Microsoft.PowerShell_profile.ps1.tmpl` targets the PowerShell 7 current-user, current-host profile. It reads `portable.history.size` and the three `portable.fzf` commands and quotes them as single-quoted PowerShell strings, as `run_after_windows-tern-path.ps1.tmpl` does. Non-Windows hosts ignore `Documents/PowerShell`. The Windows ignore block stops listing `.config/starship.toml`, `.config/fzf` and `.config/eza`. The profile points `FZF_DEFAULT_OPTS_FILE` and `EZA_CONFIG_DIR` at those files.
+`home/Documents/PowerShell/Microsoft.PowerShell_profile.ps1.tmpl` targets the PowerShell 7 current-user, current-host profile. It reads `portable.history.size` and the three `portable.fzf` commands and quotes them as single-quoted PowerShell strings, as `run_after_windows-tern-path.ps1.tmpl` does. Non-Windows hosts ignore the whole `Documents` tree, because chezmoi would otherwise manage the Mac's `~/Documents` directory and its private mode. The Windows ignore block stops listing `.config/starship.toml`, `.config/fzf` and `.config/eza`. The profile points `FZF_DEFAULT_OPTS_FILE` and `EZA_CONFIG_DIR` at those files.
 
 ### Interactive guard
 
