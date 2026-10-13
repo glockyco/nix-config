@@ -149,6 +149,19 @@ The owner then authorized `wsl --unregister NixOS` explicitly, before the projec
 
 To recover, the owner runs `wsl --import NixOS <directory> C:\Users\jglock\Backups\wsl\NixOS-2026-10-13.tar`. The import restores the old credentials as they were. It re-enrolls no Tailscale identity, and the Mac no longer accepts the old WSL keys.
 
+## Container acceptance and session migration (2026-10-13)
+
+Container checks ran on Korolev with Docker Desktop 29.8.2, context `desktop-linux`. Docker Desktop updated itself during the run, and Compose moved from 5.5.1 to 5.6.0.
+
+| Project              | Result                                                                                                                                                                                                                                                                                                                            |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| aqua                 | Passed on `korolev-native` `e7755ff` without changes. All six Langfuse services became healthy, and the Langfuse and tracing health endpoints returned HTTP 200. `docker compose run --rm eval check` passed the same preflight as the native `uv run aqua-eval check`. Both stacks were taken down.                              |
+| not-so-personalwolke | Passed without changes. Compose ran the published registry image, and a locally built image also ran. Both returned HTTP 200 on port 7007 with the Cumulix page.                                                                                                                                                                  |
+| test-generalization  | Passed after one local fix, `9848786b` on `korolev-containers`, not pushed. With `core.symlinks=false`, the checkout's `CLAUDE.md` and `GEMINI.md` aliases reached the image as plain files, so the Dockerfile now recreates them as symlinks to `AGENTS.md`. The image built, and the documented Gradle smoke passed.            |
+| saner2027-paper      | The replication image built natively on `korolev-native` `0b26b43` and started offline. The run stopped because the package contains no identification runs: `replication/package.toml` comments them out, and the archive holds only construction data. That gap belongs to the project's replication packaging, not to Windows. |
+
+The WSL omp sessions are available in native omp. Each project session was packed with `omp session pack` from the retained export and unpacked with `omp session unpack --cwd` into its native checkout. That gives nix-config 36, saner2027-paper 30, anita 14, aqua 6 and not-so-personalwolke 5. The `/tmp` "Set Up Teralizer Paper" session went to Teralizer-Paper. Three other `/tmp` and three `/mnt/c` sessions went to their Windows equivalents. Twenty-one throwaway smoke-test sessions stay only in the export. The 3,716 content-addressed WSL blobs were merged into the native blob store without overwriting anything, and all 2,240 blob references in the native session files resolve. Session history keeps its original `/home/user` paths. Only each session's working directory changed.
+
 ## Affected-job and Darwin evaluation acceptance
 
 Measurements below come from GitHub-hosted Actions job and step timestamps on 2026-10-12. Workflow wall time is creation to the last job's completion, including runner allocation. These are observations, not controlled benchmarks.
