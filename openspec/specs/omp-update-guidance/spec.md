@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Provide discoverable repository-local guidance that enables an agent to complete authorized personal OMP updates, including patch repair, runtime verification, and safe recovery.
+Provide discoverable repository-local guidance that enables an agent to complete authorized upstream OMP and personal-plugin updates on each host, with runtime verification and safe recovery.
 
 ## Requirements
 
@@ -25,7 +25,7 @@ A fresh upstream OMP session in this repository SHALL find current ownership, of
 
 ### Requirement: Installed upstream host discovery
 
-The guidance SHALL determine the target host, official command path/version, plugin-manager installation identity/version, and requested scope before mutation. It SHALL default to the current host and SHALL NOT treat a Nix check-tool pin, previous session, or another host's evidence as the current runtime. Native Windows and WSL installations SHALL be distinguished.
+The guidance SHALL determine the target host, official command path/version, plugin-manager installation identity/version, and requested scope before mutation. It SHALL default to the current host and SHALL NOT treat a Nix check-tool pin, previous session, or another host's evidence as the current runtime. The Mac's official installation and native Korolev's Tern-managed installation SHALL be distinguished.
 
 #### Scenario: Check tools and installed plugin differ
 
@@ -74,7 +74,7 @@ The guidance SHALL continue through actions within the user's granted scope, pre
 
 ### Requirement: Installed release completion evidence
 
-An updated result SHALL identify the host/environment, actual official executable path and version, plugin-manager identity, installed release/path, and exercised checks. It SHALL require a fresh upstream OMP session in Tern and applicable personal-policy, commit-preview, Plannotator, language-server, and WSL browser checks. It SHALL distinguish the fresh process from still-running old sessions and record evidence with the change/session rather than current-state manuals.
+An updated result SHALL identify the host, actual official executable path and version, plugin-manager identity, installed release/path, and exercised checks. It SHALL require a fresh upstream OMP session in Tern and applicable personal-policy, commit-preview, Plannotator, and language-server checks. It SHALL distinguish the fresh process from still-running old sessions and record evidence with the change/session rather than current-state manuals.
 
 #### Scenario: A new installation passes acceptance
 

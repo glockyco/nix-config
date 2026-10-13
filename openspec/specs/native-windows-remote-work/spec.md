@@ -8,7 +8,7 @@ Provides authenticated remote work on the personal Windows desktop for commands,
 
 ### Requirement: Explicit desktop provisioning boundary
 
-Desktop setup SHALL use supported native Windows tools and explicit operator actions. Nix activation SHALL NOT apply desktop settings. The employer Windows configuration SHALL remain unchanged. Credentials, SSH private keys, and agent state SHALL remain outside the repository and Nix store.
+Desktop setup SHALL use supported native Windows tools and explicit operator actions. Nix activation on the Pro SHALL NOT apply desktop settings. The employer Windows configuration SHALL remain unchanged. Credentials, SSH private keys and agent state SHALL remain outside the repository and Nix store.
 
 The selected desktop account is the owner's existing local administrator account. Its SSH sessions have enabled administrator privileges without an additional elevation prompt. Agents SHALL use the approved SSH session without adding a separate elevation mechanism, scheduled task, or agent service. Privileged service changes SHALL still require explicit local approval. This approval requirement is an operator policy, not a technical restriction of the account's token.
 
@@ -20,8 +20,8 @@ The selected desktop account is the owner's existing local administrator account
 
 #### Scenario: Activate an existing managed host
 
-- **WHEN** Korolev or the Pro activates a Nix generation
-- **THEN** it does not install desktop applications, modify desktop services, or copy authentication state
+- **WHEN** the Pro activates a Nix generation
+- **THEN** it does not install desktop applications, modify desktop services or copy authentication state
 
 ### Requirement: Authenticated terminal access from each source
 
@@ -53,23 +53,21 @@ The Pro, Air and native Windows Korolev SHALL reach `desktop` with native OpenSS
 
 ### Requirement: Native agent environment
 
-OMP SHALL operate in a local Windows checkout using native Windows tools. OMP SHALL be the official standalone Windows binary installed through the official installer in binary mode and updated explicitly through `omp update`. The personal plugin SHALL be installed in user scope using the plugin-manager install command defined by `publish-plugin-through-omp-plugin-manager` (`omp plugin marketplace add glockyco/omp-agent-setup`, then `omp plugin install --scope user personal@glockyco`) and upgraded with `omp plugin marketplace update glockyco` followed by `omp plugin upgrade --scope user personal@glockyco` and a fresh session. It SHALL not load from a manual source checkout, explicit wrapper flags, or a copied Nix-store wrapper. Required workflow dependencies SHALL resolve natively. Each installation SHALL keep its own writable authentication and session state.
-
-WSL may be installed on the desktop and SHALL NOT be treated as a defect. A required native tool SHALL NOT be satisfied by a WSL launcher: in particular the desktop's `bash.exe` resolves to WSL, so a native shell requirement SHALL be met by PowerShell or Git Bash instead. A NixOS-WSL host on this machine is a separate configuration with its own agent installation and is outside this capability.
+OMP SHALL operate in a local desktop Windows checkout using native Windows tools and its recorded personal-plugin revision. Each installation SHALL retain its own writable authentication/session state. PowerShell or Git Bash SHALL satisfy native shell requirements, never a Linux launcher. Optional WSL installation on the personal desktop SHALL remain outside this capability; it SHALL not provide any Korolev dependency.
 
 #### Scenario: Complete native repository work
 
-- **WHEN** the operator starts the official agent in a disposable Windows checkout
-- **THEN** the agent completes a harmless repository task using Windows tools
-- **AND** the plugin-manager personal policy extension loads and completes a commit preview without creating a commit
-- **AND** required shell, Git, OpenSpec, and research-helper functions pass their applicable smoke checks, with OpenSpec workflows exposed as `/personal:opsx-*`
-- **AND** language-server diagnostics remain out of scope for the native desktop agent, which SHALL NOT resolve a server through a WSL launcher; a separate WSL host may serve its own agent instead
+- **WHEN** the operator starts the configured agent in a disposable Windows checkout
+- **THEN** the agent completes a harmless task using Windows tools
+- **AND** personal policy loads and completes a commit preview without creating a commit
+- **AND** shell, Git, OpenSpec and research-helper functions pass applicable smoke checks
+- **AND** desktop language-server diagnostics remain out of scope and no required executable resolves through a Linux launcher
 
 #### Scenario: Inspect local runtime ownership
 
-- **WHEN** the operator checks the agent's executable, plugin-manager installation, and state paths
-- **THEN** no executable or interpreter used by the native Windows agent resolves through WSL or a Nix store path
-- **AND** provider authentication was established locally rather than copied from another machine
+- **WHEN** the operator checks the agent's executable, plugin and state paths
+- **THEN** no executable/interpreter used by the native Windows agent resolves through WSL or a Nix store
+- **AND** provider authentication was established locally, not copied from another machine
 
 #### Scenario: Update the native installation
 
@@ -95,19 +93,19 @@ Live agent persistence across a lost SSH connection is out of scope: the desktop
 
 ### Requirement: Graphical access with retained disconnected sessions
 
-The Pro SHALL have a usable RDP client path to the desktop with verified server identity and Network Level Authentication. Graphical access from the Air and the WSL host is out of scope; only SSH and file transfer are required from them. Disconnecting the RDP client SHALL retain ordinary terminal computation in the existing Windows user session. Setup SHALL NOT disable screen locking or bypass elevation prompts to support agents.
+The Pro SHALL have a usable RDP client path to desktop with verified server identity and Network Level Authentication. Graphical access from Air and native Korolev SHALL remain out of scope; they require SSH and file transfer only. RDP disconnect SHALL retain ordinary computation in the existing Windows user session. Setup SHALL NOT disable locking or bypass elevation prompts.
 
 #### Scenario: Return to a graphical work session
 
-- **WHEN** the operator starts a harmless terminal task through RDP, disconnects, and reconnects as the same Windows user
-- **THEN** the existing task and desktop session remain available
-- **AND** configured session timeouts do not silently log off that accepted working session
+- **WHEN** the operator starts a harmless terminal task through RDP, disconnects and reconnects as the same Windows user
+- **THEN** the task and desktop session remain available
+- **AND** configured timeouts do not silently log off that accepted session
 
 #### Scenario: Distinguish disconnection from sign-out
 
 - **WHEN** the operator follows the desktop procedure
-- **THEN** it distinguishes RDP disconnect, workstation lock, sign-out, sleep, and reboot
-- **AND** it does not promise GUI automation while locked or continuous execution during sleep
+- **THEN** it distinguishes RDP disconnect, lock, sign-out, sleep and reboot
+- **AND** it does not promise GUI automation while locked or continuous computation during sleep
 
 ### Requirement: Authenticated bounded file access
 
@@ -128,24 +126,24 @@ Because the selected account is a local administrator, whole-volume access over 
 
 ### Requirement: Tailnet-only access and existing fleet isolation
 
-Desktop SSH, RDP and SMB SHALL retain effective approved-tailnet restrictions. Native Korolev SSH SHALL be bound/restricted to its tailnet addresses with independently approved keys. WSL SHALL retain its no-listener boundary. Loss of Tailscale SHALL not create a permissive fallback. Independent authenticated desktop relay products remain outside this service boundary and SHALL be enumerated with effective firewall scope.
+Desktop SSH, RDP and SMB SHALL retain effective approved-tailnet restrictions. Native Korolev SSH SHALL retain its tailnet-only listening/firewall and independently approved keys. Native Windows-to-Mac user SSH SHALL remain usable; no Linux Nix-daemon builder SHALL remain required. Loss of Tailscale SHALL not create a permissive fallback. Independent authenticated desktop relay products SHALL remain outside this boundary and be enumerated with effective firewall scope.
 
 #### Scenario: Compare allowed and denied paths
 
-- **WHEN** an authorized source tests a configured service through Tailscale and through a reachable non-tailnet interface
+- **WHEN** an authorized source tests a configured service through Tailscale and a reachable non-tailnet interface
 - **THEN** the tailnet connection succeeds and the non-tailnet connection fails
-- **AND** a missing route is not accepted as proof of firewall enforcement
+- **AND** missing routing is not accepted as proof of firewall enforcement
 
 #### Scenario: Work away from home
 
-- **WHEN** a source and the desktop use different physical networks
-- **THEN** the saved desktop name supports authenticated terminal, graphical, and file access without router port forwarding
+- **WHEN** a source and desktop use different physical networks
+- **THEN** the saved desktop name supports authenticated terminal, graphical and file access without router port forwarding
 
 #### Scenario: Preserve the installed fleet
 
-- **WHEN** desktop setup completes
-- **THEN** the approved Mac key reaches Windows Korolev over Tailscale, while non-tailnet SSH and WSL inbound services remain blocked
-- **AND** Korolev's native command-status check against the Pro still passes
+- **WHEN** desktop setup or Korolev retirement completes
+- **THEN** the approved Mac key reaches native Windows Korolev over Tailscale and non-tailnet SSH remains blocked
+- **AND** native Korolev-to-Mac user command-status checks pass without a Linux builder/distribution
 
 ### Requirement: Explicit operational recovery
 

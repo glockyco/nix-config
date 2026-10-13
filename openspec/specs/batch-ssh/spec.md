@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Provides a deterministic SSH endpoint for unattended commands to each remote destination that automation drives, currently the MacBook Air, the Windows desktop, and, from the WSL host, the MacBook Pro, while preserving the separate interactive connection policy.
+Provides a deterministic SSH endpoint for unattended commands to each remote destination that automation drives, currently the MacBook Air, the Windows desktop, native Windows Korolev and the MacBook Pro, while preserving the separate interactive connection policy.
 
 ## Requirements
 
 ### Requirement: Dedicated batch endpoint
 
-The workstation SHALL provide a named SSH endpoint for unattended commands to each remote destination that automation drives, currently the MacBook Air, the Windows desktop, and, from a declared source workstation, the MacBook Pro. Chezmoi SHALL render the user SSH endpoints from declared shared endpoint facts on each supported platform. Each endpoint SHALL identify the same remote host and account as its interactive counterpart, and SHALL be named after that counterpart so the pair is discoverable from the declaration.
+The workstation SHALL provide a named SSH endpoint for unattended commands to each remote destination that automation drives: the MacBook Air while declared, desktop, native Windows Korolev and macbook-pro. Each endpoint SHALL identify the same remote host/account as its interactive counterpart and SHALL be named after it. Windows user access SHALL use its independently approved key, never the retired Linux Nix-daemon builder key.
 
 #### Scenario: Batch endpoint resolves the Air
 
@@ -23,9 +23,15 @@ The workstation SHALL provide a named SSH endpoint for unattended commands to ea
 
 #### Scenario: Batch endpoint resolves the MacBook Pro
 
-- **WHEN** automation on a declared source workstation connects through `macbook-pro-batch`
-- **THEN** the command runs under the MacBook Pro's declared user with the source user's own key
+- **WHEN** automation on native Windows Korolev connects through macbook-pro-batch
+- **THEN** the command runs under the MacBook Pro's declared user with the native Windows user's independently approved key
 - **AND** it resolves the Mac by its tailnet name and verifies the declared host key
+
+#### Scenario: Batch endpoint resolves native Korolev
+
+- **WHEN** approved Mac automation selects Korolev's native batch endpoint
+- **THEN** it reaches the declared standard Windows account using its own source key and pinned host identity
+- **AND** no WSL process or root Nix builder credential participates
 
 ### Requirement: Non-interactive command lifecycle
 

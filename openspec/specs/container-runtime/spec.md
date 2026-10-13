@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Provides a reproducible Docker-compatible container interface for local development and verification workloads on the Apple Silicon workstation.
+Provides a Docker-compatible container interface for local development and verification workloads: Colima on the Apple Silicon workstation and Docker Desktop on native Windows Korolev.
 
 ## Requirements
 
@@ -121,40 +121,43 @@ The workstation documentation SHALL define startup, readiness, status, shutdown,
 - **WHEN** one acceptance step fails or exceeds its bound
 - **THEN** the procedure reports the failed boundary and provides a cleanup command for resources it created
 
-### Requirement: Container runtime on the WSL host
+### Requirement: Container runtime on native Windows Korolev
 
-The WSL host SHALL provide a rootless container runtime that accepts Docker commands. The runtime SHALL run inside the WSL distribution. The workstation SHALL NOT require a Windows container product, and SHALL NOT require nested virtualization. `docker compose` and `podman compose` SHALL run the official Docker Compose from the pinned Nixpkgs input against the user's rootless runtime, without searching `PATH` for another provider and without printing a provider banner.
+Korolev SHALL use repository-declared native Docker Desktop, supplying Docker CLI/Compose as a self-updating machine-scope exception with owner-approved UAC and no version pin or downgrade. Intune SHALL remain the update-only owner, not the initial installer. Owner/employer licensing confirmation SHALL precede installation. Project repositories SHALL own images/Compose/toolchains; Mac Colima SHALL remain unchanged.
 
-#### Scenario: Run a container
+#### Scenario: Inspect Windows runtime ownership
 
-- **WHEN** the user runs a container image on the WSL host after activation
-- **THEN** the container starts and exits with its own status
-- **AND** the runtime requires no root privileges and no separate virtual machine
+- **WHEN** the owner prepares native container work on Korolev
+- **THEN** Docker.DockerDesktop has one native document declaration and is removed from the managed-applications exclusions with the dated update-only Intune evidence
+- **AND** the machine-scope resource uses self-updating policy without a version pin or downgrade of a newer installed release
+- **AND** docker and docker compose resolve natively and identify the intended Docker Desktop engine/context
 
-#### Scenario: Use the Docker command name
+#### Scenario: Run a native project workload
 
-- **WHEN** a project command invokes the Docker command name
-- **THEN** the declared runtime serves that command
+- **WHEN** an accepted native checkout starts its declared Docker image or Compose workload
+- **THEN** required builds, mounts and service behavior work against Docker Desktop without the retired NixOS distribution
+- **AND** test-generalization uses its own project-owned Docker image as its toolchain
 
-#### Scenario: Compose is available after activation
+#### Scenario: Repository-declared runtime installation fails
 
-- **WHEN** the user runs `docker compose version` after activation
-- **THEN** it reports the Docker Compose version from the pinned Nixpkgs input
-- **AND** no `podman-compose` or user-installed plugin is involved
+- **WHEN** the declared Docker Desktop installation or required engine readiness fails
+- **THEN** the operation reports failure and blocks native container-project migration
+- **AND** no WSL-host fallback or competing runtime silently satisfies acceptance
 
-#### Scenario: Compose honors service dependencies
+#### Scenario: Confirm licensing before installation
 
-- **WHEN** a Compose service depends on another service completing successfully and that service fails
-- **THEN** `docker compose run` does not start the dependent service and exits with a nonzero status
+- **WHEN** Docker Desktop installation is requested
+- **THEN** the owner/employer confirms required subscription entitlement before the installer runs
+- **AND** the Intune update package alone is not accepted as licensing confirmation
 
-#### Scenario: Compose files stay owned by the user
+#### Scenario: Install with owner-assisted elevation
 
-- **WHEN** a Compose service writes into a bind-mounted directory as the container's root user
-- **THEN** the files belong to the invoking WSL user
+- **WHEN** licensing is confirmed and the owner authorizes the declared initial installation
+- **THEN** only the Docker installer uses its approved machine-scope UAC prompt with owner-typed credentials
+- **AND** ordinary chezmoi/user-file work remains in the standard account
+- **AND** a bounded native Docker Compose smoke passes before projects migrate
 
-#### Scenario: Preserve the boundary
+#### Scenario: Retire the project distribution
 
-- **WHEN** the host configuration is reviewed
-- **THEN** it declares no Windows container product
-- **AND** it declares no listening container service that another host can reach
-- **AND** it creates no `/run/docker.sock`
+- **WHEN** the owner unregisters the backed-up NixOS distribution
+- **THEN** Docker Desktop engine-owned distributions and mutable containers, volumes and images remain untouched

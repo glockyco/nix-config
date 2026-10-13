@@ -1,34 +1,34 @@
 ## Purpose
 
-Provide browser-based visual feedback on documents and assistant responses in a wrapped OMP session, without adding a planning or approval workflow.
+Provide browser-based visual feedback on documents and assistant responses in a local upstream OMP session, without adding a planning or approval workflow.
 
 ## Requirements
 
 ### Requirement: Declarative executable and adapter ownership
 
-The workstation SHALL supply the unmodified vendor Plannotator package on macbook-pro and Korolev's WSL environment through the commit-pinned `plannotator-packages` input as an ordinary host package. The OMP adapter SHALL belong to the published personal plugin installed through OMP's plugin manager using the command defined by `publish-plugin-through-omp-plugin-manager`. The adapter SHALL invoke the supplied executable without installing software, selecting versions, or loading the Plannotator Pi extension. Preferences, review history, and temporary data SHALL remain outside the Nix store and tracked source files.
+The Mac SHALL retain ordinary unmodified Plannotator from its commit-pinned vendor Nix input; native Korolev SHALL use C3's official native release installation. The adapter SHALL belong to the published personal plugin installed by OMP's user manager, including released support-native-windows. It SHALL invoke the supplied executable without installing/selecting versions or loading the Pi extension. Preferences, history and temporary data SHALL remain outside store/tracked files.
 
 #### Scenario: Launch from a clean managed session
 
-- **WHEN** the user starts the default official OMP command in Tern after the reviewed packages are activated and the personal plugin is installed
-- **THEN** visual annotation commands and the pinned ordinary Plannotator executable are available through the plugin-manager installation and host PATH
-- **AND** activation has not installed the plugin, opened a browser, or rewritten OMP configuration
+- **WHEN** the user starts the platform-owned upstream OMP in Tern after reviewed packages and the personal plugin are installed
+- **THEN** annotation commands and the selected native Plannotator resolve from the plugin manager and host PATH
+- **AND** activation has not installed the plugin, opened a browser or rewritten OMP configuration
 
 ### Requirement: Unmodified vendor package delivery
 
-The workstation SHALL use the vendor package without a local client-lease patch or separate package recipe. Both hosts SHALL select the same commit-pinned vendor source. Application advancement SHALL require an explicit source update. Package updates SHALL verify annotation-only feedback and explicit cancellation before release. Delivery SHALL NOT require an upstream contribution or custom CI caching.
+Each host SHALL use unmodified vendor Plannotator through its declared platform owner, without a local lease patch or separate package recipe. Application advancement SHALL require an explicit reviewed platform source/release change and annotation/cancellation verification. Delivery SHALL not require an upstream contribution, custom CI caching or a cross-host Nix package. Version provenance SHALL be recorded independently for both native installations.
 
 #### Scenario: Select the vendor package
 
-- **WHEN** both hosts evaluate their annotation executable
-- **THEN** each selection equals the corresponding unmodified vendor package from the declared input
-- **AND** browser, network, lifecycle, activation, and rollback acceptance gates remain required
+- **WHEN** both hosts resolve their annotation executable
+- **THEN** the Mac selects its unmodified pinned vendor package and Windows its accepted official release
+- **AND** browser, network, lifecycle, activation and recovery acceptance remain required
 
 #### Scenario: Update the selected package
 
-- **WHEN** an explicit Plannotator update changes the declared source revision
-- **THEN** review verifies annotation-only feedback and explicit cancellation with the selected package
-- **AND** routine complete lock updates cannot advance the declared Plannotator source revision
+- **WHEN** an explicit Plannotator update changes the Mac source revision or Windows release selection
+- **THEN** review verifies annotation-only feedback and explicit cancellation on affected hosts
+- **AND** routine complete flake lock updates cannot advance the declared Mac application source
 
 ### Requirement: Annotate a document snapshot
 
@@ -131,15 +131,15 @@ The integration SHALL allow one active review per OMP session and independent re
 - **WHEN** the executable is absent, startup fails, or the result is malformed or unexpected
 - **THEN** the adapter reports an error, releases owned resources, and injects no feedback or approval
 
-### Requirement: Local annotation browser boundary
+### Requirement: Host-local annotation browser boundary
 
-Review servers SHALL listen on loopback only and SHALL open the local browser on macOS or the Windows browser for local WSL use. The integration SHALL NOT enable tailnet publication, remote sharing, firewall access, or an activation-time service. Noninteractive and remote-session invocation SHALL fail clearly rather than publish a server automatically.
+Review servers SHALL bind loopback only and open the host-local browser on Mac and native Windows Korolev. No Linux relay, tailnet publication, remote sharing, firewall access or activation service SHALL be used. Noninteractive/remote invocation SHALL fail clearly rather than publish automatically. Native Windows acceptance SHALL depend on the released support-native-windows adapter.
 
-#### Scenario: Annotate from WSL through Tern
+#### Scenario: Annotate natively through Tern on Windows
 
-- **WHEN** a local upstream OMP session in Tern for Windows starts annotation in Korolev's WSL environment
-- **THEN** the Windows browser can reach the temporary review through local WSL connectivity
-- **AND** the review is not reachable from another tailnet host
+- **WHEN** a local native OMP session in Tern starts annotation in a Korolev Windows checkout
+- **THEN** the Windows browser reaches the temporary native loopback review and feedback returns to that session
+- **AND** no NixOS distribution, Linux listener or tailnet publication participates
 
 #### Scenario: Annotate on macOS
 
