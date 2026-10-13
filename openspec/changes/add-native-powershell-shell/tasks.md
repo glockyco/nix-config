@@ -21,6 +21,7 @@
 - [x] 3.3 Extend `windows/tests/chezmoi-core.ps1` so the Windows fixture manages the profile, renders the shared history size and fzf commands from fixture data, and leaves prompt, key bindings, modules and environment unchanged when a non-interactive session runs the profile, and verify `ci.ps1` passes.
 - [x] 3.4 Cover the interactive path with a behavior test that loads PSReadLine and stubs `starship` and `zoxide`. Verify that it binds Tab, Ctrl+T, Ctrl+R and Alt+C, leaves PSFzf and git-completion unloaded, and returns `SkipAdding` for a leading-space line and `MemoryOnly` for a sensitive one.
 - [ ] 3.5 Extend `checks/chezmoi-render-check.py` so the Mac fixture renders no `Documents/PowerShell` target and the Windows render manages the profile and the shared configuration files, and verify the check passes in the Nix checks.
+- [x] 3.6 Append saved machine and user PATH entries missing from the inherited PATH in the profile's interactive path, and verify the chezmoi fixture shows a removed saved entry restored after the inherited entries in an interactive session and left out in a non-interactive one.
 
 ## 4. Live acceptance
 
