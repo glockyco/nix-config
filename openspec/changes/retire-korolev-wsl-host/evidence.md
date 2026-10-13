@@ -185,3 +185,40 @@ Source audit used grep and the actual declarations and consumer scripts. `fleetS
 Local classifier fixtures passed 11 path classes plus main push and workflow dispatch. Windows aggregate fixtures rejected failed classification, affected skips, failures and cancellation, while accepting successful unaffected skips. The first real docs probe exposed that a skipped matrix publishes generic `check`, not its protected matrix identities. Static platform job names fixed that defect and the final docs and Windows probes proved both skipped named contexts. The first Darwin run rejected literal Nix interpolation in a single-quoted shell expression. Explicit attribute lookup fixed it without a ShellCheck suppression.
 
 An isolated native Git worktree could not commit staged Nix through the existing WSL bridge. Its `.git` gitdir points to a Windows absolute path that WSL Git cannot resolve, producing `fatal: not a git repository: (null)`. The enabled hook rejected the commit. With Main's approval, the correction was transferred to the ordinary native checkout, committed with its real hook and returned to `main`. No hook was bypassed. Retire task 4.3 will remove the bridge, but its planned unconditional staged-Nix failure would require every Nix commit to use the Mac or another approved Nix environment.
+
+## Task 1.1: prerequisite archives (2026-10-13)
+
+`2026-10-12-adopt-upstream-omp-and-tern` and `2026-10-12-replace-home-manager-with-chezmoi` were archived in `53d595f`. `2026-10-13-make-korolev-windows-native` was archived in `418467e` through [#111](https://github.com/glockyco/nix-config/pull/111) after its tasks 8.5 and 8.6 closed. Its evidence records C3's native Tern, tool and SSH acceptance and the interim WSL DNS and builder checks that ran before this change removed the builder. omp-agent-setup released `support-native-windows` as v0.4.0 at `aa97a3febee50f00ee7e4e43a81edc211ad7f8d7`, the commit `check.yml` calls. Its archive is `6d59fa3` on omp-agent-setup `main`, and Korolev and the Mac run its successor plugin release 0.5.0.
+
+## Task 1.2: delta review against the archived state
+
+After the C3 archive, every MODIFIED and REMOVED header in this change names an existing main-spec requirement, and every ADDED name is new. Where C3 had changed a requirement, the MODIFIED text here starts from C3's version and only removes WSL and builder promises. C3's `Native language and document tools` requirement is referenced, not repeated. `pdf-inspection-tools` and `python-project-tooling` point to C3's delivery. In the four REMOVED-to-ADDED pairs, each successor keeps every scenario of its predecessor except the Linux-only ones, and each of those has a native replacement:
+
+| Removed requirement                     | Successor                                     | Linux scenarios replaced                                                    |
+| --------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
+| `Declared access policy`                | `Declared native fleet access policy`         | `A rule names the Linux host as a destination`, `Connect to the Linux host` |
+| `Tailnet SSH access to the Darwin host` | `Native user SSH access to the Darwin host`   | `Build client connects`, `Linux user opens an interactive shell`            |
+| `Host gates generated per host`         | `Managed Nix host gates`                      | `Compare Darwin and NixOS system gates`                                     |
+| `Peer facts come from the registry`     | `Declared managed-host and native-peer facts` | `A builder host changes its system or name`                                 |
+
+## Task 7.7: spec synchronization
+
+A trial archive into a scratch copy of `openspec/` applied every delta and then stopped at `cross-platform-open-command`, whose spec would have no requirement left. `retire_capabilities: true` in `.openspec.yaml` lets the archive delete the emptied `wsl-host` and `cross-platform-open-command` specs. A search of the trial result found two requirements outside the original deltas that still promised Linux support: the WSL Markdown Oxide package in `darwin-dependency-builds` and the WSL installation and browser checks in `omp-update-guidance`. Both now have MODIFIED deltas. The remaining Linux and WSL mentions are prohibitions, retained Linux CI, Docker Desktop's WSL 2 backend, the retained export and recovery, and preserved Zed UI state. Archive changes no requirement purpose, so the purposes of `batch-ssh`, `fleet-tailnet`, `container-runtime`, `omp-visual-feedback`, `personal-omp-workstation` and `omp-update-guidance` are edited with the archive. Historical archives stay unchanged.
+
+## Task 8.4: preservation review
+
+All seven WSL sessions and the native UNC aqua session ended before export (task 2.3), and the export quiesced only `NixOS` (task 8.5). The five migrated decision banks, the native `litellm` provider and the booking plugin are recorded under tasks 3.1 to 3.6. The owner's decisions for `/tmp/haroon/LLMCodeImpact`, the dataset fixture and the reference clones are recorded under tasks 1.3 and 2.7. Compared on 2026-10-13 with the inventory of task 2.1, every preserved item is present in the native checkouts:
+
+| Project              | Current state                                                                                                                                                                                                   |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| phd-thesis           | `main` keeps the unpublished `4f0697b` and `511bc22`. Origin is one commit ahead, and `3a87b2f` is patch-equivalent to the merged PR. Five initialized `projects/` submodules. The owner publishes the commits. |
+| Teralizer-Paper      | `revise-for-resubmission` at `962fe2b`, the same commit as the Mac checkout.                                                                                                                                    |
+| omp-agent-setup      | Clean. Both local docs branches were merged upstream and their remote branches deleted.                                                                                                                         |
+| test-generalization  | Clean `master`. The local container fix `9848786b` was published unchanged as `a6b932fe` on `origin/master`.                                                                                                    |
+| anita                | `research` ahead 1 and behind 1, the three local branches, the stash, the modified notebook and both untracked files.                                                                                           |
+| aqua                 | `korolev-native` at `e7755ff`, one commit ahead of `origin/main`, and the ten untracked files under `docs/how-we-built-it.md` and `presentation/`.                                                              |
+| saner2027-paper      | `korolev-native`, 17 commits ahead of `origin/main`: the native fix `0b26b43` and the owner's paper work of 2026-10-12 and 2026-10-13. The Overleaf `paper` submodule is initialized.                           |
+| saner2027-overleaf   | Clean `main` except an untracked `build/` from the acceptance build of 2026-10-12, which latexmk regenerates.                                                                                                   |
+| not-so-personalwolke | `main` and the local `nix-dev-shell`. The untracked booking skill left this checkout and is published in the private `glockyco/omp-booking`, whose checkout also holds the six personalwolke sessions.          |
+
+The owner decided on 2026-10-13 to keep the SCCH branches and the thesis commits local and to publish them personally. The retained export holds every source as it was before unregister.
