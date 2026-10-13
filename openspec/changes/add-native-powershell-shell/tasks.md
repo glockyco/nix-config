@@ -8,11 +8,11 @@
 
 ## 2. Shell tool declarations
 
-- [ ] 2.1 Declare `Starship.Starship` 1.26.0 as an archive from `starship-x86_64-pc-windows-msvc.zip` with its published SHA-256 below `Programs\starship`, and verify `pwsh -NoProfile -File .\windows\check-workstation.ps1 -StaticOnly` accepts it.
-- [ ] 2.2 Declare `ajeetdsouza.zoxide` and `eza-community.eza` as user-scope WinGet `zip` packages with present policy and their executables, and verify the static check accepts them.
-- [ ] 2.3 Declare PSFzf 2.7.12 and git-completion 2.0.0 as `psmodule` applications with their PowerShell Gallery package URLs and the package SHA-256 values reviewed for this change, and verify the static check accepts them.
-- [ ] 2.4 Add the `prompt`, `directory-jumper`, `file-lister`, `picker-bindings` and `git-completion` roles to the required-role map in `windows/Workstation.Validation.ps1`, and verify validation tests fail on a missing role, on a role owned by another application and on a machine-scope Starship declaration.
-- [ ] 2.5 Run `pwsh -NoProfile -File .\windows\dev\ci.ps1` and verify the declaration, mocked engine tests and chezmoi fixtures pass with the new applications.
+- [x] 2.1 Declare `Starship.Starship` 1.26.0 as an archive from `starship-x86_64-pc-windows-msvc.zip` with its published SHA-256 below `Programs\starship`, and verify `pwsh -NoProfile -File .\windows\check-workstation.ps1 -StaticOnly` accepts it.
+- [x] 2.2 Declare `ajeetdsouza.zoxide` and `eza-community.eza` as user-scope WinGet `zip` packages with present policy and their executables, and verify the static check accepts them.
+- [x] 2.3 Declare PSFzf 2.7.12 and git-completion 2.0.0 as `psmodule` applications with their PowerShell Gallery package URLs and the package SHA-256 values reviewed for this change, and verify the static check accepts them.
+- [x] 2.4 Add the `prompt`, `directory-jumper`, `file-lister`, `picker-bindings` and `git-completion` roles to the required-role map in `windows/Workstation.Validation.ps1`, and verify validation tests fail on a missing role, on a role owned by another application and on a machine-scope Starship declaration.
+- [x] 2.5 Run `pwsh -NoProfile -File .\windows\dev\ci.ps1` and verify the declaration, mocked engine tests and chezmoi fixtures pass with the new applications.
 
 ## 3. Profile and shared configuration
 

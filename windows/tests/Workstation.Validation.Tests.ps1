@@ -113,6 +113,30 @@ Describe 'Workstation declaration invariants' {
             { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*Duplicate application role*editor*'
         }
 
+        It 'requires each shell tool role from its own application' -ForEach @(
+            @{ Id = 'Starship.Starship'; Role = 'prompt' }
+            @{ Id = 'ajeetdsouza.zoxide'; Role = 'directory-jumper' }
+            @{ Id = 'eza-community.eza'; Role = 'file-lister' }
+            @{ Id = 'PSFzf'; Role = 'picker-bindings' }
+            @{ Id = 'git-completion'; Role = 'git-completion' }
+        ) {
+            $script:data.applications = @($script:data.applications | Where-Object id -NE $Id)
+            { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw "*Missing required application role*$Role*"
+        }
+
+        It 'rejects a shell tool role owned by another application' {
+            # Swapping the roles keeps each role unique, so only ownership can reject it.
+            ($script:data.applications | Where-Object id -EQ 'Starship.Starship').roles = @('file-lister')
+            ($script:data.applications | Where-Object id -EQ 'eza-community.eza').roles = @('prompt')
+            { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*unexpected owner*file-lister*'
+        }
+
+        It 'keeps Starship out of machine scope' {
+            $starship = $script:data.applications | Where-Object id -EQ 'Starship.Starship'
+            $starship.scope = 'machine'
+            { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*Unapproved machine application*Starship.Starship*'
+        }
+
         It 'requires the declared Node runtime before the npm closure' {
             $node = $script:data.applications | Where-Object id -EQ 'OpenJS.NodeJS.LTS'
             $script:data.applications = @($script:data.applications | Where-Object id -NE 'OpenJS.NodeJS.LTS') + @($node)
