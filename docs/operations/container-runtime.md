@@ -41,7 +41,7 @@ If the context is not `colima`, open a new shell or run `export DOCKER_CONTEXT=c
 
 ### Recreate the profile
 
-Recreating the profile deletes the virtual machine and all Docker data, including databases and volumes. Export what you need first. Shrinking the disk requires recreation, growing it does not.
+Recreating the profile deletes the virtual machine and all Docker data, including databases and volumes. Export what you need first. Shrinking the disk requires recreation, growing it does not. The declared root disk must match the existing virtual machine, because Colima refuses to start when the profile asks for a smaller one. Change it only together with a recreation.
 
 ```sh
 colima stop

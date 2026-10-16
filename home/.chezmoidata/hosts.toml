@@ -24,6 +24,7 @@ airClient = true
 cpu = 8
 memory = 16
 disk = 150
+rootDisk = 20
 
 [[hosts.macbook-pro.container.mounts]]
 location = "/Users/glockyco"

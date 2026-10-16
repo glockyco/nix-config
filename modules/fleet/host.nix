@@ -195,6 +195,11 @@ in
                 description = "Colima virtual-machine disk in GiB.";
               };
 
+              rootDisk = mkOption {
+                type = types.ints.positive;
+                description = "Colima virtual-machine root disk in GiB, which Colima cannot shrink.";
+              };
+
               mounts = mkOption {
                 type = types.listOf (
                   types.submodule {

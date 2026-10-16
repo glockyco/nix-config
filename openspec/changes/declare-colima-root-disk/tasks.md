@@ -2,9 +2,9 @@
 
 ## 1. Root disk declaration
 
-- [ ] 1.1 Add a required `rootDisk` of type positive integer, described as the Colima virtual-machine root disk in GiB, to `host.darwin.containerProfile` in `modules/fleet/host.nix`. Declare `rootDisk = 20` for the Mac in `home/.chezmoidata/hosts.toml` and render it in `home/dot_config/colima/default/colima.yaml.tmpl`, and verify the shared-facts check accepts the declaration.
-- [ ] 1.2 Compare `rootDisk` in `checks/chezmoi-container-check.py` and require it to be positive, and verify `nix flake check` passes on the Mac.
-- [ ] 1.3 State in `docs/operations/container-runtime.md` that the root disk keeps the declared size and that changing it requires recreating the profile, and verify the format check passes.
+- [x] 1.1 Add a required `rootDisk` of type positive integer, described as the Colima virtual-machine root disk in GiB, to `host.darwin.containerProfile` in `modules/fleet/host.nix`. Declare `rootDisk = 20` for the Mac in `home/.chezmoidata/hosts.toml` and render it in `home/dot_config/colima/default/colima.yaml.tmpl`, and verify the shared-facts check accepts the declaration.
+- [x] 1.2 Compare `rootDisk` in `checks/chezmoi-container-check.py` and require it to be positive, and verify `nix flake check` passes on the Mac.
+- [x] 1.3 State in `docs/operations/container-runtime.md` that the root disk keeps the declared size and that changing it requires recreating the profile, and verify the format check passes.
 
 ## 2. Acceptance
 

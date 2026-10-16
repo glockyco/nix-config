@@ -21,6 +21,7 @@ def main():
         "autoActivate": True,
         "cpu": expected["cpu"],
         "disk": expected["disk"],
+        "rootDisk": expected["rootDisk"],
         "memory": expected["memory"],
         "forwardAgent": False,
         "mountType": "virtiofs",
@@ -30,7 +31,7 @@ def main():
         "mounts": expected["mounts"],
     }.items():
         assert profile[key] == value, f"Colima {key} drift"
-    assert all(profile[key] > 0 for key in ("cpu", "disk", "memory"))
+    assert all(profile[key] > 0 for key in ("cpu", "disk", "rootDisk", "memory"))
     assert profile["mounts"]
     assert profile["network"] == {
         "address": False,
