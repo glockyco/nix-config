@@ -8,6 +8,6 @@
 
 ## 2. Acceptance
 
-- [ ] 2.1 Verify that the PR's macOS, Linux and OpenSpec CI checks pass.
-- [ ] 2.2 On the Mac, run `darwin-switch` from the PR branch while the owner types the password, and verify that the switch succeeds and `chezmoi diff` is empty afterwards.
-- [ ] 2.3 With no container running, stop and start Colima, and verify that it starts without a disk-shrinking error and reports the declared disk sizes.
+- [x] 2.1 Verify that the PR's macOS, Linux and OpenSpec CI checks pass. The macOS, Linux, Windows and OpenSpec checks passed for `3cdcd2c`.
+- [x] 2.2 On the Mac, run `darwin-switch` from the PR branch while the owner types the password, and verify that the switch succeeds and `chezmoi diff` is empty afterwards. The switch at `3cdcd2c` succeeded with an unchanged closure size of 5837 paths, and `chezmoi diff` printed nothing. The rendered profile has `disk: 150` and `rootDisk: 20`.
+- [x] 2.3 Stop and start Colima, then start again the containers that ran before, and verify that Colima starts without a disk-shrinking error and reports the declared disk size. `colima start` exited 0, `colima list` reported 8 CPUs, 16 GiB memory and a 150 GiB disk, and both `wiki-dev` containers ran again with the database healthy.
