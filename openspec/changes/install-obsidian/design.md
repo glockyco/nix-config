@@ -6,7 +6,9 @@ The Mac installs GUI applications from Homebrew casks listed as application reco
 
 Korolev's engine installs WinGet packages in user scope from `windows/workstation.json`. A WinGet declaration with `executable` and `directory` resolves that file below `%LOCALAPPDATA%` and adds its directory to the user PATH. Startup programs are current-user Run values, as for AltSnap and ReNeo. `Workstation.Validation.ps1` maps each role to exactly one application id.
 
-Obsidian's settings reference lists no option to start at sign-in. From installer 1.12.7 on, the Windows installation ships `Obsidian.com`, a terminal redirector for the command-line client, beside the GUI's `Obsidian.exe`. The Homebrew cask links `obsidian` to the bundle's `Contents/MacOS/obsidian-cli`. Obsidian's own registration adds its directory to the user PATH on Windows and asks for Administrator rights to create `/usr/local/bin/obsidian` on macOS. The command-line client works only while Obsidian runs with its command-line interface setting turned on.
+Obsidian's settings reference lists no option to start at sign-in. From installer 1.12.7 on, the Windows installation ships `Obsidian.com`, a terminal redirector for the command-line client, beside the GUI's `Obsidian.exe`. The Homebrew cask links `obsidian` to the bundle's `Contents/MacOS/obsidian-cli`. The command-line client works only while Obsidian runs with its command-line interface setting turned on.
+
+The settings and `register-cli` code in Obsidian 1.14.4's `obsidian.asar` show how the setting and the registration relate. Turning on the setting stores it at once and then opens a dialog that offers registration with Register and Skip. Skip only closes the dialog. Register appends the installation directory to the user PATH on Windows unless an entry already names that directory. On macOS it asks for Administrator rights to create `/usr/local/bin/obsidian`.
 
 A spike on Korolev with stand-in `Obsidian.com` and `Obsidian.exe` files showed that PowerShell 7 and OMP's bash resolve `obsidian` to `Obsidian.com`, following PATHEXT, while Bun's `Bun.which` returns `Obsidian.exe`.
 
@@ -43,7 +45,7 @@ Alternatives considered: a Login Item created through System Events or `SMAppSer
 
 ### Obsidian's command on PATH without its registration
 
-On the Mac, the cask's link in Homebrew's `bin` is already on the PATH of fresh shells. The owner declines Obsidian's registration, so no root-owned link outside the configuration appears. On Korolev, the WinGet declaration names `Obsidian.com` in `Programs\Obsidian`, so the engine adds that directory to the user PATH and checks that the redirector exists. PATHEXT order then makes `obsidian` the redirector. If Obsidian's registration runs anyway, it writes the same directory, and the engine leaves an entry that is already present unchanged.
+On the Mac, the cask's link in Homebrew's `bin` is already on the PATH of fresh shells. The owner skips Obsidian's registration, so no root-owned link outside the configuration appears. On Korolev, the WinGet declaration names `Obsidian.com` in `Programs\Obsidian`, so the engine adds that directory to the user PATH and checks that the redirector exists. PATHEXT order then makes `obsidian` the redirector. The owner skips the registration there too. If it runs anyway, it finds the directory already on the user PATH and changes nothing.
 
 ### Roles
 
@@ -68,12 +70,8 @@ Alternatives considered: a scanner delivered by the vault repository would need 
 
 ## Migration Plan
 
-On Korolev from the PR branch: the README's Windows checks, the workstation dry run, `chezmoi diff`, `chezmoi apply` and `chezmoi verify --exclude=scripts`. Then a fresh PowerShell session resolves `obsidian` and `gitleaks`, the owner turns on the command-line interface, `obsidian version` answers, and the next sign-in starts Obsidian.
+On Korolev from the PR branch: the README's Windows checks, the workstation dry run, `chezmoi diff`, `chezmoi apply` and `chezmoi verify --exclude=scripts`. Then a fresh PowerShell session resolves `obsidian` and `gitleaks`, the owner turns on the command-line interface and skips the registration, `obsidian version` answers, and the next sign-in starts Obsidian.
 
-On the Mac: the Nix checks pass in CI, then `darwin-switch` runs in a terminal while the owner types the password. The agent is loaded, a fresh zsh resolves `obsidian` to the cask's link, the owner turns on the command-line interface and declines the registration, `obsidian version` answers, and the next login starts Obsidian.
+On the Mac: the Nix checks pass in CI, then `darwin-switch` runs in a terminal while the owner types the password. The agent is loaded, a fresh zsh resolves `obsidian` to the cask's link, the owner turns on the command-line interface and skips the registration, `obsidian version` answers, and the next login starts Obsidian.
 
 Rollback: reverting removes the cask and the launchd agent on the next Mac activation and leaves Obsidian's data. On Korolev, neither the engine nor chezmoi removes what a reverted declaration leaves behind. Uninstall Obsidian and gitleaks with WinGet and delete the Run value and the PATH entry by hand.
-
-## Open Questions
-
-- Whether Obsidian's command-line interface setting can stay on after its registration prompt is declined. Acceptance records what each platform does.

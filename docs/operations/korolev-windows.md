@@ -60,6 +60,7 @@ It prints one `desired:` or `drift:` line per resource and exits 0 when everythi
    - Create a Zen profile, then run `chezmoi apply` again to install its theme.
    - Install Tern, OMP, the plugins and Plannotator as described below.
    - Install TeX Live as described below.
+   - Turn on Obsidian's command-line interface as described in [Obsidian](obsidian.md).
    - Enroll Tailscale and set up SSH as described in [Korolev remote access](korolev-remote-access.md).
    - Sign in to GitHub (`gh auth login --web --git-protocol https`), GitLab and Overleaf. Git Credential Manager stores the tokens.
 
