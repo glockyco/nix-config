@@ -53,6 +53,18 @@
       "versionPolicy": "present"
     },
     {
+      "name": "package notes",
+      "kind": "winget",
+      "id": "Obsidian.Obsidian",
+      "roles": [
+        "notes"
+      ],
+      "scope": "user",
+      "versionPolicy": "present",
+      "executable": "Obsidian.com",
+      "directory": "Programs\\Obsidian"
+    },
+    {
       "name": "package git client",
       "kind": "winget",
       "id": "Fork.Fork",
@@ -369,6 +381,18 @@
       "scope": "user",
       "versionPolicy": "present",
       "executable": "lefthook.exe"
+    },
+    {
+      "name": "package secret scanner",
+      "kind": "winget",
+      "id": "Gitleaks.Gitleaks",
+      "roles": [
+        "secret-scanner"
+      ],
+      "scope": "user",
+      "versionPolicy": "present",
+      "executable": "gitleaks.exe",
+      "installerType": "zip"
     },
     {
       "name": "package markdown lsp",
@@ -735,6 +759,15 @@
       "ensure": "present",
       "type": "ExpandString",
       "value": "\"%APPDATA%\\AltSnap\\AltSnap.exe\""
+    },
+    {
+      "name": "notes startup",
+      "kind": "registry",
+      "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+      "valueName": "Obsidian",
+      "ensure": "present",
+      "type": "ExpandString",
+      "value": "\"%LOCALAPPDATA%\\Programs\\Obsidian\\Obsidian.exe\""
     },
     {
       "name": "firefox startup",
