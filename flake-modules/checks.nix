@@ -69,6 +69,7 @@
                   cask = null;
                   appPath = null;
                   dockPosition = null;
+                  startAtLogin = false;
                 }
                 // application
               ) (sharedFacts.applications or [ ]);

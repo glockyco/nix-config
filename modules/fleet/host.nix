@@ -139,13 +139,19 @@ in
               appPath = mkOption {
                 type = types.nullOr absolutePath;
                 default = null;
-                description = "Absolute application bundle path used in the Dock.";
+                description = "Absolute application bundle path used in the Dock and for the login start.";
               };
 
               dockPosition = mkOption {
                 type = types.nullOr types.ints.positive;
                 default = null;
                 description = "One-based position in the ordered Dock application list.";
+              };
+
+              startAtLogin = mkOption {
+                type = types.bool;
+                default = false;
+                description = "Whether the user's graphical login opens this application.";
               };
 
               rationale = mkOption {
@@ -158,6 +164,11 @@ in
         default = [ ];
         apply =
           applications:
+          let
+            loginWithoutPath = map (application: application.cask) (
+              builtins.filter (application: application.startAtLogin && application.appPath == null) applications
+            );
+          in
           assert lib.assertMsg (uniqueNonNull "cask" applications)
             "host.darwin.applications has duplicate casks";
           assert lib.assertMsg (uniqueNonNull "appPath" applications)
@@ -172,8 +183,10 @@ in
             )
             applications
           ) "host.darwin.applications needs a cask or app path and a path for each Dock position";
+          assert lib.assertMsg (loginWithoutPath == [ ])
+            "host.darwin.applications needs an app path to start ${lib.concatStringsSep ", " loginWithoutPath} at login";
           applications;
-        description = "Homebrew casks and ordered Dock application bundles.";
+        description = "Homebrew casks, ordered Dock application bundles and login starts.";
       };
 
       containerProfile = mkOption {
