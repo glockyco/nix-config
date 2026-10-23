@@ -86,6 +86,12 @@ dockPosition = 8
 rationale = "The editor receives updates from its vendor."
 
 [[hosts.macbook-pro.applications]]
+cask = "obsidian"
+appPath = "/Applications/Obsidian.app"
+startAtLogin = true
+rationale = "The notes app syncs the vault only while it runs, so it starts at login."
+
+[[hosts.macbook-pro.applications]]
 cask = "discord"
 rationale = "Install the communication client."
 

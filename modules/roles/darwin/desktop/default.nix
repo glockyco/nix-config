@@ -7,6 +7,7 @@
     ./power.nix
     ./fonts.nix
     ./homebrew.nix
+    ./login-applications.nix
     ./rectangle.nix
     ./zen.nix
     ./chezmoi-resources.nix

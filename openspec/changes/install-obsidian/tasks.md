@@ -9,8 +9,8 @@
 
 ## 2. Mac declarations
 
-- [ ] 2.1 Add a boolean `startAtLogin` with default `false` to Darwin application records in `modules/fleet/host.nix`, with an assertion that names the record when a login start lacks `appPath`, and describe `appPath` as the bundle path for the Dock and the login start. Add the field's default to the shared-facts check in `flake-modules/checks.nix`, and verify the CI Nix checks evaluate both.
-- [ ] 2.2 Add a desktop-role module that derives one launchd user agent per login-start record, running `/usr/bin/open -a <appPath>` with `RunAtLoad` and `LimitLoadToSessionType = "Aqua"`, import it from `modules/roles/darwin/desktop/default.nix`, and verify the Darwin system builds in CI.
+- [x] 2.1 Add a boolean `startAtLogin` with default `false` to Darwin application records in `modules/fleet/host.nix`, with an assertion that names the record when a login start lacks `appPath`, and describe `appPath` as the bundle path for the Dock and the login start. Add the field's default to the shared-facts check in `flake-modules/checks.nix` and a rejection case with a valid control to `checks/host-declaration-check.nix`, and verify the Nix checks evaluate all three.
+- [x] 2.2 Add a desktop-role module that derives one launchd user agent per login-start record, running `/usr/bin/open -a <appPath>` with `RunAtLoad` and `LimitLoadToSessionType = "Aqua"`, import it from `modules/roles/darwin/desktop/default.nix`, and verify the Darwin system builds in CI.
 - [ ] 2.3 Add the `obsidian` application record with `appPath` `/Applications/Obsidian.app`, `startAtLogin = true` and its rationale to `home/.chezmoidata/hosts.toml`, and verify `nix flake check` passes in CI on macOS and Linux.
 
 ## 3. Superseded plan
