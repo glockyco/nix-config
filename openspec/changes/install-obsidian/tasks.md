@@ -2,10 +2,10 @@
 
 ## 1. Korolev declarations
 
-- [ ] 1.1 Declare `Obsidian.Obsidian` in `windows/workstation.json` as a user-scope WinGet package with present policy, the `notes` role, `executable` `Obsidian.com` and `directory` `Programs\Obsidian`, and `Gitleaks.Gitleaks` as a user-scope WinGet `zip` package with present policy, the `secret-scanner` role and `executable` `gitleaks.exe`. Add both roles to the required-role map in `windows/Workstation.Validation.ps1`, and verify `pwsh -NoProfile -File .\windows\check-workstation.ps1 -StaticOnly` accepts the declaration.
-- [ ] 1.2 Declare the current-user Run value `Obsidian` with `"%LOCALAPPDATA%\Programs\Obsidian\Obsidian.exe"` as an `ExpandString`, and verify the static check accepts it.
+- [x] 1.1 Declare `Obsidian.Obsidian` in `windows/workstation.json` as a user-scope WinGet package with present policy, the `notes` role, `executable` `Obsidian.com` and `directory` `Programs\Obsidian`, and `Gitleaks.Gitleaks` as a user-scope WinGet `zip` package with present policy, the `secret-scanner` role and `executable` `gitleaks.exe`. Add both roles to the required-role map in `windows/Workstation.Validation.ps1`, and verify `pwsh -NoProfile -File .\windows\check-workstation.ps1 -StaticOnly` accepts the declaration.
+- [x] 1.2 Declare the current-user Run value `Obsidian` with `"%LOCALAPPDATA%\Programs\Obsidian\Obsidian.exe"` as an `ExpandString`, and verify the static check accepts it.
 - [ ] 1.3 Write `docs/operations/obsidian.md` with the owner steps on each machine, the declined registration on the Mac and the `Obsidian.com` name for callers that resolve commands through `Bun.which`. Add the Obsidian step to the manual steps in `docs/operations/korolev-windows.md` and link the guide from the README, and verify `pwsh -NoProfile -File .\windows\dev\format.ps1 -Check` passes.
-- [ ] 1.4 Run `pwsh -NoProfile -File .\windows\dev\ci.ps1` and verify the declaration, mocked engine tests and chezmoi fixtures pass.
+- [x] 1.4 Run `pwsh -NoProfile -File .\windows\dev\ci.ps1` and verify the declaration, mocked engine tests and chezmoi fixtures pass.
 
 ## 2. Mac declarations
 
