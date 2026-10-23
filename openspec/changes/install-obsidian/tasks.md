@@ -15,7 +15,7 @@
 
 ## 3. Superseded plan
 
-- [ ] 3.1 Remove `docs/plans/2026-08-09-knowledge-management-plan.md` and its entry in `docs/plans/INDEX.md`, and verify no link to it remains and the format check passes.
+- [x] 3.1 Mark `docs/plans/2026-08-09-knowledge-management-plan.md` superseded, pointing to the notes application contract, and move its entry in `docs/plans/INDEX.md` to the superseded historical records, and verify the format check passes.
 
 ## 4. Acceptance
 

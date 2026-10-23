@@ -20,7 +20,6 @@ These plans remain distinct records while a separate planning migration awaits r
 ## Draft decisions, not scheduled
 
 - [Family Backup, Storage, and Continuity](2026-08-08-family-backup-storage-plan.md): directional draft; products, capacity, retention, and legal arrangements remain undecided.
-- [Knowledge Management](2026-08-09-knowledge-management-plan.md): draft; the RemNote export and repository location remain open.
 - [Multi-Host Fleet Architecture](2026-08-09-multi-host-fleet-plan.md): draft; network, account, and deployment details remain open.
 
 ## Superseded cleanup proposals
@@ -36,3 +35,4 @@ These commit-pinned records preserve the complete unresolved material, not repla
 
 - [OMP Setup Nix Consolidation Tasks](2026-08-07-omp-setup-nix-consolidation-plan.md): superseded by the accepted personal OMP architecture; do not execute.
 - [OMP Setup Nix Consolidation](2026-08-07-omp-setup-nix-consolidation-spec.md): superseded by the accepted personal OMP architecture; do not implement.
+- [Knowledge Management](2026-08-09-knowledge-management-plan.md): superseded by the notes application contract and the notes vault's conventions; do not execute.
