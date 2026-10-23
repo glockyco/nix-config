@@ -254,9 +254,14 @@ Each host-specific fact SHALL have one declaration: name is the host directory k
 
 #### Scenario: Change an application record
 
-- **WHEN** a maintainer changes a declared Homebrew application's cask, application path, or Dock position
-- **THEN** the generated Homebrew cask set and Dock layout change together
+- **WHEN** a maintainer changes a declared Homebrew application's cask, application path, Dock position, or login start
+- **THEN** the generated Homebrew cask set, Dock layout, and login agents change together
 - **AND** no second application list exists
+
+#### Scenario: Reject a login start without an application path
+
+- **WHEN** an application record requests a login start but declares no application path
+- **THEN** evaluation fails with a message that names the record
 
 #### Scenario: Change a container resource
 
