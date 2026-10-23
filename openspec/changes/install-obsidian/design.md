@@ -39,7 +39,7 @@ Alternatives considered: the nixpkgs `obsidian` package is unfree, so it would n
 
 A new boolean `startAtLogin` on Darwin application records requires `appPath`. A module in the desktop role turns each such record into a launchd user agent named after the bundle. The agent runs `/usr/bin/open -a <appPath>` with `RunAtLoad` and `LimitLoadToSessionType = "Aqua"`, so only a graphical login starts the application and LaunchServices starts it as an ordinary app. The shared-facts check fills the new field's default like the other optional fields. Korolev declares a Run value `Obsidian` with `"%LOCALAPPDATA%\Programs\Obsidian\Obsidian.exe"`, as for AltSnap.
 
-nix-darwin loads a new or changed user agent during activation, and `RunAtLoad` then opens Obsidian once. Unchanged agents are not reloaded.
+nix-darwin loads a new or changed user agent during activation, and `RunAtLoad` then runs it once. Activation sets up user agents before the Homebrew bundle, so on the activation that first installs the cask the agent finds no bundle and exits with status 1. Obsidian then starts from the next login, or from `launchctl kickstart gui/$(id -u)/org.nixos.open-obsidian`. Unchanged agents are not reloaded.
 
 Alternatives considered: a Login Item created through System Events or `SMAppService` is imperative state that a rollback does not remove. A dedicated Obsidian module would repeat the bundle path, which the record already owns. A Startup-folder shortcut on Windows would need a `.lnk` file that neither the engine nor chezmoi declares.
 
