@@ -57,7 +57,7 @@ Alternatives considered: a scanner delivered by the vault repository would need 
 
 ### Superseded plan
 
-`docs/plans/2026-08-09-knowledge-management-plan.md` chose a desktop-only vault in Git without a sync layer. This change and the vault set up on top of it replace that decision, so the plan and its index entry are removed.
+`docs/plans/2026-08-09-knowledge-management-plan.md` chose a desktop-only vault in Git without a sync layer and allowed one community plugin. This change and the vault set up on top of it replace that decision. The plan also holds material without a reviewed replacement, such as the RemNote export, and the plan index keeps such originals. The plan is therefore marked superseded and listed with the superseded historical records, like the earlier OMP setup plans, instead of being deleted.
 
 ## Risks / Trade-offs
 

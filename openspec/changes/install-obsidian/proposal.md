@@ -11,7 +11,7 @@ Work and personal notes are moving into one Obsidian vault that Obsidian Sync ke
 - Put Obsidian's command-line client on PATH as `obsidian`: on the Mac through the command the cask links into Homebrew's `bin`, and on Korolev by adding the installation directory, which holds the `Obsidian.com` terminal redirector, to the user PATH. Neither depends on Obsidian's own command registration.
 - Declare gitleaks on Korolev as the user-scope `Gitleaks.Gitleaks` WinGet package, for the commit hook of the vault's Git backup.
 - Document the owner steps that stay manual: turning on Obsidian's command-line interface on each machine.
-- Remove the knowledge-management plan in `docs/plans/`, whose desktop-only vault without a sync layer this setup replaces.
+- Mark the knowledge-management plan in `docs/plans/` superseded, because this setup replaces its desktop-only vault without a sync layer.
 
 ## Capabilities
 

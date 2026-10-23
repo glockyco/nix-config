@@ -1,5 +1,7 @@
 # Knowledge Management
 
+**Superseded:** The [notes application contract](../../openspec/specs/notes-application/spec.md) and the conventions kept in the notes vault replace this plan. Keep this file as historical evidence; do not execute it.
+
 Status: draft. The decision is made; the RemNote export and the vault's
 repository location remain open.
 
