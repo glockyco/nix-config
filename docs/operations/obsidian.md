@@ -12,4 +12,4 @@ The `obsidian` command talks to the running app and works only after its command
 1. In the dialog that offers to register `obsidian` in PATH, choose Skip. The configuration already puts the command on PATH, and on the Mac the registration asks for Administrator rights to create a second link outside the configuration.
 1. In a new terminal, check that `obsidian version` prints Obsidian's version.
 
-On Korolev, `obsidian` resolves to the `Obsidian.com` terminal redirector beside the app's `Obsidian.exe`, because PATHEXT lists `.COM` first. Bun's `Bun.which` returns `Obsidian.exe` instead, so a program that resolves commands through it, such as OMP, must call `Obsidian.com` by name.
+On Korolev, `obsidian` in a terminal resolves to the `Obsidian.com` terminal redirector beside the app's `Obsidian.exe`, because PATHEXT lists `.COM` first. Programs that look commands up through Bun's `Bun.which`, such as OMP, get `Obsidian.exe` instead. It answers command-line requests too when its output goes to a pipe, as it does for OMP's `vault://`.
