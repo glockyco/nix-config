@@ -77,12 +77,15 @@ omp plugin marketplace add glockyco/omp-agent-setup
 omp plugin install --scope user personal@glockyco
 omp plugin marketplace add glockyco/omp-booking
 omp plugin install --scope user booking@glockyco-booking
+omp plugin marketplace add kepano/obsidian-skills
+omp plugin install --scope user obsidian@obsidian-skills
+omp config set skills.ignoredSkills '["defuddle","json-canvas","knap"]'
 pwsh -NoProfile -Command { $env:PLANNOTATOR_MINIMAL = '1'; & ([scriptblock]::Create((Invoke-RestMethod https://plannotator.ai/install.ps1))) -Version v0.28.7 -VerifyAttestation }
 ```
 
-Plannotator needs the environment variable because its installer ignores the `-Minimal` switch. Without minimal mode it also installs vendor skills and commands.
+Plannotator needs the environment variable because its installer ignores the `-Minimal` switch. Without minimal mode it also installs vendor skills and commands. The [README](../../README.md#omp) explains the Obsidian skills and the ignored ones.
 
-Update the plugins with `omp plugin marketplace update <marketplace>` followed by `omp plugin upgrade --scope user <plugin>`, then start a new session.
+Update the plugins with `omp plugin marketplace update` followed by `omp plugin upgrade`, then start a new session.
 
 ## TeX Live
 
