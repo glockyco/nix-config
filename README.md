@@ -103,20 +103,25 @@ The Air is borrowed and temporary. [Issue #17](https://github.com/glockyco/nix-c
 
 ## OMP
 
-On macOS, the official installer puts OMP in `~/.local/bin`. Install OMP and the [personal plugin](https://github.com/glockyco/omp-agent-setup):
+On macOS, the official installer puts OMP in `~/.local/bin`. Install OMP, the [personal plugin](https://github.com/glockyco/omp-agent-setup) and Steph Ango's [Obsidian skills](https://github.com/kepano/obsidian-skills):
 
 ```sh
 curl -fsSL https://omp.sh/install | sh -s -- --binary
 omp plugin marketplace add glockyco/omp-agent-setup
 omp plugin install --scope user personal@glockyco
+omp plugin marketplace add kepano/obsidian-skills
+omp plugin install --scope user obsidian@obsidian-skills
+omp config set skills.ignoredSkills '["defuddle","json-canvas","knap"]'
 ```
 
-Update OMP and the plugin independently, then start a new session:
+The Obsidian skills teach agents the Markdown, Bases and command line of the [notes vault](docs/operations/obsidian.md). The three ignored skills cover web clipping, template rendering and canvases, which nothing here uses, and would otherwise add their descriptions to every session.
+
+Update OMP and the plugins independently, then start a new session:
 
 ```sh
 omp update
-omp plugin marketplace update glockyco
-omp plugin upgrade --scope user personal@glockyco
+omp plugin marketplace update
+omp plugin upgrade
 ```
 
 To return to an earlier OMP release, reinstall with `--binary --ref <tag>`. A bad plugin release is replaced by a newer one, never by editing the installed cache. On Windows, Tern installs and updates OMP, see [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator).
