@@ -177,11 +177,24 @@ $history = if ($Interactive) { (Get-PSReadLineOption).AddToHistoryHandler } else
   $expectedHelper = '!"' + $target.Replace('\', '/') + '/AppData/Local/Programs/Git/mingw64/bin/git-credential-manager.exe"'
   $helperValues = @($helper -split "`r?`n")
   Assert-Core ($helperValues.Count -eq 3 -and $helperValues[0] -eq 'fixture-system-helper' -and $helperValues[1] -eq '' -and $helperValues[2] -eq $expectedHelper) 'native GCM must reset the system helper and quote its one absolute executable, including spaces'
-  foreach ($entry in @(@('src/github.com/any owner/project', '11704293+glockyco@users.noreply.github.com'), @('src/gitlab.scch.at/work project', 'johann.glock@scch.at'), @('outside/work project', 'johann.glock@scch.at'))) {
+  $gitHubEmail = '11704293+glockyco@users.noreply.github.com'
+  $workEmail = 'johann.glock@scch.at'
+  # Each entry is a path below the profile, its origin remote ('' for none) and the expected identity.
+  $identityCases = @(
+    @('src/github.com/any owner/project', '', $gitHubEmail),
+    @('src/gitlab.scch.at/work project', '', $workEmail),
+    @('outside/work project', '', $workEmail),
+    @('outside/github https clone', 'https://github.com/glockyco/project.git', $gitHubEmail),
+    @('outside/github scp clone', 'git@github.com:glockyco/project.git', $gitHubEmail),
+    @('outside/github ssh clone', 'ssh://git@github.com/glockyco/project.git', $gitHubEmail),
+    @('outside/gitlab clone', 'https://gitlab.scch.at/foci/project.git', $workEmail)
+  )
+  foreach ($entry in $identityCases) {
     $repository = Join-Path $target $entry[0]
     $null = New-Item -ItemType Directory -Path $repository -Force
     $null = Invoke-CoreNative git @('init', '-q', $repository)
-    Assert-Core ((Get-CoreGit 'user.email' $repository) -eq $entry[1]) "effective identity in $($entry[0]) drifted"
+    if ($entry[1]) { $null = Invoke-CoreNative git @('-C', $repository, 'remote', 'add', 'origin', $entry[1]) }
+    Assert-Core ((Get-CoreGit 'user.email' $repository) -eq $entry[2]) "effective identity in $($entry[0]) drifted"
     $null = Invoke-CoreNative git @('-C', $repository, 'config', 'user.email', 'fixture-local@example.invalid')
     Assert-Core ((Get-CoreGit 'user.email' $repository) -eq 'fixture-local@example.invalid') 'local Git email must override both global and GitHub include'
   }
