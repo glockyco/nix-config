@@ -29,6 +29,13 @@
 {{ if $windows }}
 [includeIf "gitdir:{{ $platform.ghqRoot }}/github.com/"]
     path = ~/.config/git/github.gitconfig
+# A GitHub clone outside the ghq root keeps the GitHub identity through its remote.
+[includeIf "hasconfig:remote.*.url:https://github.com/**"]
+    path = ~/.config/git/github.gitconfig
+[includeIf "hasconfig:remote.*.url:git@github.com:*/**"]
+    path = ~/.config/git/github.gitconfig
+[includeIf "hasconfig:remote.*.url:ssh://git@github.com/**"]
+    path = ~/.config/git/github.gitconfig
 [url "https://github.com/"]
     insteadOf = git@github.com:
     insteadOf = ssh://git@github.com/
