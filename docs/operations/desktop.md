@@ -1,6 +1,6 @@
 # Personal desktop
 
-The personal Windows desktop is reached over the tailnet with `ssh desktop`, `ssh desktop-batch` and Windows App. The [README](../../README.md#network) lists the endpoints. The selected account is an administrator, and service changes need the owner's approval.
+The personal Windows desktop is reached over the tailnet with `ssh desktop`, `ssh desktop-batch` and Windows App. The [README](../../README.md#network) lists the endpoints. The selected account is an administrator. Ask before changing services.
 
 ## Keys
 

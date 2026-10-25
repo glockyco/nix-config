@@ -1,6 +1,6 @@
 # nix-config
 
-Configuration for an Apple Silicon MacBook Pro and Korolev, a Windows 11 work laptop. Nix configures the Mac, chezmoi manages user files on both, and a PowerShell 7 engine installs applications and settings on Windows. The flake also declares the tailnet policy and the [DNS zone](dns/dnsconfig.js).
+Personal workstation configuration for an Apple Silicon MacBook Pro and Korolev, a Windows 11 work laptop. Nix configures the Mac, chezmoi manages user files on both, and a PowerShell 7 engine installs applications and settings on Windows. The flake also declares the [tailnet policy](lib/tailnet-policy.nix) and the [DNS zone](dns/dnsconfig.js). Review the machine-specific declarations before using this on another computer.
 
 ## Hosts
 
@@ -11,9 +11,9 @@ Configuration for an Apple Silicon MacBook Pro and Korolev, a Windows 11 work la
 
 Host facts live in `hosts/<name>/host.nix`, typed by [modules/fleet/host.nix](modules/fleet/host.nix). Each `hosts/<name>/default.nix` selects roles from `modules/roles/`. Change a machine value in its host declaration and role policy in its role module.
 
-## Who owns what
+## What manages each part
 
-| State                                                    | Owner                                                   |
+| State                                                    | Managed by                                              |
 | -------------------------------------------------------- | ------------------------------------------------------- |
 | macOS system, packages, language servers and services    | Nix (nix-darwin)                                        |
 | User files and app settings on every host                | chezmoi, from [home/](home/)                            |
@@ -42,7 +42,7 @@ nix build .#darwinConfigurations.macbook-pro.system
 
 ### Windows
 
-Use the checkout below `C:\Users\jglock\src`. Install the pinned formatters, hook and test modules once, then run the checks:
+From a checkout on Windows, install the pinned formatters, hook and test modules once, then run the checks:
 
 ```powershell
 pwsh -NoProfile -File .\windows\dev\bootstrap.ps1 -IncludeTestDependencies
@@ -71,7 +71,7 @@ chezmoi init --source "$HOME/.config/nix-darwin" --promptString host=macbook-pro
 chezmoi apply
 ```
 
-Later activations use `darwin-switch`. It prints the closure diff, switches the system and then runs `chezmoi apply`. A failed switch skips the apply. Run it without `sudo`, because it calls `sudo` itself. Agents run it in a terminal and the owner types the password. From Korolev:
+Later activations use `darwin-switch`. It prints the closure diff, switches the system and then runs `chezmoi apply`. A failed switch skips the apply. Run it without `sudo`, because it calls `sudo` itself. Use an interactive terminal and enter the password at the prompt. From Korolev:
 
 ```sh
 ssh -t macbook-pro 'cd ~/.config/nix-darwin && darwin-switch'
@@ -152,7 +152,7 @@ nix develop .. --command bash -c 'CLOUDFLARE_API_TOKEN="$(< ~/.config/credential
 nix develop .. --command bash -c 'CLOUDFLARE_API_TOKEN="$(< ~/.config/credentials/cloudflare-dns-token)" exec dnscontrol push'
 ```
 
-Only the owner runs `push`, and only when the preview shows the intended changes and nothing else. A project that needs the token calls the `use_cloudflare_dns` direnv function from its `.envrc`.
+Run `push` only when the preview shows the intended changes and nothing else. A project that needs the token calls the `use_cloudflare_dns` direnv function from its `.envrc`.
 
 ## Update
 
