@@ -7,4 +7,4 @@
 
 - [x] 2.1 Run the Windows checks from the README and validate this change with `openspec validate select-github-identity-by-remote --strict`.
 - [x] 2.2 Run the engine dry run and `chezmoi apply` on Korolev from the branch, then verify the effective email in a GitHub clone outside the GitHub tree, in a repository below `~/src/github.com/` and in an SCCH GitLab repository.
-- [ ] 2.3 After merge, mark every completed task and archive the change.
+- [x] 2.3 After merge, mark every completed task and archive the change.

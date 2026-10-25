@@ -543,10 +543,16 @@ Korolev SHALL use a native Windows checkout below the ghq root `~/src` as chezmo
 
 #### Scenario: Select Git identity
 
-- **WHEN** Git runs below `~/src/github.com/` or below a work/outside directory
-- **THEN** the GitHub tree uses `11704293+glockyco@users.noreply.github.com` and other locations use global `johann.glock@scch.at`
+- **WHEN** Git runs in a repository whose remote points at github.com, in a repository below `~/src/github.com/`, or in any other repository
+- **THEN** the first two use `11704293+glockyco@users.noreply.github.com` and the others use global `johann.glock@scch.at`
 - **AND** a repository-local email overrides either selection
 - **AND** Git uses Windows GCM and preserves the Overleaf generic-provider declaration
+
+#### Scenario: Commit from a GitHub clone outside the GitHub tree
+
+- **WHEN** a repository cloned from github.com over HTTPS or SSH lives outside `~/src/github.com/`, such as a scratch directory
+- **THEN** its commits use `11704293+glockyco@users.noreply.github.com`
+- **AND** a repository outside that tree with a gitlab.scch.at remote keeps `johann.glock@scch.at`
 
 #### Scenario: Apply package configuration after a source change
 
