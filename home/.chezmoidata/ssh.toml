@@ -27,6 +27,16 @@ user = "User"
 publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN/+XoGCH3MVvNQuvVfjmidMk5mEa+gqs84C00s6DiEt"
 fingerprint = "SHA256:ZYFVPT8M8AJI7Vmq63k018DCGIIJKA8atz3xQ6TI4Lw"
 
+# The second personal desktop's host key, read from its own C:\ProgramData\ssh over
+# an authenticated session.
+[ssh.desktop-ac]
+hostName = "desktop-ac"
+user = "hho_h"
+publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPf4H/HKs6jh/LKW1ZBquROZHDpIT84SNICtbfGY/6kO"
+fingerprint = "SHA256:jYEG4vrFrvlRDuZqxFPbq1NCGcM1LIWNUGtMhv5lR94"
+# In-box Windows OpenSSH 9.5, as on Korolev.
+warnWeakCrypto = "no-pq-kex"
+
 # Korolev's host key as printed at its console by windows/apply-openssh.ps1.
 [ssh.korolev]
 hostName = "korolev"

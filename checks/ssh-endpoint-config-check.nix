@@ -4,7 +4,7 @@
   runCommand,
   renderedHome,
   host,
-  # A Windows endpoint name from the ssh chezmoi data, such as desktop or korolev.
+  # A Windows endpoint name from the ssh chezmoi data, such as desktop, korolev or desktop-ac.
   endpoint,
 }:
 runCommand "check-${host.name}-${endpoint}-batch-configuration"

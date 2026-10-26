@@ -186,6 +186,10 @@
             inherit host renderedHome;
             endpoint = "korolev";
           };
+          desktop-ac-batch-configuration = pkgs.callPackage ../checks/ssh-endpoint-config-check.nix {
+            inherit host renderedHome;
+            endpoint = "desktop-ac";
+          };
         }
         // lib.optionalAttrs host.roles.airClient {
           air-batch-configuration = pkgs.callPackage ../checks/air-batch-config-check.nix {
