@@ -7,5 +7,5 @@
 
 ## 2. Delivery
 
-- [ ] 2.1 Open a PR, run the README checks for Darwin and the portable checks, and merge after the required checks and the live policy test pass. Verify that the `tailnet-policy` deployment run applies the merged revision.
-- [ ] 2.2 Ask for the interactive enrollment on DESKTOP-ARNTPG5 by following the guide. Verify from the Mac that `tailscale status --json` lists `desktop-ac` online with exactly `tag:desktop-ac` and an empty key expiry, and that `tailscale ping --until-direct=false desktop-ac` gets a pong.
+- [x] 2.1 Open a PR, run the README checks for Darwin and the portable checks, and merge after the required checks and the live policy test pass. Verify that the `tailnet-policy` deployment run applies the merged revision.
+- [x] 2.2 Ask for the interactive enrollment on DESKTOP-ARNTPG5 by following the guide. Verify from the Mac that `tailscale status --json` lists `desktop-ac` online with exactly `tag:desktop-ac` and an empty key expiry, and that `tailscale ping --until-direct=false desktop-ac` gets a pong.
