@@ -84,7 +84,7 @@ jobs:
     if: needs.changes.outputs.nix == 'true'
     # Static job names preserve both required contexts even when Nix is skipped.
     # `nix flake check` covers only the runner's own system.
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -143,14 +143,14 @@ jobs:
       # Cache only hash-reviewed archives and exact-version engine modules.
       # Restores have no fallback keys. Bootstrap validates their contents.
       - name: Cache locked development archives
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/native-dev-archives
           key: windows-dev-archives-${{ hashFiles('windows/dev/dependencies.lock.json') }}
 
       - name: Cache pinned local engine modules
         if: needs.changes.outputs.windows == 'true'
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ github.workspace }}/.git/engine-modules
           key: windows-engine-modules-pwsh7-${{ hashFiles('windows/dev/engine-dependencies.ps1') }}
