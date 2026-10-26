@@ -13,6 +13,22 @@
         "github-actions"
       ],
       "groupName": "github actions"
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "@fission-ai/openspec"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Hold TypeScript 7.0 because it ships no compiler API. typescript-language-server reports no valid TypeScript installation and svelte2tsx throws on missing ScriptTarget.Latest. TypeScript 7.1 is expected to restore the API. Remove this rule when that update lands. Upstream: https://github.com/typescript-eslint/typescript-eslint/issues/10940",
+      "matchPackageNames": [
+        "typescript"
+      ],
+      "allowedVersions": "<7.0.0 || >=7.1.0"
     }
   ]
 }

@@ -100,7 +100,13 @@ The integration SHALL expose visual feedback without plan mode, approval control
 
 ### Requirement: Explicit review lifecycle
 
-The integration SHALL allow one active review per OMP session and independent reviews in separate sessions. It SHALL provide `/plannotator-cancel`. Dismissal, explicit cancellation, session navigation, and session shutdown SHALL terminate the review without feedback or approval. Browser tab closure MAY leave a review pending and SHALL NOT imply approval. The integration SHALL NOT promise automatic tab-close settlement or add approval mode, a timeout, or a fallback to obtain it. Terminal outcomes SHALL release the owned child process, listener, and temporary snapshot without deleting Plannotator user history or preferences.
+The integration SHALL allow one active review per OMP session and independent reviews across sessions, with `/plannotator-cancel`. Dismissal, explicit cancellation, navigation and shutdown SHALL terminate review without feedback or approval. Terminal outcomes SHALL release the owned child process, listener and temporary snapshot without deleting Plannotator user history or preferences.
+
+#### Scenario: Define tab-close behavior
+
+- **WHEN** browser tab closure leaves a review pending
+- **THEN** closure SHALL NOT imply approval
+- **AND** the integration SHALL NOT promise automatic tab-close settlement or add approval mode, a timeout or a fallback to obtain it
 
 #### Scenario: Recover after closing the annotation tab
 

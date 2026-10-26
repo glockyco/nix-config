@@ -489,7 +489,7 @@
       ],
       "scope": "user",
       "versionPolicy": "pinned",
-      "version": "1.14.0",
+      "version": "1.14.3",
       "consumer": "omp-agent-setup reusable workflow OpenSpec pin",
       "directory": "Programs\\npm",
       "nodeId": "OpenJS.NodeJS.LTS",

@@ -8,7 +8,7 @@ Define a reviewable Windows workstation configuration layer with explicit owners
 
 ### Requirement: Rendered Windows configuration artifacts
 
-The repository SHALL maintain declarative JSON application/settings data, its schema, one PowerShell 7 convergence module and narrow standalone Zen-policy, Neo-driver and OpenSSH-server Administrator scripts under `windows/`. The engine SHALL own installations and supported user settings. Chezmoi SHALL exclusively own user/app files. Nix activation SHALL neither write Windows paths nor apply Windows artifacts. No WinGet Configuration document or embedded DSC test/set scripts SHALL remain in the cutover PR.
+The repository SHALL keep declarative JSON app/settings data, its schema, one PowerShell 7 convergence module and narrow standalone Zen-policy, Neo-driver and OpenSSH-server Administrator scripts under `windows/`. The engine SHALL own installs and supported user settings. Chezmoi SHALL exclusively own user/app files. Nix activation SHALL NOT write Windows paths or apply Windows artifacts. No WinGet Configuration document or embedded DSC test/set scripts SHALL remain in the cutover PR.
 
 #### Scenario: Inspect source offline
 
@@ -80,7 +80,13 @@ The engine SHALL run as the standard interactive account and reject elevated exe
 
 ### Requirement: Pinned application set
 
-Each application SHALL declare present or consumer-pinned policy. Bun SHALL be pinned to 1.3.13 for omp-agent-setup's .bun-version and OpenSpec to 1.14.0 for its reusable workflow. Any other version pin SHALL name a concrete consumer. Present applications SHALL install the selected latest WinGet version when missing and SHALL NOT trigger automatic upgrades. Reviewed archive/npm/font integrity selections SHALL retain reproducible missing-install delivery without downgrading existing newer applications. No application SHALL be downgraded automatically.
+Each application SHALL declare present or consumer-pinned policy. Every version pin SHALL name a concrete consumer. Missing present applications SHALL install the selected latest WinGet version without automatic upgrades. Reviewed archive/npm/font integrity selections SHALL retain reproducible missing-install delivery without downgrading existing newer applications. No application SHALL be downgraded automatically.
+
+#### Scenario: Select consumer-required tool versions
+
+- **WHEN** the application declaration selects Bun and OpenSpec
+- **THEN** Bun SHALL be pinned for omp-agent-setup's `.bun-version` and OpenSpec for its reusable workflow
+- **AND** reviewed versions SHALL come from `windows/workstation.json`
 
 #### Scenario: Accept an existing present application
 
@@ -136,7 +142,7 @@ The hand-maintained Windows application set SHALL declare `Ferdium.Ferdium` as t
 
 ### Requirement: Ferdium-owned state and preferences
 
-Ferdium SHALL own its profile, configured services, credentials, sessions, cache, automatic-update preference, and startup preference. The Windows configuration SHALL NOT write those values, authenticate an account, launch Ferdium, add a repository-owned updater, or add a repository-owned startup entry. A fresh Ferdium profile SHALL use the application's default enabled automatic-update preference and disabled startup preference. A later configuration apply SHALL preserve user changes to either preference and all other profile state.
+Ferdium SHALL own its profile, services, credentials, sessions, cache, automatic-update and startup preferences. Windows configuration SHALL NOT write them, authenticate accounts, launch Ferdium or add a repository updater/startup entry. A fresh profile SHALL use the app's default enabled automatic updates and disabled startup. Later applies SHALL preserve changed preferences and all other profile state.
 
 #### Scenario: Launch a fresh installation
 
@@ -159,7 +165,7 @@ Ferdium SHALL own its profile, configured services, credentials, sessions, cache
 
 ### Requirement: Declared Windows settings
 
-The engine SHALL converge the existing supported registry, keyboard, Explorer, region, snapping, screenshot, dark appearance and animation settings. It SHALL preserve German and Austrian input methods, place en-GB first with no English input method, use en-GB UI override, and place German QWERTZ first/default with native Neo second. Native Neo driver installation and restart SHALL remain an owner prerequisite. Dark appearance SHALL accept generated Custom.theme when flags, transparency and wallpaper match.
+The engine SHALL converge supported registry, keyboard, Explorer, region, snapping, screenshot, dark appearance and animation settings. It SHALL preserve German/Austrian inputs, place en-GB first without English input, use en-GB UI override and put German QWERTZ first/default with native Neo second. Neo driver installation/restart SHALL remain owner prerequisites. Dark appearance SHALL accept generated Custom.theme when flags, transparency and wallpaper match.
 
 #### Scenario: Preserve input and application state
 
@@ -279,9 +285,12 @@ Chezmoi SHALL own Windows app files, enforcing stable content and converging onl
 
 ### Requirement: Windows-first Zed control shortcuts
 
-The Windows chezmoi source SHALL keep Zed Vim mode enabled and SHALL declare a user keymap for full editors. In every Vim mode, standard Windows and VS Code `Ctrl` shortcuts SHALL take precedence over Vim's `Ctrl` commands. The standard shortcuts SHALL include copy, cut, paste, select all, undo, redo, save, find, replace, quick open, command palette, new file, open file, recent projects, symbol search, go to line, select next occurrence, dock toggles, and close editor. `Ctrl+K` SHALL remain available as the base keymap's chord prefix. Vim-only single-key `Ctrl` commands that have no selected Windows action SHALL do nothing in a full editor.
+Windows chezmoi SHALL keep Zed Vim enabled and declare a complete full-editor keymap. Standard Windows/VS Code `Ctrl` actions SHALL override Vim `Ctrl` in every Vim mode. `Ctrl+K` SHALL retain its base-keymap chord prefix. Vim-only single-key `Ctrl` commands without a selected Windows action SHALL do nothing in full editors. Overrides SHALL NOT change unmodified Vim keys, `Escape`, terminal input, menus, panels or other non-editor surfaces. Apply SHALL NOT preserve undeclared keymap entries.
 
-The override SHALL NOT change unmodified Vim keys, `Escape`, terminal input, menus, panels, or other non-editor surfaces. The chezmoi apply operation SHALL converge the declared keymap as complete configuration rather than preserve undeclared keymap entries.
+#### Scenario: Cover standard editor actions
+
+- **WHEN** the full-editor keymap declares standard `Ctrl` shortcuts
+- **THEN** they SHALL include copy, cut, paste, select all, undo, redo, save, find, replace, quick open, command palette, new file, open file, recent projects, symbol search, go to line, select next occurrence, dock toggles and close editor
 
 #### Scenario: Copy from normal mode
 
@@ -341,7 +350,13 @@ The engine SHALL NOT write taskbar pinned-application lists, default application
 
 ### Requirement: Validation before and after apply
 
-Data SHALL be validated against its schema and privilege/ownership invariants before execution. Dry run SHALL report every declared resource as desired or drift, make no persistent or temporary writes, return zero only for full convergence, return nonzero for drift and distinguish execution errors. Apply SHALL test before setting, mutate only drifted resources, confirm each change and propagate native failures by exit code rather than stderr. Installed WinGet discovery SHALL use one initial batch without scope filtering and, only after installs or updates, one fresh batch to verify all changed packages together. Portable executables SHALL resolve from their selected package root or approved PATH resolution, never an assumed WinGet Links directory.
+Data SHALL pass schema and privilege/ownership invariants before execution. Dry run SHALL report every resource as desired or drift, write nothing persistent or temporary, return zero only for full convergence, nonzero for drift and distinguish errors. Apply SHALL test before setting, change only drift, confirm each change and propagate native failures by exit code, not stderr.
+
+#### Scenario: Resolve package executables and installed state
+
+- **WHEN** a run discovers installed WinGet packages or portable executables
+- **THEN** installed discovery SHALL use one initial batch without scope filtering and, only after installs/updates, one fresh batch verifying all changed packages together
+- **AND** portable executables SHALL resolve from their selected package root or approved PATH resolution, never an assumed WinGet Links directory
 
 #### Scenario: Preview a converged workstation
 
@@ -471,7 +486,13 @@ The repository SHALL parse all shipped Windows scripts, the module, every Admini
 
 ### Requirement: Owner-confirmed engine cutover
 
-The PR SHALL contain the engine cutover, hash-protected chezmoi invocation, persisted pwsh interpreter and complete obsolete DSC source deletion. Git history SHALL retain the legacy source for rollback. Only the integrator SHALL dry run or apply against Korolev. Before merge, the integrator SHALL run the dry run and then chezmoi apply from the PR branch, record zero drift or accept every named difference, and confirm post-apply convergence. Source rollback SHALL NOT be represented as restoration of mutated user state. Agents SHALL report only mocked local verification.
+The PR SHALL include engine cutover, hash-protected chezmoi invocation, persisted pwsh interpreter and full obsolete DSC source deletion. Git history SHALL retain legacy rollback source. Only the integrator SHALL dry run/apply on Korolev. Before merge they SHALL dry run then chezmoi apply from the PR branch, record zero drift or accept every named difference and confirm convergence.
+
+#### Scenario: Report cutover verification honestly
+
+- **WHEN** agents report verification or source rollback is described
+- **THEN** agents SHALL report only mocked local verification
+- **AND** source rollback SHALL NOT be represented as restoration of mutated user state
 
 #### Scenario: Review before live acceptance
 
@@ -581,7 +602,7 @@ Korolev SHALL run standalone upstream OMP in Tern against a local Windows checko
 
 ### Requirement: Native language and document tools
 
-Native Korolev SHALL provide Windows Markdown, Python, TypeScript/Svelte, Typst and LaTeX tools/servers used by its agent/editor, plus the Poppler, QPDF, ImageMagick and Pandoc command-line tools for document work. LaTeX SHALL use TeX Live installed per user from its official installer, including latexmk and biber, with TexLab from its official release. Project SDKs and build settings SHALL remain project-owned. Windows SHALL not satisfy native tools through WSL; nixd and C#/Unity servers SHALL not be installed for this role.
+Native Korolev SHALL provide agent/editor Windows Markdown, Python, TypeScript/Svelte, Typst and LaTeX tools/servers plus Poppler, QPDF, ImageMagick and Pandoc CLI tools. LaTeX SHALL use official per-user TeX Live with latexmk/biber and official-release TexLab. Project SDKs/build settings SHALL stay project-owned. Windows SHALL NOT satisfy native tools through WSL or install nixd or C#/Unity servers for this role.
 
 #### Scenario: Diagnose representative work
 

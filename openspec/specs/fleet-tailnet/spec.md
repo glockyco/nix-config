@@ -84,7 +84,7 @@ Korolev SHALL accept key-only OpenSSH Server access to its standard Windows acco
 
 ### Requirement: Declared native fleet access policy
 
-Repository-rendered policy SHALL grant every tailnet node access to declared reachable members, including native Windows Korolev, the Mac, desktop, the second personal desktop desktop-ac and temporary Air. It SHALL generate positive port-22 tests and synthetic unreachable-destination rejection tests. It SHALL contain no email addresses or Tailscale SSH authorization. Reviewed separate test/deploy identities and protected-main acceptance SHALL remain effective; no retired host gate SHALL authorize deployment.
+Rendered policy SHALL grant all tailnet nodes access to declared reachable members: native Korolev, Mac, desktop, second personal desktop desktop-ac and temporary Air. It SHALL generate positive port-22 and synthetic unreachable-destination rejection tests, with no emails or Tailscale SSH authorization. Reviewed separate test/deploy identities and protected-main acceptance SHALL remain effective. No retired host gate SHALL authorize deployment.
 
 #### Scenario: Render the policy
 
