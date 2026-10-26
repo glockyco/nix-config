@@ -74,7 +74,7 @@ jobs:
   openspec:
     permissions:
       contents: read
-    uses: glockyco/omp-agent-setup/.github/workflows/openspec.yml@63ec1de390411d7b99ed3de61b05a88e9dd75bb6 # v0.7.5
+    uses: glockyco/omp-agent-setup/.github/workflows/openspec.yml@8f4244aff44891de4490d1455e2a745e412aa639 # v0.7.6
     with:
       openspec-root: '.'
 

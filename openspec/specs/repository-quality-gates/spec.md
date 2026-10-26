@@ -8,7 +8,7 @@ Define how this repository enforces formatting before a commit and in continuous
 
 ### Requirement: One formatting configuration for both gates
 
-Local and CI formatting SHALL consume the existing single platform-neutral formatter declaration. The PowerShell 7 Windows adapter SHALL use locked native tooling. It SHALL NOT format staged Nix files or invoke WSL, and it SHALL name staged Nix files as left to the Nix formatting checks in CI and on the Mac. Native-only work SHALL not require Nix. Missing tools SHALL fail rather than silently skip. Windows engine checks SHALL use proportional mocked behavior coverage, not mutations of a bespoke checker.
+Local and CI formatting SHALL consume one existing platform-neutral formatter declaration. The PowerShell 7 Windows adapter SHALL use locked native tools, never format staged Nix or invoke WSL, and name staged Nix files as left to CI/Mac Nix formatting checks. Native-only work SHALL not require Nix. Missing tools SHALL fail, not silently skip. Windows engine checks SHALL use proportional mocked behavior coverage, not bespoke-checker mutations.
 
 #### Scenario: Stage native-only work
 
@@ -39,7 +39,7 @@ Local and CI formatting SHALL consume the existing single platform-neutral forma
 
 ### Requirement: The commit hook is installed from the development shell
 
-Darwin SHALL retain pinned Nix-shell hook installation. Windows SHALL retain explicit repository-local native development bootstrap and lefthook installation, running all hooks and tooling under PowerShell 7. Only the separate minimal fresh-machine pwsh/Git/chezmoi prerequisite bootstrap MAY use Windows PowerShell 5.1. Re-entry SHALL not duplicate hooks or silently retire unrelated hooks. Git clients outside the declared environment SHALL resolve pinned tools or fail with an actionable diagnostic. No hook SHALL invoke WSL.
+Darwin SHALL retain pinned Nix-shell hook installation. Windows SHALL retain explicit repository-local native bootstrap and lefthook installation with PowerShell 7 hooks/tooling. Only the separate minimal fresh-machine pwsh/Git/chezmoi bootstrap MAY use Windows PowerShell 5.1. Re-entry SHALL not duplicate hooks or silently retire unrelated hooks. Outside clients SHALL resolve pinned tools or fail with an actionable diagnostic. No hook SHALL invoke WSL.
 
 #### Scenario: Bootstrap native development
 
@@ -89,7 +89,13 @@ Every declared Nix system SHALL retain a pinned shell; native Windows SHALL use 
 
 ### Requirement: Each gate runs its host's Nix implementation
 
-Darwin gates SHALL use the Mac's declared Nix implementation, and generic Linux CI SHALL use its explicitly declared CI implementation without resolving a retired host. Windows SHALL use one native PowerShell 7 CI job named `check (windows-latest)` with applicable shared formatting, built-in JSON-schema validation, PSScriptAnalyzer, parser checks, privilege invariants and mocked Pester behavior tests. CI SHALL neither provision WinGet/DSC providers nor apply workstation resources. Pester 5 and PSScriptAnalyzer SHALL be pinned development dependencies installed through PSResourceGet into repository-local or runner-local paths, never an owner's global profile. Failed or skipped required checks SHALL not count as successful Windows acceptance.
+Darwin gates SHALL use the Mac's declared Nix. Generic Linux CI SHALL use its explicit CI implementation without resolving retired hosts. Windows SHALL use one native PowerShell 7 job named `check (windows-latest)` with applicable shared formatting, built-in JSON-schema validation, PSScriptAnalyzer, parser checks, privilege invariants and mocked Pester behavior tests. CI SHALL neither provision WinGet/DSC providers nor apply workstation resources.
+
+#### Scenario: Provision isolated Windows test tools
+
+- **WHEN** development or CI installs Pester 5 and PSScriptAnalyzer
+- **THEN** they SHALL be pinned dependencies installed through PSResourceGet into repository-local or runner-local paths, never an owner's global profile
+- **AND** failed or skipped required checks SHALL NOT count as successful Windows acceptance
 
 #### Scenario: Run proportional Windows CI
 
@@ -116,7 +122,13 @@ Darwin gates SHALL use the Mac's declared Nix implementation, and generic Linux 
 
 ### Requirement: One package-set instance per system
 
-The repository SHALL instantiate one Nixpkgs package set per supported system. Host configurations and flake outputs for that system SHALL consume that instance. A host SHALL NOT instantiate a second package set. The overlay SHALL derive each local package attribute from a matching `packages/<name>/package.nix` directory, with package-set-only arguments. It SHALL explicitly re-export pinned external packages and apply the NixOS options override. Modules SHALL consume repository packages from that package set. A host package check SHALL assert the derivation that the host installs. Package outputs and program checks SHALL use `meta.platforms` rather than a host-kind branch to select supported systems.
+The repository SHALL instantiate one Nixpkgs package set per supported system, consumed by its host configurations, modules and flake outputs. Hosts SHALL NOT instantiate another set. The overlay SHALL derive local attributes from matching `packages/<name>/package.nix` directories with package-set-only arguments, explicitly re-export pinned external packages and apply the NixOS options override.
+
+#### Scenario: Select package derivations and platforms
+
+- **WHEN** host package checks, package outputs and program checks are generated
+- **THEN** the host package check SHALL assert the derivation the host installs
+- **AND** package outputs and program checks SHALL select supported systems through `meta.platforms`, not a host-kind branch
 
 #### Scenario: Compare a shared artifact
 
@@ -166,7 +178,14 @@ The portable local/CI OpenSpec gate SHALL reject archived changes with incomplet
 
 ### Requirement: One typed host declaration per host
 
-Each host SHALL describe its identity through one standalone `hosts/<name>/host.nix` declaration validated by the module system, importing facts shared with user templates from home/.chezmoidata/\*.toml rather than duplicating them. The directory name SHALL set the host name. The declaration SHALL set the interactive user name, system, kind, builder capacity, and tailnet facts. The flake SHALL evaluate that declaration alone and expose the result through the read-only `fleet.hosts` registry. Each configuration SHALL receive the same facts through a typed `fleet.hosts` option. A module that needs a fact about its own host SHALL read `config.host`; a module that needs a fact about a peer SHALL read `config.fleet.hosts`. No host fact SHALL travel to a Nix module as an untyped argument; chezmoi SHALL read the same shared TOML facts directly.
+Each host SHALL have one standalone module-validated `hosts/<name>/host.nix` identity declaration. Its directory SHALL set the host name. It SHALL declare interactive user name, system, kind, builder capacity and tailnet facts, importing shared user-template facts from home/.chezmoidata/\*.toml without duplication. The flake SHALL evaluate it alone and expose a read-only `fleet.hosts` registry. Each configuration SHALL receive the same facts through a typed `fleet.hosts` option.
+
+#### Scenario: Consume typed host facts
+
+- **WHEN** a Nix module or chezmoi template consumes host facts
+- **THEN** a module SHALL read its own facts through `config.host` and peer facts through `config.fleet.hosts`
+- **AND** no host fact SHALL reach a Nix module as an untyped argument
+- **AND** chezmoi SHALL read the same shared TOML facts directly
 
 #### Scenario: A host omits a required value
 
@@ -244,7 +263,12 @@ A platform baseline SHALL contain only configuration required by every host of t
 
 ### Requirement: One declaration owns each host fact
 
-Each host-specific fact SHALL have one declaration: name is the host directory key; facts shared with user configuration live in home/.chezmoidata/\*.toml and remaining system facts in hosts/<name>/host.nix. Nix SHALL validate them through config.host and config.fleet.hosts; chezmoi SHALL read the same shared TOML. Every generated file and check SHALL derive values from that owner. A check SHALL NOT repeat a machine name, user name, durable path, application, or resource value. The temporary Air integration SHALL remain role-owned until its removal under issue #17; it SHALL NOT gain a durable host endpoint declaration.
+Each host fact SHALL have one owner: directory key for name, home/.chezmoidata/\*.toml for shared user facts, hosts/<name>/host.nix for remaining system facts. Nix SHALL validate through config.host/config.fleet.hosts. Chezmoi SHALL read the shared TOML. Generated files and checks SHALL derive from that owner. Checks SHALL NOT repeat machine names, user names, durable paths, applications or resource values.
+
+#### Scenario: Retain temporary Air ownership
+
+- **WHEN** the temporary Air integration remains pending removal under issue #17
+- **THEN** it SHALL remain role-owned and SHALL NOT gain a durable host endpoint declaration
 
 #### Scenario: Change a screenshot directory
 
@@ -288,7 +312,13 @@ The Mac SHALL retain its pinned registry and disabled legacy channels, using Det
 
 ### Requirement: Installed and activation programs are packages with behavior checks
 
-Each reusable repository-owned user, setup or modify-filter program SHALL be a package under `packages/<name>/package.nix`, with `meta.description`, `meta.mainProgram`, and `meta.platforms`. Each SHALL have `packages/<name>/tests.nix` that runs the built program against doubles or fixtures and asserts observable behavior. Python programs SHALL also run their stdlib unit tests during package builds. A module SHALL NOT interpolate a source script path into activation. Thin chezmoi scripts SHALL invoke installed packaged helpers; a modify filter SHALL change only declared keys and preserve unrelated app state.
+Each reusable repository-owned user, setup or modify-filter program SHALL be a `packages/<name>/package.nix` package with `meta.description`, `meta.mainProgram` and `meta.platforms`, plus sibling `tests.nix` running the built program against doubles or fixtures and asserting behavior. Python package builds SHALL also run stdlib unit tests. Modules SHALL NOT interpolate source script paths into activation.
+
+#### Scenario: Invoke packaged user helpers
+
+- **WHEN** a thin chezmoi script or modify filter runs
+- **THEN** thin scripts SHALL invoke installed packaged helpers
+- **AND** modify filters SHALL change only declared keys and preserve unrelated app state
 
 #### Scenario: Inspect a program a host installs
 

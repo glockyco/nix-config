@@ -19,7 +19,7 @@ No updater merges or activates anything. The dependency automation repository ow
 
 ## OpenSpec
 
-CI validates with the version that omp-agent-setup's [reusable workflow](https://github.com/glockyco/omp-agent-setup/blob/main/.github/workflows/openspec.yml) installs, called at a full commit in [check.yml](../../.github/workflows/check.yml). Windows pins the same version in [windows/npm](../../windows/npm/package.json) for its commit hook. The Mac's CLI comes from the `llm-agents` input and moves with the Nix inputs. After an OpenSpec update, regenerate the adapters and release the plugin in [omp-agent-setup](https://github.com/glockyco/omp-agent-setup#release-flow), then advance the workflow commit and the Windows pin together.
+CI validates with the version that omp-agent-setup's [reusable workflow](https://github.com/glockyco/omp-agent-setup/blob/main/.github/workflows/openspec.yml) installs, called at a full commit in [check.yml](../../.github/workflows/check.yml). Windows pins the same version in [windows/npm](../../windows/npm/package.json) and its [consumer declaration](../../windows/workstation.json) for the commit hook. Renovate leaves this npm dependency manual because the workflow, consumer declaration and integrity lock must advance together. The Mac's CLI comes from the `llm-agents` input and moves with the Nix inputs. After an OpenSpec update, regenerate the adapters and release the plugin in [omp-agent-setup](https://github.com/glockyco/omp-agent-setup#release-flow), then advance the workflow commit, Windows consumer declaration, npm manifest and lock together. Run strict validation of active and archived artifacts with the new CLI before merging.
 
 ## Plannotator
 

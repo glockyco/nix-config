@@ -10,7 +10,12 @@ Provides authenticated remote work on the personal Windows desktop for commands,
 
 Desktop setup SHALL use supported native Windows tools and explicit operator actions. Nix activation on the Pro SHALL NOT apply desktop settings. The employer Windows configuration SHALL remain unchanged. Credentials, SSH private keys and agent state SHALL remain outside the repository and Nix store.
 
-The selected desktop account is the owner's existing local administrator account. Its SSH sessions have enabled administrator privileges without an additional elevation prompt. Agents SHALL use the approved SSH session without adding a separate elevation mechanism, scheduled task, or agent service. Privileged service changes SHALL still require explicit local approval. This approval requirement is an operator policy, not a technical restriction of the account's token.
+#### Scenario: Use the selected desktop account
+
+- **WHEN** an agent uses the owner's existing local administrator account over SSH
+- **THEN** its session has enabled administrator privileges without an additional elevation prompt
+- **AND** agents SHALL use that approved session without adding a separate elevation mechanism, scheduled task or agent service
+- **AND** privileged service changes SHALL still require explicit local approval as operator policy, not as a technical restriction of the account's token
 
 #### Scenario: Provision the personal desktop
 
@@ -111,7 +116,11 @@ The Pro SHALL have a usable RDP client path to desktop with verified server iden
 
 Authorized sources SHALL transfer files through SFTP, which is the accepted transfer mechanism. Working repositories SHALL remain local to the desktop. SMB is not an accepted capability of this change: no new share SHALL be added, no guest access SHALL be enabled, and the platform's existing administrative shares SHALL be recorded rather than exercised.
 
-Because the selected account is a local administrator, whole-volume access over SMB follows from the platform's administrative shares and SHALL NOT be reported as a bounded-folder guarantee. The implementation SHALL record which shares exist, SHALL NOT add a redundant explicit whole-volume share alongside them, and SHALL leave unrelated existing shares in place.
+#### Scenario: Inspect administrator file-sharing access
+
+- **WHEN** the selected local administrator account can reach whole volumes through platform administrative shares
+- **THEN** that reach SHALL NOT be reported as a bounded-folder guarantee
+- **AND** the implementation SHALL record existing shares, add no redundant explicit whole-volume share and leave unrelated existing shares in place
 
 #### Scenario: Transfer a file without corruption
 
@@ -147,7 +156,13 @@ Desktop SSH, RDP and SMB SHALL retain effective approved-tailnet restrictions. N
 
 ### Requirement: Explicit operational recovery
 
-The operating procedure SHALL identify installed versions, owned settings, local recovery access, key revocation, and service rollback. Repeating setup SHALL NOT duplicate keys, shares, or firewall rules. Service recovery SHALL preserve repositories and agent state. Desktop remote access SHALL return after an approved reboot without automatic agent execution. The desktop's Tailscale node key expiry SHALL be disabled and verified in node status. The operating procedure SHALL identify this coordination-server setting as state outside the repository's host and policy declarations.
+The procedure SHALL identify installed versions, owned settings, local recovery access, key revocation and service rollback. Repeated setup SHALL NOT duplicate keys, shares or firewall rules. Service recovery SHALL preserve repositories and agent state. Remote access SHALL return after an approved reboot without automatic agent execution.
+
+#### Scenario: Retain desktop tailnet enrollment
+
+- **WHEN** the desktop's Tailscale node status is inspected
+- **THEN** its node key expiry SHALL be disabled and verified
+- **AND** the procedure SHALL identify this coordination-server setting as state outside repository host and policy declarations
 
 #### Scenario: Repeat or reverse setup
 

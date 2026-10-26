@@ -84,7 +84,7 @@ An updated result SHALL identify the host, actual official executable path and v
 
 ### Requirement: Official release recovery boundaries
 
-The guidance SHALL report update failure or rejected acceptance honestly and inspect the error before retrying. Supported official-installer recovery SHALL select a recorded accepted binary release explicitly and repeat acceptance. It SHALL preserve mutable application and plugin-manager state, SHALL not invoke the removed source updater, and SHALL not claim Nix rollback changes the official executable or installed plugin. Plugin recovery SHALL use only the supported manager procedure established by the plugin publication change.
+Guidance SHALL report update failure or rejected acceptance honestly and inspect errors before retrying. Official-installer recovery SHALL explicitly select a recorded accepted binary release and repeat acceptance. It SHALL preserve mutable application/plugin-manager state, never invoke the removed source updater or claim Nix rollback changes the official executable/installed plugin. Plugin recovery SHALL use only the supported manager procedure established by the plugin publication change.
 
 #### Scenario: Fresh-session smoke rejects the installed release
 

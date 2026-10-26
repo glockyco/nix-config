@@ -8,9 +8,13 @@ Define how packaged Darwin activation concerns apply state that Nix cannot link 
 
 ### Requirement: Activation changes host state only where it differs from the declaration
 
-System activation SHALL retain power/Rosetta ownership; chezmoi change scripts SHALL invoke packaged helpers for layouts, handlers, shortcuts and Terminal fonts, and modify templates SHALL merge declared Karabiner settings. Each invoked concern SHALL compare before writing, mutate only declared differences and report current or changed state. Reapplying unchanged user source SHALL perform no user setup writes.
+System activation SHALL own power/Rosetta. Chezmoi change scripts SHALL invoke packaged layout, handler, shortcut and Terminal-font helpers. Modify templates SHALL merge declared Karabiner settings. Each invoked concern SHALL compare before writing, mutate only declared differences and report current or changed state. Reapplying unchanged user source SHALL perform no user setup writes.
 
-The user-helper scenarios below apply when a source change schedules the helper or an operator explicitly reruns it for recovery. Unchanged change scripts SHALL NOT be treated as an external-preference drift scheduler.
+#### Scenario: Schedule a user helper
+
+- **WHEN** a source change schedules a user helper or an operator explicitly reruns it for recovery
+- **THEN** the user-helper scenarios below apply
+- **AND** unchanged change scripts SHALL NOT act as an external-preference drift scheduler
 
 #### Scenario: Second activation of the same generation
 
