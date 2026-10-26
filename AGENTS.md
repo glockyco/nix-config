@@ -8,8 +8,6 @@ Use OpenSpec for permanent behavior changes. Read all artifacts of the selected 
 
 The personal plugin owns the OpenSpec adapters, and its workflow commands are `/personal:opsx-*`. Do not run `openspec init` here.
 
-[docs/plans](docs/plans/INDEX.md) holds old plans. Keep them until a reviewed change replaces them.
-
 ## Boundaries
 
 - Nix owns packages and host configuration on macOS, never OMP. OMP comes from its official installer on macOS and from Tern on Windows, and the plugin manager installs its plugins. Do not add wrappers, launcher flags, patched sources or activation steps that install, update or reconfigure OMP.

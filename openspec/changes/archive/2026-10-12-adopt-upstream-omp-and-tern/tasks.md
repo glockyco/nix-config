@@ -57,5 +57,5 @@
 
 ## 7. Complete clean cutover and archive in fleet order
 
-- [x] 7.1 After all applicable gates pass, retire unused updater sources and verify that no active implementation, spec or manual depends on the wrapper, updater, patch pins, activation-managed Herdr integration or bare OpenSpec aliases. On 2026-10-12 the repository outside OpenSpec history and `docs/plans` had no references to an OMP wrapper, updater, pin or source generation, and both hosts ran the official binary.
+- [x] 7.1 After all applicable gates pass, retire unused updater sources and verify that no active implementation, spec or manual depends on the wrapper, updater, patch pins, activation-managed Herdr integration or bare OpenSpec aliases. On 2026-10-12 the repository outside OpenSpec history and legacy plans had no references to an OMP wrapper, updater, pin or source generation, and both hosts ran the official binary.
 - [x] 7.2 Record final evidence, run strict validation and archive. Validated with `openspec validate adopt-upstream-omp-and-tern --strict` before archiving on 2026-10-12.
