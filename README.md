@@ -85,7 +85,7 @@ See [Korolev Windows](docs/operations/korolev-windows.md).
 
 ## Network
 
-Tailscale connects the Mac, Korolev, the personal Windows desktop and the borrowed MacBook Air. The policy is generated from [lib/tailnet-policy.nix](lib/tailnet-policy.nix). Pull requests test it, and the `tailnet-policy` workflow applies it after `check` passes on `main`. [Tailnet policy authorization](docs/operations/tailnet-policy.md) covers repairing the workflow's access to Tailscale.
+Tailscale connects the Mac, Korolev, the personal Windows desktop, the [second personal desktop](docs/operations/desktop-ac.md) and the borrowed MacBook Air. The policy is generated from [lib/tailnet-policy.nix](lib/tailnet-policy.nix). Pull requests test it, and the `tailnet-policy` workflow applies it after `check` passes on `main`. [Tailnet policy authorization](docs/operations/tailnet-policy.md) covers repairing the workflow's access to Tailscale.
 
 SSH endpoints come from [home/private_dot_ssh/config.tmpl](home/private_dot_ssh/config.tmpl). They pin host keys and never fall back to passwords.
 
