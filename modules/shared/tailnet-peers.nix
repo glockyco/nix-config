@@ -5,6 +5,12 @@
     purpose = "Durable personal desktop.";
   };
 
+  desktop-ac = {
+    tag = "tag:desktop-ac";
+    lifecycle = "durable";
+    purpose = "Second personal Windows desktop, configured by hand.";
+  };
+
   korolev = {
     tag = "tag:korolev";
     lifecycle = "durable";
