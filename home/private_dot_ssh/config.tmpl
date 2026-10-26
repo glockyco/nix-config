@@ -4,7 +4,7 @@
 # Endpoint blocks precede defaults because OpenSSH uses the first value.
 {{ $windowsEndpoints := list -}}
 {{ if or (and $mac $host.roles.desktop) $windows }}{{ $windowsEndpoints = append $windowsEndpoints "desktop" }}{{ end -}}
-{{ if and $mac $host.roles.desktop }}{{ $windowsEndpoints = append $windowsEndpoints "korolev" }}{{ end -}}
+{{ if and $mac $host.roles.desktop }}{{ $windowsEndpoints = concat $windowsEndpoints (list "korolev" "desktop-ac") }}{{ end -}}
 {{ range $name := $windowsEndpoints -}}
 {{ $endpoint := index $.ssh $name -}}
 Host {{ $name }}-batch

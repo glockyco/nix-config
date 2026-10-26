@@ -1,0 +1,1 @@
+{{ $endpoint := index .ssh "desktop-ac" }}{{ $endpoint.hostName }},{{ $endpoint.hostName }}.{{ .ssh.tailnetDnsDomain }} {{ $endpoint.publicKey }}

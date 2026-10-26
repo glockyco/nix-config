@@ -18,7 +18,7 @@ def main():
     facts = json.loads((root / "facts.json").read_text())
     host = facts["hosts"][host_name]
     platform = host["platforms"]["darwin"]
-    windows = endpoint in ("desktop", "korolev")
+    windows = endpoint in ("desktop", "korolev", "desktop-ac")
     if windows:
         require(host["roles"]["desktop"], f"{endpoint} endpoint without desktop role")
         destination = facts["ssh"][endpoint]
