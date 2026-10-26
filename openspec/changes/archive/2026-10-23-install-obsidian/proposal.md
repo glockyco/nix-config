@@ -11,7 +11,7 @@ Work and personal notes are moving into one Obsidian vault that Obsidian Sync ke
 - Put Obsidian's command-line client on PATH as `obsidian`: on the Mac through the command the cask links into Homebrew's `bin`, and on Korolev by adding the installation directory, which holds the `Obsidian.com` terminal redirector, to the user PATH. Neither depends on Obsidian's own command registration.
 - Declare gitleaks on Korolev as the user-scope `Gitleaks.Gitleaks` WinGet package, for the commit hook of the vault's Git backup.
 - Document the owner steps that stay manual: turning on Obsidian's command-line interface on each machine.
-- Mark the knowledge-management plan in `docs/plans/` superseded, because this setup replaces its desktop-only vault without a sync layer.
+- Mark the original knowledge-management plan superseded, because this setup replaces its desktop-only vault without a sync layer.
 
 ## Capabilities
 
@@ -25,6 +25,6 @@ Work and personal notes are moving into one Obsidian vault that Obsidian Sync ke
 
 ## Impact
 
-Targets `home/.chezmoidata/hosts.toml`, `modules/fleet/host.nix`, a new module under `modules/roles/darwin/desktop/`, `flake-modules/checks.nix`, `windows/workstation.json`, `windows/Workstation.Validation.ps1`, a new `docs/operations/obsidian.md`, `docs/operations/korolev-windows.md`, the README and `docs/plans/`.
+Targets `home/.chezmoidata/hosts.toml`, `modules/fleet/host.nix`, a new module under `modules/roles/darwin/desktop/`, `flake-modules/checks.nix`, `windows/workstation.json`, `windows/Workstation.Validation.ps1`, a new `docs/operations/obsidian.md`, `docs/operations/korolev-windows.md`, the README and the legacy plans.
 
 Korolev applies as the standard user without elevation. The Mac needs a `darwin-switch` with the owner's password. Obsidian's vaults, account, Sync connection, settings and plugins stay owned by Obsidian. The vault itself, its Git repository and its commit hook live outside this repository.

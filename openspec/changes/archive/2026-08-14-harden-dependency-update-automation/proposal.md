@@ -10,7 +10,7 @@ The workstation runtime is reproducible, but its weekly update pull request does
 - Require the real Darwin and Linux CI jobs before any main-branch merge, including administrator merges.
 - Verify that the packaged OpenSpec executable matches its Nix package version, generated adapters are current, and archived tasks are complete.
 - Add concise repository guidance and one dependency-update operations runbook.
-- Classify and track the existing `docs/plans/` files so the worktree has no ambiguous permanent state.
+- Classify and track the existing legacy plans so the worktree has no ambiguous permanent state.
 - Preserve manual workstation activation, activation verification, the real OMP release smoke, and Nix-generation rollback.
 
 ## Capabilities

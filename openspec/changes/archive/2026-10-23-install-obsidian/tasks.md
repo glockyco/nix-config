@@ -15,7 +15,7 @@
 
 ## 3. Superseded plan
 
-- [x] 3.1 Mark `docs/plans/2026-08-09-knowledge-management-plan.md` superseded, pointing to the notes application contract, and move its entry in `docs/plans/INDEX.md` to the superseded historical records, and verify the format check passes.
+- [x] 3.1 Mark the original knowledge-management plan superseded, pointing to the notes application contract, and move its index entry to the superseded historical records, and verify the format check passes.
 
 ## 4. Acceptance
 

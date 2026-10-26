@@ -121,7 +121,7 @@ At `542be05`, `nix eval --impure --json -f /tmp/fleet-drv.nix` returned Mac `/ni
 
 ## Final review
 
-Outside `docs/plans/` and `openspec/`, every Air reference is in the deletion set, `README.md`, or `docs/operations/container-runtime.md`. The Air role's `default.nix` lists that set for issue #17. `packages/windows-configuration/` has no Zen `removeAttrs` compensation; its one `removeAttrs` drops release data from `passthru.declaration`. Homebrew casks and Dock applications derive from `host.darwin.applications`, and no module under `modules/` repeats a host name, user name, home path, time zone, or locale literal. Every relative link in `README.md`, `AGENTS.md`, `docs/operations/`, and the OMP update skill resolves.
+Outside legacy plans and `openspec/`, every Air reference is in the deletion set, `README.md`, or `docs/operations/container-runtime.md`. The Air role's `default.nix` lists that set for issue #17. `packages/windows-configuration/` has no Zen `removeAttrs` compensation. Its one `removeAttrs` drops release data from `passthru.declaration`. Homebrew casks and Dock applications derive from `host.darwin.applications`, and no module under `modules/` repeats a host name, user name, home path, time zone, or locale literal. Every relative link in `README.md`, `AGENTS.md`, `docs/operations/`, and the OMP update skill resolves.
 
 ## CI evidence
 

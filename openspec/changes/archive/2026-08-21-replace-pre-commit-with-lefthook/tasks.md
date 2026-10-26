@@ -36,4 +36,4 @@
 
 - [x] 6.1 Re-run the measurement from task 1.2 and confirm every output reports 0.
 - [x] 6.2 Confirm the Darwin job compiles neither toolchain, and record the new duration against the 5 h 18 min baseline.
-- [x] 6.3 Update `docs/architecture/personal-omp-environment.md` where it describes the hook mechanism for this repository. Leave `docs/plans/` alone. The `consolidate-planning-home` change owns those files.
+- [x] 6.3 Update `docs/architecture/personal-omp-environment.md` where it describes the hook mechanism for this repository. Leave legacy plans alone. The `consolidate-planning-home` change owns those files.

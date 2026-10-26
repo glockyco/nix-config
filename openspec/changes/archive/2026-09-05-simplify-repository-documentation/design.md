@@ -32,7 +32,7 @@ Alternative: generate an architecture manual. Rejected because generated volume 
 
 ### 3. Require concrete justification for an operating-procedure exception
 
-Keep operating documentation minimal. This rule does not apply to unfinished plans under `docs/plans/`. Retain a focused file under `docs/operations/` only if it contains necessary repository-specific bootstrap or recovery steps that make the README unclear. State its task and prerequisites, link it from the README, and keep no duplicated command sequence.
+Keep operating documentation minimal. This rule does not apply to unfinished legacy plans. Retain a focused file under `docs/operations/` only if it contains necessary repository-specific bootstrap or recovery steps that make the README unclear. State its task and prerequisites, link it from the README, and keep no duplicated command sequence.
 
 Review WSL import, Windows administrator boundaries, builder credentials, external authorization, and destructive container recovery explicitly. Preserve required ordering, backup conditions, account scope, and manual steps. Do not turn these operations into activation logic to eliminate prose.
 

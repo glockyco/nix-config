@@ -62,7 +62,7 @@ CI proves evaluation and deterministic package contracts. After merge, a maintai
 
 Add a short root `AGENTS.md` that points to the architecture, update runbook, active OpenSpec change, and release gates. Add `docs/operations/dependency-updates.md` with the ownership table, schedules, native commands, expected CI contexts, App credential rotation, activation, smoke, and rollback.
 
-Classify every existing `docs/plans/` file in its index. Commit retained historical plans, move live implementation work into OpenSpec, and remove only documents confirmed obsolete by their content. This changes ownership, not their historical claims.
+Classify the existing legacy plans in their index. Commit retained historical plans, move live implementation work into OpenSpec, and remove only documents confirmed obsolete by their content. This changes ownership, not their historical claims.
 
 ## Risks / Trade-offs
 
