@@ -105,7 +105,7 @@ Applications without a version in `workstation.json` stay current through their 
 
 To change a pinned version, an archive, a PowerShell module or a setting, edit `workstation.json` and run the dry run, then `chezmoi apply`. Archives and modules move to a new release when its version, URL and SHA-256 change together. The engine installs a module release beside older ones and never removes them. Pins exist only where a named consumer needs a version. Bun follows `omp-agent-setup/.bun-version` and OpenSpec follows the omp-agent-setup workflow.
 
-To update the npm tools, edit `windows/npm/package.json`, then run `npm install --package-lock-only --ignore-scripts` in `windows/npm`. The next apply reinstalls the closure with `npm ci` when the lock changes.
+To update the npm tools, edit `windows/npm/package.json`, then run `npm install --package-lock-only --ignore-scripts` in `windows/npm`. The next apply reinstalls the closure with `npm ci` when the lock changes. Its `.npmrc` makes npm resolve only releases at least 3 days old, the age Renovate waits for, because Renovate cannot hold back the releases a lock file refresh pulls in.
 
 ## When something goes wrong
 
