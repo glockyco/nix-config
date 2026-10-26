@@ -74,7 +74,7 @@ jobs:
   openspec:
     permissions:
       contents: read
-    uses: glockyco/omp-agent-setup/.github/workflows/openspec.yml@aa97a3febee50f00ee7e4e43a81edc211ad7f8d7 # v0.4.0
+    uses: glockyco/omp-agent-setup/.github/workflows/openspec.yml@63ec1de390411d7b99ed3de61b05a88e9dd75bb6 # v0.7.5
     with:
       openspec-root: '.'
 
@@ -92,7 +92,7 @@ jobs:
       # login otherwise. The Numtide cache is what actually matters here, since
       # it serves the llm-agents packages that would otherwise build from
       # source. `modules/shared/binary-caches.nix` is the source for these values.
-      - uses: DeterminateSystems/determinate-nix-action@4d65ea9cab522b6d9f29a170aed23ededc1b27af # v3
+      - uses: DeterminateSystems/determinate-nix-action@92957199488000b908fdad19f63711000965d8f3 # v3
         with:
           extra-conf: |
             extra-substituters = https://cache.numtide.com
@@ -111,7 +111,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: DeterminateSystems/determinate-nix-action@4d65ea9cab522b6d9f29a170aed23ededc1b27af # v3
+      - uses: DeterminateSystems/determinate-nix-action@92957199488000b908fdad19f63711000965d8f3 # v3
         with:
           extra-conf: |
             extra-substituters = https://cache.numtide.com
@@ -143,14 +143,14 @@ jobs:
       # Cache only hash-reviewed archives and exact-version engine modules.
       # Restores have no fallback keys. Bootstrap validates their contents.
       - name: Cache locked development archives
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/native-dev-archives
           key: windows-dev-archives-${{ hashFiles('windows/dev/dependencies.lock.json') }}
 
       - name: Cache pinned local engine modules
         if: needs.changes.outputs.windows == 'true'
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ github.workspace }}/.git/engine-modules
           key: windows-engine-modules-pwsh7-${{ hashFiles('windows/dev/engine-dependencies.ps1') }}
