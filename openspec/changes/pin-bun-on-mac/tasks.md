@@ -8,5 +8,5 @@
 
 ## 2. Delivery
 
-- [ ] 2.1 Ask for an interactive `darwin-switch` from this branch. Verify in a fresh login shell that `bun --version` prints 1.4.4, that `bun run check:toolchain` passes in omp-agent-setup, and that OMP's commit tool runs the repository's hooks.
+- [x] 2.1 Ask for an interactive `darwin-switch` from this branch. Verify in a fresh login shell that `bun --version` prints 1.4.4, that `bun run check:toolchain` passes in omp-agent-setup, and that OMP's commit tool runs the repository's hooks.
 - [ ] 2.2 With explicit authorization, open a PR, merge after the required checks pass, and archive the change.
