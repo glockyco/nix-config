@@ -287,6 +287,9 @@
       // lib.optionalAttrs (supports pkgs.markdown-oxide) {
         inherit (markdownTests) markdownOxideVersion;
       }
+      // lib.optionalAttrs (supports pkgs.bun-bin) {
+        inherit (pkgs.callPackage ../packages/bun-bin/tests.nix { }) bunVersion;
+      }
       // lib.optionalAttrs (supports pkgs.roslyn-language-server) {
         inherit (roslynTests) roslynInitialization;
       }
