@@ -207,7 +207,7 @@
       ],
       "scope": "user",
       "versionPolicy": "pinned",
-      "version": "1.3.13",
+      "version": "1.4.4",
       "consumer": "omp-agent-setup/.bun-version",
       "executable": "bun.exe",
       "installerType": "zip"
