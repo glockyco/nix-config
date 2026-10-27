@@ -10,6 +10,7 @@ with pkgs;
   gh
   ghq
   uv
+  bun-bin
   herdr
   openspec
   plannotator
