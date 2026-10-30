@@ -14,6 +14,7 @@ with pkgs;
   herdr
   openspec
   plannotator
+  bitwarden-cli
   markdown-oxide
   nixd
   pyright

@@ -12,6 +12,18 @@
       "versionPolicy": "present"
     },
     {
+      "name": "package bitwarden cli",
+      "kind": "winget",
+      "id": "Bitwarden.CLI",
+      "roles": [
+        "vault-cli"
+      ],
+      "scope": "user",
+      "versionPolicy": "present",
+      "executable": "bw.exe",
+      "installerType": "zip"
+    },
+    {
       "name": "package browser",
       "kind": "winget",
       "id": "Zen-Team.Zen-Browser",
