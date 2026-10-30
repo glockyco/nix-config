@@ -16,6 +16,6 @@
 
 ## 3. Operator acceptance
 
-- [ ] 3.1 Activate the Mac interactively, retain the previous generation and verify chezmoi state.
-- [ ] 3.2 Apply Korolev interactively as the standard account, then verify engine convergence and chezmoi state.
-- [ ] 3.3 Verify platform-owned executable paths and `bw --version` in fresh native shells on both hosts after installation.
+- [x] 3.1 Activate the Mac interactively, retain the previous generation and verify chezmoi state.
+- [x] 3.2 Apply Korolev interactively as the standard account, then verify engine convergence and chezmoi state.
+- [x] 3.3 Verify platform-owned executable paths and `bw --version` in fresh native shells on both hosts after installation.
