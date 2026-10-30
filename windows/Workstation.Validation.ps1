@@ -42,6 +42,7 @@ function Assert-WorkstationData {
         'native-git' = 'Git.Git'
         'source-manager' = 'twpayne.chezmoi'
         'tailnet' = 'Tailscale.Tailscale'
+        'vault-cli' = 'Bitwarden.CLI'
         'javascript-runtime' = 'OpenJS.NodeJS.LTS'
         'bun-runtime' = 'Oven-sh.Bun'
         'python-runtime' = 'Python.Python.3.13'

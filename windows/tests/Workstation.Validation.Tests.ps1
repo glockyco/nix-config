@@ -106,6 +106,30 @@ Describe 'Workstation declaration invariants' {
             { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*Missing required application role*editor*'
         }
 
+        It 'declares a user-scoped vault CLI with present policy' {
+            $vault = $script:data.applications | Where-Object id -EQ 'Bitwarden.CLI'
+            $vault.kind | Should -Be 'winget'
+            $vault.scope | Should -Be 'user'
+            $vault.versionPolicy | Should -Be 'present'
+            $vault.roles | Should -Contain 'vault-cli'
+            { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Not -Throw
+        }
+
+        It 'requires the vault CLI role' {
+            $script:data.applications = @($script:data.applications | Where-Object id -NE 'Bitwarden.CLI')
+            { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*Missing required application role*vault-cli*'
+        }
+
+        It 'rejects reassigned vault CLI ownership' {
+            ($script:data.applications | Where-Object id -EQ 'Bitwarden.CLI').id = 'Example.Vault'
+            { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*unexpected owner*vault-cli*'
+        }
+
+        It 'rejects machine-scoped vault CLI delivery' {
+            ($script:data.applications | Where-Object id -EQ 'Bitwarden.CLI').scope = 'machine'
+            { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*Unapproved machine application*Bitwarden.CLI*'
+        }
+
         It 'rejects duplicate and reassigned role ownership' {
             $script:data.applications[0].roles += 'browser'
             { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*unexpected owner*browser*'

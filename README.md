@@ -137,6 +137,8 @@ Obsidian holds the notes vault on the Mac and Korolev. See [Obsidian](docs/opera
 
 ## Secrets
 
+The workstation package declarations install the official Bitwarden CLI. The [personal OMP plugin](https://github.com/glockyco/omp-agent-setup) owns vault use, including profiles, authentication, unlock caching, entry approvals, secret delivery and model-bound scrubbing, so workstation activation leaves vault state untouched.
+
 Chezmoi's built-in age decrypts the Mac-only [encrypted sources](home/dot_config/private_credentials/) with `~/.config/sops/age/keys.txt`. [credentials.toml](home/.chezmoidata/credentials.toml) lists the recipient and the credentials, which land in `~/.config/credentials/` with mode 0600. The plaintext persists across reboots, so keep the disk and local backups encrypted. Never commit, print or export the identity or the decrypted values. Windows skips these sources. There is no offline recovery recipient yet.
 
 To preview a change without decrypting credentials, run `chezmoi --override-data '{"checkMode":true}' diff`. Never use that override for a real apply.
