@@ -28,7 +28,8 @@ Plannotator comes from the `plannotator-packages` input in [flake.nix](../../fla
 1. Review the vendor revision and its Plannotator version.
 1. Change the commit in `inputs.plannotator-packages.url` and run `nix flake update plannotator-packages`.
 1. Review the URL and the lock diff together, then build and activate.
-1. In a fresh OMP session, check `/plannotator-annotate <path>`, `/plannotator-last` and `/plannotator-cancel`.
+1. Advance Plannotator's OMP plugin to the same version when it is published: change the version in the [README's OMP block](../../README.md#omp) and run that install command on each host.
+1. In a fresh OMP session, check `/plannotator-annotate <path>` and `/plannotator-last`.
 
 ## After an update
 

@@ -17,7 +17,8 @@
     "secrets/*",
     "home/encrypted_*",
     "home/**/encrypted_*",
-    "home/.chezmoitemplates/windows-apps/zen/**"
+    "home/.chezmoitemplates/windows-apps/zen/**",
+    "home/dot_plannotator/modify_config.json"
   ],
   "formatters": [
     {

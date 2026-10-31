@@ -83,7 +83,7 @@ omp config set skills.ignoredSkills '["defuddle","json-canvas","knap"]'
 pwsh -NoProfile -Command { $env:PLANNOTATOR_MINIMAL = '1'; & ([scriptblock]::Create((Invoke-RestMethod https://plannotator.ai/install.ps1))) -Version v0.28.7 -VerifyAttestation }
 ```
 
-Plannotator needs the environment variable because its installer ignores the `-Minimal` switch. Without minimal mode it also installs vendor skills and commands. The [README](../../README.md#omp) explains the Obsidian skills and the ignored ones.
+Install Plannotator's OMP plugin with the command at the end of the [README's OMP block](../../README.md#omp). Plannotator needs the environment variable because its installer ignores the `-Minimal` switch. Without minimal mode it also installs vendor skills and commands. The [README](../../README.md#omp) explains the Obsidian skills and the ignored ones.
 
 Update the plugins with `omp plugin marketplace update` followed by `omp plugin upgrade`, then start a new session.
 
