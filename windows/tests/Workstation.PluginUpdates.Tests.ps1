@@ -37,6 +37,17 @@ Describe 'Personal plugin scheduled task convergence' {
             Should -Invoke Register-ScheduledTask -Times 0 -Exactly
         }
 
+        It 'accepts scheduler default elision and account-name normalization but rejects disabled tasks' {
+            $account = [Security.SecurityElement]::Escape([Security.Principal.WindowsIdentity]::GetCurrent().Name)
+            [xml]$xml = $script:desired
+            $sid = $xml.Task.Triggers.LogonTrigger.UserId
+            $script:installed = $script:desired.Replace('<Enabled>true</Enabled>', '').Replace('<StopAtDurationEnd>false</StopAtDurationEnd>', '').Replace('<RunLevel>LeastPrivilege</RunLevel>', '')
+            $script:installed = $script:installed.Replace("<UserId>$sid</UserId></LogonTrigger>", "<UserId>$account</UserId></LogonTrigger>")
+            Test-WorkstationSetting -Resource $script:resource | Should -BeTrue
+            $script:installed = $script:installed.Replace('<Settings>', '<Settings><Enabled>false</Enabled>')
+            Test-WorkstationSetting -Resource $script:resource | Should -BeFalse
+        }
+
         It 'repairs noninteractive execution and installs the current runner' {
             $script:installed = $script:desired.Replace('InteractiveToken', 'S4U')
             Test-WorkstationSetting -Resource $script:resource | Should -BeFalse
