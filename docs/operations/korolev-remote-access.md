@@ -35,6 +35,8 @@ The script's `$authorizedKeys` holds one labelled public key per source. To add 
 
 Agents use `ssh korolev-batch '<command>'`. It runs without a terminal, preserves stdin and returns the remote exit status. `sftp korolev-batch` transfers files.
 
+An SSH session has no access to Windows Credential Manager, so Git Credential Manager cannot sign in to GitHub and `git push` fails. OMP fails there as soon as it loads plugins, as `omp -p` and `omp plugin` do, with `EUNKNOWN` on the package files under `~\.omp\plugins`. Run such commands in Tern's desktop session instead: `tern new session <name> -- pwsh -NoProfile -File <script>` starts the script there, and the script writes its output to a file that `korolev-batch` reads. End the session with `tern kill session <name>`.
+
 Terminal sessions are for people. Win32-OpenSSH always reports exit status 0 for them ([#1737](https://github.com/PowerShell/Win32-OpenSSH/issues/1737)) and strips double quotes from a command passed with `ssh -t`. A terminal session also ends as soon as its stdin closes.
 
 The Mac's entries silence the client's post-quantum warning, because the in-box Windows OpenSSH has no post-quantum key exchange ([#2433](https://github.com/PowerShell/Win32-OpenSSH/issues/2433)).
