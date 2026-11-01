@@ -21,3 +21,9 @@ The Windows runner rebuilds PATH from persisted user and machine values and reso
 Windows waits until the user is logged on. This is required because SSH sessions cannot reliably access OMP plugin files. A held marketplace handle can still exhaust the bounded retries, leaving a readable failure for the next hourly attempt.
 
 Mac activation needs a password. Build and check the generation without running darwin-switch.
+
+## Acceptance
+
+Korolev applied PR branch revision `5c77e14` in Tern with a temporary checkout override. The engine dry run converged, and the registered task uses InteractiveToken with logon and hourly triggers. Its first scheduled run at 16:00 on 2026-11-01 logged a successful upgrade to personal 0.11.9. A manually started run also finished with task result 0.
+
+A fresh OMP 18.15.0 session in Tern loaded personal 0.11.9 and returned `HOST_AUTO_FRESH_SESSION_OK`. The native engine suite passed all 134 Pester tests. The README's Mac checks passed, including the system build and 66 build-plan outputs without forbidden source builds.
