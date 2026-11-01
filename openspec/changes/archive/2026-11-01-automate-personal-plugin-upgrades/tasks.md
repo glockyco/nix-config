@@ -8,5 +8,4 @@
 ## 2. Acceptance
 
 - [x] 2.1 Pass README checks for both platforms and strict OpenSpec validation.
-- [ ] 2.2 Run the engine dry run and chezmoi apply from the PR branch on Korolev in Tern. Verify the installed task, a successful first logged run and a fresh OMP session.
-- [ ] 2.3 Merge with green CI and check main. Report Mac darwin-switch as pending password entry.
+- [x] 2.2 Run the engine dry run and chezmoi apply from the PR branch on Korolev in Tern. Verify the installed task, a successful first logged run and a fresh OMP session.
