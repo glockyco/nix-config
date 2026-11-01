@@ -25,6 +25,7 @@ try {
 
     $enginePaths = @(
         'Workstation.psm1', 'Workstation.Settings.ps1', 'Workstation.Delivery.ps1', 'Workstation.Validation.ps1',
+        'Workstation.PluginUpdates.ps1', 'personal-plugin-upgrade.ps1',
         'workstation.ps1', 'bootstrap.ps1', 'check-workstation.ps1', 'PSScriptAnalyzerSettings.psd1'
     ) | ForEach-Object { Join-Path $PSScriptRoot $_ }
     . (Join-Path $PSScriptRoot 'dev/formatting.ps1')

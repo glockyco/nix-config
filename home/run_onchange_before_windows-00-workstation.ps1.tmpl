@@ -1,7 +1,7 @@
 {{- if and (eq .chezmoi.os "windows") (hasKey (index .hosts .host).platforms "windows") -}}
 {{- $platform := index (index .hosts .host).platforms "windows" -}}
 {{- $root := .chezmoi.sourceDir | dir -}}
-{{- $inputs := list "windows/workstation.json" "windows/workstation.schema.json" "windows/Workstation.psm1" "windows/Workstation.Settings.ps1" "windows/Workstation.Delivery.ps1" "windows/Workstation.Validation.ps1" "windows/workstation.ps1" "windows/managed-applications.json" "windows/npm/package.json" "windows/npm/package-lock.json" -}}
+{{- $inputs := list "windows/workstation.json" "windows/workstation.schema.json" "windows/Workstation.psm1" "windows/Workstation.Settings.ps1" "windows/Workstation.Delivery.ps1" "windows/Workstation.Validation.ps1" "windows/Workstation.PluginUpdates.ps1" "windows/personal-plugin-upgrade.ps1" "windows/workstation.ps1" "windows/managed-applications.json" "windows/npm/package.json" "windows/npm/package-lock.json" -}}
 #!/usr/bin/env pwsh
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false

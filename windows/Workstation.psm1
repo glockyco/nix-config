@@ -3,6 +3,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Workstation.Settings.ps1')
 . (Join-Path $PSScriptRoot 'Workstation.Delivery.ps1')
 . (Join-Path $PSScriptRoot 'Workstation.Validation.ps1')
+. (Join-Path $PSScriptRoot 'Workstation.PluginUpdates.ps1')
 
 function Invoke-WorkstationNative {
     param([Parameter(Mandatory)][string] $Command, [string[]] $Arguments = @())

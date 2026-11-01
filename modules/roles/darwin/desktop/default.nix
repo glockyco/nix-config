@@ -8,6 +8,7 @@
     ./fonts.nix
     ./homebrew.nix
     ./login-applications.nix
+    ./personal-plugin-updates.nix
     ./rectangle.nix
     ./zen.nix
     ./chezmoi-resources.nix

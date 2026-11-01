@@ -28,7 +28,7 @@ function Invoke-CoreNative([string]$Command, [string[]]$Arguments, [switch]$Fail
   else { Assert-Core ($code -eq 0) ("$Command exited ${code}: " + ($output -join "`n")) }
   return ($output -join "`n")
 }
-$engineInputs = @('windows/workstation.json', 'windows/workstation.schema.json', 'windows/Workstation.psm1', 'windows/Workstation.Settings.ps1', 'windows/Workstation.Delivery.ps1', 'windows/Workstation.Validation.ps1', 'windows/workstation.ps1', 'windows/managed-applications.json', 'windows/npm/package.json', 'windows/npm/package-lock.json')
+$engineInputs = @('windows/workstation.json', 'windows/workstation.schema.json', 'windows/Workstation.psm1', 'windows/Workstation.Settings.ps1', 'windows/Workstation.Delivery.ps1', 'windows/Workstation.Validation.ps1', 'windows/Workstation.PluginUpdates.ps1', 'windows/personal-plugin-upgrade.ps1', 'windows/workstation.ps1', 'windows/managed-applications.json', 'windows/npm/package.json', 'windows/npm/package-lock.json')
 $fakeEngine = @'
 param([switch]$Apply)
 $ErrorActionPreference = 'Stop'

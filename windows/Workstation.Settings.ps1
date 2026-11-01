@@ -298,6 +298,7 @@ function Test-WorkstationSetting {
         'appearance' { return Test-WorkstationAppearance -Resource $Resource }
         'animation' { return (Get-WorkstationAnimationEnabled) -eq $Resource.enabled }
         'taskbarVisibility' { return Test-WorkstationTaskbarVisibility -Resource $Resource }
+        'personalPluginUpdate' { return Test-WorkstationPluginUpdateTask -Resource $Resource }
         default { throw "Unknown setting kind: $($Resource.kind)" }
     }
 }
@@ -313,6 +314,7 @@ function Set-WorkstationSetting {
             if ((Get-WorkstationAnimationEnabled) -ne $Resource.enabled) { Set-WorkstationAnimationEnabled -Enabled $Resource.enabled }
         }
         'taskbarVisibility' { Set-WorkstationTaskbarVisibility -Resource $Resource }
+        'personalPluginUpdate' { Set-WorkstationPluginUpdateTask -Resource $Resource }
         default { throw "Unknown setting kind: $($Resource.kind)" }
     }
 }

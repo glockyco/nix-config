@@ -86,7 +86,7 @@ pwsh -NoProfile -Command { $env:PLANNOTATOR_MINIMAL = '1'; & ([scriptblock]::Cre
 
 Install Plannotator's OMP plugin with the command at the end of the [README's OMP block](../../README.md#omp). Plannotator needs the environment variable because its installer ignores the `-Minimal` switch. Without minimal mode it also installs vendor skills and commands. The [README](../../README.md#omp) explains the Obsidian skills, the ignored ones and why memory is off.
 
-Update the plugins with `omp plugin marketplace update` followed by `omp plugin upgrade`, then start a new session.
+The workstation engine installs the `OMP personal plugin upgrade` scheduled task for the current user. It runs at logon and hourly, only while logged on, without elevation. It refreshes the personal marketplace and upgrades the user-scoped personal plugin. Marketplace `EPERM` failures get four attempts, 15 seconds apart, because another process can hold plugin cache handles. Other failures stop the run. Read `%LOCALAPPDATA%\WindowsConfiguration\personal-plugin-upgrade.log` for command output and results, or run the task from Task Scheduler to retry now. New sessions load the release. Running sessions keep theirs. Other plugins remain manual as described in the [README](../../README.md#omp).
 
 ## TeX Live
 
