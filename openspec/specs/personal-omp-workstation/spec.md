@@ -6,29 +6,6 @@ This specification defines how each workstation runs the official upstream OMP w
 
 ## Requirements
 
-### Requirement: Mutable runtime state boundary
-
-Configuration/activation SHALL preserve writable OMP and plugin-manager state and SHALL not replace it with store symlinks or reconcile its registry. Cross-platform transfer SHALL be limited to architecture.md, product.md and style.md after source sessions finish, with owner reconciliation into exact-path native sharpshooter banks, plus the nonsecret litellm model definition. Authentication/session databases, browser profiles, queue and state.json SHALL never be imported.
-
-#### Scenario: Activate over an existing OMP profile
-
-- **WHEN** workstation configuration activates on a host with existing OMP runtime state
-- **THEN** authentication, configuration, sessions, history and caches remain at their mutable paths
-- **AND** activation does not overwrite or delete those files
-
-#### Scenario: Port project decisions after sessions finish
-
-- **WHEN** a project's WSL sessions have ended and the owner approves its decision migration
-- **THEN** only architecture.md, product.md and style.md are copied or reconciled into the bank computed from the exact resolved native checkout path
-- **AND** a fresh native session discovers those decisions
-- **AND** queue, state.json, transcripts and authentication/session databases are not imported
-
-#### Scenario: Reproduce nonsecret provider configuration
-
-- **WHEN** the owner prepares Windows models.yml for the migrated SCCH provider
-- **THEN** it defines litellm with baseUrl https://vllm-api.scch.at/v1 while preserving other native definitions
-- **AND** the owner establishes authentication natively, without copying secrets or authentication files
-
 ### Requirement: Representative language-server matrix
 
 The Mac SHALL retain its declared C#, Python, TypeScript/JavaScript, Svelte, Nix, Markdown and LaTeX/BibTeX servers. Native Korolev SHALL use C3's Windows language/document tools, including native TexLab, with no nixd or C#/Unity server for this role. Project SDKs SHALL remain project-owned. Plugin overrides SHALL select only the intended primary server/root behavior; no server SHALL resolve through the retired Linux environment.
@@ -189,3 +166,28 @@ The Mac SHALL provide `bun` in managed login shells at the version that the Wind
 
 - **WHEN** the Bun version in `windows/workstation.json` differs from the Mac package's version
 - **THEN** the flake checks fail and name both versions
+
+### Requirement: Memory off
+
+The documented OMP installation on each workstation SHALL set `memory.backend` to `off`, so that no session receives rules a model inferred from earlier chats.
+
+#### Scenario: Start a session in a folder with a memory bank
+
+- **WHEN** a fresh OMP session starts in a folder whose sharpshooter bank holds entries
+- **THEN** its system prompt carries none of them
+
+### Requirement: Preserved mutable runtime state
+
+Configuration/activation SHALL preserve writable OMP and plugin-manager state and SHALL not replace it with store symlinks or reconcile its registry. Cross-platform transfer SHALL be limited to the nonsecret litellm model definition. Memory banks, authentication/session databases and browser profiles SHALL never be imported.
+
+#### Scenario: Activate over an existing OMP profile
+
+- **WHEN** workstation configuration activates on a host with existing OMP runtime state
+- **THEN** authentication, configuration, sessions, history and caches remain at their mutable paths
+- **AND** activation does not overwrite or delete those files
+
+#### Scenario: Reproduce nonsecret provider configuration
+
+- **WHEN** the owner prepares Windows models.yml for the migrated SCCH provider
+- **THEN** it defines litellm with baseUrl https://vllm-api.scch.at/v1 while preserving other native definitions
+- **AND** the owner establishes authentication natively, without copying secrets or authentication files
