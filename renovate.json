@@ -9,6 +9,15 @@
   },
   "packageRules": [
     {
+      "description": "Keep every update review-only. Windows changes need the engine dry run and chezmoi apply on Korolev from the pull request branch before merging, as AGENTS.md requires.",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "lockFileMaintenance"
+      ],
+      "automerge": false
+    },
+    {
       "matchManagers": [
         "github-actions"
       ],
