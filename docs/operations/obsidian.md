@@ -4,6 +4,25 @@ Obsidian holds the notes vault on the Mac and Korolev. The Mac installs it from 
 
 Both machines start Obsidian at sign-in, because Sync runs only while Obsidian runs. The Mac starts it only for a graphical login, so an SSH login leaves it closed.
 
+## Git
+
+Both machines keep a Git clone of the vault, `~/notes` on the Mac and `~/src/github.com/glockyco/notes` on Korolev, with `https://github.com/glockyco/notes.git` as origin. Obsidian Sync carries edits between them, so a change can reach both clones. Pull with rebase before committing, which drops a change upstream already has. The vault's pre-commit hook scans for secrets with gitleaks through lefthook, which both machines install.
+
+Obsidian Sync does not carry dotfiles, so turn a synced folder into a clone in place:
+
+```sh
+cd ~/notes
+git init -b main
+git remote add origin https://github.com/glockyco/notes.git
+git fetch origin
+git reset origin/main
+git branch --set-upstream-to=origin/main main
+git checkout -- .gitignore .gitattributes .lefthook.yml .archive
+lefthook install
+```
+
+`git status` then lists only the edits Sync brought that upstream lacks.
+
 ## Command line
 
 The `obsidian` command talks to the running app and works only after its command-line interface is turned on. Turn it on once on each machine:

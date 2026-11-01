@@ -29,6 +29,10 @@
     packages = [
       pkgs.openssh
       pkgs.roslyn-language-server
+      # The notes vault has no development shell, so its pre-commit secret scan
+      # needs both on PATH, as Korolev's workstation declaration provides.
+      pkgs.gitleaks
+      pkgs.lefthook
       (pkgs.darwin-switch.override {
         configurationCheckout = config.host.paths.configurationCheckout;
         darwinRebuild = inputs.nix-darwin.packages.${pkgs.stdenv.hostPlatform.system}.darwin-rebuild;
