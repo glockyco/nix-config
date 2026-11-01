@@ -34,7 +34,7 @@ function Test-WorkstationPluginUpdateTask {
     [xml]$desired = Get-WorkstationPluginUpdateTaskXml
     $namespace = [Xml.XmlNamespaceManager]::new($desired.NameTable)
     $namespace.AddNamespace('t', $desired.DocumentElement.NamespaceURI)
-    # Export adds scheduler defaults. Compare every declared leaf and reject extra triggers/actions.
+    # Export omits schema defaults and resolves the logon SID to an account name.
     foreach ($node in $desired.SelectNodes('//t:*[not(*)]', $namespace)) {
         $parts = [Collections.Generic.List[string]]::new()
         $current = $node
@@ -43,7 +43,20 @@ function Test-WorkstationPluginUpdateTask {
             $current = $current.ParentNode
         }
         $matchedNodes = $actual.SelectNodes('/' + ($parts -join '/'), $namespace)
-        if ($matchedNodes.Count -ne 1 -or $matchedNodes[0].InnerText -cne $node.InnerText) { return $false }
+        if ($matchedNodes.Count -gt 1) { return $false }
+        $value = if ($matchedNodes.Count -eq 1) { $matchedNodes[0].InnerText } else {
+            switch ($node.LocalName) {
+                'Enabled' { 'true' }
+                'StopAtDurationEnd' { 'false' }
+                'RunLevel' { 'LeastPrivilege' }
+                default { return $false }
+            }
+        }
+        if ($node.LocalName -eq 'UserId' -and $value -notmatch '^S-\d-') {
+            try { $value = [Security.Principal.NTAccount]::new($value).Translate([Security.Principal.SecurityIdentifier]).Value }
+            catch { return $false }
+        }
+        if ($value -cne $node.InnerText) { return $false }
     }
     return $actual.Task.Triggers.ChildNodes.Count -eq 2 -and $actual.Task.Actions.ChildNodes.Count -eq 1 -and
         $actual.Task.Principals.ChildNodes.Count -eq 1 -and $actual.Task.Actions.Context -ceq 'User'
