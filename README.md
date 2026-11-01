@@ -113,10 +113,11 @@ omp plugin install --scope user personal@glockyco
 omp plugin marketplace add kepano/obsidian-skills
 omp plugin install --scope user obsidian@obsidian-skills
 omp config set skills.ignoredSkills '["defuddle","json-canvas","knap"]'
+omp config set memory.backend off
 omp plugin install @plannotator/pi-extension@0.28.42
 ```
 
-The Obsidian skills teach agents the Markdown, Bases and command line of the [notes vault](docs/operations/obsidian.md). The three ignored skills cover web clipping, template rendering and canvases, which nothing here uses, and would otherwise add their descriptions to every session.
+The Obsidian skills teach agents the Markdown, Bases and command line of the [notes vault](docs/operations/obsidian.md). The three ignored skills cover web clipping, template rendering and canvases, which nothing here uses, and would otherwise add their descriptions to every session. Memory stays off, because it gives every session rules that a model inferred from earlier chats, mixed across all projects started in the same folder. Each project's repository and the notes vault hold its decisions instead.
 
 Plannotator's OMP plugin provides `/plannotator-annotate`, `/plannotator-last` and the tool agents use to open reviews. `omp plugin upgrade` updates only marketplace plugins, so this one stays at its installed version until the install command runs with a new one. chezmoi turns Plannotator's sharing off in `~/.plannotator/config.json` and leaves the file's other settings alone.
 
