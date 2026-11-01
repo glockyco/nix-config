@@ -33,19 +33,13 @@ Both supported hosts SHALL use unmodified vendor Plannotator with explicit platf
 - **AND** each selection's source/release/version is recorded
 - **AND** other tool selections remain unchanged
 
-### Requirement: Preserve existing verification and runtime contracts
+### Requirement: Verified Plannotator advancement
 
-Explicit platform source/release selection SHALL preserve required native gates and the annotation-only adapter contract. Maintenance SHALL introduce no custom CI caching, approval controls, automatic activation, mutable source checkout or Linux fallback. Windows SHALL retain its existing explicit official installer rather than gain another installer. Documentation SHALL distinguish pins from guaranteed build reuse. Tab closure SHALL not imply cancellation.
+Explicit platform source/release selection SHALL preserve required native gates. Maintenance SHALL introduce no custom CI caching, automatic activation, mutable source checkout or Linux fallback. Windows SHALL retain its existing explicit official installer rather than gain another installer. Documentation SHALL distinguish pins from guaranteed build reuse.
 
 #### Scenario: Verify the final stock selection
 
 - **WHEN** maintenance is submitted for acceptance
 - **THEN** evidence verifies the updater behavior and both native vendor selections
 - **AND** ordered native checks and Mac build-plan/system-build gates pass where applicable
-- **AND** visual-feedback release retains browser, activation, network, cancellation and recovery gates
-
-#### Scenario: Recover a pending review
-
-- **WHEN** a browser tab closes while its review remains pending
-- **THEN** /plannotator-cancel remains available to stop the owned review
-- **AND** no automatic tab-close settlement, approval mode, new timeout or fallback is promised
+- **AND** a Plannotator update is checked in a fresh OMP session with `/plannotator-annotate` and `/plannotator-last`

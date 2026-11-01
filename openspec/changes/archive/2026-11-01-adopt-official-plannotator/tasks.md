@@ -8,8 +8,8 @@
 
 ## 2. Hosts
 
-- [ ] 2.1 On the Mac, install the plugin with the README command and apply chezmoi. Verify `omp plugin list` and the configuration file.
-- [ ] 2.2 After omp-agent-setup 0.10.0, verify in a fresh OMP session on the Mac that `/plannotator-annotate` and `/plannotator-last` come from Plannotator's plugin.
+- [x] 2.1 On the Mac, install the plugin with the README command and apply chezmoi. Verify `omp plugin list` and the configuration file.
+- [x] 2.2 After omp-agent-setup 0.10.0, verify in a fresh OMP session on the Mac that `/plannotator-annotate` and `/plannotator-last` come from Plannotator's plugin.
 
 ## Workflow follow-up
 
