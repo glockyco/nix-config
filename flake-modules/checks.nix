@@ -178,6 +178,40 @@
             pkgs.runCommand "check-${host.name}-tailnet" { } "touch $out";
         }
         // lib.optionalAttrs host.roles.desktop {
+          personal-plugin-updates =
+            let
+              agent = hostConfig.launchd.user.agents.personal-plugin-upgrade.serviceConfig;
+              fakeOmp = pkgs.writeShellScript "fake-omp" ''
+                printf '%s\n' "$*" >> "$COMMAND_LOG"
+                if [ "$1 $2" = "plugin marketplace" ]; then
+                  exit "''${REFRESH_RESULT:-0}"
+                fi
+              '';
+            in
+            assert agent.StartInterval == 3600;
+            assert agent.RunAtLoad;
+            assert agent.LimitLoadToSessionType == "Aqua";
+            assert agent.StandardOutPath == "${user.home}/Library/Logs/personal-plugin-upgrade.log";
+            assert agent.StandardErrorPath == agent.StandardOutPath;
+            pkgs.runCommand "check-${host.name}-personal-plugin-updates" { } ''
+              mkdir -p "$TMPDIR/home/.local/bin"
+              cp ${fakeOmp} "$TMPDIR/home/.local/bin/omp"
+              substitute ${builtins.head agent.ProgramArguments} "$TMPDIR/runner" \
+                --replace-fail ${lib.escapeShellArg user.home} "$TMPDIR/home"
+              export COMMAND_LOG="$TMPDIR/commands"
+              ${pkgs.bash}/bin/bash "$TMPDIR/runner"
+              printf '%s\n' 'plugin marketplace update glockyco' \
+                'plugin upgrade --scope user personal@glockyco' > "$TMPDIR/expected"
+              diff "$TMPDIR/expected" "$COMMAND_LOG"
+              rm "$COMMAND_LOG"
+              if REFRESH_RESULT=23 ${pkgs.bash}/bin/bash "$TMPDIR/runner"; then
+                echo "Failed marketplace refresh was accepted" >&2
+                exit 1
+              fi
+              printf '%s\n' 'plugin marketplace update glockyco' > "$TMPDIR/expected"
+              diff "$TMPDIR/expected" "$COMMAND_LOG"
+              touch "$out"
+            '';
           desktop-batch-configuration = pkgs.callPackage ../checks/ssh-endpoint-config-check.nix {
             inherit host renderedHome;
             endpoint = "desktop";

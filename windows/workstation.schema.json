@@ -628,6 +628,27 @@
                 "minLength": 1
               },
               "kind": {
+                "const": "personalPluginUpdate"
+              },
+              "taskName": {
+                "const": "OMP personal plugin upgrade"
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "taskName"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
                 "const": "registry"
               },
               "path": {

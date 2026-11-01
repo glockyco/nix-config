@@ -843,6 +843,11 @@
       "valueName": "Settings",
       "index": 8,
       "value": 2
+    },
+    {
+      "name": "personal plugin automatic updates",
+      "kind": "personalPluginUpdate",
+      "taskName": "OMP personal plugin upgrade"
     }
   ]
 }

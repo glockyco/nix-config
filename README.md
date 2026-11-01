@@ -121,13 +121,9 @@ The Obsidian skills teach agents the Markdown, Bases and command line of the [no
 
 Plannotator's OMP plugin provides `/plannotator-annotate`, `/plannotator-last` and the tool agents use to open reviews. `omp plugin upgrade` updates only marketplace plugins, so this one stays at its installed version until the install command runs with a new one. chezmoi turns Plannotator's sharing off in `~/.plannotator/config.json` and leaves the file's other settings alone.
 
-Update OMP and the plugins independently, then start a new session:
+The personal plugin updates automatically at login and hourly through the Mac user launch agent and Korolev's interactive scheduled task. Each run refreshes only the `glockyco` marketplace and upgrades `personal@glockyco` in user scope. New sessions load the release. Running sessions keep theirs. On the Mac, read `~/Library/Logs/personal-plugin-upgrade.log`. See [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator) for its task and log.
 
-```sh
-omp update
-omp plugin marketplace update
-omp plugin upgrade
-```
+Update the Mac's OMP executable with `omp update`. Other marketplace plugins remain manual: refresh their marketplace with `omp plugin marketplace update <marketplace>` and upgrade the selected plugin with `omp plugin upgrade --scope user <plugin>`. Start a new session afterward.
 
 To return to an earlier OMP release, reinstall with `--binary --ref <tag>`. A bad plugin release is replaced by a newer one, never by editing the installed cache. On Windows, Tern installs and updates OMP, see [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator).
 

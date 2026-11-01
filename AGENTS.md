@@ -21,4 +21,4 @@ The personal plugin owns the OpenSpec adapters, and its workflow commands are `/
 
 ## Before merging
 
-Run the README checks for every platform a change touches. A Windows change also needs the engine's dry run and `chezmoi apply` on Korolev from the PR branch. An OMP or plugin change needs a fresh session in Tern. Keep previous generations until the checks pass. Do not add another updater or scheduler, and keep Nix dependency updates review-only.
+Run the README checks for every platform a change touches. A Windows change also needs the engine's dry run and `chezmoi apply` on Korolev from the PR branch. An OMP or plugin change needs a fresh session in Tern. Keep previous generations until the checks pass. Keep dependency updates on the existing automation and Nix dependency updates review-only. The personal plugin's user jobs are declared in the host layers, so do not add a competing scheduler.
