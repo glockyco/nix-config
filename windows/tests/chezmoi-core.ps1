@@ -177,6 +177,7 @@ $history = if ($Interactive) { (Get-PSReadLineOption).AddToHistoryHandler } else
   $expectedHelper = '!"' + $target.Replace('\', '/') + '/AppData/Local/Programs/Git/mingw64/bin/git-credential-manager.exe"'
   $helperValues = @($helper -split "`r?`n")
   Assert-Core ($helperValues.Count -eq 3 -and $helperValues[0] -eq 'fixture-system-helper' -and $helperValues[1] -eq '' -and $helperValues[2] -eq $expectedHelper) 'native GCM must reset the system helper and quote its one absolute executable, including spaces'
+  Assert-Core ((Get-CoreGit 'credential.credentialStore') -ceq 'dpapi') 'native GCM must encrypt credentials for both desktop and SSH logons'
   $gitHubEmail = '11704293+glockyco@users.noreply.github.com'
   $workEmail = 'johann.glock@scch.at'
   # Each entry is a path below the profile, its origin remote ('' for none) and the expected identity.
