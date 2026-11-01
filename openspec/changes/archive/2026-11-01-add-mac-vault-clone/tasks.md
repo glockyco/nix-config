@@ -6,7 +6,7 @@
 
 ## 2. Host
 
-- [ ] 2.1 Run `darwin-switch` on the Mac, run `lefthook install` in `~/notes`, and verify a test commit there runs gitleaks.
+- [x] 2.1 Run `darwin-switch` on the Mac, run `lefthook install` in `~/notes`, and verify a test commit there runs gitleaks.
 
 ## Workflow follow-up
 
