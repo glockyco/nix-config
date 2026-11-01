@@ -35,7 +35,11 @@ The script's `$authorizedKeys` holds one labelled public key per source. To add 
 
 Agents use `ssh korolev-batch '<command>'`. It runs without a terminal, preserves stdin and returns the remote exit status. `sftp korolev-batch` transfers files.
 
-An SSH session has no access to Windows Credential Manager, so Git Credential Manager cannot sign in to GitHub and `git push` fails. OMP fails there as soon as it loads plugins, as `omp -p` and `omp plugin` do, with `EUNKNOWN` on the package files under `~\.omp\plugins`. Run such commands in Tern's desktop session instead: `tern new session <name> -- pwsh -NoProfile -File <script>` starts the script there, and the script writes its output to a file that `korolev-batch` reads. End the session with `tern kill session <name>`.
+Git HTTPS authentication works in SSH and desktop sessions through GCM's current-user DPAPI store. Complete the first sign-in locally before unattended work. Credentials stay encrypted in application-owned runtime files, outside chezmoi. Windows Credential Manager's default vault does not support SSH network logons. The [GCM credential store reference](https://github.com/git-ecosystem/git-credential-manager/blob/main/docs/credstores.md) explains both stores.
+
+OMP still needs Tern's desktop session when it loads plugins. sshd's inherited RedirectionGuard mitigation rejects the user-created plugin junctions as untrusted mount points, even though the cache files are readable directly. Changing symbolic-link evaluation or file ACLs does not fix that boundary. Keep the mitigation enabled and do not run the plugin manager elevated.
+
+Run plugin-loading commands through `tern new session <name> -- pwsh -NoProfile -File <script>`. The script writes its output to a file that `korolev-batch` reads. End the session with `tern kill session <name>`.
 
 Terminal sessions are for people. Win32-OpenSSH always reports exit status 0 for them ([#1737](https://github.com/PowerShell/Win32-OpenSSH/issues/1737)) and strips double quotes from a command passed with `ssh -t`. A terminal session also ends as soon as its stdin closes.
 

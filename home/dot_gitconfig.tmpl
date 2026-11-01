@@ -45,6 +45,8 @@
 [credential]
     helper =
     helper = {{ printf "!\"%s/%s/%s\"" ($platform.home | replace "\\" "/") $platform.gitDirectory $platform.gcmHelper | quote }}
+    # Credential Manager's Windows vault rejects SSH network logons.
+    credentialStore = dpapi
 [credential "https://git.overleaf.com"]
     provider = generic
 {{ end -}}
