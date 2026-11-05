@@ -23,6 +23,8 @@ Host facts live in `hosts/<name>/host.nix`, typed by [modules/fleet/host.nix](mo
 
 [Shared TOML facts](home/.chezmoidata/) feed both the Nix host declarations and the chezmoi templates. Chezmoi writes regular files. The Zed and Karabiner filters keep settings they do not declare.
 
+The Mac's application inventory lives in [hosts.toml](home/.chezmoidata/hosts.toml). Its [typed fields](modules/fleet/host.nix) declare Homebrew casks, Mac App Store apps, existing bundles, Dock positions and login starts. App Store apps require signing in to the App Store before activation. macOS may refuse `mas install` for an app never obtained with that account. Obtain it in the App Store first, then rerun activation. Removing an App Store record does not uninstall the app.
+
 ## Develop
 
 ### macOS

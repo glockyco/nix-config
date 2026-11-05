@@ -1,14 +1,21 @@
 {
   config,
   inputs,
+  lib,
+  pkgs,
   ...
 }:
 
 let
   inherit (config.host) username;
+  masApplications = builtins.filter (
+    application: application.masId != null
+  ) config.host.darwin.applications;
 in
 {
   imports = [ inputs.nix-homebrew.darwinModules.nix-homebrew ];
+
+  environment.systemPackages = lib.optional (masApplications != [ ]) pkgs.mas;
 
   # nix-homebrew manages the `/opt/homebrew` installation and disables `brew update-self`.
   nix-homebrew = {
@@ -22,12 +29,16 @@ in
     mutableTaps = true;
   };
 
-  # nix-darwin declares installed casks via a generated Brewfile.
+  # nix-darwin declares casks and Mac App Store apps via a generated Brewfile.
   homebrew = {
     enable = true;
 
     casks = map (application: application.cask) (
       builtins.filter (application: application.cask != null) config.host.darwin.applications
+    );
+
+    masApps = builtins.listToAttrs (
+      map (application: lib.nameValuePair application.masName application.masId) masApplications
     );
 
     onActivation = {
