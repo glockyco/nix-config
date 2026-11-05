@@ -43,3 +43,7 @@ Build and validate the new generation without activation, including checking the
 - `nix build .#darwinConfigurations.macbook-pro.system` passed.
 - `nix eval --json .#darwinConfigurations.macbook-pro.config.homebrew.masApps` returned `{"Keynote":409183694}`.
 - No activation, App Store sign-in or app installation was run.
+
+## Delivery
+
+Implementation is committed as `47900a5` on `feat/keynote-app-store-inventory`. Activate from an interactive terminal with `cd ~/.config/nix-darwin && darwin-switch`, after meeting the App Store prerequisites above. Enter the password when prompted. The branch has not been pushed, and the change remains unarchived.
