@@ -67,6 +67,8 @@
                 application:
                 {
                   cask = null;
+                  masId = null;
+                  masName = null;
                   appPath = null;
                   dockPosition = null;
                   startAtLogin = false;
@@ -178,6 +180,20 @@
             pkgs.runCommand "check-${host.name}-tailnet" { } "touch $out";
         }
         // lib.optionalAttrs host.roles.desktop {
+          applications =
+            let
+              applications = host.darwin.applications;
+              casks = builtins.filter (application: application.cask != null) applications;
+              masApps = builtins.filter (application: application.masId != null) applications;
+              systemPackages = map (package: package.drvPath) hostConfig.environment.systemPackages;
+            in
+            assert hostConfig.homebrew.enable;
+            assert map (cask: cask.name) hostConfig.homebrew.casks == map (app: app.cask) casks;
+            assert
+              hostConfig.homebrew.masApps
+              == builtins.listToAttrs (map (app: lib.nameValuePair app.masName app.masId) masApps);
+            assert masApps == [ ] || builtins.elem pkgs.mas.drvPath systemPackages;
+            pkgs.runCommand "check-${host.name}-applications" { } "touch $out";
           personal-plugin-updates =
             let
               agent = hostConfig.launchd.user.agents.personal-plugin-upgrade.serviceConfig;

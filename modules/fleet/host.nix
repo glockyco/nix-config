@@ -136,6 +136,18 @@ in
                 description = "Homebrew cask that installs this application.";
               };
 
+              masId = mkOption {
+                type = types.nullOr types.ints.positive;
+                default = null;
+                description = "Mac App Store ID that installs this application.";
+              };
+
+              masName = mkOption {
+                type = nullableString;
+                default = null;
+                description = "Mac App Store name used in the generated Brewfile.";
+              };
+
               appPath = mkOption {
                 type = types.nullOr absolutePath;
                 default = null;
@@ -165,28 +177,36 @@ in
         apply =
           applications:
           let
-            loginWithoutPath = map (application: application.cask) (
-              builtins.filter (application: application.startAtLogin && application.appPath == null) applications
-            );
+            loginWithoutPath =
+              map (application: if application.cask != null then application.cask else application.masName)
+                (
+                  builtins.filter (application: application.startAtLogin && application.appPath == null) applications
+                );
           in
           assert lib.assertMsg (uniqueNonNull "cask" applications)
             "host.darwin.applications has duplicate casks";
+          assert lib.assertMsg (uniqueNonNull "masId" applications)
+            "host.darwin.applications has duplicate App Store IDs";
+          assert lib.assertMsg (uniqueNonNull "masName" applications)
+            "host.darwin.applications has duplicate App Store names";
+          assert lib.assertMsg (builtins.all (
+            application: (application.masId == null) == (application.masName == null)
+          ) applications) "host.darwin.applications needs both an App Store ID and name";
           assert lib.assertMsg (uniqueNonNull "appPath" applications)
             "host.darwin.applications has duplicate app paths";
           assert lib.assertMsg (uniqueNonNull "dockPosition" applications)
             "host.darwin.applications has duplicate Dock positions";
-          assert lib.assertMsg (builtins.all
-            (
+          assert lib.assertMsg
+            (builtins.all (
               application:
-              (application.cask != null || application.appPath != null)
+              (application.cask != null || application.masId != null || application.appPath != null)
               && (application.dockPosition == null || application.appPath != null)
-            )
-            applications
-          ) "host.darwin.applications needs a cask or app path and a path for each Dock position";
+            ) applications)
+            "host.darwin.applications needs a cask, App Store ID or app path and a path for each Dock position";
           assert lib.assertMsg (loginWithoutPath == [ ])
             "host.darwin.applications needs an app path to start ${lib.concatStringsSep ", " loginWithoutPath} at login";
           applications;
-        description = "Homebrew casks, ordered Dock application bundles and login starts.";
+        description = "Homebrew casks, Mac App Store apps, ordered Dock application bundles and login starts.";
       };
 
       containerProfile = mkOption {
