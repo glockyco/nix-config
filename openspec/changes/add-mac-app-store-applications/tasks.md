@@ -9,4 +9,4 @@
 ## 2. Integration acceptance
 
 - [x] 2.1 Run strict change validation, both README OpenSpec validations, nix fmt -- --fail-on-change, nix flake check --print-build-logs, nix run .#check-darwin-build-plans and nix build .#darwinConfigurations.macbook-pro.system. Record results without activating the system.
-- [ ] 2.2 Commit the verified change on its feature branch using personal_commit. Report the branch, commit, verification results, interactive activation command and App Store prerequisites. Do not push.
+- [x] 2.2 Commit the verified change on its feature branch using personal_commit. Report the branch, commit, verification results, interactive activation command and App Store prerequisites. Do not push.
