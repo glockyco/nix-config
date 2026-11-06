@@ -28,6 +28,8 @@ Describe 'Personal plugin scheduled task convergence' {
             $xml.Task.Triggers.TimeTrigger.Repetition.Interval | Should -BeExactly 'PT1H'
             $xml.Task.Settings.MultipleInstancesPolicy | Should -BeExactly 'IgnoreNew'
             $xml.Task.Settings.ExecutionTimeLimit | Should -BeExactly 'PT15M'
+            $xml.Task.Actions.Exec.Command | Should -BeExactly (Join-Path $env:SystemRoot 'System32\conhost.exe')
+            $xml.Task.Actions.Exec.Arguments | Should -BeExactly ('--headless "' + (Join-Path $PSHOME 'pwsh.exe') + '" -NoProfile -NonInteractive -File "' + $script:runner + '"')
             $xml.Task.Actions.Exec.Arguments | Should -Match ([regex]::Escape($script:runner))
         }
 
@@ -35,6 +37,18 @@ Describe 'Personal plugin scheduled task convergence' {
             Test-WorkstationSetting -Resource $script:resource | Should -BeTrue
             Set-WorkstationSetting -Resource $script:resource
             Should -Invoke Register-ScheduledTask -Times 0 -Exactly
+        }
+
+        It 'repairs the old direct PowerShell action' {
+            [xml]$xml = $script:desired
+            $xml.Task.Actions.Exec.Command = Join-Path $PSHOME 'pwsh.exe'
+            $xml.Task.Actions.Exec.Arguments = '-NoProfile -NonInteractive -WindowStyle Hidden -File "' + $script:runner + '"'
+            $script:installed = $xml.OuterXml
+            Test-WorkstationSetting -Resource $script:resource | Should -BeFalse
+            Set-WorkstationSetting -Resource $script:resource
+            Should -Invoke Register-ScheduledTask -Times 1 -Exactly -ParameterFilter { $Xml -ceq $script:desired }
+            $script:installed = $script:desired
+            Test-WorkstationSetting -Resource $script:resource | Should -BeTrue
         }
 
         It 'accepts scheduler default elision and account-name normalization but rejects disabled tasks' {
