@@ -80,6 +80,10 @@ dockPosition = 1
 rationale = "The cask includes its Safari extension."
 
 [[hosts.macbook-pro.applications]]
+cask = "keepassxc"
+rationale = "It opens the recovery-code database, which stays outside Bitwarden."
+
+[[hosts.macbook-pro.applications]]
 cask = "zed"
 appPath = "/Applications/Zed.app"
 dockPosition = 8
