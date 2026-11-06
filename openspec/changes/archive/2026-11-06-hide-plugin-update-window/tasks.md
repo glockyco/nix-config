@@ -7,4 +7,4 @@
 ## 2. Verification
 
 - [x] 2.1 Run available Mac checks, formatting hooks and strict OpenSpec validation.
-- [ ] 2.2 On Korolev from the PR branch, run the engine dry run and chezmoi apply, run the scheduled task, and confirm no window appears and a fresh log entry reports success.
+- [x] 2.2 On Korolev from the PR branch, run the engine dry run and chezmoi apply, run the scheduled task, and confirm no window appears and a fresh log entry reports success.

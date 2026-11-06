@@ -18,7 +18,12 @@ Each host SHALL run `omp plugin marketplace update glockyco` followed on success
 
 ### Requirement: Interactive Windows execution
 
-Windows SHALL register an unelevated per-user task at logon and hourly using the user's interactive session. Marketplace EPERM failures SHALL receive bounded retries before the run fails. Other errors SHALL stop the run, and no upgrade SHALL follow a failed refresh.
+Windows SHALL register an unelevated per-user task at logon and hourly using the user's interactive session, without opening a window. Marketplace EPERM failures SHALL receive bounded retries before the run fails. Other errors SHALL stop the run, and no upgrade SHALL follow a failed refresh.
+
+#### Scenario: Scheduled update runs while logged on
+
+- **WHEN** the logon or hourly task runs in the logged-on user's session
+- **THEN** it runs without opening a console or terminal window and without elevation
 
 #### Scenario: Marketplace files are temporarily locked
 
