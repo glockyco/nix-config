@@ -8,8 +8,8 @@ function Get-WorkstationPluginUpdatePaths {
 function Get-WorkstationPluginUpdateTaskXml {
     $paths = Get-WorkstationPluginUpdatePaths
     $userId = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-    $command = [Security.SecurityElement]::Escape((Join-Path $PSHOME 'pwsh.exe'))
-    $arguments = [Security.SecurityElement]::Escape('-NoProfile -NonInteractive -WindowStyle Hidden -File "' + $paths.Runner + '"')
+    $command = [Security.SecurityElement]::Escape((Join-Path $env:SystemRoot 'System32\conhost.exe'))
+    $arguments = [Security.SecurityElement]::Escape('--headless "' + (Join-Path $PSHOME 'pwsh.exe') + '" -NoProfile -NonInteractive -File "' + $paths.Runner + '"')
     return @"
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <Triggers>
