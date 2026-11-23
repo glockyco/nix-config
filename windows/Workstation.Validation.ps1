@@ -31,7 +31,6 @@ function Assert-WorkstationData {
         'editor' = 'ZedIndustries.Zed'
         'browser' = 'Zen-Team.Zen-Browser'
         'container-runtime' = 'Docker.DockerDesktop'
-        'browser-relay' = 'Brave.Brave'
         'communication-client' = 'Ferdium.Ferdium'
         'notes' = 'Obsidian.Obsidian'
         'git-client' = 'Fork.Fork'
