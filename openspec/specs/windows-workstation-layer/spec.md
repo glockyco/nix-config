@@ -404,33 +404,6 @@ Data SHALL pass schema and privilege/ownership invariants before execution. Dry 
 - **WHEN** the integrator tests the engine and each Administrator script before and after approved apply
 - **THEN** preview writes nothing and post-apply tests report matching state or named failures
 
-### Requirement: Dedicated browser-relay application
-
-The hand-maintained Windows application set SHALL declare Brave as a self-updating, user-scope Chromium-based browser for native OMP browser relay use. The relay browser SHALL have a distinct application role, SHALL NOT replace Zen as the interactive browser, and SHALL NOT appear in the centrally managed application set. The Windows declaration SHALL configure no startup entry for the relay browser.
-
-#### Scenario: Apply the Windows application declaration
-
-- **WHEN** the interactive user applies the Windows configuration without Brave installed
-- **THEN** WinGet installs the latest available Brave version in that user's scope without elevation
-- **AND** Zen remains the declared interactive browser
-
-#### Scenario: Detect an invalid relay browser declaration
-
-- **WHEN** Brave is absent, uses a policy other than self-updating, is machine-scoped, is assigned the interactive browser role, or is listed as centrally managed
-- **THEN** repository validation fails
-
-#### Scenario: Sign in after a restart
-
-- **WHEN** Windows restarts after the relay browser is installed
-- **THEN** the relay browser does not start automatically
-- **AND** starting Zen requires no relay browser process
-
-#### Scenario: Remove the relay browser capability
-
-- **WHEN** the relay browser declaration is removed and the Windows configuration is applied
-- **THEN** no NixOS generation change is required
-- **AND** the operator can remove the browser-owned relay profile and extension independently
-
 ### Requirement: Check expectations derive from the declaration
 
 Checks SHALL derive mutable application/version/release/settings facts from JSON and the managed exclusion audit, not duplicate them in checker code. Only stable privilege, role identity and ownership invariants SHALL be literals. The engine data SHALL be the application/settings authority rather than a declaration rendered into a second document.
@@ -442,7 +415,7 @@ Checks SHALL derive mutable application/version/release/settings facts from JSON
 
 #### Scenario: Declare a self-updating application
 
-- **WHEN** Zed, Brave or Ferdium declares present policy
+- **WHEN** Zed or Ferdium declares present policy
 - **THEN** checks accept an existing installation without catalog queries or application-specific version exceptions
 
 #### Scenario: Declared application absent from the document
@@ -462,7 +435,7 @@ Checks SHALL derive mutable application/version/release/settings facts from JSON
 
 #### Scenario: Reject a different named application
 
-- **WHEN** required Zen, Zed, Brave or Ferdium role identity changes outside the contract
+- **WHEN** required Zen, Zed or Ferdium role identity changes outside the contract
 - **THEN** invariants reject that role without copying its mutable version or profile state
 
 ### Requirement: Every script parses
@@ -705,3 +678,38 @@ Only after all project acceptance and source-session/preservation gates pass SHA
 - **WHEN** recovery is explicitly authorized after retirement
 - **THEN** the runbook uses the retained private export through an owner-assisted import with reviewed names/paths
 - **AND** it claims no Windows credential/tool rollback or conversion of running sessions
+
+### Requirement: Persistent Unpaywall contact variable
+
+Korolev SHALL hold the current-user environment variable `UNPAYWALL_EMAIL` as an ordinary declared registry setting below `HKCU:\Environment`. Its value SHALL equal the shared contact address of the user configuration, and a declaration test SHALL fail when the two differ.
+
+#### Scenario: Value set by hand before
+
+- **WHEN** the variable already holds the declared address
+- **THEN** the engine reports no difference and writes nothing
+
+#### Scenario: Declarations drift apart
+
+- **WHEN** the Windows declaration and the shared contact address differ
+- **THEN** the declaration test fails and names the setting
+
+### Requirement: Browser relay in Edge
+
+The Windows OMP browser relay SHALL run in Microsoft Edge, which Windows provides and updates. The hand-maintained Windows application set SHALL declare no package and no role for the relay browser. Edge SHALL NOT replace Zen as the interactive browser. The Korolev guide SHALL describe how to install the relay extension and register its native messaging host for Edge.
+
+#### Scenario: Apply the Windows application declaration
+
+- **WHEN** the interactive user applies the Windows configuration
+- **THEN** the engine installs no relay browser package
+- **AND** Zen remains the declared interactive browser
+
+#### Scenario: Set up the relay in Edge
+
+- **WHEN** the operator follows the Korolev guide after installing or upgrading OMP
+- **THEN** Edge finds the relay's native messaging host and its extension connects to OMP
+
+#### Scenario: Sign in after a restart
+
+- **WHEN** Windows restarts
+- **THEN** the relay needs no browser started by the configuration
+- **AND** starting Zen requires no relay browser process

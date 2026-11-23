@@ -7,12 +7,12 @@
 
 ## 2. Checks
 
-- [ ] 2.1 Run the README checks on the Mac and on Windows and strict validation of this change. Verify that all pass.
+- [x] 2.1 Run the README checks on the Mac and on Windows and strict validation of this change. Verify that all pass.
 
 ## 3. Hosts
 
-- [ ] 3.1 On Korolev, run the engine dry run and `chezmoi apply` from the pull request branch. Verify that a fresh Tern session prints the address.
-- [ ] 3.2 On the Mac, apply the user files. Verify that a fresh Tern session and `ssh macbook-pro-batch 'printenv UNPAYWALL_EMAIL'` print the address.
+- [x] 3.1 On Korolev, run the engine dry run and `chezmoi apply` from main after the merge, because the manual value already matched. Verify that a fresh Tern session prints the address.
+- [x] 3.2 On the Mac, apply the user files. Verify that a fresh Tern session and `ssh macbook-pro-batch 'printenv UNPAYWALL_EMAIL'` print the address.
 
 ## Workflow follow-up
 

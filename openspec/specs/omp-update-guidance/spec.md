@@ -8,7 +8,7 @@ Provide discoverable repository-local guidance that enables an agent to complete
 
 ### Requirement: Discoverable upstream update guidance
 
-A fresh upstream OMP session in this repository SHALL find current ownership, official installer commands, `omp update`, and the personal plugin's manager install/upgrade commands through AGENTS.md and README. The repository SHALL contain no wrapper-specific `omp-update` skill, patch-repair procedure, Herdr control prerequisite, or source-generation recovery runbook. Guidance SHALL not require previous conversation history.
+A fresh upstream OMP session in this repository SHALL find current ownership, Tern-managed installation and update operations, and the personal plugin's manager install/upgrade commands through AGENTS.md and README. The repository SHALL contain no wrapper-specific `omp-update` skill, patch-repair procedure, Herdr control prerequisite, or source-generation recovery runbook. Guidance SHALL not require previous conversation history.
 
 #### Scenario: Request an update in a fresh session
 
@@ -25,7 +25,7 @@ A fresh upstream OMP session in this repository SHALL find current ownership, of
 
 ### Requirement: Installed upstream host discovery
 
-The guidance SHALL determine the target host, official command path/version, plugin-manager installation identity/version, and requested scope before mutation. It SHALL default to the current host and SHALL NOT treat a Nix check-tool pin, previous session, or another host's evidence as the current runtime. The Mac's official installation and native Korolev's Tern-managed installation SHALL be distinguished.
+The guidance SHALL determine the target host, official command path/version, plugin-manager installation identity/version, and requested scope before mutation. It SHALL default to the current host and SHALL NOT treat a Nix check-tool pin, previous session, or another host's evidence as the current runtime. Both hosts SHALL use Tern-managed OMP, and guidance SHALL identify the target host's executable.
 
 #### Scenario: Check tools and installed plugin differ
 
@@ -41,7 +41,7 @@ The guidance SHALL determine the target host, official command path/version, plu
 
 ### Requirement: Verified official updates
 
-The guidance SHALL use `omp update` for the official executable and the exact plugin-manager upgrade command defined by `publish-plugin-through-omp-plugin-manager` for personal behavior. It SHALL verify the installed result and applicable fresh-session smoke. An already-current result SHALL not require repository pin edits, publication, or Nix activation.
+The guidance SHALL use Tern's managed update flow for the executable and the exact plugin-manager upgrade command defined by `publish-plugin-through-omp-plugin-manager` for personal behavior. It SHALL verify the installed result and applicable fresh-session smoke. An already-current result SHALL not require repository pin edits, publication, or Nix activation.
 
 #### Scenario: Upstream updates successfully
 
@@ -84,12 +84,12 @@ An updated result SHALL identify the host, actual official executable path and v
 
 ### Requirement: Official release recovery boundaries
 
-Guidance SHALL report update failure or rejected acceptance honestly and inspect errors before retrying. Official-installer recovery SHALL explicitly select a recorded accepted binary release and repeat acceptance. It SHALL preserve mutable application/plugin-manager state, never invoke the removed source updater or claim Nix rollback changes the official executable/installed plugin. Plugin recovery SHALL use only the supported manager procedure established by the plugin publication change.
+Guidance SHALL report update failure or rejected acceptance honestly and inspect errors before retrying. Recovery SHALL use only a supported Tern recovery operation and repeat acceptance, and SHALL NOT invent a version-selection command or prescribe official-installer recovery. It SHALL preserve mutable state, never invoke the removed source updater and never claim that a Nix rollback changes the executable or the plugin. Plugin recovery SHALL use only the plugin manager's supported procedure.
 
 #### Scenario: Fresh-session smoke rejects the installed release
 
 - **WHEN** fresh-session smoke fails and a recorded accepted official release is available
-- **THEN** the agent reports failed acceptance and follows authorized official-installer recovery and repeat verification
+- **THEN** the agent reports failed acceptance and uses an authorized supported Tern recovery flow and repeats verification, or reports that no supported recovery operation is available
 - **AND** a recovered older runtime is reported as recovery, not a successful upgrade
 
 #### Scenario: Recovery has no recorded accepted release
