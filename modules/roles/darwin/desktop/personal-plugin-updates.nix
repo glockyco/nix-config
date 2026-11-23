@@ -12,8 +12,8 @@ let
       echo "$(date -u '+%Y-%m-%dT%H:%M:%SZ') personal plugin update finished: $result"
     }
     trap finish EXIT
-    "$HOME/.local/bin/omp" plugin marketplace update glockyco
-    "$HOME/.local/bin/omp" plugin upgrade --scope user personal@glockyco
+    "$HOME/Library/Application Support/Tern/omp/bin/omp" plugin marketplace update glockyco
+    "$HOME/Library/Application Support/Tern/omp/bin/omp" plugin upgrade --scope user personal@glockyco
   '';
 in
 {

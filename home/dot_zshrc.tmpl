@@ -9,7 +9,7 @@ path=("$HOME/.local/bin" "/etc/profiles/per-user/{{ $platform.username }}/bin" "
 {{ if $host.roles.desktop -}}
 {{ range $host.applications -}}
 {{ if and (hasKey . "appPath") (eq (base .appPath) "Tern.app") -}}
-path=("$HOME/.local/bin" "/etc/profiles/per-user/{{ $platform.username }}/bin" "{{ .appPath }}/Contents/MacOS" "${path[@]}")
+path=("$HOME/Library/Application Support/Tern/omp/bin" "$HOME/.local/bin" "/etc/profiles/per-user/{{ $platform.username }}/bin" "{{ .appPath }}/Contents/MacOS" "${path[@]}")
 {{ end -}}
 {{ end -}}
 {{ end -}}

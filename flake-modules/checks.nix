@@ -194,8 +194,8 @@
             assert agent.StandardOutPath == "${user.home}/Library/Logs/personal-plugin-upgrade.log";
             assert agent.StandardErrorPath == agent.StandardOutPath;
             pkgs.runCommand "check-${host.name}-personal-plugin-updates" { } ''
-              mkdir -p "$TMPDIR/home/.local/bin"
-              cp ${fakeOmp} "$TMPDIR/home/.local/bin/omp"
+              mkdir -p "$TMPDIR/home/Library/Application Support/Tern/omp/bin"
+              cp ${fakeOmp} "$TMPDIR/home/Library/Application Support/Tern/omp/bin/omp"
               substitute ${builtins.head agent.ProgramArguments} "$TMPDIR/runner" \
                 --replace-fail ${lib.escapeShellArg user.home} "$TMPDIR/home"
               export COMMAND_LOG="$TMPDIR/commands"
