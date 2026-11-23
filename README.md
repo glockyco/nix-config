@@ -13,13 +13,13 @@ Host facts live in `hosts/<name>/host.nix`, typed by [modules/fleet/host.nix](mo
 
 ## What manages each part
 
-| State                                                    | Managed by                                              |
-| -------------------------------------------------------- | ------------------------------------------------------- |
-| macOS system, packages, language servers and services    | Nix (nix-darwin)                                        |
-| User files and app settings on every host                | chezmoi, from [home/](home/)                            |
-| Windows applications and user settings                   | The PowerShell engine, which chezmoi runs               |
-| OMP and its plugins                                      | Their own installer and plugin manager, see [OMP](#omp) |
-| Credentials, sessions, browser profiles and project data | The applications themselves                             |
+| State                                                    | Managed by                                     |
+| -------------------------------------------------------- | ---------------------------------------------- |
+| macOS system, packages, language servers and services    | Nix (nix-darwin)                               |
+| User files and app settings on every host                | chezmoi, from [home/](home/)                   |
+| Windows applications and user settings                   | The PowerShell engine, which chezmoi runs      |
+| OMP and its plugins                                      | Tern and OMP's plugin manager, see [OMP](#omp) |
+| Credentials, sessions, browser profiles and project data | The applications themselves                    |
 
 [Shared TOML facts](home/.chezmoidata/) feed both the Nix host declarations and the chezmoi templates. Chezmoi writes regular files. The Zed and Karabiner filters keep settings they do not declare.
 
@@ -104,10 +104,9 @@ The Air is borrowed and temporary. [Issue #17](https://github.com/glockyco/nix-c
 
 ## OMP
 
-On macOS, the official installer puts OMP in `~/.local/bin`. Install OMP, the [personal plugin](https://github.com/glockyco/omp-agent-setup) and Steph Ango's [Obsidian skills](https://github.com/kepano/obsidian-skills):
+Tern installs and updates OMP on both hosts. Start Tern to provision OMP before using it in a shell. Install the [personal plugin](https://github.com/glockyco/omp-agent-setup) and Steph Ango's [Obsidian skills](https://github.com/kepano/obsidian-skills) through OMP's plugin manager:
 
 ```sh
-curl -fsSL https://omp.sh/install | sh -s -- --binary
 omp plugin marketplace add glockyco/omp-agent-setup
 omp plugin install --scope user personal@glockyco
 omp plugin marketplace add kepano/obsidian-skills
@@ -123,9 +122,9 @@ Plannotator's OMP plugin provides `/plannotator-annotate`, `/plannotator-last` a
 
 The personal plugin updates automatically at login and hourly through the Mac user launch agent and Korolev's interactive scheduled task. Each run refreshes only the `glockyco` marketplace and upgrades `personal@glockyco` in user scope. New sessions load the release. Running sessions keep theirs. On the Mac, read `~/Library/Logs/personal-plugin-upgrade.log`. See [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator) for its task and log.
 
-Update the Mac's OMP executable with `omp update`. Other marketplace plugins remain manual: refresh their marketplace with `omp plugin marketplace update <marketplace>` and upgrade the selected plugin with `omp plugin upgrade --scope user <plugin>`. Start a new session afterward.
+Other marketplace plugins remain manual: refresh their marketplace with `omp plugin marketplace update <marketplace>` and upgrade the selected plugin with `omp plugin upgrade --scope user <plugin>`. Start a new session afterward.
 
-To return to an earlier OMP release, reinstall with `--binary --ref <tag>`. A bad plugin release is replaced by a newer one, never by editing the installed cache. On Windows, Tern installs and updates OMP, see [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator).
+A bad plugin release is replaced by a newer one, never by editing the installed cache. See [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator) for its Tern setup.
 
 ## Containers
 

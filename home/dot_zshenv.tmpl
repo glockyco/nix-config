@@ -1,6 +1,6 @@
 {{- $host := index .hosts .host -}}
 {{- $platform := index $host.platforms .chezmoi.os -}}
-# Upstream OMP's installer owns ~/.local/bin; no shell installs tools.
+# Keep user tools available without installing them from shell startup.
 typeset -U path PATH
 path=("$HOME/.local/bin" "${path[@]}")
 {{ if eq .chezmoi.os "darwin" -}}
@@ -9,7 +9,7 @@ export EDITOR={{ $platform.editor | quote }}
 {{ range $host.applications -}}
 {{ if and (hasKey . "appPath") (eq (base .appPath) "Tern.app") -}}
 # SSH commands and non-interactive login shells do not read .zshrc.
-path=("$HOME/.local/bin" "{{ .appPath }}/Contents/MacOS" "${path[@]}")
+path=("$HOME/Library/Application Support/Tern/omp/bin" "$HOME/.local/bin" "{{ .appPath }}/Contents/MacOS" "${path[@]}")
 {{ end -}}
 {{ end -}}
 {{ end -}}

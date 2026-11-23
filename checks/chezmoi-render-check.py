@@ -221,6 +221,13 @@ def assert_portable(fixture, facts):
         command.parent.mkdir(parents=True, exist_ok=True)
         command.write_text("#!/bin/sh\nexit 0\n")
         command.chmod(0o755)
+        omp = fixture.target / "Library/Application Support/Tern/omp/bin/omp"
+        local_tool = fixture.target / ".local/bin/local-tool-probe"
+        stale_omp = fixture.target / ".local/bin/omp"
+        for executable in (omp, local_tool, stale_omp):
+            executable.parent.mkdir(parents=True, exist_ok=True)
+            executable.write_text("#!/bin/sh\nexit 0\n")
+            executable.chmod(0o755)
         changed_host = copy.deepcopy(host)
         changed_host["applications"][tern_index]["appPath"] = str(tern_bundle)
         targets = [str(fixture.target / name) for name in (".zshenv", ".zshrc")]
@@ -234,14 +241,14 @@ def assert_portable(fixture, facts):
             # The build host's /etc/zprofile is not this repository's: stock
             # macOS runs path_helper there and reorders PATH. nix-darwin's
             # replacement does not, so probe only the rendered user files.
-            for flags in (["-l", "-c"], ["-l", "-i", "-c"]):
+            for flags in (["-c"], ["-l", "-c"], ["-i", "-c"], ["-l", "-i", "-c"]):
                 resolved = subprocess.run(
                     [
                         "zsh",
                         "-o",
                         "no_global_rcs",
                         *flags,
-                        'command -v tern; print -r -- "$path[1]"',
+                        'command -v tern; command -v omp; command -v local-tool-probe; print -r -- "$path[1]"',
                     ],
                     stdin=subprocess.DEVNULL,
                     capture_output=True,
@@ -251,10 +258,12 @@ def assert_portable(fixture, facts):
                 require(
                     resolved.returncode == 0
                     and resolved.stdout.splitlines()
-                    == [str(command), str(fixture.target / ".local/bin")],
-                    f"Tern CLI or local-bin precedence lost in zsh {' '.join(flags)}",
+                    == [str(command), str(omp), str(local_tool), str(omp.parent)],
+                    f"Tern OMP, CLI or local tools lost in zsh {' '.join(flags)}",
                 )
         finally:
+            for executable in (omp, local_tool, stale_omp):
+                executable.unlink()
             fixture.run("apply", "--exclude=scripts", *targets)
 
 
