@@ -18,6 +18,15 @@ Describe 'Workstation declaration invariants' {
         }
 
 
+        It 'declares the same Unpaywall contact address as the shared chezmoi data' {
+            $portable = Get-Content -LiteralPath (Join-Path $script:declarationDirectory '../home/.chezmoidata/portable.toml') -Raw
+            $portable -match '(?m)^unpaywallEmail = "([^"]+)"$' | Should -BeTrue
+            $setting = @($script:data.settings | Where-Object { $_.valueName -eq 'UNPAYWALL_EMAIL' })
+            $setting.Count | Should -Be 1
+            $setting[0].path | Should -Be 'HKCU:\Environment'
+            $setting[0].value | Should -Be $Matches[1]
+        }
+
         It 'rejects resource-name collisions across applications and settings case-insensitively' {
             $script:data.settings[0].name = $script:data.applications[0].name.ToUpperInvariant()
             { Assert-WorkstationData -Data $script:data -ManagedPath $script:managedPath } | Should -Throw '*Duplicate resource name*'

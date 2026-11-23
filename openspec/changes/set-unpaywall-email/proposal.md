@@ -8,7 +8,7 @@ The personal OMP plugin's research skill in release 0.11.17 stops acquiring pape
 
 - Declare one shared non-secret Unpaywall contact address, `johann.glock@scch.at`, for both managed hosts.
 - Export `UNPAYWALL_EMAIL` from the Mac's managed zsh environment.
-- Extend the Windows workstation engine to converge the persistent current-user environment value from shared source data, rather than add a PowerShell profile assignment.
+- Declare the persistent current-user variable on Windows as an ordinary registry setting of the workstation engine, with a test that keeps its value equal to the shared address.
 - Verify inheritance in programs started by OMP in fresh Tern sessions on both hosts.
 - Remove no existing configuration, application, environment value or runtime state.
 
@@ -21,8 +21,8 @@ None.
 ### Modified Capabilities
 
 - `user-configuration`: Require the shared Unpaywall contact in the managed user environment and real OMP child-process inheritance on both hosts.
-- `windows-workstation-layer`: Require persistent, idempotent current-user environment convergence with values resolved from shared data, preserving the existing preview and privilege boundaries.
+- `windows-workstation-layer`: Require the persistent current-user variable as a declared registry setting whose value a test keeps equal to the shared address.
 
 ## Impact
 
-Implementation will touch shared chezmoi data, the Mac environment template, Windows engine declarations, schema, validation, environment notification and hashed invocation inputs, and their regression fixtures. Operational guidance will explain how to apply the change and start a fresh environment without repeating the address. No OMP installation, plugin cache, Tern configuration, account enrollment, credential or package change is required.
+The shared chezmoi data, the Mac environment template with its render check, and the Windows declaration with one declaration test. No engine code, OMP installation, plugin cache, Tern configuration, account or credential changes.
