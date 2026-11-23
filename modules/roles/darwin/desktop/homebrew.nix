@@ -44,7 +44,10 @@ in
     onActivation = {
       # `cleanup = "uninstall"` avoids `zap`, which would delete `~/.config/karabiner`.
       cleanup = "uninstall";
-      autoUpdate = true;
+      # After an automatic update, brew restarts itself with a reduced PATH that
+      # hides mas, and every Mac App Store entry fails. Run brew update by hand
+      # before adding a cask that the taps do not know yet.
+      autoUpdate = false;
       upgrade = false;
     };
   };
