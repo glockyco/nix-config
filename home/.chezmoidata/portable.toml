@@ -14,3 +14,8 @@ commandDurationDisabled = true
 [portable.brave]
 extensions = ["nngceckbapebfimnlniiiahkandclblb", "jinjaccalgkegednnccohejagnlnfdag"]
 updateUrl = "https://clients2.google.com/service/update2/crx"
+
+# Contact address that the Unpaywall API asks for with every request. It needs no account.
+# windows/workstation.json repeats it, and a declaration test keeps both equal.
+[portable.research]
+unpaywallEmail = "johann.glock@scch.at"

@@ -592,6 +592,15 @@
   ],
   "settings": [
     {
+      "name": "Unpaywall contact address",
+      "kind": "registry",
+      "path": "HKCU:\\Environment",
+      "valueName": "UNPAYWALL_EMAIL",
+      "ensure": "present",
+      "type": "String",
+      "value": "johann.glock@scch.at"
+    },
+    {
       "name": "keyboard repeat delay",
       "kind": "registry",
       "path": "HKCU:\\Control Panel\\Keyboard",

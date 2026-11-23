@@ -4,7 +4,7 @@
 
 ### Requirement: Shared Unpaywall contact environment
 
-Both managed hosts, macbook-pro and native Windows korolev, SHALL provide `UNPAYWALL_EMAIL` as `johann.glock@scch.at` to programs started by OMP in a fresh Tern session after user configuration is applied. The contact SHALL have one shared non-secret declaration and SHALL require no Unpaywall account or address typed into a command.
+Both managed hosts, macbook-pro and native Windows korolev, SHALL provide `UNPAYWALL_EMAIL` as `johann.glock@scch.at` to programs started by OMP in a fresh Tern session after user configuration is applied. The contact SHALL have one shared non-secret declaration, which the Windows declaration repeats under a test for equality, and SHALL require no Unpaywall account or address typed into a command.
 
 #### Scenario: Start research on the Mac
 
@@ -20,7 +20,8 @@ Both managed hosts, macbook-pro and native Windows korolev, SHALL provide `UNPAY
 #### Scenario: Change the common contact
 
 - WHEN the shared contact declaration changes and configuration is reapplied on both hosts
-- THEN fresh consumer sessions on both hosts use the changed value without editing a second address literal
+- THEN fresh consumer sessions on both hosts use the changed value
+- AND a test fails while the Windows declaration still holds the old address
 
 #### Scenario: Preserve unrelated configuration
 

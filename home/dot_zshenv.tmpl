@@ -5,6 +5,7 @@ typeset -U path PATH
 path=("$HOME/.local/bin" "${path[@]}")
 {{ if eq .chezmoi.os "darwin" -}}
 export EDITOR={{ $platform.editor | quote }}
+export UNPAYWALL_EMAIL={{ .portable.research.unpaywallEmail | quote }}
 {{ if $host.roles.desktop -}}
 {{ range $host.applications -}}
 {{ if and (hasKey . "appPath") (eq (base .appPath) "Tern.app") -}}

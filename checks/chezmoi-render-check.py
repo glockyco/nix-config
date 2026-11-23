@@ -248,7 +248,7 @@ def assert_portable(fixture, facts):
                         "-o",
                         "no_global_rcs",
                         *flags,
-                        'command -v tern; command -v omp; command -v local-tool-probe; print -r -- "$path[1]"',
+                        'command -v tern; command -v omp; command -v local-tool-probe; print -r -- "$path[1]"; print -r -- "$UNPAYWALL_EMAIL"',
                     ],
                     stdin=subprocess.DEVNULL,
                     capture_output=True,
@@ -258,8 +258,14 @@ def assert_portable(fixture, facts):
                 require(
                     resolved.returncode == 0
                     and resolved.stdout.splitlines()
-                    == [str(command), str(omp), str(local_tool), str(omp.parent)],
-                    f"Tern OMP, CLI or local tools lost in zsh {' '.join(flags)}",
+                    == [
+                        str(command),
+                        str(omp),
+                        str(local_tool),
+                        str(omp.parent),
+                        facts["portable"]["research"]["unpaywallEmail"],
+                    ],
+                    f"Tern OMP, CLI, local tools or the Unpaywall contact lost in zsh {' '.join(flags)}",
                 )
         finally:
             for executable in (omp, local_tool, stale_omp):
