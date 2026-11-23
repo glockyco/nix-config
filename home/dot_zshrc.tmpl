@@ -39,3 +39,6 @@ alias ll='eza -l'
 alias la='eza -a'
 alias lla='eza -la'
 alias lt='eza --tree'
+
+# Unity Hub writes this file and would otherwise append its line here.
+if [ -r "$HOME/.unity/env" ]; then . "$HOME/.unity/env"; fi
