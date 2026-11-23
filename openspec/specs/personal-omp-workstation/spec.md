@@ -44,7 +44,7 @@ Mac Nix rollback SHALL restore Nix-managed paths without changing OMP, plugin se
 
 #### Scenario: Recover an OMP release
 
-- **WHEN** an authorized operator recovers an accepted OMP release through the Mac installer or Windows Tern flow
+- **WHEN** an authorized operator recovers an accepted OMP release through a supported Tern recovery flow on the requested host
 - **THEN** a fresh session reports the recovered executable version
 - **AND** application state remains in place
 - **AND** personal-plugin and applicable host smokes are repeated
@@ -57,7 +57,7 @@ Mac Nix rollback SHALL restore Nix-managed paths without changing OMP, plugin se
 
 ### Requirement: Bootstrap-era deployment removal
 
-Accepted workstations SHALL contain no OMP wrapper, patched updater, patch pin, obsolete verifier/skill/shim, global package link or executable fallback. Nix/chezmoi SHALL not invoke OMP or manage Herdr integration. Mac official installation and native Korolev Tern delivery plus plugin-manager operations SHALL remain explicit. Removing Linux host tooling SHALL not remove Mac-required ordinary packages.
+Accepted workstations SHALL contain no OMP wrapper, patched updater, patch pin, obsolete verifier/skill/shim, global package link or executable fallback. Nix/chezmoi SHALL not invoke OMP or manage Herdr integration. Tern delivery on Mac and native Korolev plus plugin-manager operations SHALL remain explicit. Removing Linux host tooling SHALL not remove Mac-required ordinary packages.
 
 #### Scenario: Inspect the final workstation closure
 
@@ -92,15 +92,15 @@ Mac and native Windows Korolev SHALL consume one portable chezmoi source for app
 
 ### Requirement: Official standalone OMP distribution
 
-Supported workstations SHALL use standalone upstream OMP outside Nix activation. The Mac SHALL retain the official platform installer; native Korolev SHALL use Tern-managed OMP as its sole installation. Nix SHALL provide no OMP wrapper, source updater, runtime plugin package or executable fallback. Both hosts SHALL install/upgrade the published personal plugin through OMP's user plugin manager and retain namespaced /personal:opsx-\* commands without legacy aliases.
+Supported workstations SHALL use standalone upstream OMP outside Nix activation. Both the Mac and native Korolev SHALL use Tern-managed OMP as their declared installation. Nix SHALL provide no OMP wrapper, source updater, runtime plugin package or executable fallback. Both hosts SHALL install/upgrade the published personal plugin through OMP's user plugin manager and retain namespaced /personal:opsx-\* commands without legacy aliases.
 
 #### Scenario: Install on either supported host
 
 - **WHEN** the operator prepares OMP on macbook-pro or native Windows Korolev
-- **THEN** the Mac uses its official native standalone installation and Korolev uses Tern's managed omp.exe
+- **THEN** the Mac and Korolev use Tern's managed upstream executable
 - **AND** the plugin manager records the independently released personal plugin in writable user state
 - **AND** no developer checkout or Nix runtime plugin path is required
-- **AND** Korolev adds no competing official-installer or Bun-global copy
+- **AND** neither host installs a competing official-installer or Bun-global copy
 
 ### Requirement: Default upstream command
 
@@ -109,7 +109,7 @@ The default omp SHALL resolve to its platform-owned upstream executable in a fre
 #### Scenario: Resolve the installed command
 
 - **WHEN** the user starts omp in a fresh shell after the platform setup
-- **THEN** the Mac resolves its official installation and Korolev resolves Tern's copy at %LOCALAPPDATA%\\Tern\\omp\\bin\\omp.exe
+- **THEN** the Mac resolves $HOME/Library/Application Support/Tern/omp/bin/omp ahead of ~/.local/bin in non-interactive and interactive zsh shells, and Korolev resolves Tern's copy at %LOCALAPPDATA%\\Tern\\omp\\bin\\omp.exe
 - **AND** personal@glockyco loads once through OMP's user plugin manager
 - **AND** OpenSpec, Plannotator and applicable language servers resolve natively
 
@@ -121,7 +121,7 @@ The default omp SHALL resolve to its platform-owned upstream executable in a fre
 
 ### Requirement: Explicit upstream executable updates
 
-OMP updates SHALL remain explicit host operations outside activation: omp update for the Mac's official installation and Tern's managed update flow on Korolev. Plugin upgrades SHALL use OMP's published marketplace/user-plugin commands. Neither operation SHALL require workstation patch pins or publication. Existing sessions SHALL not be interrupted automatically; acceptance SHALL use a fresh session on the observed installed version.
+OMP updates SHALL remain explicit host operations outside activation: Tern's managed update flow on both hosts. Plugin upgrades SHALL use OMP's published marketplace/user-plugin commands. Neither operation SHALL require workstation patch pins or publication. Existing sessions SHALL not be interrupted automatically; acceptance SHALL use a fresh session on the observed installed version.
 
 #### Scenario: Update the executable
 

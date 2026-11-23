@@ -278,9 +278,20 @@ Each host fact SHALL have one owner: directory key for name, home/.chezmoidata/\
 
 #### Scenario: Change an application record
 
-- **WHEN** a maintainer changes a declared Homebrew application's cask, application path, Dock position, or login start
-- **THEN** the generated Homebrew cask set, Dock layout, and login agents change together
+- **WHEN** an application's cask, App Store identity, application path, Dock position, or login start changes in the shared inventory
+- **THEN** the generated Homebrew cask and App Store sets, Dock layout, and login agents use that record
 - **AND** no second application list exists
+
+#### Scenario: Declare an App Store application
+
+- **WHEN** an application record declares a positive App Store ID and a nonempty App Store name
+- **THEN** the generated Homebrew configuration includes that name and ID without requiring a cask or application path
+- **AND** the Mac provides the `mas` executable
+
+#### Scenario: Reject an invalid application identity
+
+- **WHEN** an application lacks a cask, App Store ID and application path, has an incomplete App Store identity, or duplicates another record's App Store ID or name
+- **THEN** typed host evaluation fails instead of silently dropping or overwriting the record
 
 #### Scenario: Reject a login start without an application path
 
