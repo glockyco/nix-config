@@ -45,16 +45,6 @@
       "installArguments": "install --quiet --backend=wsl-2 --no-windows-containers"
     },
     {
-      "name": "package browser relay",
-      "kind": "winget",
-      "id": "Brave.Brave",
-      "roles": [
-        "browser-relay"
-      ],
-      "scope": "user",
-      "versionPolicy": "present"
-    },
-    {
       "name": "package communication client",
       "kind": "winget",
       "id": "Ferdium.Ferdium",

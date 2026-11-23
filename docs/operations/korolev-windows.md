@@ -88,6 +88,15 @@ Install Plannotator's OMP plugin with the command at the end of the [README's OM
 
 The workstation engine installs the `OMP personal plugin upgrade` scheduled task for the current user. It runs at logon and hourly, only while logged on, without elevation or opening a window. It refreshes the personal marketplace and upgrades the user-scoped personal plugin. Marketplace `EPERM` failures get four attempts, 15 seconds apart, because another process can hold plugin cache handles. Other failures stop the run. Read `%LOCALAPPDATA%\WindowsConfiguration\personal-plugin-upgrade.log` for command output and results, or run the task from Task Scheduler to retry now. New sessions load the release. Running sessions keep theirs. Other plugins remain manual as described in the [README](../../README.md#omp).
 
+OMP's browser tool drives the signed-in Microsoft Edge through OMP's relay extension. The relay runs in the extension's native messaging host while Edge is open. `omp browser-relay install` writes the extension and registers the host for Chrome only, so register it for Edge too, then load the extension once in `edge://extensions` with Developer mode and "Load unpacked" on `%USERPROFILE%\.omp\browser-relay\extension`. OMP keeps the loaded extension current after that:
+
+```powershell
+omp browser-relay install --no-chrome
+reg add 'HKCU\Software\Microsoft\Edge\NativeMessagingHosts\sh.omp.browser' /ve /t REG_SZ /d "$env:USERPROFILE\.omp\browser-relay\sh.omp.browser.json" /f
+```
+
+The extension's toolbar badge shows "on" while the relay is up. Repeat both commands when an OMP release changes the extension's install steps.
+
 ## TeX Live
 
 TeX Live is installed by hand, once a year, into the user profile. Download `install-tl-windows.exe` from CTAN and run it with the reviewed profile:
