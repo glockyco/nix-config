@@ -8,4 +8,4 @@
 ## 2. Verify and publish
 
 - [x] 2.1 Validate this change strictly and run the README's Windows checks and the engine's dry run on Korolev.
-- [ ] 2.2 Open a pull request and wait for green checks.
+- [x] 2.2 Open a pull request and wait for green checks.
