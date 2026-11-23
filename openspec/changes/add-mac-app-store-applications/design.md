@@ -41,7 +41,7 @@ Build and validate the new generation without activation, including checking the
 - `nix flake check --print-build-logs` passed the native macOS checks, including the declaration fixtures, shared facts, application mapping and packaged-program tests. Linux checks were omitted as incompatible with the current host.
 - `nix run .#check-darwin-build-plans` checked 67 outputs with no forbidden source builds.
 - `nix build .#darwinConfigurations.macbook-pro.system` passed.
-- `nix eval --json .#darwinConfigurations.macbook-pro.config.homebrew.masApps` returned `{"Keynote":409183694}`.
+- `nix eval --json .#darwinConfigurations.macbook-pro.config.homebrew.masApps` returned `{"Keynote":361285480}`.
 - No activation, App Store sign-in or app installation was run.
 
 ## Delivery
