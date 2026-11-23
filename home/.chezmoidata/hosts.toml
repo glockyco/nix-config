@@ -152,6 +152,26 @@ masId = 361285480
 masName = "Keynote"
 rationale = "Read and export existing Keynote decks."
 
+[[hosts.macbook-pro.applications]]
+masId = 361304891
+masName = "Numbers"
+rationale = "Keep the Apple spreadsheet app that was installed before the inventory."
+
+[[hosts.macbook-pro.applications]]
+masId = 361309726
+masName = "Pages"
+rationale = "Keep the Apple document app that was installed before the inventory."
+
+[[hosts.macbook-pro.applications]]
+masId = 682658836
+masName = "GarageBand"
+rationale = "Keep the Apple audio app that was installed before the inventory."
+
+[[hosts.macbook-pro.applications]]
+masId = 408981434
+masName = "iMovie"
+rationale = "Keep the Apple video app that was installed before the inventory."
+
 [hosts.korolev.git]
 authorName = "Johann Glock"
 defaultEmail = "johann.glock@scch.at"
