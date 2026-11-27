@@ -197,11 +197,50 @@
           personal-plugin-updates =
             let
               agent = hostConfig.launchd.user.agents.personal-plugin-upgrade.serviceConfig;
-              fakeOmp = pkgs.writeShellScript "fake-omp" ''
-                printf '%s\n' "$*" >> "$COMMAND_LOG"
-                if [ "$1 $2" = "plugin marketplace" ]; then
-                  exit "''${REFRESH_RESULT:-0}"
+              checkEnvironment = ''
+                if [[ "$GIT_TERMINAL_PROMPT" != 0 || "$GIT_SSH_COMMAND" != "ssh -o BatchMode=yes" ]]; then
+                  echo "Command did not run with noninteractive Git settings" >&2
+                  exit 99
                 fi
+              '';
+              fakeGit = pkgs.writeShellScript "fake-git" ''
+                ${checkEnvironment}
+                printf 'git %s\n' "$*" >> "$COMMAND_LOG"
+                if [[ "$3" == "''${FAILED_GIT_URL:-}" ]]; then
+                  exit 128
+                fi
+              '';
+              fakeOmp = pkgs.writeShellScript "fake-omp" ''
+                ${checkEnvironment}
+                printf '%s\n' "$*" >> "$COMMAND_LOG"
+                case "$*" in
+                  'plugin marketplace list')
+                    case "''${LIST_FORMAT:-}" in
+                      invalid)
+                        echo "Unrecognized marketplace listing"
+                        exit 0
+                        ;;
+                      empty)
+                        printf 'No marketplaces configured\n\nAdd one with: omp plugin marketplace add <source>\n'
+                        exit 0
+                        ;;
+                    esac
+                    printf 'Configured Marketplaces:\n\n'
+                    printf '  %s  %s\n' glockyco glockyco/omp-agent-setup \
+                      obsidian-skills kepano/obsidian-skills
+                    if [[ "''${LIST_FORMAT:-}" != missing ]]; then
+                      printf '  %s  %s\n' glockyco-booking "''${BOOKING_SOURCE:-glockyco/omp-booking}"
+                    fi
+                    printf '  %s  %s\n' glockyco-workbench glockyco/obsidian-workbench
+                    ;;
+                  'plugin marketplace update glockyco-booking')
+                    if [[ "''${REFRESH_RESULT:-}" == timeout ]]; then
+                      sleep 10
+                    else
+                      exit "''${REFRESH_RESULT:-0}"
+                    fi
+                    ;;
+                esac
               '';
             in
             assert agent.StartInterval == 3600;
@@ -213,19 +252,56 @@
               mkdir -p "$TMPDIR/home/Library/Application Support/Tern/omp/bin"
               cp ${fakeOmp} "$TMPDIR/home/Library/Application Support/Tern/omp/bin/omp"
               substitute ${builtins.head agent.ProgramArguments} "$TMPDIR/runner" \
-                --replace-fail ${lib.escapeShellArg user.home} "$TMPDIR/home"
+                --replace-fail ${lib.escapeShellArg user.home} "$TMPDIR/home" \
+                --replace-fail '${pkgs.git}/bin/git' ${fakeGit} \
+                --replace-fail ' 300s ' ' 1s '
               export COMMAND_LOG="$TMPDIR/commands"
-              ${pkgs.bash}/bin/bash "$TMPDIR/runner"
-              printf '%s\n' 'plugin marketplace update glockyco' \
-                'plugin upgrade --scope user personal@glockyco' > "$TMPDIR/expected"
-              diff "$TMPDIR/expected" "$COMMAND_LOG"
-              rm "$COMMAND_LOG"
-              if REFRESH_RESULT=23 ${pkgs.bash}/bin/bash "$TMPDIR/runner"; then
-                echo "Failed marketplace refresh was accepted" >&2
-                exit 1
-              fi
-              printf '%s\n' 'plugin marketplace update glockyco' > "$TMPDIR/expected"
-              diff "$TMPDIR/expected" "$COMMAND_LOG"
+
+              cat > "$TMPDIR/expected" <<'EOF'
+              git ls-remote --exit-code https://github.com/glockyco/omp-agent-setup HEAD
+              git ls-remote --exit-code https://github.com/glockyco/omp-booking HEAD
+              git ls-remote --exit-code https://github.com/glockyco/obsidian-workbench HEAD
+              git ls-remote --exit-code https://github.com/kepano/obsidian-skills HEAD
+              plugin marketplace list
+              plugin marketplace update glockyco
+              plugin upgrade --scope user personal@glockyco
+              plugin marketplace update glockyco-booking
+              plugin upgrade --scope user booking@glockyco-booking
+              plugin marketplace update glockyco-workbench
+              plugin upgrade --scope user workbench@glockyco-workbench
+              plugin marketplace update obsidian-skills
+              plugin upgrade --scope user obsidian@obsidian-skills
+              EOF
+              grep -vxF 'plugin upgrade --scope user booking@glockyco-booking' "$TMPDIR/expected" > "$TMPDIR/skipped-upgrade"
+              grep -vxF 'plugin marketplace update glockyco-booking' "$TMPDIR/skipped-upgrade" > "$TMPDIR/skipped-plugin"
+              head -n 5 "$TMPDIR/expected" > "$TMPDIR/skipped-all"
+
+              run_case() {
+                local expected_status="$1" expected_commands="$2" status=0
+                shift 2
+                : > "$COMMAND_LOG"
+                env "$@" ${pkgs.bash}/bin/bash "$TMPDIR/runner" > "$TMPDIR/run.log" 2>&1 || status=$?
+                cat "$TMPDIR/run.log"
+                test "$status" = "$expected_status"
+                grep -q "personal plugin update finished: $expected_status$" "$TMPDIR/run.log"
+                diff -u "$TMPDIR/$expected_commands" "$COMMAND_LOG"
+              }
+
+              run_case 0 expected
+              run_case 1 skipped-upgrade REFRESH_RESULT=23
+              grep -q 'Command failed (exit 23): .* plugin marketplace update glockyco-booking$' "$TMPDIR/run.log"
+              run_case 1 skipped-upgrade REFRESH_RESULT=timeout
+              grep -q 'Command timed out: .* plugin marketplace update glockyco-booking$' "$TMPDIR/run.log"
+              run_case 0 expected FAILED_GIT_URL=https://github.com/glockyco/omp-booking
+              grep -Fxq 'Git cannot read https://github.com/glockyco/omp-booking: run gh auth login -h github.com --web' "$TMPDIR/run.log"
+              run_case 0 expected BOOKING_SOURCE=git@github.com:glockyco/omp-booking.git
+              grep -Fxq 'Marketplace glockyco-booking is registered as git@github.com:glockyco/omp-booking.git, declared glockyco/omp-booking: run omp plugin marketplace remove glockyco-booking && omp plugin marketplace add glockyco/omp-booking' "$TMPDIR/run.log"
+              run_case 1 skipped-plugin LIST_FORMAT=missing
+              grep -Fxq 'Marketplace glockyco-booking is not registered: run omp plugin marketplace add glockyco/omp-booking' "$TMPDIR/run.log"
+              run_case 1 skipped-all LIST_FORMAT=empty
+              grep -Fxq 'Marketplace glockyco-booking is not registered: run omp plugin marketplace add glockyco/omp-booking' "$TMPDIR/run.log"
+              run_case 0 expected LIST_FORMAT=invalid
+              grep -Fxq 'Cannot read omp plugin marketplace list' "$TMPDIR/run.log"
               touch "$out"
             '';
           desktop-batch-configuration = pkgs.callPackage ../checks/ssh-endpoint-config-check.nix {

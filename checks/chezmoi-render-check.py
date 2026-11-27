@@ -711,12 +711,28 @@ def main():
             ".config/eza/theme.yml",
         ):
             require(path in managed, f"Windows does not manage {path}")
+        omp_plugins = "AppData/Local/WindowsConfiguration/omp-plugins.json"
+        require(omp_plugins in managed, f"Windows does not manage {omp_plugins}")
+        require(
+            json.loads(
+                fixture.run(
+                    "cat", str(fixture.target / omp_plugins), overrides=overrides
+                )
+            )
+            == facts["omp"]["plugins"],
+            "Windows plugin declaration does not match the shared facts",
+        )
         if fixture.target_os != "windows":
+            native_managed = fixture.run("managed").splitlines()
+            require(
+                omp_plugins not in native_managed,
+                f"{fixture.target_os} manages {omp_plugins}",
+            )
             # Managing the Documents directory itself would reset the Mac's private mode.
             require(
                 not any(
                     path == "Documents" or path.startswith("Documents/")
-                    for path in fixture.run("managed").splitlines()
+                    for path in native_managed
                 ),
                 f"{fixture.target_os} manages a Documents path",
             )
