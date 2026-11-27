@@ -20,7 +20,7 @@
 ## 5. Rollout
 
 - [x] 5.1 Fix the Mac by hand in a Tern session: re-register `glockyco-booking` and `glockyco-workbench` with their GitHub sources and upgrade both plugins. Verify that `omp plugin list` shows booking 0.9.0 and workbench 0.19.7 on the Mac.
-- [ ] 5.2 Run the macOS and Windows checks from the README, `darwin-switch` on the Mac, and the engine's dry run and `chezmoi apply` on Korolev from the branch. Verify that both logs show one successful run over all four plugins and that a fresh Tern session lists every plugin once.
+- [x] 5.2 Run the macOS and Windows checks from the README, `darwin-switch` on the Mac, and the engine's dry run and `chezmoi apply` on Korolev from the branch. Verify that both logs show one successful run over all four plugins and that a fresh Tern session lists every plugin once.
 
 ## Workflow follow-up
 
