@@ -70,23 +70,15 @@ German QWERTZ stays first and Neo second. Office derives its shortcuts from the 
 
 ## Tern, OMP and Plannotator
 
-Install Tern from the Stencil download page into `%LOCALAPPDATA%\Programs\Tern` and start it only through its Start-menu shortcut. Tern updates the executable it was started from. Accept Tern's offer to install OMP, or run Install omp from its command palette. Tern then keeps OMP current. Then install the plugins and Plannotator:
+Install Tern from the Stencil download page into `%LOCALAPPDATA%\Programs\Tern` and start it only through its Start-menu shortcut. Tern updates the executable it was started from. Accept Tern's offer to install OMP, or run Install omp from its command palette. Tern then keeps OMP current. Then install the plugins and settings as the [README's OMP block](../../README.md#omp) describes, and Plannotator:
 
 ```powershell
-omp plugin marketplace add glockyco/omp-agent-setup
-omp plugin install --scope user personal@glockyco
-omp plugin marketplace add glockyco/omp-booking
-omp plugin install --scope user booking@glockyco-booking
-omp plugin marketplace add kepano/obsidian-skills
-omp plugin install --scope user obsidian@obsidian-skills
-omp config set skills.ignoredSkills '["defuddle","json-canvas","knap"]'
-omp config set memory.backend off
 pwsh -NoProfile -Command { $env:PLANNOTATOR_MINIMAL = '1'; & ([scriptblock]::Create((Invoke-RestMethod https://plannotator.ai/install.ps1))) -Version v0.28.40 -VerifyAttestation }
 ```
 
 Install Plannotator's OMP plugin with the command at the end of the [README's OMP block](../../README.md#omp). Plannotator needs the environment variable because its installer ignores the `-Minimal` switch. Without minimal mode it also installs vendor skills and commands. The [README](../../README.md#omp) explains the Obsidian skills, the ignored ones and why memory is off.
 
-The workstation engine installs the `OMP personal plugin upgrade` scheduled task for the current user. It runs at logon and hourly, only while logged on, without elevation or opening a window. It refreshes the personal marketplace and upgrades the user-scoped personal plugin. Marketplace `EPERM` failures get four attempts, 15 seconds apart, because another process can hold plugin cache handles. Other failures stop the run. Read `%LOCALAPPDATA%\WindowsConfiguration\personal-plugin-upgrade.log` for command output and results, or run the task from Task Scheduler to retry now. New sessions load the release. Running sessions keep theirs. Other plugins remain manual as described in the [README](../../README.md#omp).
+The workstation engine installs the `OMP personal plugin upgrade` scheduled task for the current user. It runs at logon and hourly, only while logged on, without elevation or opening a window. It refreshes every marketplace in [omp.toml](../../home/.chezmoidata/omp.toml) and upgrades its user-scoped plugin, as the [README](../../README.md#omp) describes. Marketplace `EPERM` failures get four attempts, 15 seconds apart, because another process can hold plugin cache handles. Read `%LOCALAPPDATA%\WindowsConfiguration\personal-plugin-upgrade.log` for command output and results, or run the task from Task Scheduler to retry now.
 
 OMP's browser tool drives the signed-in Microsoft Edge through OMP's relay extension. The relay runs in the extension's native messaging host while Edge is open. `omp browser-relay install` writes the extension and registers the host for Chrome only, so register it for Edge too, then load the extension once in `edge://extensions` with Developer mode and "Load unpacked" on `%USERPROFILE%\.omp\browser-relay\extension`. OMP keeps the loaded extension current after that:
 

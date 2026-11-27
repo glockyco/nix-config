@@ -1,0 +1,20 @@
+# Marketplace plugins that the hourly user job keeps current on every host.
+[[omp.plugins]]
+plugin = "personal@glockyco"
+marketplace = "glockyco"
+source = "glockyco/omp-agent-setup"
+
+[[omp.plugins]]
+plugin = "booking@glockyco-booking"
+marketplace = "glockyco-booking"
+source = "glockyco/omp-booking"
+
+[[omp.plugins]]
+plugin = "workbench@glockyco-workbench"
+marketplace = "glockyco-workbench"
+source = "glockyco/obsidian-workbench"
+
+[[omp.plugins]]
+plugin = "obsidian@obsidian-skills"
+marketplace = "obsidian-skills"
+source = "kepano/obsidian-skills"

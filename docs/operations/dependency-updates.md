@@ -33,6 +33,6 @@ Plannotator comes from the `plannotator-packages` input in [flake.nix](../../fla
 
 ## After an update
 
-- `omp --version` shows the expected version, and `omp plugin list` shows `personal@glockyco` once, in user scope.
+- `omp --version` shows the expected version, and `omp plugin list` shows each plugin of [omp.toml](../../home/.chezmoidata/omp.toml) once, in user scope.
 - After an OMP, plugin or Plannotator change, start a fresh session in a disposable repository. The personal policy applies, the `/personal:opsx-*` commands are listed and a `personal_commit` preview leaves the repository unchanged.
 - After a language-server change, open a representative project at its root and check diagnostics, definition, references and rename. Roslyn loads projects in the background, so judge its results after loading finishes.

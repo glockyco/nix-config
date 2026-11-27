@@ -106,25 +106,25 @@ The Air is borrowed and temporary. [Issue #17](https://github.com/glockyco/nix-c
 
 ## OMP
 
-Tern installs and updates OMP on both hosts. Start Tern to provision OMP before using it in a shell. Install the [personal plugin](https://github.com/glockyco/omp-agent-setup) and Steph Ango's [Obsidian skills](https://github.com/kepano/obsidian-skills) through OMP's plugin manager:
+Tern installs and updates OMP on both hosts. Start Tern to provision OMP before using it in a shell. [omp.toml](home/.chezmoidata/omp.toml) lists the marketplace plugins both hosts use, among them the [personal plugin](https://github.com/glockyco/omp-agent-setup) and Steph Ango's [Obsidian skills](https://github.com/kepano/obsidian-skills). Install each through OMP's plugin manager with its `source` and `plugin`, then set the configuration and add Plannotator:
 
 ```sh
-omp plugin marketplace add glockyco/omp-agent-setup
-omp plugin install --scope user personal@glockyco
-omp plugin marketplace add kepano/obsidian-skills
-omp plugin install --scope user obsidian@obsidian-skills
+omp plugin marketplace add <source>
+omp plugin install --scope user <plugin>
 omp config set skills.ignoredSkills '["defuddle","json-canvas","knap"]'
 omp config set memory.backend off
 omp plugin install @plannotator/pi-extension@0.28.42
 ```
 
+Add each marketplace by its GitHub `owner/repo`, never by an SSH URL. Scheduled updates then fetch over HTTPS with the GitHub sign-in, which needs no Touch ID.
+
 The Obsidian skills teach agents the Markdown, Bases and command line of the [notes vault](docs/operations/obsidian.md). The three ignored skills cover web clipping, template rendering and canvases, which nothing here uses, and would otherwise add their descriptions to every session. Memory stays off, because it gives every session rules that a model inferred from earlier chats, mixed across all projects started in the same folder. Each project's repository and the notes vault hold its decisions instead.
 
 Plannotator's OMP plugin provides `/plannotator-annotate`, `/plannotator-last` and the tool agents use to open reviews. `omp plugin upgrade` updates only marketplace plugins, so this one stays at its installed version until the install command runs with a new one. chezmoi turns Plannotator's sharing off in `~/.plannotator/config.json` and leaves the file's other settings alone.
 
-The personal plugin updates automatically at login and hourly through the Mac user launch agent and Korolev's interactive scheduled task. Each run refreshes only the `glockyco` marketplace and upgrades `personal@glockyco` in user scope. New sessions load the release. Running sessions keep theirs. On the Mac, read `~/Library/Logs/personal-plugin-upgrade.log`. See [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator) for its task and log.
+The plugins in `omp.toml` update automatically at login and hourly through the Mac user launch agent and Korolev's interactive scheduled task. Each run refreshes every listed marketplace and upgrades its plugin in user scope. A failure of one plugin doesn't stop the others. Every command has a five-minute limit, so a prompt that nobody can answer becomes a logged failure. New sessions load the release. Running sessions keep theirs. On the Mac, read `~/Library/Logs/personal-plugin-upgrade.log`. See [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator) for its task and log.
 
-Other marketplace plugins remain manual: refresh their marketplace with `omp plugin marketplace update <marketplace>` and upgrade the selected plugin with `omp plugin upgrade --scope user <plugin>`. Start a new session afterward.
+The log names the fix when a run can't proceed. "Git cannot read" means the GitHub sign-in is missing or expired: run `gh auth login -h github.com --web`. "is registered as" means a marketplace was added with another source: run the remove and add commands it prints. On the Mac, `gh` keeps its token in the login keychain, which only the logged-in desktop session can read, so run these in a Tern session, not over SSH.
 
 A bad plugin release is replaced by a newer one, never by editing the installed cache. See [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator) for its Tern setup.
 

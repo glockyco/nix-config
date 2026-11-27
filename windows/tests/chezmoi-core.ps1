@@ -94,7 +94,8 @@ try {
   $facts = Invoke-CoreChezmoi @('data', '--format=json') | ConvertFrom-Json
   $platformFixture = @{ home = $target; checkout = $checkout; ghqRoot = ((Join-Path $target 'src').Replace('\', '/')) }
   $override.hosts = @{ korolev = @{ platforms = @{ windows = $platformFixture } } }
-  $coreTargets = @('.gitconfig', '.config/git/github.gitconfig', '.config/delta/catppuccin.gitconfig', 'AppData/Roaming/GitHub CLI/config.yml', '.ssh/config', '.ssh/desktop-known-hosts', '.ssh/macbook-pro-known-hosts')
+  $pluginManifest = 'AppData/Local/WindowsConfiguration/omp-plugins.json'
+  $coreTargets = @('.gitconfig', '.config/git/github.gitconfig', '.config/delta/catppuccin.gitconfig', 'AppData/Roaming/GitHub CLI/config.yml', '.ssh/config', '.ssh/desktop-known-hosts', '.ssh/macbook-pro-known-hosts', $pluginManifest)
   # Targeted apply canonicalizes its explicit paths before creating entries;
   # unlike a full apply, it therefore needs disposable parent directories.
   foreach ($relative in $coreTargets) {
@@ -105,6 +106,16 @@ try {
   $managed = @(((Invoke-CoreChezmoi @('managed', '--path-style=relative')) -split "`r?`n") | ForEach-Object { $_.Replace('\', '/') })
   foreach ($forbidden in @('.ssh/builder-known-hosts', '.zshenv', '.zshrc')) { Assert-Core ($forbidden -notin $managed) "Windows unexpectedly manages $forbidden" }
   Assert-Core (-not (@($managed | Where-Object { $_ -match 'credentials|hosts\.yml|\.omp|Library/' }).Count)) 'native source must not manage Mac secrets or authentication/runtime state'
+  $renderedPlugins = Get-Content -LiteralPath (Join-Path $target $pluginManifest) -Raw | ConvertFrom-Json -NoEnumerate
+  Assert-Core ($pluginManifest -in $managed -and $renderedPlugins.Count -eq $facts.omp.plugins.Count) 'Windows must manage the complete OMP plugin manifest'
+  for ($index = 0; $index -lt $facts.omp.plugins.Count; $index++) {
+    foreach ($key in @('plugin', 'marketplace', 'source')) {
+      Assert-Core ($renderedPlugins[$index].$key -ceq $facts.omp.plugins[$index].$key) "OMP plugin manifest entry $index has incorrect $key"
+    }
+  }
+  $macOverride = @{ chezmoi = @{ os = 'darwin'; homeDir = $target }; host = 'macbook-pro' }
+  $macManaged = @(((Invoke-CoreChezmoi @('managed', '--path-style=relative') -OverrideData $macOverride) -split "`r?`n") | ForEach-Object { $_.Replace('\', '/') })
+  Assert-Core ($pluginManifest -notin $macManaged) 'the Mac must not manage the Windows OMP plugin manifest'
   $ghConfig = [IO.File]::ReadAllText((Join-Path $target 'AppData/Roaming/GitHub CLI/config.yml'))
   Assert-Core ($ghConfig -match '(?m)^git_protocol: https\r?$' -and $ghConfig -notmatch 'oauth|token|user:') 'native gh config must select HTTPS without auth state'
   Assert-Core ($ghConfig -ceq "version: `"1`"`ngit_protocol: https`neditor: `"`"`naliases: {}`n") 'native gh config must match gh serialization without an extra blank line'
