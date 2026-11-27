@@ -22,3 +22,7 @@ The personal plugin owns the OpenSpec adapters, and its workflow commands are `/
 ## Before merging
 
 Run the README checks for every platform a change touches. A Windows change also needs the engine's dry run and `chezmoi apply` on Korolev from the PR branch. An OMP or plugin change needs a fresh session in Tern. Keep previous generations until the checks pass. Keep dependency updates on the existing automation and Nix dependency updates review-only. The personal plugin's user jobs are declared in the host layers, so do not add a competing scheduler.
+
+## Activating the Mac
+
+Activate the Mac yourself, never ask the person to. Update `~/.config/nix-darwin` with `git pull --ff-only https://github.com/glockyco/nix-config.git main` over `ssh macbook-pro`, because its `origin` uses SSH, which waits for Touch ID. Then start the switch in a Tern pane below your own, so the person sees the sudo prompt: `tern split "$TERN_PANE" down --keep-open -- ssh -t macbook-pro 'cd ~/.config/nix-darwin && darwin-switch'`. `@focused` would put it wherever the person is looking. Tell the person that the pane waits for the Mac's sudo password, wait with `tern wait <block> --until exit`, read the pane with `tern capture`, and close it. Never pipe the switch's output, because the prompt would echo the password into the transcript.
