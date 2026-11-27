@@ -2,7 +2,7 @@
 
 ## Why
 
-Only `personal@glockyco` updates by itself. The booking, Workbench and Obsidian plugins are upgraded by hand on each host, so they drift: on 2026-11-27 the Mac ran booking 0.8.1 after 0.9.0 was released, and Korolev ran the Workbench omp plugin 0.18.4 after 0.19.7. The Mac also registered two private marketplaces as SSH sources, which go through Secretive and wait for Touch ID, so an unattended upgrade hangs instead of failing, and nothing reported it.
+Only `personal@glockyco` updates by itself. The booking, Workbench and Obsidian plugins are upgraded by hand on each host, so they drift: on 2026-11-27 the Mac ran booking 0.8.1 after 0.9.0 was released, and Korolev ran the Workbench omp plugin 0.18.4 after 0.19.7. The Mac also registered two private marketplaces as SSH sources. An upgrade started over SSH sat in `git clone` from one of them for several minutes without output, and nothing reported it.
 
 ## What Changes
 
