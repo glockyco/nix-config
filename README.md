@@ -116,7 +116,7 @@ omp config set memory.backend off
 omp plugin install @plannotator/pi-extension@0.28.42
 ```
 
-Add each marketplace by its GitHub `owner/repo`, never by an SSH URL. Scheduled updates then fetch over HTTPS with the GitHub sign-in, which needs no Touch ID.
+Add each marketplace by its GitHub `owner/repo`, never by an SSH URL, so scheduled updates fetch over HTTPS with the GitHub sign-in.
 
 The Obsidian skills teach agents the Markdown, Bases and command line of the [notes vault](docs/operations/obsidian.md). The three ignored skills cover web clipping, template rendering and canvases, which nothing here uses, and would otherwise add their descriptions to every session. Memory stays off, because it gives every session rules that a model inferred from earlier chats, mixed across all projects started in the same folder. Each project's repository and the notes vault hold its decisions instead.
 

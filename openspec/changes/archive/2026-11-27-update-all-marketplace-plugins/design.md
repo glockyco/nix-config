@@ -2,7 +2,7 @@
 
 ## Context
 
-The Mac runs a launchd user agent whose shell runner Nix generates in `modules/roles/darwin/desktop/personal-plugin-updates.nix`. Korolev runs a scheduled task that the workstation engine registers and that executes `windows/personal-plugin-upgrade.ps1`, copied to `%LOCALAPPDATA%\WindowsConfiguration`. Both hard-code `glockyco` and `personal@glockyco`. Shared facts live in `home/.chezmoidata/*.toml`: Nix reads them with `builtins.fromTOML`, and chezmoi templates read them directly. Git over HTTPS gets GitHub credentials from `gh auth git-credential` on the Mac and from Git Credential Manager on Korolev. Both are set up with `gh auth login`. On the Mac, `gh` keeps its token in the login keychain, which only the logged-in GUI session can read: the launchd agent runs there (`LimitLoadToSessionType = "Aqua"`), while an SSH session sees the token as invalid. Remote maintenance on the Mac therefore runs in a Tern session. SSH on the Mac goes through Secretive, which needs Touch ID for every signature.
+The Mac runs a launchd user agent whose shell runner Nix generates in `modules/roles/darwin/desktop/personal-plugin-updates.nix`. Korolev runs a scheduled task that the workstation engine registers and that executes `windows/personal-plugin-upgrade.ps1`, copied to `%LOCALAPPDATA%\WindowsConfiguration`. Both hard-code `glockyco` and `personal@glockyco`. Shared facts live in `home/.chezmoidata/*.toml`: Nix reads them with `builtins.fromTOML`, and chezmoi templates read them directly. Git over HTTPS gets GitHub credentials from `gh auth git-credential` on the Mac and from Git Credential Manager on Korolev. Both are set up with `gh auth login`. On the Mac, `gh` keeps its token in the login keychain. Over SSH, `security` refused to read that keychain ("User interaction is not allowed") and `gh` reported the token as invalid, while the same commands worked in a Tern session. The launchd agent runs in the GUI session (`LimitLoadToSessionType = "Aqua"`). SSH on the Mac uses the Secretive agent. Why an SSH clone of a private marketplace stopped making progress during an upgrade started over SSH was not established.
 
 ## Goals / Non-Goals
 
@@ -29,7 +29,7 @@ For each plugin the runner refreshes its marketplace, then upgrades the plugin i
 
 ### Every command has a time limit and no input
 
-Commands run with `GIT_TERMINAL_PROMPT=0` and `GIT_SSH_COMMAND="ssh -o BatchMode=yes"`. Each command is limited to five minutes: through `timeout` from Nix's coreutils on the Mac, and on Windows through a process wait that kills the process tree when the limit passes. A Secretive confirmation is an agent-side wait that `BatchMode` does not stop, so only the time limit ends it. The Windows task's `ExecutionTimeLimit` grows from 15 to 50 minutes, so four plugins with retries fit. `MultipleInstancesPolicy` stays `IgnoreNew`, which keeps hourly runs from overlapping.
+Commands run with `GIT_TERMINAL_PROMPT=0` and `GIT_SSH_COMMAND="ssh -o BatchMode=yes"`. Each command is limited to five minutes: through `timeout` from Nix's coreutils on the Mac, and on Windows through a process wait that kills the process tree when the limit passes. The limit ends any wait that the environment variables don't prevent, whatever its cause. The Windows task's `ExecutionTimeLimit` grows from 15 to 50 minutes, so four plugins with retries fit. `MultipleInstancesPolicy` stays `IgnoreNew`, which keeps hourly runs from overlapping.
 
 ### The sign-in check uses Git itself
 

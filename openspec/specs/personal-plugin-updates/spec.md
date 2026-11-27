@@ -36,7 +36,7 @@ Every command of the job SHALL run without waiting for input and SHALL fail when
 
 #### Scenario: A command waits for input
 
-- **WHEN** a refresh would wait for a credential prompt or a hardware key confirmation
+- **WHEN** a refresh would wait for input that nobody gives
 - **THEN** the command fails within its time limit and the job logs the failure
 
 ### Requirement: Interactive Windows execution
