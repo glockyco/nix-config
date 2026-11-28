@@ -113,14 +113,14 @@ omp plugin marketplace add <source>
 omp plugin install --scope user <plugin>
 omp config set skills.ignoredSkills '["defuddle","json-canvas","knap"]'
 omp config set memory.backend off
-omp plugin install @plannotator/pi-extension@0.28.42
+omp plugin install @plannotator/pi-extension@0.29.6
 ```
 
 Add each marketplace by its GitHub `owner/repo`, never by an SSH URL, so scheduled updates fetch over HTTPS with the GitHub sign-in.
 
 The Obsidian skills teach agents the Markdown, Bases and command line of the [notes vault](docs/operations/obsidian.md). The three ignored skills cover web clipping, template rendering and canvases, which nothing here uses, and would otherwise add their descriptions to every session. Memory stays off, because it gives every session rules that a model inferred from earlier chats, mixed across all projects started in the same folder. Each project's repository and the notes vault hold its decisions instead.
 
-Plannotator's OMP plugin provides `/plannotator-annotate`, `/plannotator-last` and the tool agents use to open reviews. `omp plugin upgrade` updates only marketplace plugins, so this one stays at its installed version until the install command runs with a new one. chezmoi turns Plannotator's sharing off in `~/.plannotator/config.json` and leaves the file's other settings alone.
+Plannotator's OMP plugin provides `/plannotator-annotate`, `/plannotator-last` and the tool agents use to open reviews. It stays at its installed version until the install command runs with a new one or `omp plugin upgrade @plannotator/pi-extension` takes the newest release. OMP drops extension APIs between releases, so after an OMP update that makes the plugin fail to load, upgrade it and change the version above to match. chezmoi turns Plannotator's sharing off in `~/.plannotator/config.json` and leaves the file's other settings alone.
 
 The plugins in `omp.toml` update automatically at login and hourly through the Mac user launch agent and Korolev's interactive scheduled task. Each run refreshes every listed marketplace and upgrades its plugin in user scope. A failure of one plugin doesn't stop the others. Every command has a five-minute limit, so a prompt that nobody can answer becomes a logged failure. New sessions load the release. Running sessions keep theirs. On the Mac, read `~/Library/Logs/personal-plugin-upgrade.log`. See [Korolev Windows](docs/operations/korolev-windows.md#tern-omp-and-plannotator) for its task and log.
 

@@ -73,7 +73,7 @@ German QWERTZ stays first and Neo second. Office derives its shortcuts from the 
 Install Tern from the Stencil download page into `%LOCALAPPDATA%\Programs\Tern` and start it only through its Start-menu shortcut. Tern updates the executable it was started from. Accept Tern's offer to install OMP, or run Install omp from its command palette. Tern then keeps OMP current. Then install the plugins and settings as the [README's OMP block](../../README.md#omp) describes, and Plannotator:
 
 ```powershell
-pwsh -NoProfile -Command { $env:PLANNOTATOR_MINIMAL = '1'; & ([scriptblock]::Create((Invoke-RestMethod https://plannotator.ai/install.ps1))) -Version v0.28.40 -VerifyAttestation }
+pwsh -NoProfile -Command { $env:PLANNOTATOR_MINIMAL = '1'; & ([scriptblock]::Create((Invoke-RestMethod https://plannotator.ai/install.ps1))) -Version v0.29.6 -VerifyAttestation }
 ```
 
 Install Plannotator's OMP plugin with the command at the end of the [README's OMP block](../../README.md#omp). Plannotator needs the environment variable because its installer ignores the `-Minimal` switch. Without minimal mode it also installs vendor skills and commands. The [README](../../README.md#omp) explains the Obsidian skills, the ignored ones and why memory is off.

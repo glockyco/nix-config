@@ -47,7 +47,7 @@
     };
 
     # Pin Plannotator releases independently; retain the vendor's own transitive inputs.
-    plannotator-packages.url = "github:numtide/llm-agents.nix/dc8e4d4eb3cdbb13652f075eb651096c25aebbf2";
+    plannotator-packages.url = "github:numtide/llm-agents.nix/0f3fff27027ad78d23dab90bb43a4877567f6790";
 
     # Include upstream Karabiner rules, including the Neo2 group from `neo-layout.org/Einrichtung/macOS/`.
     karabiner-complex-modifications = {
